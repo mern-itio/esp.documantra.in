@@ -234,27 +234,27 @@ export function CommentSystem({
   const filteredComments = getFilteredComments();
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <div className="h-full flex flex-col bg-muted/30">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 bg-white">
+      <div className="p-4 border-b border-border bg-card">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Comments</h3>
+            <h3 className="text-lg font-semibold text-foreground">Comments</h3>
             {/* Version Summary */}
             {versions && versions.length > 0 && (
-              <div className="flex items-center space-x-2 mt-1">
-                <span className="text-xs text-gray-500">Comments by version:</span>
+              <div className="flex items-center space-x-2 mt-1 flex-wrap gap-1">
+                <span className="text-xs text-muted-foreground">Comments by version:</span>
                 {versions.map((version) => {
                   const versionCommentCount = comments.filter(c => 
                     c.versionId?._id === version.id || c.versionNumber === version.version
                   ).length;
                   return (
-                    <span key={version.id} className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                    <span key={version.id} className="text-xs text-foreground bg-muted px-2 py-1 rounded-md">
                       {version.version}: {versionCommentCount}
                     </span>
                   );
                 })}
-                <span className="text-xs text-gray-600 bg-blue-100 px-2 py-1 rounded">
+                <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded-md">
                   Total: {comments.length}
                 </span>
               </div>
@@ -272,7 +272,7 @@ export function CommentSystem({
                     onVersionChange(version);
                   }
                 }}
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-1 border border-input rounded-md text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 <option value="all">All Versions</option>
                 {versions.map((version) => (
@@ -313,7 +313,7 @@ export function CommentSystem({
                   }
                 }}
                 placeholder="Add a comment... Use @email to mention someone"
-                className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-input rounded-lg resize-none bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 rows={3}
               />
               <div className="flex items-center justify-between">
@@ -347,7 +347,7 @@ export function CommentSystem({
             </>
           )}
           {!canAddComments && (
-            <div className="text-center py-4 text-gray-500">
+            <div className="text-center py-4 text-muted-foreground">
               You do not have permission to add comments.
             </div>
           )}
@@ -358,13 +358,13 @@ export function CommentSystem({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoading ? (
           <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading comments...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading comments...</p>
           </div>
         ) : filteredComments.length === 0 ? (
           <div className="text-center py-8">
-            <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">
+            <MessageCircle className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
+            <p className="text-muted-foreground">
               {showResolved ? 'No comments yet' : 'No unresolved comments'}
             </p>
           </div>
@@ -372,7 +372,7 @@ export function CommentSystem({
           filteredComments.map((comment) => (
             <div
               key={comment._id || comment.id}
-              className={`bg-white rounded-lg border p-4 ${
+              className={`bg-card text-card-foreground rounded-lg border border-border p-4 ${
                 comment.resolved ? 'opacity-60' : ''
               }`}
             >
@@ -385,20 +385,20 @@ export function CommentSystem({
                     size="md"
                   />
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-foreground">
                       {comment.authorName}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       {formatDate(comment.timestamp)}
                     </span>
                     {/* Version Information */}
                     {comment.versionId && (
                       <div className="flex items-center space-x-1 mt-1">
-                        <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                        <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">
                           Version: {comment.versionId.version || comment.versionNumber || 'Unknown'}
                         </span>
                         {comment.versionId.description && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground">
                             - {comment.versionId.description}
                           </span>
                         )}
@@ -439,7 +439,7 @@ export function CommentSystem({
                     
                     {/* Dropdown Menu */}
                     {showCommentMenu === (comment._id || comment.id || '') && (
-                      <div className="absolute right-0 top-8 bg-white border rounded-lg shadow-lg z-10 min-w-32">
+                      <div className="absolute right-0 top-8 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg z-10 min-w-32">
                         {canAddComments && (
                           <button
                             onClick={() => {
@@ -449,7 +449,7 @@ export function CommentSystem({
                                 setShowCommentMenu(null);
                               }
                             }}
-                            className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                            className="w-full text-left px-4 py-2 hover:bg-accent flex items-center space-x-2"
                           >
                             <Edit3 className="w-4 h-4" />
                             <span>Edit</span>
@@ -464,7 +464,7 @@ export function CommentSystem({
                                 setShowCommentMenu(null);
                               }
                             }}
-                            className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 flex items-center space-x-2"
+                            className="w-full text-left px-4 py-2 hover:bg-accent text-destructive flex items-center space-x-2"
                           >
                             <Trash2 className="w-4 h-4" />
                             <span>Delete</span>
@@ -483,7 +483,7 @@ export function CommentSystem({
                     <textarea
                       value={editCommentText}
                       onChange={(e) => setEditCommentText(e.target.value)}
-                      className="w-full p-2 border rounded resize-none"
+                      className="w-full p-2 border border-input rounded-md resize-none bg-background text-foreground"
                       rows={3}
                     />
                     <div className="flex space-x-2">
@@ -512,13 +512,13 @@ export function CommentSystem({
                   </div>
                 ) : (
                   <>
-                    <p className="text-sm text-gray-700">{comment.content}</p>
+                    <p className="text-sm text-foreground">{comment.content}</p>
                     {comment.mentions.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
                         {comment.mentions.map((mention, index) => (
                           <span
                             key={index}
-                            className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                            className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"
                           >
                             @{mention}
                           </span>
@@ -531,23 +531,23 @@ export function CommentSystem({
 
               {/* Replies */}
               {comment.replies.length > 0 && (
-                <div className="space-y-2 ml-4 border-l-2 border-gray-100 pl-4">
+                <div className="space-y-2 ml-4 border-l-2 border-border pl-4">
                   {comment.replies.map((reply) => (
-                    <div key={reply.id} className="bg-gray-50 rounded p-2">
+                    <div key={reply.id} className="bg-muted/50 rounded-md p-2">
                       <div className="flex items-center space-x-2 mb-1">
                         <Avatar
                           name={reply.authorName}
                           email={reply.author}
                           size="sm"
                         />
-                        <span className="text-xs font-medium text-gray-900">
+                        <span className="text-xs font-medium text-foreground">
                           {reply.authorName}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           {formatDate(reply.timestamp)}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-700">{reply.content}</p>
+                      <p className="text-xs text-foreground">{reply.content}</p>
                     </div>
                   ))}
                 </div>
@@ -607,7 +607,7 @@ export function CommentSystem({
 
               {/* Resolved Badge */}
               {comment.resolved && (
-                <div className="mt-2 inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                <div className="mt-2 inline-flex items-center px-2 py-1 bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300 text-xs rounded-full">
                   <Check className="w-3 h-3 mr-1" />
                   Resolved
                 </div>
@@ -619,15 +619,15 @@ export function CommentSystem({
 
       {/* Mention Picker Modal */}
       {showMentionPicker && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4">Mention Someone</h3>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-card text-card-foreground border border-border rounded-lg p-6 w-96 shadow-xl">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">Mention Someone</h3>
             <input
               type="text"
               placeholder="Enter email..."
               value={mentionSearch}
               onChange={(e) => setMentionSearch(e.target.value)}
-              className="w-full p-2 border rounded mb-4"
+              className="w-full p-2 border border-input rounded-md mb-4 bg-background text-foreground"
             />        
             <div className="flex justify-end mt-4 space-x-2">
               <Button 
@@ -653,9 +653,9 @@ export function CommentSystem({
 
       {/* Attachment Picker Modal */}
       {showAttachmentPicker && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4">Add Attachment</h3>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-card text-card-foreground border border-border rounded-lg p-6 w-96 shadow-xl">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">Add Attachment</h3>
             <input
               type="file"
               onChange={(e) => {
@@ -664,7 +664,7 @@ export function CommentSystem({
                   handleAttachmentSelect(file);
                 }
               }}
-              className="w-full p-2 border rounded mb-4"
+              className="w-full p-2 border border-input rounded-md mb-4 bg-background text-sm text-foreground"
             />
             <div className="flex justify-end mt-4">
               <Button 

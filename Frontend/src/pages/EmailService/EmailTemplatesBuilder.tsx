@@ -47,10 +47,18 @@ const extractVariables = (html: string) => {
 
 const getTemplateId = (t: EmailTemplate) => t._id || t.id || '';
 
-const getRowsFromResponse = (res: any): EmailTemplate[] => {
-  const payload = res?.data?.data ?? res?.data ?? [];
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.templates)) return payload.templates;
+const getRowsFromResponse = (res: unknown): EmailTemplate[] => {
+  if (!res || typeof res !== 'object') return [];
+  const root = res as { data?: { data?: unknown; templates?: EmailTemplate[] } | EmailTemplate[] | unknown };
+  const d = root.data;
+  const payload =
+    d && typeof d === 'object' && d !== null && 'data' in d
+      ? (d as { data: unknown }).data
+      : d ?? [];
+  if (Array.isArray(payload)) return payload as EmailTemplate[];
+  if (payload && typeof payload === 'object' && Array.isArray((payload as { templates?: EmailTemplate[] }).templates)) {
+    return (payload as { templates: EmailTemplate[] }).templates;
+  }
   return [];
 };
 
@@ -66,8 +74,15 @@ const formatDate = (dateString?: string) => {
   });
 };
 
+type EmailEditorHandle = {
+  editor?: {
+    loadDesign: (design: unknown) => void;
+    exportHtml: (cb: (data: ExportHtmlData) => void) => void;
+  };
+};
+
 const EmailTemplatesBuilder: React.FC = () => {
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<EmailEditorHandle | null>(null);
 
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [filteredTemplates, setFilteredTemplates] = useState<EmailTemplate[]>([]);
@@ -79,7 +94,7 @@ const EmailTemplatesBuilder: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState('');
-  const [initialDesign, setInitialDesign] = useState<any>(null);
+  const [initialDesign, setInitialDesign] = useState<unknown>(null);
   const [templateName, setTemplateName] = useState('');
   const [templateSlug, setTemplateSlug] = useState('');
 
@@ -277,24 +292,24 @@ const EmailTemplatesBuilder: React.FC = () => {
   }, [currentTemplates, startIndex]);
 
   return (
-    <div >
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/40 dark:from-background dark:to-muted/20 py-8 px-4 sm:px-6 lg:px-8">
       <div className="mb-6">
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
           <div className="flex-1">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search templates by name, slug or id..."
-                className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:outline-none shadow-sm focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] transition-all duration-200 bg-white hover:border-gray-400 text-sm"
+                className="w-full pl-10 pr-12 py-2.5 border border-input rounded-lg focus:outline-none shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 bg-background hover:border-muted-foreground/30 text-sm text-foreground placeholder:text-muted-foreground"
               />
 
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200 hover:scale-110 transition-all duration-200"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-muted text-foreground text-xs rounded-lg hover:bg-accent hover:scale-110 transition-all duration-200"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -304,7 +319,7 @@ const EmailTemplatesBuilder: React.FC = () => {
 
           <button
             onClick={openCreateModal}
-            className="group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
+            className="group inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
           >
             <Plus className="w-4 h-4 transition-transform duration-200 ease-in-out group-hover:rotate-90" />
             Create Template
@@ -313,23 +328,23 @@ const EmailTemplatesBuilder: React.FC = () => {
       </div>
 
       <div className="relative">
-        <div className="flex flex-col min-h-[calc(100vh-210px)] overflow-x-auto relative">
-          <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed', width: '100%' }}>
+        <div className="flex flex-col min-h-[calc(100vh-210px)] overflow-x-auto relative rounded-lg border border-border bg-card text-card-foreground shadow-sm">
+          <table className="min-w-full divide-y divide-border" style={{ tableLayout: 'fixed', width: '100%' }}>
             
-            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+            <thead className="bg-muted/50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-20">S.No.</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Template Name</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Slug</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Variables</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Updated At</th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider w-56">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-20">S.No.</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Template Name</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Slug</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Variables</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Updated At</th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider w-56">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-16 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-16 text-center text-muted-foreground">
                     Loading templates...
                   </td>
                 </tr>
@@ -340,33 +355,34 @@ const EmailTemplatesBuilder: React.FC = () => {
 
                       {/* Icon */}
                       <div className="relative flex items-center justify-center">
-                        <div className="w-24 h-24 rounded-full bg-indigo-50 flex items-center justify-center">
-                          <div className="w-14 h-18 rounded-lg bg-white shadow-md border border-indigo-100 flex flex-col items-center justify-center">
-                            <div className="w-10 h-2 bg-indigo-100 rounded mb-1" />
-                            <div className="w-8 h-2 bg-indigo-100 rounded mb-1" />
-                            <div className="w-6 h-2 bg-indigo-100 rounded" />
+                        <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+                          <div className="w-14 h-18 rounded-lg bg-card shadow-md border border-border flex flex-col items-center justify-center">
+                            <div className="w-10 h-2 bg-primary/15 rounded mb-1" />
+                            <div className="w-8 h-2 bg-primary/15 rounded mb-1" />
+                            <div className="w-6 h-2 bg-primary/15 rounded" />
                           </div>
                         </div>
-                        <span className="absolute -bottom-1 -right-1 text-2xl"><CircleCheckBig className="h-6 w-6 text-green-500" /></span>
+                        <span className="absolute -bottom-1 -right-1 text-2xl"><CircleCheckBig className="h-6 w-6 text-green-600 dark:text-green-400" /></span>
                       </div>
 
                       {/* Title */}
-                      <h3 className="text-lg font-semibold text-[#3E2B66]">
+                      <h3 className="text-lg font-semibold text-foreground">
                         No email templates found
                       </h3>
 
                       {/* Subtitle with clickable Create */}
-                      <p className="text-sm text-gray-500 mt-2 max-w-sm">
+                      <p className="text-sm text-muted-foreground mt-2 max-w-sm">
                         {searchTerm ? (
                           "Try adjusting your search terms."
                         ) : (
                           <>
-                            <span
-                              onClick={() => setShowModal(true)} 
-                              className="text-[#3E2B66] font-medium cursor-pointer hover:underline"
+                            <button
+                              type="button"
+                              onClick={openCreateModal}
+                              className="text-primary font-medium cursor-pointer hover:underline"
                             >
                               Create
-                            </span>{" "}
+                            </button>{" "}
                             your first template to get started.
                           </>
                         )}
@@ -376,26 +392,26 @@ const EmailTemplatesBuilder: React.FC = () => {
                 </tr>
               ) : (
                 rows.map((template) => (
-                  <tr key={getTemplateId(template)} className="group hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-transparent transition-all duration-200 border-l-4 border-l-transparent hover:border-l-[#3E2B66]">
-                    <td className="px-6 py-4 text-sm text-gray-900">{template.serial}</td>
-                    <td className="px-6 py-4 text-sm font-semibold text-[#3E2B66] truncate">{template.name || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{template.template_Slug || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700 truncate">
+                  <tr key={getTemplateId(template)} className="group hover:bg-muted/40 transition-all duration-200 border-l-4 border-l-transparent hover:border-l-primary">
+                    <td className="px-6 py-4 text-sm text-foreground">{template.serial}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-primary truncate">{template.name || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-foreground">{template.template_Slug || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground truncate">
                       {Array.isArray(template.variables) && template.variables.length ? template.variables.join(', ') : '-'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{formatDate(template.updatedAt || template.createdAt)}</td>
+                    <td className="px-6 py-4 text-sm text-foreground">{formatDate(template.updatedAt || template.createdAt)}</td>
                     <td className="px-6 py-4 text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => openEditModal(template)}
-                          className="px-4 py-2 border border-[#3E2B66] rounded-lg text-sm font-medium text-[#3E2B66] hover:bg-purple-50 hover:border-[#4d3577] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
+                          className="px-4 py-2 border border-primary rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
                         >
                           <Pencil className="w-4 h-4" />
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(template)}
-                          className="px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 hover:border-red-400 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
+                          className="px-4 py-2 border border-red-300 dark:border-red-800 rounded-lg text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 hover:border-red-400 dark:hover:border-red-700 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
                         >
                           <Trash2 className="w-4 h-4" />
                           Delete
@@ -410,12 +426,12 @@ const EmailTemplatesBuilder: React.FC = () => {
         </div>
 
         {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-end border-t border-gray-200 sm:px-6">
+          <div className="bg-card px-4 py-3 flex items-center justify-end border-t border-border sm:px-6">
             <nav className="relative z-0 inline-flex rounded-sm shadow-sm -space-x-px" aria-label="Pagination">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-300"
+                className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-border bg-background text-sm font-medium text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-background disabled:hover:text-muted-foreground disabled:hover:border-border"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
@@ -425,7 +441,7 @@ const EmailTemplatesBuilder: React.FC = () => {
                   return (
                     <span
                       key={`ellipsis-${index}`}
-                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500"
+                      className="relative inline-flex items-center px-4 py-2 border border-border bg-background text-sm font-medium text-muted-foreground"
                     >
                       ...
                     </span>
@@ -437,8 +453,8 @@ const EmailTemplatesBuilder: React.FC = () => {
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
                     className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${pageNum === currentPage
-                      ? 'z-10 bg-[#3E2B66] border-[#3E2B66] text-white shadow-md'
-                      : 'bg-white border-gray-300 text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66]'
+                      ? 'z-10 bg-primary border-primary text-primary-foreground shadow-md'
+                      : 'bg-background border-border text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary'
                       }`}
                   >
                     {pageNum}
@@ -449,7 +465,7 @@ const EmailTemplatesBuilder: React.FC = () => {
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-300"
+                className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-border bg-background text-sm font-medium text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-background disabled:hover:text-muted-foreground disabled:hover:border-border"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
@@ -460,15 +476,15 @@ const EmailTemplatesBuilder: React.FC = () => {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={closeModal} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-7xl p-6 max-h-[95vh] overflow-y-auto">
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/60" onClick={closeModal} />
+          <div className="relative bg-card text-card-foreground border border-border rounded-2xl shadow-2xl w-full max-w-7xl p-6 max-h-[95vh] overflow-y-auto">
             <div className="flex items-start justify-between mb-6">
-              <h3 className="text-[22px] font-semibold text-[#3E2B66]">
+              <h3 className="text-[22px] font-semibold text-foreground">
                 {isEditing ? 'Edit Email Template' : 'Create Email Template'}
               </h3>
               <button
                 onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
                 disabled={submitting}
               >
                 <X className="w-6 h-6" />
@@ -477,24 +493,24 @@ const EmailTemplatesBuilder: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Template Name <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Template Name <span className="text-destructive">*</span>
                 </label>
                 <input
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
                   placeholder="Welcome Email"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Template Slug <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Template Slug <span className="text-destructive">*</span>
                 </label>
                 <select
                   value={templateSlug}
                   onChange={(e) => setTemplateSlug(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent bg-white"
+                  className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary bg-background text-foreground"
                 >
                   <option value="">Select Template Slug</option>
                   {TEMPLATE_SLUG_OPTIONS.map((slug) => (
@@ -506,22 +522,22 @@ const EmailTemplatesBuilder: React.FC = () => {
               </div>
             </div>
 
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+              <p className="text-sm text-foreground">
                 Available variables: <strong>{Object.values(MERGE_TAGS).map((tag) => tag.value).join(', ')}</strong>
               </p>
             </div>
 
-            <div className="h-[620px] border border-gray-200 rounded-lg overflow-hidden">
+            <div className="h-[620px] border border-border rounded-lg overflow-hidden bg-background">
               <EmailEditor ref={editorRef} onReady={onEditorReady} options={{ mergeTags: MERGE_TAGS }} />
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-gray-200">
+            <div className="flex items-center justify-end gap-3 pt-4 mt-4 border-t border-border">
               <button
                 type="button"
                 onClick={closeModal}
                 disabled={submitting}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:bg-accent transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -529,7 +545,7 @@ const EmailTemplatesBuilder: React.FC = () => {
                 type="button"
                 onClick={upsertTemplate}
                 disabled={submitting}
-                className="px-5 py-2 text-sm font-medium text-white bg-[#3E2B66] rounded-lg hover:bg-[#4d3577] transition-colors disabled:opacity-50"
+                className="px-5 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 {submitting ? (isEditing ? 'Updating...' : 'Creating...') : isEditing ? 'Update Template' : 'Create Template'}
               </button>

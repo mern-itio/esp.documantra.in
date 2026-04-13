@@ -35,28 +35,27 @@ export function BreadcrumbNavigation() {
   };
 
   const currentPage = getCurrentPageInfo();
-const navigate = useNavigate();
+  const navigate = useNavigate();
   return (
-    <nav className="flex items-center space-x-1 text-sm">
+    <nav className="flex items-center space-x-1 text-sm text-foreground">
       {/* Home/All Documents - always show as root */}
       <button
-       onClick={() => navigate("/all-documents")}
+        onClick={() => navigate("/all-documents")}
         className={cn(
-          "flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
-         
+          "flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-accent transition-colors"
         )}
       >
-        {/* <File className="w-4 h-4 text-gray-500" /> */}
-        <span><ArrowLeft className="w-4 h-4 text-gray-500" /></span>
+        <span>
+          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+        </span>
       </button>
 
       {/* Current Page */}
       {currentPage && (
         <>
-          {/* <ChevronRight className="w-4 h-4 text-gray-400" /> */}
           <div className="flex items-center space-x-1 px-2 py-1 rounded-md">
-            <currentPage.icon className="w-4 h-4 text-gray-500" />
-            <span className="text-gray-900 font-medium">{currentPage.name}</span>
+            <currentPage.icon className="w-4 h-4 text-muted-foreground" />
+            <span className="text-foreground font-medium">{currentPage.name}</span>
           </div>
         </>
       )}
@@ -64,14 +63,14 @@ const navigate = useNavigate();
       {/* Folder Breadcrumbs (only show for folder navigation) */}
       {location.pathname === '/documents/folder' && breadcrumbs.map((folder, index) => (
         <React.Fragment key={folder.id}>
-          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
           <button
             onClick={() => setCurrentFolder(folder.id)}
             className={cn(
-              "px-2 py-1 rounded-md hover:bg-gray-100 transition-colors",
-              index === breadcrumbs.length - 1 
-                ? "text-gray-900 font-medium" 
-                : "text-gray-600"
+              "px-2 py-1 rounded-md hover:bg-accent transition-colors",
+              index === breadcrumbs.length - 1
+                ? "text-foreground font-medium"
+                : "text-muted-foreground"
             )}
           >
             {folder.name}

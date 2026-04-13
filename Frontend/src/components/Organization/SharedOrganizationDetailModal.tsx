@@ -85,13 +85,11 @@ const PERMISSION_CONFIG: {
 ];
 
 function resolvePermissions(raw: OrgDetailResponse['permissions']): PermissionSet | null {
-  if (!raw) return null;
-  // nested: { permissions: { ENVELOPE_CREATE: ... } }
-  if ('permissions' in (raw as any) && typeof (raw as any).permissions === 'object') {
-    return (raw as any).permissions as PermissionSet;
+  if (!raw || typeof raw !== 'object') return null;
+  if ('permissions' in raw && raw.permissions && typeof raw.permissions === 'object') {
+    return raw.permissions as PermissionSet;
   }
-  // flat: { ENVELOPE_CREATE: ... }
-  if ('ENVELOPE_CREATE' in (raw as any)) {
+  if ('ENVELOPE_CREATE' in raw) {
     return raw as PermissionSet;
   }
   return null;
@@ -137,7 +135,10 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
   const org = detail ?? organization as unknown as OrgDetailResponse;
   const isActive = typeof org.status === 'boolean' ? org.status : org.status === true;
   const isVerified = org.isVerified === true;
-  const roleName = detail?.access?.role?.name ?? (organization as any).role ?? 'Member';
+  const roleName =
+    detail?.access?.role?.name ??
+    (organization as Organization & { role?: string }).role ??
+    'Member';
   const permissions = detail ? resolvePermissions(detail.permissions) : null;
   const enabledCount = permissions
     ? Object.values(permissions).filter(Boolean).length
@@ -155,9 +156,9 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60 backdrop-blur-sm p-4">
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col overflow-hidden max-h-[90vh]"
+        className="bg-card text-card-foreground border border-border rounded-2xl shadow-2xl w-full max-w-xl flex flex-col overflow-hidden max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Blue accent top bar */}
@@ -179,38 +180,38 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
               )}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 leading-tight">{organization.name}</h2>
+              <h2 className="text-xl font-bold text-foreground leading-tight">{organization.name}</h2>
               {organization.website ? (
                 <a
                   href={organization.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 mt-1 transition-colors"
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mt-1 transition-colors"
                 >
                   <Globe className="w-3 h-3" />
                   <span>{organization.website.replace(/^https?:\/\//, '')}</span>
                   <ExternalLink className="w-2.5 h-2.5" />
                 </a>
               ) : (
-                <span className="text-xs text-gray-400 mt-1 block">No website</span>
+                <span className="text-xs text-muted-foreground mt-1 block">No website</span>
               )}
               {/* Status badges */}
               <div className="flex flex-wrap gap-1.5 mt-2">
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
                   isActive
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-gray-100 text-gray-500 border-gray-200'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                    : 'bg-muted text-muted-foreground border-border'
                 }`}>
                   {isActive ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                   {isActive ? 'Active' : 'Inactive'}
                 </span>
                 {isVerified && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800">
                     <ShieldCheck className="w-3 h-3" />
                     Verified
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800">
                   <Users className="w-3 h-3" />
                   {roleName}
                 </span>
@@ -219,7 +220,7 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0 mt-0.5"
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex-shrink-0 mt-0.5"
           >
             <X className="w-5 h-5" />
           </button>
@@ -229,16 +230,16 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
         <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-5">
 
           {loading && (
-            <div className="flex flex-col items-center justify-center py-10 text-gray-400">
-              <Loader2 className="w-7 h-7 animate-spin mb-3 text-blue-500" />
+            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+              <Loader2 className="w-7 h-7 animate-spin mb-3 text-blue-600 dark:text-blue-400" />
               <p className="text-sm">Loading details…</p>
             </div>
           )}
 
           {error && !loading && (
-            <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-200 dark:bg-red-950/40 dark:border-red-900">
+              <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0" />
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
             </div>
           )}
 
@@ -246,40 +247,40 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
             <>
               {/* Organization details */}
               <section>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
                   Organization Details
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   {org.createdAt && (
-                    <div className="flex items-start gap-2.5 bg-gray-50 rounded-xl border border-gray-100 p-3.5">
-                      <Calendar className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex items-start gap-2.5 bg-muted/50 rounded-xl border border-border p-3.5">
+                      <Calendar className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Created</p>
-                        <p className="text-sm font-medium text-gray-800 mt-0.5">{formatDate(org.createdAt)}</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Created</p>
+                        <p className="text-sm font-medium text-foreground mt-0.5">{formatDate(org.createdAt)}</p>
                       </div>
                     </div>
                   )}
                   {organization.gst && (
-                    <div className="flex items-start gap-2.5 bg-gray-50 rounded-xl border border-gray-100 p-3.5">
-                      <Building2 className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex items-start gap-2.5 bg-muted/50 rounded-xl border border-border p-3.5">
+                      <Building2 className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">GST</p>
-                        <p className="text-sm font-mono font-medium text-gray-800 mt-0.5">{organization.gst}</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">GST</p>
+                        <p className="text-sm font-mono font-medium text-foreground mt-0.5">{organization.gst}</p>
                       </div>
                     </div>
                   )}
-                  <div className="flex items-start gap-2.5 bg-gray-50 rounded-xl border border-gray-100 p-3.5">
-                    <ShieldCheck className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-2.5 bg-muted/50 rounded-xl border border-border p-3.5">
+                    <ShieldCheck className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Verification</p>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Verification</p>
                       <p className={`text-sm font-semibold mt-0.5 ${
                         org.verificationStatus === 'APPROVED'
-                          ? 'text-blue-600'
+                          ? 'text-blue-600 dark:text-blue-400'
                           : org.verificationStatus === 'PENDING'
-                          ? 'text-amber-600'
+                          ? 'text-amber-600 dark:text-amber-400'
                           : org.verificationStatus === 'REJECTED'
-                          ? 'text-red-600'
-                          : 'text-gray-500'
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-muted-foreground'
                       }`}>
                         {org.verificationStatus
                           ? org.verificationStatus.charAt(0) + org.verificationStatus.slice(1).toLowerCase()
@@ -287,11 +288,11 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-2.5 bg-gray-50 rounded-xl border border-gray-100 p-3.5">
-                    <CheckCircle2 className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-2.5 bg-muted/50 rounded-xl border border-border p-3.5">
+                    <CheckCircle2 className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Status</p>
-                      <p className={`text-sm font-semibold mt-0.5 ${isActive ? 'text-emerald-600' : 'text-gray-500'}`}>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Status</p>
+                      <p className={`text-sm font-semibold mt-0.5 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                         {isActive ? 'Active' : 'Inactive'}
                       </p>
                     </div>
@@ -301,23 +302,23 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
 
               {/* Your access */}
               <section>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
                   Your Access
                 </p>
-                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                <div className="bg-indigo-50 border border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900 rounded-xl p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center flex-shrink-0">
                     <Users className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-indigo-900">{roleName}</p>
-                    <p className="text-xs text-indigo-600 mt-0.5">
+                    <p className="text-sm font-bold text-indigo-900 dark:text-indigo-100">{roleName}</p>
+                    <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-0.5">
                       {permissions
                         ? `${enabledCount} of ${PERMISSION_CONFIG.length} permissions enabled`
                         : 'Shared organization member'}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-indigo-200 text-indigo-700">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-card border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300">
                       <Share2 className="w-3 h-3" />
                       Shared
                     </span>
@@ -328,7 +329,7 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
               {/* Permissions */}
               {permissions ? (
                 <section>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
                     Your Permissions
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -339,25 +340,25 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
                           key={key}
                           className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
                             allowed
-                              ? 'bg-emerald-50 border-emerald-200'
-                              : 'bg-gray-50 border-gray-200 opacity-60'
+                              ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800'
+                              : 'bg-muted/50 border-border opacity-80 dark:opacity-70'
                           }`}
                         >
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            allowed ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200 text-gray-400'
+                            allowed ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-muted text-muted-foreground'
                           }`}>
                             {icon}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-xs font-semibold truncate ${
-                              allowed ? 'text-emerald-800' : 'text-gray-500'
+                              allowed ? 'text-emerald-800 dark:text-emerald-200' : 'text-muted-foreground'
                             }`}>
                               {label}
                             </p>
-                            <p className="text-[10px] text-gray-400 truncate">{description}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{description}</p>
                           </div>
                           <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            allowed ? 'bg-emerald-500' : 'bg-gray-300'
+                            allowed ? 'bg-emerald-500 dark:bg-emerald-600' : 'bg-muted-foreground/40'
                           }`}>
                             {allowed ? (
                               <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -376,10 +377,10 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
                 </section>
               ) : !error && (
                 <section>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
                     Your Permissions
                   </p>
-                  <div className="bg-gray-50 rounded-xl border border-gray-200 p-5 text-center text-sm text-gray-400">
+                  <div className="bg-muted/50 rounded-xl border border-border p-5 text-center text-sm text-muted-foreground">
                     Permission details not available for this organization.
                   </div>
                 </section>
@@ -389,14 +390,14 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 flex-shrink-0 flex items-center justify-between bg-gray-50">
-          <p className="text-xs text-gray-400 flex items-center gap-1.5">
+        <div className="px-6 py-4 border-t border-border flex-shrink-0 flex items-center justify-between bg-muted/40">
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
             <Building2 className="w-3.5 h-3.5" />
             You are a member of this organization
           </p>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+            className="px-4 py-2 text-sm font-semibold text-foreground bg-background border border-border rounded-lg hover:bg-accent transition-colors"
           >
             Close
           </button>

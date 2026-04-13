@@ -270,18 +270,18 @@ const PdfRepairPage: React.FC = () => {
   return (
     <div className="mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
                  to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">PDF Repair</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">PDF Repair</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Repair corrupted PDFs, analyze issues, and optimize for fast web viewing
               </p>
             </div>
@@ -290,14 +290,14 @@ const PdfRepairPage: React.FC = () => {
       </div>
 
       {/* Mode Selection */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-background rounded-lg shadow p-6">
         <div className="flex space-x-4 mb-6">
           <button
             onClick={() => setRepairMode('repair')}
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
               repairMode === 'repair'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
             <Wrench className="w-4 h-4 mr-2" />
@@ -307,8 +307,8 @@ const PdfRepairPage: React.FC = () => {
             onClick={() => setRepairMode('analyze')}
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
               repairMode === 'analyze'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
             <Search className="w-4 h-4 mr-2" />
@@ -318,8 +318,8 @@ const PdfRepairPage: React.FC = () => {
             onClick={() => setRepairMode('optimize')}
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
               repairMode === 'optimize'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
             <Zap className="w-4 h-4 mr-2" />
@@ -328,13 +328,13 @@ const PdfRepairPage: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
+        <div className="border-b border-border">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('repair')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'repair'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -345,8 +345,8 @@ const PdfRepairPage: React.FC = () => {
               onClick={() => setActiveTab('analysis')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'analysis'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'
               }`}
             >
               <Search className="w-4 h-4 inline mr-2" />
@@ -356,8 +356,8 @@ const PdfRepairPage: React.FC = () => {
               onClick={() => setActiveTab('optimization')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'optimization'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'
               }`}
             >
               <Zap className="w-4 h-4 inline mr-2" />
@@ -367,8 +367,8 @@ const PdfRepairPage: React.FC = () => {
               onClick={() => setActiveTab('results')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'results'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'
               }`}
             >
               <BarChart3 className="w-4 h-4 inline mr-2" />
@@ -383,15 +383,15 @@ const PdfRepairPage: React.FC = () => {
         {/* Main Content */}
         <div className={`space-y-6 ${selectedFile ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
           {/* File Upload Section */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload PDF for {repairMode === 'repair' ? 'Repair' : repairMode === 'analyze' ? 'Analysis' : 'Optimization'}</h2>
+          <div className="bg-background rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Upload PDF for {repairMode === 'repair' ? 'Repair' : repairMode === 'analyze' ? 'Analysis' : 'Optimization'}</h2>
             
             {!selectedFile ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                 <div className="mt-4">
                   <label className="cursor-pointer">
-                    <span className="text-blue-600 hover:text-blue-500 font-medium">
+                    <span className="text-primary hover:text-primary/80 font-medium">
                       Click to upload PDF
                     </span>
                     <input
@@ -402,32 +402,32 @@ const PdfRepairPage: React.FC = () => {
                       className="hidden"
                     />
                   </label>
-                  <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
+                  <p className="text-sm text-muted-foreground mt-1">or drag and drop</p>
                 </div>
               </div>
             ) : (
-              <div className="border rounded-lg p-4 bg-gray-50">
+              <div className="border rounded-lg p-4 bg-muted">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <File className="w-8 h-8 text-blue-600" />
+                    <File className="w-8 h-8 text-primary" />
                     <div>
-                      <p className="text-lg font-medium text-gray-900">{selectedFile.name}</p>
-                      <p className="text-sm text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                      <p className="text-lg font-medium text-foreground">{selectedFile.name}</p>
+                      <p className="text-sm text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="px-3 py-1 text-sm text-primary hover:text-primary/80 font-medium"
                     >
                       Change File
                     </button>
                     <button
                       onClick={handleRemoveFile}
-                      className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                      className="p-2 hover:bg-muted rounded-full transition-colors"
                       title="Remove file"
                     >
-                      <X className="w-5 h-5 text-gray-500 hover:text-red-600" />
+                      <X className="w-5 h-5 text-muted-foreground hover:text-destructive" />
                     </button>
                   </div>
                 </div>
@@ -446,7 +446,7 @@ const PdfRepairPage: React.FC = () => {
                 <button
                   onClick={handleRepairPdf}
                   disabled={isProcessing}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/80 disabled:opacity-50"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -458,7 +458,7 @@ const PdfRepairPage: React.FC = () => {
                 <button
                   onClick={handleAnalyzePdf}
                   disabled={isProcessing}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-md text-muted-foreground bg-muted hover:bg-muted/80 disabled:opacity-50"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -470,7 +470,7 @@ const PdfRepairPage: React.FC = () => {
                 <button
                   onClick={handleOptimizePdf}
                   disabled={isProcessing}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-md text-muted-foreground bg-muted hover:bg-muted/80 disabled:opacity-50"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -483,10 +483,10 @@ const PdfRepairPage: React.FC = () => {
             )}
           </div>
           {!selectedFile && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-background border border-border rounded-lg p-4">
             <div className="flex items-start">
-              <Info className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-blue-800">
+              <Info className="w-5 h-5 text-primary mr-2 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-muted-foreground">
                 <p className="font-medium mb-1">How it works:</p>
                 <p>Upload a corrupted or damaged PDF to repair structural issues, analyze problems, or optimize for fast web viewing. The tool will attempt to recover as much content as possible and provide detailed reports.</p>
               </div>
@@ -495,10 +495,10 @@ const PdfRepairPage: React.FC = () => {
           )}
           {/* Repair Results */}
           {activeTab === 'results' && repairResult && (
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-background rounded-lg shadow">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Repair Results</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Repair Results</h3>
                   <div className="flex items-center space-x-4">
                     {repairResult.success ? (
                       <div className="flex items-center space-x-2">
@@ -516,7 +516,7 @@ const PdfRepairPage: React.FC = () => {
                         href={`${pdfApi.defaults.baseURL}${repairResult.downloadUrl}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/80"
                       >
                         <Download className="w-4 h-4 mr-2" />
                         Download
@@ -528,37 +528,37 @@ const PdfRepairPage: React.FC = () => {
                 {/* File Size Comparison */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="border rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Original File</h4>
-                    <div className="text-2xl font-bold text-gray-600">
+                    <h4 className="font-medium text-foreground mb-2">Original File</h4>
+                    <div className="text-2xl font-bold text-muted-foreground">
                       {formatFileSize(repairResult.originalSize)}
                     </div>
                   </div>
                   <div className="border rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Repaired File</h4>
-                    <div className="text-2xl font-bold text-green-600">
+                    <h4 className="font-medium text-foreground mb-2">Repaired File</h4>
+                    <div className="text-2xl font-bold text-success">
                       {formatFileSize(repairResult.repairedSize)}
                     </div>
                   </div>
                 </div>
 
                 {/* Statistics */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h4 className="font-medium text-gray-900 mb-3">Document Statistics</h4>
+                <div className="bg-muted rounded-lg p-4 mb-6">
+                  <h4 className="font-medium text-foreground mb-3">Document Statistics</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-600">Pages:</span>
+                      <span className="text-muted-foreground">Pages:</span>
                       <span className="ml-2 font-medium">{repairResult.statistics.pages}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Fonts:</span>
+                      <span className="text-muted-foreground">Fonts:</span>
                       <span className="ml-2 font-medium">{repairResult.statistics.fonts}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Images:</span>
+                      <span className="text-muted-foreground">Images:</span>
                       <span className="ml-2 font-medium">{repairResult.statistics.images}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Forms:</span>
+                      <span className="text-muted-foreground">Forms:</span>
                       <span className="ml-2 font-medium">{repairResult.statistics.forms}</span>
                     </div>
                   </div>
@@ -567,7 +567,7 @@ const PdfRepairPage: React.FC = () => {
                 {/* Issues Found */}
                 {repairResult.issuesFound.length > 0 && (
                   <div className="mb-6">
-                    <h4 className="font-medium text-gray-900 mb-3">Issues Found ({repairResult.issuesFound.length})</h4>
+                      <h4 className="font-medium text-foreground mb-3">Issues Found ({repairResult.issuesFound.length})</h4>
                     <div className="space-y-2">
                       {repairResult.issuesFound.map((issue, index) => (
                         <div key={index} className={`border rounded-lg p-3 ${getSeverityColor(issue.severity)}`}>
@@ -592,7 +592,7 @@ const PdfRepairPage: React.FC = () => {
                 {/* Repairs Applied */}
                 {repairResult.repairsApplied.length > 0 && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Repairs Applied ({repairResult.repairsApplied.length})</h4>
+                    <h4 className="font-medium text-foreground mb-3">Repairs Applied ({repairResult.repairsApplied.length})</h4>
                     <div className="space-y-2">
                       {repairResult.repairsApplied.map((repair, index) => (
                         <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-3">
@@ -619,31 +619,31 @@ const PdfRepairPage: React.FC = () => {
 
           {/* Analysis Results */}
           {activeTab === 'analysis' && analysisResult && (
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-background rounded-lg shadow">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Analysis Results</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Analysis Results</h3>
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
                       <span className={`text-2xl font-bold ${getHealthScoreColor(analysisResult.healthScore)}`}>
                         {analysisResult.healthScore}%
                       </span>
-                      <span className="text-sm text-gray-500">Health Score</span>
+                      <span className="text-sm text-muted-foreground">Health Score</span>
                     </div>
                     <div className={`px-3 py-1 rounded-full text-sm font-medium ${
                       analysisResult.isCorrupted 
-                        ? 'bg-red-100 text-red-800' 
+                        ? 'bg-destructive-100 text-destructive-800' 
                         : 'bg-green-100 text-green-800'
                     }`}>
                       {analysisResult.isCorrupted ? 'Needs Repair' : 'Healthy'}
                     </div>
                     {analysisResult.repairStatus && (
                       <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        analysisResult.repairStatus === 'excellent' ? 'bg-green-100 text-green-800' :
-                        analysisResult.repairStatus === 'good' ? 'bg-blue-100 text-blue-800' :
-                        analysisResult.repairStatus === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                        analysisResult.repairStatus === 'failed' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
+                        analysisResult.repairStatus === 'excellent' ? 'bg-success-100 text-success-800' :
+                        analysisResult.repairStatus === 'good' ? 'bg-primary-100 text-primary-800' :
+                        analysisResult.repairStatus === 'partial' ? 'bg-warning-100 text-warning-800' :
+                        analysisResult.repairStatus === 'failed' ? 'bg-destructive-100 text-destructive-800' :
+                        'bg-muted-100 text-muted-800'
                       }`}>
                         Repair: {analysisResult.repairStatus}
                       </div>
@@ -652,23 +652,23 @@ const PdfRepairPage: React.FC = () => {
                 </div>
 
                 {/* Statistics */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h4 className="font-medium text-gray-900 mb-3">Document Statistics</h4>
+                <div className="bg-muted rounded-lg p-4 mb-6">
+                  <h4 className="font-medium text-foreground mb-3">Document Statistics</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-600">File Size:</span>
+                      <span className="text-muted-foreground">File Size:</span>
                       <span className="ml-2 font-medium">{analysisResult.statistics.fileSizeFormatted}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Pages:</span>
+                      <span className="text-muted-foreground">Pages:</span>
                       <span className="ml-2 font-medium">{analysisResult.statistics.pages}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Fonts:</span>
+                      <span className="text-muted-foreground">Fonts:</span>
                       <span className="ml-2 font-medium">{analysisResult.statistics.fonts}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Forms:</span>
+                      <span className="text-muted-foreground">Forms:</span>
                       <span className="ml-2 font-medium">{analysisResult.statistics.forms}</span>
                     </div>
                   </div>
@@ -677,7 +677,7 @@ const PdfRepairPage: React.FC = () => {
                 {/* Issues */}
                 {analysisResult.issues.length > 0 && (
                   <div className="mb-6">
-                    <h4 className="font-medium text-gray-900 mb-3">Issues Found ({analysisResult.issues.length})</h4>
+                    <h4 className="font-medium text-foreground mb-3">Issues Found ({analysisResult.issues.length})</h4>
                     <div className="space-y-2">
                       {analysisResult.issues.map((issue, index) => (
                         <div key={index} className={`border rounded-lg p-3 ${getSeverityColor(issue.severity)}`}>
@@ -702,18 +702,18 @@ const PdfRepairPage: React.FC = () => {
                 {/* Recommendations */}
                 {analysisResult.recommendations.length > 0 && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Recommendations</h4>
+                    <h4 className="font-medium text-foreground mb-3">Recommendations</h4>
                     <div className="space-y-2">
                       {analysisResult.recommendations.map((rec, index) => (
-                        <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div key={index} className=" border border-primary rounded-lg p-3">
                           <div className="flex items-start">
-                            <Info className="w-4 h-4 text-blue-500 mt-0.5" />
+                            <Info className="w-4 h-4 text-primary mt-0.5" />
                             <div className="ml-2">
-                              <p className="text-sm font-medium text-blue-800">{rec.message}</p>
+                              <p className="text-sm font-medium text-primary-800">{rec.message}</p>
                               <span className={`text-xs px-2 py-1 rounded-full mt-1 inline-block ${
-                                rec.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-green-100 text-green-800'
+                                rec.priority === 'high' ? 'bg-destructive-100 text-destructive-800' :
+                                rec.priority === 'medium' ? 'bg-warning-100 text-warning-800' :
+                                'bg-success-100 text-success-800'
                               }`}>
                                 {rec.priority} priority
                               </span>
@@ -730,23 +730,23 @@ const PdfRepairPage: React.FC = () => {
 
           {/* Optimization Results */}
           {activeTab === 'optimization' && optimizationResult && (
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-background rounded-lg shadow">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Optimization Results</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Optimization Results</h3>
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
-                      <span className="text-2xl font-bold text-green-600">
+                      <span className="text-2xl font-bold text-success">
                         {optimizationResult.compressionRatio}%
                       </span>
-                      <span className="text-sm text-gray-500">Size Reduction</span>
+                      <span className="text-sm text-muted-foreground">Size Reduction</span>
                     </div>
                     {optimizationResult.downloadUrl && (
                       <a
                         href={`${pdfApi.defaults.baseURL}${optimizationResult.downloadUrl}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/80"
                       >
                         <Download className="w-4 h-4 mr-2" />
                         View Optimized PDF
@@ -758,33 +758,33 @@ const PdfRepairPage: React.FC = () => {
                 {/* File Size Comparison */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="border rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Original File</h4>
-                    <div className="text-2xl font-bold text-gray-600">
+                    <h4 className="font-medium text-foreground mb-2">Original File</h4>
+                    <div className="text-2xl font-bold text-muted-foreground">
                       {formatFileSize(optimizationResult.originalSize)}
                     </div>
                   </div>
                   <div className="border rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Optimized File</h4>
-                    <div className="text-2xl font-bold text-green-600">
+                    <h4 className="font-medium text-foreground mb-2">Optimized File</h4>
+                    <div className="text-2xl font-bold text-success">
                       {formatFileSize(optimizationResult.optimizedSize)}
                     </div>
                   </div>
                 </div>
 
                 {/* Statistics */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h4 className="font-medium text-gray-900 mb-3">Document Statistics</h4>
+                <div className="bg-muted rounded-lg p-4 mb-6">
+                  <h4 className="font-medium text-foreground mb-3">Document Statistics</h4>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-600">Pages:</span>
+                      <span className="text-muted-foreground">Pages:</span>
                       <span className="ml-2 font-medium">{optimizationResult.statistics.pages}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Fonts:</span>
+                      <span className="text-muted-foreground">Fonts:</span>
                       <span className="ml-2 font-medium">{optimizationResult.statistics.fonts}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Images:</span>
+                      <span className="text-muted-foreground">Images:</span>
                       <span className="ml-2 font-medium">{optimizationResult.statistics.images}</span>
                     </div>
                   </div>
@@ -793,16 +793,16 @@ const PdfRepairPage: React.FC = () => {
                 {/* Optimizations Applied */}
                 {optimizationResult.optimizationsApplied.length > 0 && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Optimizations Applied ({optimizationResult.optimizationsApplied.length})</h4>
+                      <h4 className="font-medium text-foreground mb-3">Optimizations Applied ({optimizationResult.optimizationsApplied.length})</h4>
                     <div className="space-y-2">
                       {optimizationResult.optimizationsApplied.map((opt, index) => (
-                        <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div key={index} className="bg-success-50 border border-success-200 rounded-lg p-3">
                           <div className="flex items-start">
-                            <Zap className="w-4 h-4 text-green-500 mt-0.5" />
+                            <Zap className="w-4 h-4 text-success mt-0.5" />
                             <div className="ml-2">
-                              <p className="text-sm font-medium text-green-800">{opt.message}</p>
+                              <p className="text-sm font-medium text-success-800">{opt.message}</p>
                               {opt.details && (
-                                <p className="text-xs mt-1 text-green-600">{opt.details}</p>
+                                <p className="text-xs mt-1 text-success-600">{opt.details}</p>
                               )}
                             </div>
                           </div>
@@ -820,26 +820,26 @@ const PdfRepairPage: React.FC = () => {
         {!selectedFile && (
           <div className="space-y-6">
           {/* Features */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Features</h2>
+            <div className="bg-background rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Features</h2>
             <div className="space-y-3">
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <Wrench className="w-4 h-4 mr-2 text-blue-600" />
                 Error recovery
               </div>
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <Shield className="w-4 h-4 mr-2 text-green-600" />
                 Structure repair
               </div>
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <File className="w-4 h-4 mr-2 text-purple-600" />
                 Content reconstruction
               </div>
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <Zap className="w-4 h-4 mr-2 text-orange-600" />
                 Web optimization
               </div>
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <Search className="w-4 h-4 mr-2 text-indigo-600" />
                 Issue analysis
               </div>
@@ -847,19 +847,19 @@ const PdfRepairPage: React.FC = () => {
           </div>
 
           {/* Repair Types */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Repair Types</h2>
+          <div className="bg-background rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Repair Types</h2>
             <div className="space-y-2">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>Corrupted Structure:</strong> Fix broken PDF structure
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>Missing Objects:</strong> Recover missing PDF objects
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>Invalid References:</strong> Fix broken internal references
               </div>
-              <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                 <strong>Damaged Metadata:</strong> Repair document metadata
               </div>
               <div className="text-sm text-gray-600">

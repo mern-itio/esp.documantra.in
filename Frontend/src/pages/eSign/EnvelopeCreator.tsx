@@ -6343,7 +6343,7 @@ const EnvelopeCreator: React.FC = () => {
               {helpMenuOpen && (
                 <div
                   ref={helpMenuRef}
-                  className="absolute right-24 top-10 w-70 bg-white border border-border rounded-md shadow-xl z-50"
+                  className="absolute right-24 top-10 w-70 bg-background border border-border rounded-md shadow-xl z-50"
                 >
                   <div className="px-4 py-3 border-b">
                     <h4 className="text-sm font-semibold text-foreground">Help for this Page</h4>
@@ -6351,21 +6351,21 @@ const EnvelopeCreator: React.FC = () => {
                   <div className="max-h-80 p-4 overflow-y-auto">
                     <button
                       onClick={() => { setHelpMenuOpen(false); setHelpSidebarOpen(true); }}
-                      className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-gray-50"
+                      className="w-full text-left px-4 py-3 text-sm text-primary hover:bg-card"
                     >
                       Basic steps to send an envelope
                     </button>
                     <button
                       onClick={() => { setHelpMenuOpen(false); window.open('help-support', '_blank'); }}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-t border-gray-100"
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-muted border-t border-border"
                     >
-                      <span className="text-blue-700">Visit the {APP_NAME} Support Center</span> for helpful articles, guides, videos, and more.
+                      <span className="text-primary">Visit the {APP_NAME} Support Center</span> for helpful articles, guides, videos, and more.
                     </button>
-                    <div className="p-4 border-t border-gray-100">
+                    <div className="p-4 border-t border-border">
                       <button
                         onClick={() => window.open('/help-support', '_blank')}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md text-white"
-                        style={{ backgroundColor: '#260559' }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md text-foreground hover:text-primary-foreground"
+                        style={{ backgroundColor: 'var(--primary)' }}
                       >
                         <Phone className='w-4 h-4' />
                         <span className="font-semibold">Contact Support</span>
@@ -6389,14 +6389,15 @@ const EnvelopeCreator: React.FC = () => {
       <div className="flex">
         {/* Right Help Sidebar */}
         {(
-          <div className={`fixed inset-y-0 right-0 w-[420px] bg-white border-l border-border shadow-2xl z-40 transform transition-transform duration-300 ${helpSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className={`fixed inset-y-0 right-0 w-[420px] bg-background border-l border-border shadow-2xl z-40 transform transition-transform duration-300 ${helpSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
             {/* Header Bar: back + close icons */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <button onClick={() => setHelpSidebarOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100">
+                <button onClick={() => setHelpSidebarOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted">
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <button onClick={() => setHelpSidebarOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100">
-                <X className="w-5 h-5" />
+              <button onClick={() => setHelpSidebarOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted">
+                  <X className="w-5 h-5 text-muted-foreground" />
+           
               </button>
             </div>
             {/* Content */}

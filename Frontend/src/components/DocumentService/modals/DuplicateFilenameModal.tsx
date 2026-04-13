@@ -79,7 +79,7 @@ export function DuplicateFilenameModal({
       }
       
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error checking duplicate:', error);
       setError('Failed to check filename availability. Please try again.');
       return false;
@@ -107,7 +107,7 @@ export function DuplicateFilenameModal({
       // Call the parent's resolve function
       onResolve(newFilename);
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error resolving duplicate:', error);
       setError('Failed to resolve duplicate filename. Please try again.');
     } finally {
@@ -122,13 +122,13 @@ export function DuplicateFilenameModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-full overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs dark:bg-black/60">
+      <div className="max-h-full w-full max-w-md overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center space-x-3">
-            <AlertTriangle className="w-5 h-5 text-orange-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Duplicate Filename Detected</h2>
+            <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+            <h2 className="text-lg font-semibold text-foreground">Duplicate Filename Detected</h2>
           </div>
           <Button
             variant="ghost"
@@ -144,42 +144,42 @@ export function DuplicateFilenameModal({
         {/* Content */}
         <div className="p-6">
           {/* Warning Message */}
-          <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 dark:bg-amber-950/30">
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-4 h-4 text-orange-600" />
-              <div className="text-sm text-orange-800">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <div className="text-sm text-amber-950 dark:text-amber-100">
                 <p className="font-medium">A document with this name already exists in this folder.</p>
               </div>
             </div>
           </div>
 
           {/* File Information */}
-          <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <div className="flex items-center space-x-3 mb-2">
-              <FileText className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-900">File to Upload:</span>
+          <div className="mb-4 rounded-lg border border-border bg-muted/50 p-3">
+            <div className="mb-2 flex items-center space-x-3">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">File to Upload:</span>
             </div>
-            <p className="text-sm text-gray-700 ml-7">{duplicateFile.name}</p>
-            <p className="text-xs text-gray-500 ml-7">
+            <p className="ml-7 text-sm text-foreground">{duplicateFile.name}</p>
+            <p className="ml-7 text-xs text-muted-foreground">
               Size: {(duplicateFile.size / 1024 / 1024).toFixed(2)} MB
             </p>
           </div>
 
           {/* Existing Document Information */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center space-x-3 mb-2">
-              <FileText className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-900">Existing Document:</span>
+          <div className="mb-4 rounded-lg border border-primary/25 bg-primary/10 p-3 dark:bg-primary/15">
+            <div className="mb-2 flex items-center space-x-3">
+              <FileText className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">Existing Document:</span>
             </div>
-            <p className="text-sm text-blue-700 ml-7">{existingDocument.name}</p>
-            <p className="text-xs text-blue-500 ml-7">
+            <p className="ml-7 text-sm text-foreground">{existingDocument.name}</p>
+            <p className="ml-7 text-xs text-muted-foreground">
               Uploaded: {new Date(existingDocument.uploadedAt).toLocaleDateString()}
             </p>
           </div>
 
           {/* New Filename Input */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-foreground">
               New Filename
             </label>
             <div className="relative">
@@ -187,13 +187,13 @@ export function DuplicateFilenameModal({
                 type="text"
                 value={newFilename}
                 onChange={handleFilenameChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-transparent focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter new filename"
                 disabled={isResolving}
               />
             </div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 The file extension will be preserved automatically
               </p>
               <Button
@@ -211,10 +211,10 @@ export function DuplicateFilenameModal({
 
           {/* Error Display */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 dark:bg-destructive/20">
               <div className="flex items-center space-x-2">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-                <div className="text-sm text-red-800">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <div className="text-sm text-destructive">
                   <p>{error}</p>
                 </div>
               </div>
@@ -223,7 +223,7 @@ export function DuplicateFilenameModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        <div className="flex items-center justify-between border-t border-border px-6 py-4">
           <Button 
             variant="outline" 
             onClick={handleCancel}
@@ -234,11 +234,10 @@ export function DuplicateFilenameModal({
           <Button 
             onClick={handleResolve}
             disabled={isResolving || isChecking || !newFilename.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400"
           >
             {isResolving ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
                 Resolving...
               </>
             ) : (

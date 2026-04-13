@@ -383,18 +383,18 @@ const AddPageNumbers: React.FC = () => {
   if (isPreviewExpanded && previewUrl) {
     return (
       <div className="mx-auto space-y-6">
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-background shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
                    to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Add Page Numbers to PDF</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Add Page Numbers to PDF</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Customize page numbers with advanced formatting and positioning options
                 </p>
               </div>
@@ -409,7 +409,7 @@ const AddPageNumbers: React.FC = () => {
             <div className="absolute top-4 right-4 z-10">
               <button
                 onClick={handleCollapsePreview}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 shadow-lg"
+                className="bg-muted hover:bg-muted/80 text-foreground px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 shadow-lg"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -429,7 +429,7 @@ const AddPageNumbers: React.FC = () => {
                 >
                   Previous
                 </Button>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-muted-foreground">
                   Page {currentPage} of {totalPages}
                 </span>
                 <Button
@@ -448,13 +448,13 @@ const AddPageNumbers: React.FC = () => {
               {pdfDocument ? (
                 <canvas
                   ref={canvasRef}
-                  className="border border-gray-300 rounded-lg shadow-lg"
+                  className="border border-border rounded-lg shadow-lg"
                   style={{ maxWidth: '100%', height: 'auto' }}
                 />
               ) : (
                 <iframe
                   src={previewUrl}
-                  className="w-full h-[800px] border border-gray-300 rounded-lg shadow-lg"
+                  className="w-full h-[800px] border border-border rounded-lg shadow-lg"
                   title="Page Numbers Preview"
                   onLoad={() => console.log('Preview iframe loaded successfully')}
                   onError={(e) => console.error('Preview iframe error:', e)}
@@ -462,7 +462,7 @@ const AddPageNumbers: React.FC = () => {
               )}
             </div>
 
-            <div className="text-sm text-gray-600 text-center mt-4">
+            <div className="text-sm text-muted-foreground text-center mt-4">
               <p>Total pages: {result?.totalPages}</p>
             </div>
           </div>
@@ -473,18 +473,18 @@ const AddPageNumbers: React.FC = () => {
 
   return (
     <div className="mx-auto space-y-6">
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
                  to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Add Page Numbers to PDF</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Add Page Numbers to PDF</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Customize page numbers with advanced formatting and positioning options
               </p>
             </div>
@@ -511,13 +511,13 @@ const AddPageNumbers: React.FC = () => {
                 />
                 <label
                   htmlFor="file-upload"
-                  className="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="cursor-pointer bg-primary text-foreground px-6 py-3 rounded-lg hover:bg-primary/80 transition-colors"
                 >
                   Choose PDF File
                 </label>
               </div>
               {error && (
-                <div className="text-sm text-red-600">{error}</div>
+                <div className="text-sm text-destructive">{error}</div>
               )}
             </div>
           </CardContent>
@@ -535,11 +535,11 @@ const AddPageNumbers: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Position Selection */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Position</label>
+                <label className="text-sm font-medium text-foreground">Position</label>
                 <select
                   value={formData.position}
                   onChange={(e) => handleInputChange('position', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
                   {positionOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -551,7 +551,7 @@ const AddPageNumbers: React.FC = () => {
 
               {/* Font Size */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Font Size</label>
+                <label className="text-sm font-medium text-foreground">Font Size</label>
                 <Input
                   type="number"
                   min="8"
@@ -564,7 +564,7 @@ const AddPageNumbers: React.FC = () => {
 
               {/* Font Color */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Font Color</label>
+                <label className="text-sm font-medium text-foreground">Font Color</label>
                 <div className="flex items-center space-x-2">
                   <Input
                     type="color"
@@ -584,7 +584,7 @@ const AddPageNumbers: React.FC = () => {
 
               {/* Margin */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Margin (px)</label>
+                <label className="text-sm font-medium text-foreground">Margin (px)</label>
                 <Input
                   type="number"
                   min="5"
@@ -597,11 +597,11 @@ const AddPageNumbers: React.FC = () => {
 
               {/* Format Selection */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Format</label>
+                <label className="text-sm font-medium text-foreground">Format</label>
                 <select
                   value={formData.format}
                   onChange={(e) => handleInputChange('format', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
                   {formatOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -613,7 +613,7 @@ const AddPageNumbers: React.FC = () => {
 
               {/* Custom Text */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Custom Text (optional)</label>
+                <label className="text-sm font-medium text-foreground">Custom Text (optional)</label>
                 <Input
                   type="text"
                   value={formData.customText}
@@ -625,7 +625,7 @@ const AddPageNumbers: React.FC = () => {
 
               {/* Page Range */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Start Page</label>
+                  <label className="text-sm font-medium text-foreground">Start Page</label>
                 <Input
                   type="number"
                   min="1"
@@ -636,7 +636,7 @@ const AddPageNumbers: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">End Page (optional)</label>
+                <label className="text-sm font-medium text-foreground">End Page (optional)</label>
                 <Input
                   type="number"
                   min="1"
@@ -649,7 +649,7 @@ const AddPageNumbers: React.FC = () => {
 
               {/* Exclude Pages */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Exclude Pages (optional)</label>
+                <label className="text-sm font-medium text-foreground">Exclude Pages (optional)</label>
                 <Input
                   type="text"
                   value={formData.excludePages}
@@ -657,7 +657,7 @@ const AddPageNumbers: React.FC = () => {
                   placeholder="e.g., 1,3,5 (comma-separated)"
                   className="w-full"
                 />
-                <p className="text-xs text-gray-500">Enter page numbers separated by commas to exclude them from numbering</p>
+                <p className="text-xs text-muted-foreground">Enter page numbers separated by commas to exclude them from numbering</p>
               </div>
             </div>
           </CardContent>
@@ -679,7 +679,7 @@ const AddPageNumbers: React.FC = () => {
           <Button
             onClick={handleAddPageNumbers}
             disabled={isProcessing}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700"
+            className="px-6 py-3 bg-primary text-foreground hover:bg-primary/80"
           >
             {isProcessing ? 'Adding Page Numbers...' : 'Add Page Numbers'}
           </Button>
@@ -714,7 +714,7 @@ const AddPageNumbers: React.FC = () => {
                   >
                     Previous
                   </Button>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     Page {currentPage} of {totalPages}
                   </span>
                   <Button
@@ -733,13 +733,13 @@ const AddPageNumbers: React.FC = () => {
                 {pdfDocument ? (
                   <canvas
                     ref={canvasRef}
-                    className="border border-gray-300 rounded-lg shadow-sm"
+                    className="border border-border rounded-lg shadow-sm"
                     style={{ maxWidth: '100%', height: 'auto' }}
                   />
                 ) : (
                   <iframe
                     src={previewUrl}
-                    className="w-full h-96 border border-gray-300 rounded-lg"
+                    className="w-full h-96 border border-border rounded-lg"
                     title="Page Numbers Preview"
                     onLoad={() => console.log('Preview iframe loaded successfully')}
                     onError={(e) => console.error('Preview iframe error:', e)}
@@ -747,7 +747,7 @@ const AddPageNumbers: React.FC = () => {
                 )}
               </div>
 
-              <div className="text-sm text-gray-600 text-center">
+              <div className="text-sm text-muted-foreground text-center">
                 {/* <p>Sample text: {result?.sampleText}</p> */}
                 <p>Total pages: {result?.totalPages}</p>
               </div>
@@ -758,21 +758,21 @@ const AddPageNumbers: React.FC = () => {
 
       {/* Results Section */}
       {result && result.success && (
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-success bg-success/10">
           <CardHeader>
-            <CardTitle className="text-green-800">Success!</CardTitle>
-            <CardDescription className="text-green-700">
+            <CardTitle className="text-success">Success!</CardTitle>
+            <CardDescription className="text-success">
               Page numbers have been added successfully
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="text-sm text-green-700">
+              <div className="text-sm text-success">
                 <p><strong>File:</strong> {result.filename}</p>
                 <p><strong>Pages Modified:</strong> {result.pagesModified}</p>
                 <p><strong>Total Pages:</strong> {result.totalPages}</p>
                 {!result?.downloadUrl && (
-                  <p className="text-blue-600 mt-2">
+                  <p className="text-primary mt-2">
                     💡 <strong>Tip:</strong> Click "Add Page Numbers" first to generate the complete PDF, then download it.
                   </p>
                 )}
@@ -780,7 +780,7 @@ const AddPageNumbers: React.FC = () => {
 
               <Button
                 onClick={handleDownload}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3"
+                className="bg-success text-success-foreground hover:bg-success/80 px-6 py-3"
                 disabled={!result?.downloadUrl}
               >
                 {result?.downloadUrl ? 'Download PDF' : 'Generate PDF First'}
@@ -792,9 +792,9 @@ const AddPageNumbers: React.FC = () => {
 
       {/* Error Display */}
       {error && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-destructive bg-destructive/10">
           <CardContent className="pt-6">
-            <div className="text-red-700 text-center">
+            <div className="text-destructive text-center">
               <p className="font-medium">Error:</p>
               <p>{error}</p>
             </div>
@@ -809,7 +809,7 @@ const AddPageNumbers: React.FC = () => {
           <CardTitle>How to Use</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 text-sm text-gray-600">
+          <div className="space-y-3 text-sm text-muted-foreground">
             <p><strong>1.</strong> Upload your PDF file</p>
             <p><strong>2.</strong> Maximum file size: 2MB</p>
             <p><strong>3.</strong> Choose the position where you want page numbers to appear</p>

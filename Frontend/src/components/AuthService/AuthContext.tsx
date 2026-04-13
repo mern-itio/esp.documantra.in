@@ -263,8 +263,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   class TwoFaRequiredError extends Error {
     twoFaToken?: string;
-    method?: 'email' | 'sms';
-    constructor(message: string, twoFaToken?: string, method?: 'email' | 'sms') {
+    method?: 'email' | 'sms' | 'authenticator';
+    constructor(message: string, twoFaToken?: string, method?: 'email' | 'sms' | 'authenticator') {
       super(message);
       this.name = 'TwoFaRequiredError';
       this.twoFaToken = twoFaToken;

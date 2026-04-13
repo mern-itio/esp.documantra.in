@@ -37,20 +37,20 @@ const InsertPDFPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
               to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Insert PDF Pages</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Insert PDF Pages</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Upload multiple PDF files, preview all pages, and drag & drop to reorder them.
                 Create your perfect document by combining pages from different sources.
               </p>
@@ -66,25 +66,25 @@ const InsertPDFPage: React.FC = () => {
 
       {/* Results Modal */}
       {showModal && insertResult && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-background/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-background border border-border shadow-lg rounded-lg p-6 max-w-md w-full mx-4">
             <div className="p-6">
               {/* Success State */}
               {insertResult.success ? (
                 <div className="text-center">
-                  <FiCheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <FiCheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">
                     Document Created Successfully!
                   </h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-muted-foreground mb-6">
                     {insertResult.message}
                   </p>
 
                   {/* File Information */}
                   {insertResult.file && (
-                    <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-                      <h4 className="font-medium text-gray-900 mb-2">File Information</h4>
-                      <div className="space-y-1 text-sm text-gray-600">
+                      <div className="bg-background rounded-lg p-4 mb-6 text-left">
+                      <h4 className="font-medium text-foreground mb-2">File Information</h4>
+                      <div className="space-y-1 text-sm text-muted-foreground">
                         <p><span className="font-medium">Filename:</span> {insertResult.file.filename}</p>
                         <p><span className="font-medium">Size:</span> {(insertResult.file.size / 1024 / 1024).toFixed(2)} MB</p>
                         {insertResult.totalInsertions && (
@@ -98,14 +98,14 @@ const InsertPDFPage: React.FC = () => {
                   <div className="space-y-3">
                     <button
                       onClick={handleDownload}
-                      className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+                      className="w-full bg-primary text-foreground py-3 px-4 rounded-lg font-medium hover:bg-primary/80 transition-colors flex items-center justify-center"
                     >
                       <FiDownload className="w-5 h-5 mr-2" />
                       Download PDF
                     </button>
                     <button
                       onClick={closeModal}
-                      className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                      className="w-full border border-border text-foreground py-3 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
                     >
                       Close
                     </button>
@@ -114,17 +114,17 @@ const InsertPDFPage: React.FC = () => {
               ) : (
                 /* Error State */
                 <div className="text-center">
-                  <FiXCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <FiXCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">
                     Processing Failed
                   </h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-muted-foreground mb-6">
                     {insertResult.error || insertResult.message || 'An error occurred while processing the document.'}
                   </p>
 
                   <button
                     onClick={closeModal}
-                    className="w-full bg-gray-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                      className="w-full bg-muted text-foreground py-3 px-4 rounded-lg font-medium hover:bg-muted/80 transition-colors"
                   >
                     Close
                   </button>

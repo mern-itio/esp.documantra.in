@@ -342,18 +342,18 @@ const PdfBookmarksPage: React.FC = () => {
   return (
     <div className="mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
                  to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Add Bookmarks</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Add Bookmarks</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Create navigation bookmarks in PDFs
               </p>
             </div>
@@ -363,16 +363,16 @@ const PdfBookmarksPage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Main Content */}
-        <div className="bg-white rounded-lg shadow-sm">
+        <div className="bg-background rounded-lg shadow-sm">
           {processedResult ? (
             /* Success Section - Only show when bookmarks are successfully created */
             <div className="p-8">
               <div className="text-center">
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-success-100 mb-6">
+                  <CheckCircle className="h-8 w-8 text-success" />
                 </div>
-                <h3 className="text-2xl font-bold text-green-900 mb-2">PDF with Bookmarks Created Successfully!</h3>
-                <p className="text-lg text-green-700 mb-6">
+                <h3 className="text-2xl font-bold text-success-900 mb-2">PDF with Bookmarks Created Successfully!</h3>
+                <p className="text-lg text-success-700 mb-6">
                   Your PDF now has {processedResult.bookmarks.length} bookmarks
                 </p>
                 
@@ -381,7 +381,7 @@ const PdfBookmarksPage: React.FC = () => {
                     href={`${pdfApi.defaults.baseURL}${processedResult.downloadUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-primary-foreground bg-primary hover:bg-primary/80"
                   >
                     <Download className="w-5 h-5 mr-2" />
                     Download PDF with Bookmarks
@@ -390,7 +390,7 @@ const PdfBookmarksPage: React.FC = () => {
                   <div className="flex gap-3">
                     <button
                       onClick={handleBackToWorking}
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-foreground bg-background hover:bg-muted"
                     >
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Back to Editing
@@ -398,7 +398,7 @@ const PdfBookmarksPage: React.FC = () => {
                     
                     <button
                       onClick={handleAddNew}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/80"
                     >
                       <RotateCcw className="w-4 h-4 mr-2" />
                       Add New PDF
@@ -408,16 +408,16 @@ const PdfBookmarksPage: React.FC = () => {
 
                 {/* Bookmark Information */}
                 <div className=" mx-auto text-left">
-                  <div className="p-6 rounded-lg border border-green-200 shadow-sm">
-                    <h4 className="text-lg font-medium text-gray-900 mb-4">📖 How to Access Bookmarks:</h4>
-                    <div className="text-sm text-gray-600 space-y-2">
+                  <div className="p-6 rounded-lg border border-success-200 shadow-sm">
+                    <h4 className="text-lg font-medium text-foreground mb-4">📖 How to Access Bookmarks:</h4>
+                    <div className="text-sm text-muted-foreground space-y-2">
                       <p>• <strong>In Adobe Reader:</strong> Right-click → Document Properties → Description tab</p>
                       <p>• <strong>In Chrome:</strong> Right-click → Document Properties → Details tab</p>
                       <p>• <strong>In Foxit Reader:</strong> File → Document Properties → Description</p>
-                      <p>• <strong>Keywords field</strong> contains: <code className="bg-gray-100 px-2 py-1 rounded text-xs">PDF_BOOKMARKS:{"{...}"}</code></p>
+                      <p>• <strong>Keywords field</strong> contains: <code className="bg-muted px-2 py-1 rounded text-xs">PDF_BOOKMARKS:{"{...}"}</code></p>
                     </div>
-                    <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
-                      <p className="text-sm text-blue-800">
+                      <div className="mt-4 p-4 bg-success rounded border border-success">
+                      <p className="text-sm text-success">
                         <strong>Note:</strong> Bookmarks are stored in PDF metadata. While they won't appear in the traditional bookmark panel,
                         the bookmark information is preserved and can be extracted programmatically or viewed in document properties.
                       </p>
@@ -430,11 +430,11 @@ const PdfBookmarksPage: React.FC = () => {
             /* Upload Section */
             <div className="p-8">
               <div className="text-center">
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-                  <Upload className="h-6 w-6 text-blue-600" />
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 mb-4">
+                  <Upload className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Upload PDF File</h3>
-                <p className="text-sm text-gray-500 mb-6">
+                <h3 className="text-lg font-medium text-foreground mb-2">Upload PDF File</h3>
+                <p className="text-sm text-muted-foreground mb-6">
                   Select a PDF file to create navigation bookmarks
                 </p>
                 <div className="mt-6">
@@ -447,7 +447,7 @@ const PdfBookmarksPage: React.FC = () => {
                   />
                   <label
                     htmlFor="pdf-upload"
-                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-primary-foreground bg-primary hover:bg-primary/80"
                   >
                     <Upload className="w-4 h-4 mr-2" />
                     Choose PDF File
@@ -459,17 +459,17 @@ const PdfBookmarksPage: React.FC = () => {
             /* Main Working Area */
             <div className="flex h-[600px]">
               {/* Left Side - Bookmarks Management */}
-              <div className="w-1/2 border-r border-gray-200 flex flex-col">
-                <div className="p-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Add Bookmarks</h3>
-                  <p className="text-sm text-gray-500">Click on pages in the preview to add bookmarks</p>
+              <div className="w-1/2 border-r border-border flex flex-col">
+                <div className="p-4 border-b border-border">
+                  <h3 className="text-lg font-medium text-foreground">Add Bookmarks</h3>
+                  <p className="text-sm text-muted-foreground">Click on pages in the preview to add bookmarks</p>
                 </div>
 
                 {/* Add Bookmark Form */}
-                <div className="p-4 border-b border-gray-200 bg-gray-50">
+                <div className="p-4 border-b border-border bg-background">
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-foreground mb-1">
                         Bookmark Title
                       </label>
                       <input
@@ -477,11 +477,11 @@ const PdfBookmarksPage: React.FC = () => {
                         placeholder="Enter bookmark title"
                         value={newBookmarkTitle}
                         onChange={(e) => setNewBookmarkTitle(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-foreground mb-1">
                         Page Number
                       </label>
                       <input
@@ -500,13 +500,13 @@ const PdfBookmarksPage: React.FC = () => {
                             e.target.value ? parseInt(e.target.value, 10) : null
                           )
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
 
                     <button
                       onClick={addBookmark}
-                      className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                      className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/80"
                     >
                       <Plus className="w-4 h-4 mr-1" />
                       Add Bookmark
@@ -516,11 +516,11 @@ const PdfBookmarksPage: React.FC = () => {
 
                 {/* Bookmarks List */}
                 <div className="flex-1 overflow-y-auto p-4">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">
+                  <h4 className="text-sm font-medium text-foreground mb-3">
                     Bookmarks ({bookmarks.length})
                   </h4>
                   {bookmarks.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <Bookmark className="w-8 h-8 mx-auto mb-2 opacity-50" />
                       <p>No bookmarks added yet</p>
                       <p className="text-xs">Add bookmarks to see them here</p>
@@ -528,32 +528,32 @@ const PdfBookmarksPage: React.FC = () => {
                   ) : (
                     <div className="space-y-2">
                       {bookmarks.map((bookmark) => (
-                        <div key={bookmark.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+                          <div key={bookmark.id} className="flex items-center justify-between p-3 bg-background border border-border rounded-lg hover:bg-muted">
                           <div className="flex items-center space-x-3">
-                            <Bookmark className="w-4 h-4 text-blue-500" />
+                            <Bookmark className="w-4 h-4 text-primary" />
                             <div>
-                              <p className="text-sm font-medium text-gray-900">{bookmark.title}</p>
-                              <p className="text-xs text-gray-500">Page {bookmark.page + 1}</p>
+                              <p className="text-sm font-medium text-foreground">{bookmark.title}</p>
+                              <p className="text-xs text-muted-foreground">Page {bookmark.page + 1}</p>
                             </div>
                           </div>
                           <div className="flex items-center space-x-1">
                             <button
                               onClick={() => navigateToPage(bookmark.page + 1)}
-                              className="p-1 hover:bg-blue-100 rounded text-blue-600"
+                              className="p-1 hover:bg-primary-100 rounded text-primary"
                               title="Go to page"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => startEditingBookmark(bookmark)}
-                              className="p-1 hover:bg-yellow-100 rounded text-yellow-600"
+                              className="p-1 hover:bg-primary-100 rounded text-primary"
                               title="Edit bookmark"
                             >
                               <Edit3 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => deleteBookmark(bookmark.id || '')}
-                              className="p-1 hover:bg-red-100 rounded text-red-600"
+                              className="p-1 hover:bg-primary-100 rounded text-primary"
                               title="Delete bookmark"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -566,12 +566,12 @@ const PdfBookmarksPage: React.FC = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="p-4 border-t border-gray-200 bg-gray-50">
+                <div className="p-4 border-t border-border bg-background">
                   <div className="flex space-x-3">
                     <button
                       onClick={handleCreateCustomBookmarks}
                       disabled={isProcessing || bookmarks.length === 0}
-                      className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-primary-foreground bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isProcessing ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -586,15 +586,15 @@ const PdfBookmarksPage: React.FC = () => {
 
               {/* Right Side - PDF Preview */}
               <div className="w-1/2 flex flex-col">
-                <div className="p-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">PDF Preview</h3>
-                  <p className="text-sm text-gray-500">
+                <div className="p-4 border-b border-border">
+                  <h3 className="text-lg font-medium text-foreground">PDF Preview</h3>
+                  <p className="text-sm text-muted-foreground">
                     Page {currentPage} of {totalPages}
                   </p>
                 </div>
 
-                <div className="flex-1 p-4 bg-gray-100 overflow-auto">
-                  <div className="bg-white rounded-lg shadow-sm overflow-hidden relative">
+                <div className="flex-1 p-4 bg-background overflow-auto">
+                  <div className="bg-background rounded-lg shadow-sm overflow-hidden relative">
                     <canvas
                       ref={canvasRef}
                       className="max-w-full h-auto cursor-pointer"
@@ -608,7 +608,7 @@ const PdfBookmarksPage: React.FC = () => {
                         return (
                           <div
                             key={bookmark.id}
-                            className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium shadow-lg"
+                            className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium shadow-lg"
                           >
                             📖 {bookmark.title}
                           </div>
@@ -617,20 +617,20 @@ const PdfBookmarksPage: React.FC = () => {
                       return null;
                     })}
                   </div>
-                  <p className="text-xs text-gray-500 mt-2 text-center">
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
                     Click on the PDF to set the page number for your bookmark
                   </p>
 
                   {/* Show bookmarks on current page */}
                   {bookmarks.filter(b => b.page + 1 === currentPage).length > 0 && (
-                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-                      <p className="text-blue-800 font-medium">Bookmarks on this page:</p>
+                    <div className="mt-2 p-2 bg-primary-50 border border-primary-200 rounded text-xs">
+                      <p className="text-primary-800 font-medium">Bookmarks on this page:</p>
                       {bookmarks
                         .filter(b => b.page + 1 === currentPage)
                         .map(bookmark => (
                           <div key={bookmark.id} className="flex items-center mt-1">
-                            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                            <span className="text-blue-700">{bookmark.title}</span>
+                            <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
+                            <span className="text-primary-700">{bookmark.title}</span>
                           </div>
                         ))}
                     </div>
@@ -638,21 +638,21 @@ const PdfBookmarksPage: React.FC = () => {
                 </div>
 
                 {/* Page Navigation */}
-                <div className="p-4 border-t border-gray-200 bg-gray-50">
+                <div className="p-4 border-t border-border bg-background">
                   <div className="flex items-center justify-between">
                     <button
                       onClick={() => navigateToPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage <= 1}
-                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1 text-sm bg-background border border-border rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Previous
                     </button>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-muted-foreground">
                         Page {currentPage} of {totalPages}
                       </span>
                       {bookmarks.some(b => b.page + 1 === currentPage) && (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        <span className="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded">
                           📖 Bookmarked
                         </span>
                       )}
@@ -660,7 +660,7 @@ const PdfBookmarksPage: React.FC = () => {
                     <button
                       onClick={() => navigateToPage(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage >= totalPages}
-                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1 text-sm bg-background border border-border rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Next
                     </button>
@@ -668,16 +668,16 @@ const PdfBookmarksPage: React.FC = () => {
 
                   {/* Quick navigation to bookmarked pages */}
                   {bookmarks.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <p className="text-xs text-gray-600 mb-2">Quick jump to bookmarks:</p>
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="text-xs text-muted-foreground mb-2">Quick jump to bookmarks:</p>
                       <div className="flex flex-wrap gap-1">
                         {bookmarks.map((bookmark) => (
                           <button
                             key={bookmark.id}
                             onClick={() => navigateToPage(bookmark.page + 1)}
                             className={`px-2 py-1 text-xs rounded ${currentPage === bookmark.page + 1
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                ? 'bg-primary text-primary'
+                              : 'bg-muted text-muted-foreground hover:bg-muted-foreground/10'
                               }`}
                             title={bookmark.title}
                           >

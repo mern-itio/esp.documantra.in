@@ -51,7 +51,7 @@ const EmailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInput, setPageInput] = useState<string>('1');
-  const [loading, _setLoading] = useState(false);
+  const [loading] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -104,38 +104,38 @@ const EmailPage: React.FC = () => {
 
     provider: (config: SmtpConfiguration) => (
       <div className="flex items-center gap-2.5 min-w-0">
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#260559]/10 text-[#260559]">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Mail className="h-4 w-4" />
         </span>
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-gray-900 capitalize leading-tight">
+          <div className="text-sm font-semibold text-foreground capitalize leading-tight">
             {config.provider}
           </div>
-          <div className="text-xs text-gray-500 leading-tight truncate">
+          <div className="text-xs text-muted-foreground leading-tight truncate">
             {config.smtp?.host ? String(config.smtp.host) : "SMTP"}
           </div>
         </div>
       </div>
     ),
     fromName: (config: SmtpConfiguration) => (
-      <span className="text-sm text-gray-900">{config.fromName || '-'}</span>
+      <span className="text-sm text-foreground">{config.fromName || '-'}</span>
     ),
     fromEmail: (config: SmtpConfiguration) => (
-      <span className="text-sm text-gray-900">{config.fromEmail}</span>
+      <span className="text-sm text-foreground">{config.fromEmail}</span>
     ),
     smtpHost: (config: SmtpConfiguration) => (
-      <span className="text-sm text-gray-900">{config.smtp?.host || '-'}</span>
+      <span className="text-sm text-foreground">{config.smtp?.host || '-'}</span>
     ),
     smtpPort: (config: SmtpConfiguration) => (
-      <span className="text-sm text-gray-900">{config.smtp?.port || '-'}</span>
+      <span className="text-sm text-foreground">{config.smtp?.port || '-'}</span>
     ),
     isVerified: (config: SmtpConfiguration) => (
       <div className="flex flex-wrap items-center gap-2">
         <span
           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
             config.isVerified
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-rose-200 bg-rose-50 text-rose-700"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300"
+              : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300"
           }`}
         >
           {config.isVerified ? (
@@ -149,8 +149,8 @@ const EmailPage: React.FC = () => {
         <span
           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
             config.status === "active"
-              ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-              : "border-gray-200 bg-gray-50 text-gray-700"
+              ? "border-primary/30 bg-primary/10 text-primary"
+              : "border-border bg-muted text-muted-foreground"
           }`}
         >
           {config.status === "active" ? (
@@ -162,8 +162,8 @@ const EmailPage: React.FC = () => {
         </span>
 
         {config.isDefault && (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
-            <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-600" />
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-600 dark:fill-amber-400 dark:text-amber-300" />
             Primary
           </span>
         )}
@@ -171,21 +171,21 @@ const EmailPage: React.FC = () => {
     ),
     isDefault: (config: SmtpConfiguration) => (
       config.isDefault ? (
-        <div className="flex items-center gap-2 text-amber-600">
-          <Star className="w-5 h-5 text-amber-600 fill-amber-600" />
+        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+          <Star className="w-5 h-5 text-amber-600 fill-amber-600 dark:text-amber-400 dark:fill-amber-400" />
           <span className="text-sm font-medium">Default</span>
         </div>
       ) : (
-        <span className="text-sm text-gray-400">-</span>
+        <span className="text-sm text-muted-foreground">-</span>
       )
     ),
     lastTestedAt: (config: SmtpConfiguration) => (
-      <span className="text-sm text-gray-900">
+      <span className="text-sm text-foreground">
         {config.lastTestedAt ? formatDate(config.lastTestedAt) : '-'}
       </span>
     ),
     createdAt: (config: SmtpConfiguration) => (
-      <span className="text-sm text-gray-900">
+      <span className="text-sm text-foreground">
         {config.createdAt ? formatDate(config.createdAt) : '-'}
       </span>
     )
@@ -380,12 +380,15 @@ const EmailPage: React.FC = () => {
         confirmButtonText: 'OK'
       });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('SMTP verify error:', err);
 
+      const ax = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string; message?: string } } }).response?.data
+        : undefined;
       const backendError =
-        err?.response?.data?.error ||
-        err?.response?.data?.message ||
+        ax?.error ||
+        ax?.message ||
         'Failed to verify SMTP details.';
 
       let userMessage = backendError;
@@ -456,9 +459,12 @@ const EmailPage: React.FC = () => {
         icon: 'success',
         confirmButtonText: 'OK'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error setting status:', error);
-      const backendError = error?.response?.data?.message || 'Failed to update status. Please try again.';
+      const ax = error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data
+        : undefined;
+      const backendError = ax?.message || 'Failed to update status. Please try again.';
       Swal.fire({
         title: 'Error',
         text: backendError,
@@ -648,31 +654,31 @@ const EmailPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/40 dark:from-background dark:to-muted/20 py-8 px-4 sm:px-6 lg:px-8">
       {/* Search + filter bar */}
       <div className="mb-6">
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
           <div className="flex-1">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search configurations..."
-                className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:outline-none shadow-sm focus:ring-2 focus:ring-[#3E2B66]/20 focus:border-[#3E2B66] transition-all duration-200 bg-white hover:border-gray-400 text-sm"
+                className="w-full pl-10 pr-12 py-2.5 border border-input rounded-lg focus:outline-none shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 bg-background hover:border-muted-foreground/30 text-sm text-foreground placeholder:text-muted-foreground"
               />
 
               {searchTerm && (
                 <button
                   onClick={handleClearFilters}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200 hover:scale-110 transition-all duration-200"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-muted text-foreground text-xs rounded-lg hover:bg-accent hover:scale-110 transition-all duration-200"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -683,13 +689,13 @@ const EmailPage: React.FC = () => {
             <div className="relative group/tooltip">
               <button
                 onClick={() => setIsColumnModalOpen(true)}
-                className="inline-flex items-center justify-center p-2.5"
+                className="inline-flex items-center justify-center p-2.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent"
               >
                 <Settings className="w-5 h-5" />
               </button>
-              <div className="absolute top-[60%] right-full -translate-y-1/2 mr-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+              <div className="absolute top-[60%] right-full -translate-y-1/2 mr-2 px-3 py-1.5 bg-popover text-popover-foreground border border-border text-xs rounded-md shadow-md opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
                 Customize columns
-                <div className="absolute top-1/2 left-full -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                <div className="absolute top-1/2 left-full -translate-y-1/2 border-4 border-transparent border-l-popover" />
               </div>
             </div>
 
@@ -697,19 +703,19 @@ const EmailPage: React.FC = () => {
             <div className="relative group/help">
               <button
                 onClick={() => setIsHelpOpen(true)}
-                className="inline-flex items-center justify-center p-2.5 text-gray-500 hover:text-[#260559] transition-colors rounded-lg hover:bg-[#260559]/6"
+                className="inline-flex items-center justify-center p-2.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-primary/10"
               >
                 <HelpCircle className="w-5 h-5" />
               </button>
-              <div className="absolute top-[60%] right-full -translate-y-1/2 mr-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover/help:opacity-100 group-hover/help:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+              <div className="absolute top-[60%] right-full -translate-y-1/2 mr-2 px-3 py-1.5 bg-popover text-popover-foreground border border-border text-xs rounded-md shadow-md opacity-0 invisible group-hover/help:opacity-100 group-hover/help:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
                 Setup guide
-                <div className="absolute top-1/2 left-full -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                <div className="absolute top-1/2 left-full -translate-y-1/2 border-4 border-transparent border-l-popover" />
               </div>
             </div>
 
             <button
               onClick={handleCreate}
-              className="group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
+              className="group inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-100"
             >
               <Plus className="w-4 h-4 transition-transform duration-200 ease-in-out group-hover:rotate-90" /> Create Configuration
             </button>
@@ -719,15 +725,15 @@ const EmailPage: React.FC = () => {
 
       {/* Configurations Table */}
       <div className="relative">
-        <div className="overflow-hidden border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-hidden border border-border bg-card text-card-foreground shadow-sm rounded-lg">
           <div className="overflow-x-auto">
           <table
             ref={tableRef}
-            className="min-w-full divide-y divide-gray-200"
+            className="min-w-full divide-y divide-border"
             style={{ tableLayout: 'fixed', width: '100%' }}
           >
             {currentConfigurations.length > 0 && (
-              <thead className="bg-gradient-to-r from-gray-50 to-white sticky top-0 z-10">
+              <thead className="bg-muted/50 sticky top-0 z-10">
                 <tr>
                   {getVisibleColumns().map((column) => {
                     const columnWidth = getColumnWidth(column.id);
@@ -735,7 +741,7 @@ const EmailPage: React.FC = () => {
                     return (
                       <th
                         key={column.id}
-                        className={`py-3.5 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider relative group px-6`}
+                        className="py-3.5 text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider relative group px-6"
                         style={{ width: columnWidth ? `${columnWidth}px` : undefined }}
                       >
                         <div className="flex items-center justify-between">
@@ -743,8 +749,8 @@ const EmailPage: React.FC = () => {
                         </div>
                         <div
                           className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-opacity z-10 ${isResizing
-                              ? 'bg-[#3E2B66] opacity-100'
-                              : 'bg-gray-300 opacity-0 group-hover:opacity-100 hover:bg-[#3E2B66]'
+                              ? 'bg-primary opacity-100'
+                              : 'bg-border opacity-0 group-hover:opacity-100 hover:bg-primary'
                             }`}
                           onMouseDown={(e) => handleResizeStart(e, column.id)}
                           style={{
@@ -755,13 +761,13 @@ const EmailPage: React.FC = () => {
                       </th>
                     );
                   })}
-                  <th className="px-6 py-3.5 text-right text-[11px] font-bold text-gray-600 uppercase tracking-wider" style={{ width: '220px' }}>
+                  <th className="px-6 py-3.5 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-wider" style={{ width: '220px' }}>
                     Actions
                   </th>
                 </tr>
               </thead>
             )}
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {currentConfigurations.length === 0 ? (
                 <tr>
                   <td
@@ -770,23 +776,23 @@ const EmailPage: React.FC = () => {
                   >
                     <div className="flex flex-col h-115 items-center justify-center text-center gap-4">
                       <div className="relative flex items-center justify-center">
-                        <div className="w-24 h-24 rounded-full bg-indigo-50 flex items-center justify-center">
-                          <div className="w-14 h-18 rounded-lg bg-white shadow-md border border-indigo-100 flex flex-col items-center justify-center">
-                            <div className="w-10 h-2 bg-indigo-100 rounded mb-1" />
-                            <div className="w-8 h-2 bg-indigo-100 rounded mb-1" />
-                            <div className="w-6 h-2 bg-indigo-100 rounded" />
+                        <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+                          <div className="w-14 h-18 rounded-lg bg-card shadow-md border border-border flex flex-col items-center justify-center">
+                            <div className="w-10 h-2 bg-primary/15 rounded mb-1" />
+                            <div className="w-8 h-2 bg-primary/15 rounded mb-1" />
+                            <div className="w-6 h-2 bg-primary/15 rounded" />
                           </div>
                         </div>
                         <span className="absolute -bottom-1 -right-1 text-2xl">
-                          <CircleCheckBig className="h-6 w-6 text-green-500" />
+                          <CircleCheckBig className="h-6 w-6 text-green-600 dark:text-green-400" />
                         </span>
                       </div>
 
                       <div className="space-y-1">
-                        <h3 className="text-lg font-semibold text-[#3E2B66]">
+                        <h3 className="text-lg font-semibold text-foreground">
                           No SMTP configurations found
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {searchTerm ? (
                             'Try adjusting your search terms.'
                           ) : (
@@ -794,7 +800,7 @@ const EmailPage: React.FC = () => {
                               Start by{' '}
                               <button
                                 onClick={handleCreate}
-                                className="font-medium text-[#3E2B66] hover:underline"
+                                className="font-medium text-primary hover:underline"
                               >
                                 creating your first SMTP configuration
                               </button>
@@ -809,7 +815,7 @@ const EmailPage: React.FC = () => {
                 currentConfigurations.map((config) => (
                   <tr
                     key={config._id}
-                    className="group hover:bg-gradient-to-r hover:from-[#260559]/[0.04] hover:to-transparent transition-colors duration-200"
+                    className="group hover:bg-muted/40 transition-colors duration-200"
                   >
                     {getVisibleColumns().map((column) => {
                       const columnWidth = getColumnWidth(column.id);
@@ -831,8 +837,8 @@ const EmailPage: React.FC = () => {
                             disabled={!config.isVerified}
                             className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold transition ${
                               config.isVerified
-                                ? 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                                : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                ? 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/60'
+                                : 'border-border bg-muted text-muted-foreground cursor-not-allowed'
                             }`}
                             title={config.isVerified ? "Set as Primary" : "Must be verified to set as default"}
                           >
@@ -847,8 +853,8 @@ const EmailPage: React.FC = () => {
                             disabled={!config.isVerified}
                             className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold transition ${
                               config.isVerified
-                                ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                                : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-950/70'
+                                : 'border-border bg-muted text-muted-foreground cursor-not-allowed'
                             }`}
                             title={config.isVerified ? "Activate this configuration" : "Must be verified to activate"}
                           >
@@ -858,7 +864,7 @@ const EmailPage: React.FC = () => {
                         ) : (
                           <button
                             onClick={() => handleSetStatus(config._id, 'inactive')}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs font-semibold text-rose-800 transition hover:bg-rose-100"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs font-semibold text-rose-900 transition hover:bg-rose-100 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300 dark:hover:bg-rose-950/70"
                             title="Deactivate this configuration"
                           >
                             <X className="h-3.5 w-3.5" />
@@ -868,7 +874,7 @@ const EmailPage: React.FC = () => {
 
                         <button
                           onClick={() => handleEdit(config)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#260559]/25 bg-white px-2.5 py-2 text-xs font-semibold text-[#260559] transition hover:bg-[#260559]/5"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-background px-2.5 py-2 text-xs font-semibold text-primary transition hover:bg-primary/10"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                           Edit
@@ -892,7 +898,7 @@ const EmailPage: React.FC = () => {
                             setMenuPosition({ top, left });
                             setOpenMenuId(openMenuId === config._id ? null : config._id);
                           }}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 transition hover:bg-gray-50 hover:text-[#260559]"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-primary"
                           title="More options"
                         >
                           <MoreVertical className="h-4 w-4" />
@@ -909,26 +915,26 @@ const EmailPage: React.FC = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="bg-card px-4 py-3 flex items-center justify-between border-t border-border sm:px-6">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-sm text-foreground bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-sm text-foreground bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
             </div>
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-muted-foreground">
                   Showing{' '}
                   <span className="font-medium">{startIndex + 1}</span>
                   {' '}to{' '}
@@ -945,7 +951,7 @@ const EmailPage: React.FC = () => {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-300"
+                    className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-border bg-background text-sm font-medium text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-background disabled:hover:text-muted-foreground disabled:hover:border-border"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
@@ -955,7 +961,7 @@ const EmailPage: React.FC = () => {
                       return (
                         <span
                           key={`ellipsis-${index}`}
-                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500"
+                          className="relative inline-flex items-center px-4 py-2 border border-border bg-background text-sm font-medium text-muted-foreground"
                         >
                           ...
                         </span>
@@ -967,8 +973,8 @@ const EmailPage: React.FC = () => {
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${pageNum === currentPage
-                            ? 'z-10 bg-[#3E2B66] border-[#3E2B66] text-white shadow-md'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66]'
+                            ? 'z-10 bg-primary border-primary text-primary-foreground shadow-md'
+                            : 'bg-background border-border text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary'
                           }`}
                       >
                         {pageNum}
@@ -979,14 +985,14 @@ const EmailPage: React.FC = () => {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-[#3E2B66] hover:text-white hover:border-[#3E2B66] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-500 disabled:hover:border-gray-300"
+                    className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-border bg-background text-sm font-medium text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-background disabled:hover:text-muted-foreground disabled:hover:border-border"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
                 </nav>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-700">Go to</span>
+                  <span className="text-sm text-muted-foreground">Go to</span>
                   <input
                     type="number"
                     min="1"
@@ -995,10 +1001,10 @@ const EmailPage: React.FC = () => {
                     onChange={(e) => setPageInput(e.target.value)}
                     onKeyDown={handlePageInputKeyDown}
                     onBlur={handlePageJump}
-                    className="w-16 px-2 py-1 border border-gray-300 rounded-sm text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-16 px-2 py-1 border border-input rounded-sm text-sm text-center text-foreground bg-background focus:ring-2 focus:ring-primary/30 focus:border-primary"
                     aria-label="Jump to page"
                   />
-                  <span className="text-sm text-gray-700">of {totalPages}</span>
+                  <span className="text-sm text-muted-foreground">of {totalPages}</span>
                 </div>
               </div>
             </div>
@@ -1011,21 +1017,21 @@ const EmailPage: React.FC = () => {
           {/* Animated ring + check */}
           <div className="relative mb-5">
             {/* Outer pulse ring */}
-            <span className="absolute inset-0 rounded-full bg-emerald-100 animate-ping opacity-40" />
-            <div className="relative w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center">
-              <CheckCheck className="w-7 h-7 text-emerald-500" />
+            <span className="absolute inset-0 rounded-full bg-emerald-100 dark:bg-emerald-900/40 animate-ping opacity-40" />
+            <div className="relative w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border-2 border-emerald-200 dark:border-emerald-800 flex items-center justify-center">
+              <CheckCheck className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
             </div>
           </div>
 
-          <h3 className="text-lg font-bold text-[#260559] mb-1">You're all caught up</h3>
-          <p className="text-sm text-gray-400 mb-4">
+          <h3 className="text-lg font-bold text-foreground mb-1">You're all caught up</h3>
+          <p className="text-sm text-muted-foreground mb-4">
             {filteredConfigurations.length === 1
               ? 'Your email configuration is set up and ready.'
               : `All ${filteredConfigurations.length} email configurations are visible here.`}
           </p>
           <button
             onClick={() => setIsHelpOpen(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#260559] hover:text-[#34106a] transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
           >
             Need Help <HelpCircle className="w-3.5 h-3.5" />
           
@@ -1037,27 +1043,27 @@ const EmailPage: React.FC = () => {
       {/* Backdrop */}
       {isHelpOpen && (
         <div
-          className="fixed inset-0 z-[9998] bg-black/20"
+          className="fixed inset-0 z-[9998] bg-black/50 dark:bg-black/60"
           onClick={() => setIsHelpOpen(false)}
         />
       )}
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-[380px] bg-white shadow-2xl z-[9999] flex flex-col
+        className={`fixed top-0 right-0 h-full w-[380px] bg-card text-card-foreground border-l border-border shadow-2xl z-[9999] flex flex-col
           transform transition-transform duration-300 ease-in-out
           ${isHelpOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Drawer header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[#260559] flex items-center justify-center">
-              <BookOpen className="w-3.5 h-3.5 text-white" />
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+              <BookOpen className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
-            <span className="text-sm font-bold text-gray-900">SMTP Setup Guide</span>
+            <span className="text-sm font-bold text-foreground">SMTP Setup Guide</span>
           </div>
           <button
             onClick={() => setIsHelpOpen(false)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -1068,7 +1074,7 @@ const EmailPage: React.FC = () => {
 
           {/* How it works */}
           <section>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">How it works</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">How it works</p>
             <ol className="space-y-4">
               {[
                 { step: '1', title: 'Create a configuration', desc: 'Add your SMTP provider, host, port, and credentials using the Create Configuration button.' },
@@ -1078,14 +1084,14 @@ const EmailPage: React.FC = () => {
               ].map((s, i, arr) => (
                 <li key={s.step} className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <div className="w-6 h-6 rounded-full bg-[#260559] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center flex-shrink-0">
                       {s.step}
                     </div>
-                    {i < arr.length - 1 && <div className="w-px flex-1 bg-gray-200 mt-1" />}
+                    {i < arr.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
                   </div>
                   <div className="pb-4">
-                    <p className="text-sm font-semibold text-gray-800">{s.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{s.desc}</p>
+                    <p className="text-sm font-semibold text-foreground">{s.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{s.desc}</p>
                   </div>
                 </li>
               ))}
@@ -1094,26 +1100,26 @@ const EmailPage: React.FC = () => {
 
           {/* Provider reference */}
           <section>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Provider reference</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Provider reference</p>
             <div className="space-y-3">
               {[
-                { name: 'Gmail',        icon: <Mail   className="w-3.5 h-3.5" />, color: 'bg-red-50 text-red-500',    host: 'smtp.gmail.com',       port: '587', tip: 'Requires 2FA and an App Password from Google Account → Security.' },
-                { name: 'Zoho Mail',    icon: <Globe  className="w-3.5 h-3.5" />, color: 'bg-blue-50 text-blue-500',  host: 'smtp.zoho.com',        port: '587', tip: 'Enable SMTP access in Zoho Mail settings, then use an App-Specific Password.' },
-                { name: 'Webmail',      icon: <Server className="w-3.5 h-3.5" />, color: 'bg-violet-50 text-violet-500', host: 'mail.yourdomain.com', port: '587', tip: 'Get credentials from your hosting control panel (cPanel / DirectAdmin).' },
-                { name: 'Other',        icon: <Zap    className="w-3.5 h-3.5" />, color: 'bg-gray-100 text-gray-600', host: 'custom',               port: 'any', tip: 'Enter your SMTP host and port manually. TLS/SSL supported on any port.' },
+                { name: 'Gmail',        icon: <Mail   className="w-3.5 h-3.5" />, color: 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400',    host: 'smtp.gmail.com',       port: '587', tip: 'Requires 2FA and an App Password from Google Account → Security.' },
+                { name: 'Zoho Mail',    icon: <Globe  className="w-3.5 h-3.5" />, color: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400',  host: 'smtp.zoho.com',        port: '587', tip: 'Enable SMTP access in Zoho Mail settings, then use an App-Specific Password.' },
+                { name: 'Webmail',      icon: <Server className="w-3.5 h-3.5" />, color: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400', host: 'mail.yourdomain.com', port: '587', tip: 'Get credentials from your hosting control panel (cPanel / DirectAdmin).' },
+                { name: 'Other',        icon: <Zap    className="w-3.5 h-3.5" />, color: 'bg-muted text-muted-foreground', host: 'custom',               port: 'any', tip: 'Enter your SMTP host and port manually. TLS/SSL supported on any port.' },
               ].map((p) => (
-                <div key={p.name} className="rounded-xl border border-gray-100 bg-gray-50 p-3.5">
+                <div key={p.name} className="rounded-xl border border-border bg-muted/30 p-3.5">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${p.color}`}>{p.icon}</span>
-                    <span className="text-sm font-semibold text-gray-800">{p.name}</span>
+                    <span className="text-sm font-semibold text-foreground">{p.name}</span>
                   </div>
                   <div className="flex gap-3 mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Host</span>
-                    <code className="text-[11px] bg-white border border-gray-200 px-1.5 py-0.5 rounded text-gray-700">{p.host}</code>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Port</span>
-                    <code className="text-[11px] bg-white border border-gray-200 px-1.5 py-0.5 rounded text-gray-700">{p.port}</code>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Host</span>
+                    <code className="text-[11px] bg-background border border-border px-1.5 py-0.5 rounded text-foreground">{p.host}</code>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Port</span>
+                    <code className="text-[11px] bg-background border border-border px-1.5 py-0.5 rounded text-foreground">{p.port}</code>
                   </div>
-                  <p className="text-[11px] text-gray-500 leading-relaxed">{p.tip}</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">{p.tip}</p>
                 </div>
               ))}
             </div>
@@ -1121,17 +1127,17 @@ const EmailPage: React.FC = () => {
 
           {/* Quick tips */}
           <section>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Quick tips</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Quick tips</p>
             <ul className="space-y-2.5">
               {[
-                { icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />, bg: 'bg-emerald-50', text: 'Always verify a config before relying on it for production emails.' },
-                { icon: <Star        className="w-3.5 h-3.5 text-[#260559]"  />, bg: 'bg-[#260559]/8', text: 'Only one config can be active/default at a time. Switch by clicking Active.' },
-                { icon: <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />, bg: 'bg-amber-50', text: 'Use App Passwords — never your main account password — to prevent lockouts.' },
-                { icon: <Info        className="w-3.5 h-3.5 text-blue-500"   />, bg: 'bg-blue-50',   text: 'If verification fails, check that port 587 isn\'t blocked by your firewall.' },
+                { icon: <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />, bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'Always verify a config before relying on it for production emails.' },
+                { icon: <Star        className="w-3.5 h-3.5 text-primary"  />, bg: 'bg-primary/10', text: 'Only one config can be active/default at a time. Switch by clicking Active.' },
+                { icon: <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />, bg: 'bg-amber-50 dark:bg-amber-950/40', text: 'Use App Passwords — never your main account password — to prevent lockouts.' },
+                { icon: <Info        className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400"   />, bg: 'bg-blue-50 dark:bg-blue-950/40',   text: 'If verification fails, check that port 587 isn\'t blocked by your firewall.' },
               ].map((t, i) => (
                 <li key={i} className="flex items-start gap-2.5">
                   <span className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${t.bg}`}>{t.icon}</span>
-                  <p className="text-xs text-gray-600 leading-relaxed">{t.text}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{t.text}</p>
                 </li>
               ))}
             </ul>
@@ -1146,10 +1152,10 @@ const EmailPage: React.FC = () => {
         return (
           <div
             ref={menuRef}
-            className="fixed z-50 w-56 bg-white border border-gray-200 rounded-sm shadow-lg"
+            className="fixed z-50 w-56 bg-popover text-popover-foreground border border-border rounded-md shadow-lg"
             style={{ top: menuPosition.top, left: menuPosition.left }}
           >
-            <ul className="py-1 text-sm text-gray-700">
+            <ul className="py-1 text-sm">
               <li>
                 <button
                   onClick={() => {
@@ -1157,7 +1163,7 @@ const EmailPage: React.FC = () => {
                     setMenuPosition(null);
                     if (currentConfig) handleDelete(currentConfig._id);
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-50 text-red-600"
+                  className="w-full text-left px-4 py-2 hover:bg-accent text-destructive"
                 >
                   Delete
                 </button>
@@ -1170,7 +1176,7 @@ const EmailPage: React.FC = () => {
                       setMenuPosition(null);
                       handleSetStatus(currentConfig._id, 'active');
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-green-600"
+                    className="w-full text-left px-4 py-2 hover:bg-accent text-green-600 dark:text-green-400"
                   >                   
                     Set Active
                   </button>
@@ -1184,7 +1190,7 @@ const EmailPage: React.FC = () => {
                       setMenuPosition(null);
                       handleSetStatus(currentConfig._id, 'inactive');
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-red-600"
+                    className="w-full text-left px-4 py-2 hover:bg-accent text-destructive"
                   >
                     Deactivate
                   </button>
@@ -1199,7 +1205,7 @@ const EmailPage: React.FC = () => {
                       if (currentConfig) handleVerify(currentConfig._id);
                     }}
                     disabled={verifyingConfigId === currentConfig?._id}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-green-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full text-left px-4 py-2 hover:bg-accent text-green-600 dark:text-green-400 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {verifyingConfigId === currentConfig?._id ? 'Verifying...' : 'Verify'}
                   </button>
@@ -1211,15 +1217,15 @@ const EmailPage: React.FC = () => {
       })()}
 
       {(isCreateModalOpen || isEditModalOpen) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => {
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/60" onClick={() => {
             setIsCreateModalOpen(false);
             setIsEditModalOpen(false);
             setEditingConfig(null);
           }} />
-          <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-card text-card-foreground border border-border rounded-lg shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between mb-6">
-              <h3 className="text-[22px] font-semibold text-[#3E2B66]">
+              <h3 className="text-[22px] font-semibold text-foreground">
                 {isEditModalOpen ? 'Edit SMTP Configuration' : 'Create SMTP Configuration'}
               </h3>
               <button
@@ -1228,7 +1234,7 @@ const EmailPage: React.FC = () => {
                   setIsEditModalOpen(false);
                   setEditingConfig(null);
                 }}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -1237,13 +1243,13 @@ const EmailPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Provider <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Provider <span className="text-destructive">*</span>
                   </label>
                   <select
                     value={formData.provider}
                     onChange={(e) => handleProviderChange(e.target.value as SmtpProvider)}
-                    className="cursor-pointer w-full px-3 py-2 border border-gray-300 rounded-sm"
+                    className="cursor-pointer w-full px-3 py-2 border border-input rounded-sm bg-background text-foreground"
                     required
                   >
                     <option value="gmail">Gmail</option>
@@ -1253,7 +1259,7 @@ const EmailPage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     SMTP Host
                   </label>
                   <input
@@ -1261,14 +1267,14 @@ const EmailPage: React.FC = () => {
                     value={formData.smtpHost}
                     onChange={(e) => setFormData({ ...formData, smtpHost: e.target.value })}
                     placeholder="smtp.gmail.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                    className="w-full px-3 py-2 border border-input rounded-sm bg-background text-foreground"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     From Name
                   </label>
                   <input
@@ -1276,20 +1282,20 @@ const EmailPage: React.FC = () => {
                     value={formData.fromName}
                     onChange={(e) => setFormData({ ...formData, fromName: e.target.value })}
                     placeholder="John Doe"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                    className="w-full px-3 py-2 border border-input rounded-sm bg-background text-foreground"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    From Email <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    From Email <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="email"
                     value={formData.fromEmail}
                     onChange={(e) => setFormData({ ...formData, fromEmail: e.target.value })}
                     placeholder="john.doe@example.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                    className="w-full px-3 py-2 border border-input rounded-sm bg-background text-foreground"
                     required
                   />
                 </div>
@@ -1297,7 +1303,7 @@ const EmailPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     SMTP Port
                   </label>
                   <input
@@ -1305,19 +1311,19 @@ const EmailPage: React.FC = () => {
                     value={formData.smtpPort}
                     onChange={(e) => setFormData({ ...formData, smtpPort: e.target.value })}
                     placeholder="587"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                    className="w-full px-3 py-2 border border-input rounded-sm bg-background text-foreground"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Password {isEditModalOpen && <span className="text-xs text-gray-500">(leave blank to keep current)</span>}
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Password {isEditModalOpen && <span className="text-xs text-muted-foreground">(leave blank to keep current)</span>}
                   </label>
                   <input
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="••••••••"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                    className="w-full px-3 py-2 border border-input rounded-sm bg-background text-foreground"
                   />
                 </div>
               </div>
@@ -1329,14 +1335,14 @@ const EmailPage: React.FC = () => {
                       type="checkbox"
                       checked={formData.smtpSecure}
                       onChange={(e) => setFormData({ ...formData, smtpSecure: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-300 text-[#3E2B66] focus:ring-[#3E2B66]"
+                      className="w-4 h-4 rounded border-input text-primary focus:ring-primary"
                     />
-                    <span className="text-sm font-medium text-gray-700">Secure (SSL/TLS)</span>
+                    <span className="text-sm font-medium text-foreground">Secure (SSL/TLS)</span>
                   </label>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
                 <button
                   type="button"
                   onClick={() => {
@@ -1344,13 +1350,13 @@ const EmailPage: React.FC = () => {
                     setIsEditModalOpen(false);
                     setEditingConfig(null);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-sm hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-sm hover:bg-accent transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-sm font-medium text-white bg-[#3E2B66] rounded-sm hover:bg-[#4d3577] transition-colors"
+                  className="px-5 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-sm hover:bg-primary/90 transition-colors"
                 >
                   {isEditModalOpen ? 'Update' : 'Create'}
                 </button>
@@ -1362,21 +1368,21 @@ const EmailPage: React.FC = () => {
 
       {/* Customize Columns Modal */}
       {isColumnModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsColumnModalOpen(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/60" onClick={() => setIsColumnModalOpen(false)} />
+          <div className="relative bg-card text-card-foreground border border-border rounded-2xl shadow-2xl w-full max-w-2xl p-6">
             <div className="flex items-start justify-between mb-6">
-              <h3 className="text-[22px] font-semibold text-[#3E2B66]">Customize Columns</h3>
+              <h3 className="text-[22px] font-semibold text-foreground">Customize Columns</h3>
               <button
                 onClick={() => setIsColumnModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+              <p className="text-sm text-foreground">
                 <strong>Note:</strong> You can select a maximum of 4 columns to display at a time. Status column is fixed and cannot be removed.
               </p>
             </div>
@@ -1391,10 +1397,10 @@ const EmailPage: React.FC = () => {
                   <div
                     key={column.id}
                     className={`flex items-center justify-between p-3 rounded-lg border transition-all ${column.visible
-                        ? 'bg-purple-50 border-purple-300'
+                        ? 'bg-primary/5 border-primary/30'
                         : isDisabled
-                          ? 'bg-gray-50 border-gray-200 opacity-60'
-                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                          ? 'bg-muted/50 border-border opacity-60'
+                          : 'bg-card border-border hover:bg-muted/40'
                       }`}
                   >
                     <label className="flex items-center gap-3 cursor-pointer flex-1">
@@ -1403,38 +1409,38 @@ const EmailPage: React.FC = () => {
                         checked={column.visible}
                         onChange={() => toggleColumn(column.id)}
                         disabled={isDisabled}
-                        className="w-5 h-5 rounded border-gray-300 text-[#3E2B66] focus:ring-[#3E2B66] disabled:cursor-not-allowed"
+                        className="w-5 h-5 rounded border-input text-primary focus:ring-primary disabled:cursor-not-allowed"
                       />
-                      <span className={`text-sm font-medium ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}>
+                      <span className={`text-sm font-medium ${isDisabled ? 'text-muted-foreground' : 'text-foreground'}`}>
                         {column.label}
-                        {isStatusColumn && <span className="ml-2 text-xs text-gray-500">(Fixed)</span>}
+                        {isStatusColumn && <span className="ml-2 text-xs text-muted-foreground">(Fixed)</span>}
                       </span>
                     </label>
                     {column.visible && (
-                      <span className="text-xs text-purple-600 font-medium">Visible</span>
+                      <span className="text-xs text-primary font-medium">Visible</span>
                     )}
                   </div>
                 );
               })}
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between pt-4 border-t border-border">
               <button
                 onClick={resetColumns}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:bg-accent transition-colors"
               >
                 Reset to Default
               </button>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setIsColumnModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:bg-accent transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => setIsColumnModalOpen(false)}
-                  className="px-5 py-2 text-sm font-medium text-white bg-[#3E2B66] rounded-lg hover:bg-[#4d3577] transition-colors"
+                  className="px-5 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Apply
                 </button>

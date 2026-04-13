@@ -355,7 +355,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
  
 
   return (
-    <div className="min-h-screen bg-white py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Show success box only when extract is successful */}
         {extractResult && extractResult.success ? (
@@ -384,21 +384,21 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
         ) : (
           <>
             {/* Header */}
-            <div className="mb-8 bg-gray">
+            <div className="mb-8 bg-background">
               <div className="flex items-center space-x-4 mb-4">
                 <Link
                   to={`/pdf-tools${location.search}`}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-muted rounded-lg transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </Link>
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-lg">
+                  <div className="p-2 bg-gradient-to-r from-primary to-primary/80 rounded-lg">
                     <FiScissors className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900">{headingTitle}</h1>
-                    <p className="text-gray-600">{headingSubtitle}</p>
+                    <h1 className="text-3xl font-bold text-foreground">{headingTitle}</h1>
+                    <p className="text-muted-foreground">{headingSubtitle}</p>
                   </div>
                 </div>
               </div>
@@ -406,38 +406,38 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
 
             {isLandingRoute && (
               <div className="max-w-4xl mx-auto text-center">
-                <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
-                <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+                <h2 className="text-2xl font-semibold text-foreground">{headingTitle}</h2>
+                <p className="text-muted-foreground mt-2">{headingSubtitle}</p>
               </div>
             )}
 
             {/* Upload Section - Full Width Initially */}
         {!document && (
-          <div className="bg-white rounded-xl mt-8 shadow-lg">
+          <div className="bg-background rounded-xl mt-8 shadow-lg">
             {/* <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload PDF Document</h2> */}
 
             <div
               className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary'
                 }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
               onDrop={handleDrop}
             >
-              <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-lg text-gray-600 mb-2">
+                <FiUpload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-lg text-muted-foreground mb-2">
                 Drag and drop your PDF here, or{' '}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-primary hover:text-primary/80 font-medium"
                 >
                   browse files
                 </button>
               </p>
-              <p className="text-sm text-gray-500">Maximum file size: 2MB</p>
+              <p className="text-sm text-muted-foreground">Maximum file size: 2MB</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -455,22 +455,22 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
         {document && pdfInfo && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Pane - Page Previews */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-background border border-border rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h3 className="text-lg font-semibold text-foreground flex items-center">
                   <FiEye className="w-5 h-5 mr-2" />
                   Page Preview
                 </h3>
                 <div className="flex space-x-2">
                   <button
                     onClick={selectAllPages}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-sm text-primary hover:text-primary/80 font-medium"
                   >
                     Select All
                   </button>
                   <button
                     onClick={clearAllSelections}
-                    className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                    className="text-sm text-muted-foreground hover:text-muted-foreground/80 font-medium"
                   >
                     Clear All
                   </button>
@@ -479,8 +479,8 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
 
               {loadingThumbnails ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <span className="ml-3 text-gray-600">Loading page previews...</span>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="ml-3 text-muted-foreground">Loading page previews...</span>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
@@ -488,12 +488,12 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                     <div
                       key={pageNum}
                       className={`relative cursor-pointer rounded-lg border-2 transition-all ${selectedPages.has(pageNum)
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary'
                         }`}
                       onClick={() => togglePageSelection(pageNum)}
                     >
-                      <div className="aspect-[3/4] bg-white rounded-lg shadow-sm flex items-center justify-center">
+                      <div className="aspect-[3/4] bg-background rounded-lg shadow-sm flex items-center justify-center">
                         {pageThumbnails[pageNum - 1] ? (
                           <img
                             src={pageThumbnails[pageNum - 1]}
@@ -501,7 +501,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                             className="w-full h-full object-contain rounded-lg"
                           />
                         ) : (
-                          <div className="text-center text-gray-400">
+                          <div className="text-center text-muted-foreground">
                             <FiFile className="w-8 h-8 mx-auto mb-2" />
                             <span className="text-sm">Page {pageNum}</span>
                           </div>
@@ -509,13 +509,13 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                       </div>
                       <div className="absolute top-2 left-2">
                         {selectedPages.has(pageNum) && (
-                          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                          <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                             <FiCheck className="w-4 h-4 text-white" />
                           </div>
                         )}
                       </div>
                       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                        <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
+                        <span className="text-xs text-foreground bg-background px-2 py-1 rounded">
                           {pageNum}
                         </span>
                       </div>
@@ -526,12 +526,12 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
             </div>
 
             {/* Right Pane - Extract Options */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="bg-background rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Extract Options</h3>
+                <h3 className="text-lg font-semibold text-foreground">Extract Options</h3>
                 <button
                   onClick={removeDocument}
-                  className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center"
+                  className="text-sm text-destructive hover:text-destructive/80 font-medium flex items-center"
                 >
                   <FiX className="w-4 h-4 mr-1" />
                   Remove File
@@ -540,7 +540,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
 
               {/* Extract Mode Selection */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-foreground mb-3">
                   Split Modes
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -552,7 +552,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                       key={mode.value}
                       onClick={() => setExtractMode(mode.value as any)}
                       className={`relative p-3 rounded-lg border-2 text-center transition-all ${extractMode === mode.value
-                          ? 'border-red-500 bg-red-50'
+                          ? 'border-primary bg-primary/10'
                           : 'border-gray-200 hover:border-gray-300'
                         }`}
                     >
@@ -562,7 +562,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                         </div>
                       )}
                       <div className="text-2xl mb-1">{mode.icon}</div>
-                      <div className="text-sm font-medium text-gray-900">{mode.label}</div>
+                      <div className="text-sm font-medium text-foreground">{mode.label}</div>
                     </button>
                   ))}
                 </div>
@@ -570,15 +570,15 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
 
               {/* Extract Mode */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-foreground mb-3">
                   Extract mode:
                 </label>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setExtractMode('pages')}
                     className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${extractMode === 'pages'
-                        ? 'border-red-500 bg-red-50 text-red-700'
-                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary'
                       }`}
                   >
                     Select pages
@@ -586,8 +586,8 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                   <button
                     onClick={() => setExtractMode('range')}
                     className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${extractMode === 'range'
-                        ? 'border-red-500 bg-red-50 text-red-700'
-                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary'
                       }`}
                   >
                     Extract all pages
@@ -598,7 +598,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
               {/* Pages to Extract */}
               {extractMode === 'pages' && (
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Pages to extract:
                   </label>
                   <input
@@ -606,9 +606,9 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                     value={Array.from(selectedPages).sort((a, b) => a - b).join(', ')}
                     onChange={(e) => setPageNumbers(e.target.value)}
                     placeholder="e.g., 1, 3, 5-7, 10"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {selectedPages.size > 0
                       ? `${selectedPages.size} page(s) selected`
                       : 'Click on page previews to select pages'
@@ -621,7 +621,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
               {extractMode === 'range' && (
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Start Page
                     </label>
                     <input
@@ -630,11 +630,11 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                       max={pdfInfo.pages}
                       value={startPage}
                       onChange={(e) => setStartPage(parseInt(e.target.value) || 1)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       End Page
                     </label>
                     <input
@@ -643,7 +643,7 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                       max={pdfInfo.pages}
                       value={endPage}
                       onChange={(e) => setEndPage(parseInt(e.target.value) || startPage)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -654,9 +654,9 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    className="rounded border-border text-primary focus:ring-primary"
                   />
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-foreground">
                     Merge extracted pages into one PDF file.
                   </span>
                 </label>
@@ -666,11 +666,11 @@ const ExtractPDF: React.FC<ExtractPDFProps> = ({ onExtractComplete }) => {
               <button
                 onClick={handleExtract}
                 disabled={extracting || (extractMode === 'pages' && selectedPages.size === 0)}
-                className="w-full bg-red-600 text-white py-3 px-6 rounded-lg font-medium text-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                  className="w-full bg-primary text-foreground py-3 px-6 rounded-lg font-medium text-lg hover:bg-primary/80 disabled:bg-muted disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
                 {extracting ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-3"></div>
                     Extracting...
                   </>
                 ) : (

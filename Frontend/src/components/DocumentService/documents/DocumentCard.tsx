@@ -45,13 +45,18 @@ const getFileTypeIcon = (type: string) => {
 const getFileTypeColor = (type: string) => {
   const lowerType = type.toLowerCase();
 
-  if (['pdf'].includes(lowerType)) return 'text-red-600 bg-red-50';
-  if (['doc', 'docx'].includes(lowerType)) return 'text-blue-600 bg-blue-50';
-  if (['xls', 'xlsx', 'csv'].includes(lowerType)) return 'text-green-600 bg-green-50';
-  if (['ppt', 'pptx'].includes(lowerType)) return 'text-orange-600 bg-orange-50';
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].includes(lowerType)) return 'text-purple-600 bg-purple-50';
+  if (['pdf'].includes(lowerType))
+    return 'text-red-600 dark:text-red-400 bg-red-500/10 dark:bg-red-500/15';
+  if (['doc', 'docx'].includes(lowerType))
+    return 'text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/15';
+  if (['xls', 'xlsx', 'csv'].includes(lowerType))
+    return 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15';
+  if (['ppt', 'pptx'].includes(lowerType))
+    return 'text-orange-600 dark:text-orange-400 bg-orange-500/10 dark:bg-orange-500/15';
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].includes(lowerType))
+    return 'text-violet-600 dark:text-violet-400 bg-violet-500/10 dark:bg-violet-500/15';
 
-  return 'text-gray-600 bg-gray-50';
+  return 'text-muted-foreground bg-muted';
 };
 
 export function DocumentCard({ document, isSelected, onSelect, onClick, showActionsMenu = true }: DocumentCardProps) {
@@ -100,8 +105,8 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
   return (
     <div
       className={cn(
-        "group relative bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer",
-        isSelected && "ring-2 ring-blue-500 border-blue-500"
+        'group relative rounded-lg border border-border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer',
+        isSelected && 'ring-2 ring-primary border-primary'
       )}
       onClick={handleCardClick}
     >
@@ -118,7 +123,7 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
             onSelect(e.target.checked);
             // console.log('🔍 onSelect called successfully');
           }}
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          className="rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
 
@@ -129,7 +134,7 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
             <Button
               size="sm"
               variant="ghost"
-              className="h-6 w-6 p-0 bg-white shadow-sm border"
+              className="h-6 w-6 p-0 bg-background shadow-sm border border-border"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowActions(!showActions);
@@ -139,20 +144,20 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
             </Button>
 
             {showActions && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
-                <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50"   style={{cursor: 'pointer'}}>
+              <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20">
+                <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground" style={{ cursor: 'pointer' }}>
                   <Eye className="w-4 h-4" />
                   <span>Preview</span>
                 </button>
-                <button 
-                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" 
+                <button
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleDownload}
                   disabled={isDownloading}
-                    style={{cursor: 'pointer'}}
+                  style={{ cursor: 'pointer' }}
                 >
                   {isDownloading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-muted-foreground/30 border-t-primary" />
                       <span>Downloading...</span>
                     </>
                   ) : (
@@ -162,8 +167,8 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
                     </>
                   )}
                 </button>
-                <button 
-                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50"
+                <button
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleArchive(document.id);
@@ -171,9 +176,11 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
                     // Clear any selection so header bulk actions disappear
                     try {
                       useDocumentStore.getState().setSelectedDocuments([]);
-                    } catch {}
+                    } catch {
+                      /* noop */
+                    }
                   }}
-                    style={{cursor: 'pointer'}}
+                  style={{ cursor: 'pointer' }}
                 >
                   {document.isArchived ? (
                     <>
@@ -187,10 +194,10 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
                     </>
                   )}
                 </button>
-                <div className="border-t border-gray-100 my-1" />
+                <div className="border-t border-border my-1" />
                 {userPermissions.delete_own && (
-                  <button 
-                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                  <button
+                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
                     onClick={(e) => {
                       e.stopPropagation();
                       moveToTrash(document.id);
@@ -198,9 +205,11 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
                       // Clear any selection so header bulk actions disappear
                       try {
                         useDocumentStore.getState().setSelectedDocuments([]);
-                      } catch {}
+                      } catch {
+                        /* noop */
+                      }
                     }}
-                      style={{cursor: 'pointer'}}
+                    style={{ cursor: 'pointer' }}
                   >
                     <Trash2 className="w-4 h-4" />
                     <span>Move to Trash</span>
@@ -223,16 +232,16 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
 
         {/* Document Info */}
         <div className="space-y-1">
-          <h3 className="text-sm font-medium text-gray-900 truncate" title={document.name}>
+          <h3 className="text-sm font-medium text-foreground truncate" title={document.name}>
             {document.name}
           </h3>
 
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{formatFileSize(document.size)}</span>
             <span>{document.type.toUpperCase()}</span>
           </div>
 
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {formatDate(document.modifiedAt)}
           </p>
         </div>
@@ -243,13 +252,13 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
             {document.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full"
+                className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full"
               >
                 {tag}
               </span>
             ))}
             {document.tags.length > 2 && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground/80">
                 +{document.tags.length - 2}
               </span>
             )}
@@ -257,30 +266,30 @@ export function DocumentCard({ document, isSelected, onSelect, onClick, showActi
         )}
 
         {/* Status Indicators */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
           <div className="flex items-center space-x-2">
             {document.shared && (
-              <Share2 className="w-3 h-3 text-blue-500" >Shared</Share2>
+              <Share2 className="w-3 h-3 text-primary" aria-hidden />
             )}
             {document.isArchived && (
-              <Archive className="w-3 h-3 text-gray-500" />
+              <Archive className="w-3 h-3 text-muted-foreground" />
             )}
             {document.views > 0 && (
               <div className="flex items-center space-x-1">
-                <Eye className="w-3 h-3 text-gray-400" />
-                <span className="text-xs text-gray-500">{document.views}</span>
+                <Eye className="w-3 h-3 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{document.views}</span>
               </div>
             )}
           </div>
 
           <button
             onClick={handleFavoriteToggle}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="p-1 hover:bg-accent rounded transition-colors"
           >
             {document.isFavorite ? (
-              <Star className="w-3 h-3 text-yellow-500 fill-current" />
+              <Star className="w-3 h-3 text-amber-500 dark:text-amber-400 fill-current" />
             ) : (
-              <StarOff className="w-3 h-3 text-gray-400" />
+              <StarOff className="w-3 h-3 text-muted-foreground" />
             )}
           </button>
         </div>

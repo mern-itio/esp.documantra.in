@@ -82,18 +82,18 @@ const CustomRoleDropdown: React.FC<CustomRoleDropdownProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between ${
           small 
-            ? 'px-2 py-1 text-xs border border-gray-300 rounded' 
-            : 'px-3 py-2.5 border-2 border-gray-200 rounded-md'
-        } bg-white font-medium text-gray-800 hover:border-gray-300 transition-all`}
+            ? 'px-2 py-1 text-xs border border-input rounded bg-background' 
+            : 'px-3 py-2.5 border-2 border-border rounded-md'
+        } bg-background font-medium text-foreground hover:border-border/80 transition-all`}
       >
-        <span className={selectedRole ? 'text-gray-900 font-semibold' : 'text-gray-500'}>
+        <span className={selectedRole ? 'text-foreground font-semibold' : 'text-muted-foreground'}>
           {selectedRole ? selectedRole.name : placeholder}
         </span>
-        <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className={`absolute z-50 w-full ${openUp ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden`}>
+        <div className={`absolute z-50 w-full ${openUp ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg overflow-hidden`}>
           {/* Roles List */}
           <div className="max-h-48 overflow-y-auto">
             {roles.length > 0 ? (
@@ -101,10 +101,10 @@ const CustomRoleDropdown: React.FC<CustomRoleDropdownProps> = ({
                 <button
                   key={role._id}
                   onClick={() => handleSelect(role._id)}
-                  className={`w-full text-left px-4 py-3 text-sm font-medium transition-all border-b border-gray-100 last:border-b-0 ${
+                  className={`w-full text-left px-4 py-3 text-sm font-medium transition-all border-b border-border last:border-b-0 ${
                     value === role._id
-                      ? 'bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white'
-                      : 'text-gray-900 hover:bg-gray-50'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-popover-foreground hover:bg-accent'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -114,17 +114,17 @@ const CustomRoleDropdown: React.FC<CustomRoleDropdownProps> = ({
                 </button>
               ))
             ) : (
-              <div className="px-4 py-3 text-xs text-gray-500">No roles available</div>
+              <div className="px-4 py-3 text-xs text-muted-foreground">No roles available</div>
             )}
           </div>
 
           {/* Separator */}
-          <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200"></div>
+          <div className="h-px bg-border" />
 
           {/* Add Role Option */}
           <button
             onClick={() => handleSelect('add-role')}
-            className="w-full text-left px-4 py-3 text-sm font-semibold text-[#3E2B66] hover:bg-purple-50 transition-all flex items-center gap-2"
+            className="w-full text-left px-4 py-3 text-sm font-semibold text-primary hover:bg-accent transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             <span>Create New Role</span>
@@ -187,7 +187,7 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
       setNewMemberData({ name: '', email: '', roleId: '' });
       setAddMemberMode('existing');
     }
-  }, [isOpen, organization]);
+  }, [isOpen, organization]); // eslint-disable-line react-hooks/exhaustive-deps -- load/reset when modal opens; members fetch is stable per org
 
   useEffect(() => {
     const query = availableSearchQuery.trim();
@@ -201,7 +201,7 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
     }, 300);
 
     return () => window.clearTimeout(handler);
-  }, [availableSearchQuery, organization?._id]);
+  }, [availableSearchQuery, organization?._id]); // eslint-disable-line react-hooks/exhaustive-deps -- debounced search; fetchAvailableUsers tied to org
 
   const fetchTeamMembers = async () => {
     if (!organization?._id) return;
@@ -371,10 +371,10 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl mx-4  flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60 backdrop-blur-sm">
+      <div className="bg-card text-card-foreground border border-border rounded-xl shadow-2xl w-full max-w-xl mx-4  flex flex-col">
         {/* Header */}
-        <div className="flex items-center p-6 justify-between border-b border-gray-200">
+        <div className="flex items-center p-6 justify-between border-b border-border">
           <div className="flex items-center gap-3">
 
             <button
@@ -385,17 +385,17 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                 setAddMemberMode('existing');
               }}
             >
-              <ArrowLeft className='w-4 h-4 flex' />
+              <ArrowLeft className="w-4 h-4 flex text-muted-foreground hover:text-foreground" />
             </button>
 
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Team Management</h2>
-              <p className="text-sm text-gray-600">{organization?.name}</p>
+              <h2 className="text-2xl font-bold text-foreground">Team Management</h2>
+              <p className="text-sm text-muted-foreground">{organization?.name}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            className="text-muted-foreground hover:text-foreground transition-colors p-1"
           >
             <X className="w-6 h-6" />
           </button>
@@ -409,18 +409,18 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
               {/* Search and Add Button */}
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                     placeholder="Search team members..."
                   />
                 </div>
                 <button
                   onClick={() => setShowAddMember(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg font-semibold hover:from-[#3E2B66] hover:to-[#260559] shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <Plus className="w-5 h-5" />
                   <span>Add Member</span>
@@ -430,49 +430,49 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
               {/* Members List */}
               {isLoading ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">Loading team members...</p>
+                  <p className="text-muted-foreground">Loading team members...</p>
                 </div>
               ) : filteredMembers.length === 0 ? (
                 <div className="text-center py-12">
-                  <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No team members found</p>
+                  <Users className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
+                  <p className="text-muted-foreground">No team members found</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {filteredMembers.map((member) => (
                     <div
                       key={member._id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                      className="flex items-center justify-between p-4 bg-muted/40 rounded-lg border border-border hover:bg-muted/60 transition-colors"
                     >
                       <div className="flex items-center gap-4 flex-1">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#260559] to-[#3E2B66] flex items-center justify-center text-white font-semibold">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-semibold">
                           {member.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{member?.name || member?.fullname}</p>
-                          <p className="text-sm text-gray-600">{member.email}</p>
+                          <p className="font-semibold text-foreground">{member?.name || member?.fullname}</p>
+                          <p className="text-sm text-muted-foreground">{member.email}</p>
                         </div>
                         <div
                           className={`px-3 py-1 text-xs font-semibold rounded-full ${member.status === 'ACTIVE'
-                            ? 'bg-green-100 text-green-700'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300'
                             : member.status === 'PENDING'
-                              ? 'bg-yellow-100 text-yellow-700'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300'
                               : member.status === 'DISABLED'
-                                ? 'bg-gray-100 text-gray-700'
+                                ? 'bg-muted text-muted-foreground'
                                 : member.status === 'REJECTED'
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-blue-100 text-blue-700'
+                                  ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
+                                  : 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
                             }`}
                         >
                           {member.status}
                         </div>
-                        <div className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+                        <div className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 text-xs font-semibold rounded-full">
                           {member.role || member?.roleId?.name}
                         </div>
                       </div>
                       <button
                         onClick={() => handleRemoveMember(member._id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-4"
+                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors ml-4"
                         title="Remove from organization"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -486,14 +486,14 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
             <>
               {/* Add Member Form */}
               {roles.length === 0 ? (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
-                  <p className="text-yellow-800">
+                <div className="p-4 bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900 rounded-lg mb-4">
+                  <p className="text-yellow-800 dark:text-yellow-200">
                     No roles exist for this organization. Please create roles before adding members.
                   </p>
                   <div className="mt-3">
                     <button
                       onClick={() => setShowCreateRoleModal(true)}
-                      className="px-4 py-2 bg-[#3E2B66] text-white rounded-lg font-semibold hover:bg-[#260559] transition-colors"
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
                     >
                       Create Role
                     </button>
@@ -502,13 +502,13 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
               ) : (
                 <div className="space-y-4">
                   {/* Tab Switcher */}
-                  <div className="flex gap-2 bg-gray-100 p-1.5 rounded-lg w-fit">
+                  <div className="flex gap-2 bg-muted p-1.5 rounded-lg w-fit">
                     <button
                       onClick={() => setAddMemberMode('existing')}
                       className={`px-4 py-2 rounded-md font-semibold text-sm transition-colors ${
                         addMemberMode === 'existing'
-                          ? 'bg-white text-[#3E2B66] shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-card text-primary shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <span className="flex items-center gap-2">
@@ -520,8 +520,8 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                       onClick={() => setAddMemberMode('new')}
                       className={`px-4 py-2 rounded-md font-semibold text-sm transition-colors ${
                         addMemberMode === 'new'
-                          ? 'bg-white text-[#3E2B66] shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-card text-primary shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <span className="flex items-center gap-2">
@@ -533,21 +533,21 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
 
                   {/* Existing Member Mode */}
                   {addMemberMode === 'existing' && (
-                    <div className="bg-gradient-to-br from-[#f8f7ff] to-white border border-[#e8e0fb] rounded-xl p-5 space-y-4">
+                    <div className="bg-muted/30 border border-border rounded-xl p-5 space-y-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-800 mb-2">Search User</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Search User</label>
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#3E2B66]" />
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary pointer-events-none" />
                           <input
                             type="text"
                             value={availableSearchQuery}
                             onChange={(e) => setAvailableSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg bg-white text-sm"
+                            className="w-full pl-10 pr-4 py-2.5 border border-input rounded-lg bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                             placeholder="Type name or email..."
                           />
                         </div>
                         {availableSearchQuery.trim().length < 2 && (
-                          <p className="text-xs text-gray-500 mt-1.5">Enter at least 2 characters</p>
+                          <p className="text-xs text-muted-foreground mt-1.5">Enter at least 2 characters</p>
                         )}
                       </div>
 
@@ -557,12 +557,12 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                           {availableLoading ? (
                             <div className="text-center py-8">
                               <div className="inline-block animate-spin">
-                                <div className="w-4 h-4 border-2 border-[#3E2B66] border-t-transparent rounded-full"></div>
+                                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
                               </div>
-                              <p className="text-sm text-gray-500 mt-2">Searching...</p>
+                              <p className="text-sm text-muted-foreground mt-2">Searching...</p>
                             </div>
                           ) : availableUsers.length > 0 ? (
-                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="border border-border rounded-lg overflow-hidden">
                               {availableUsers.map((user, index) => (
                                 <div
                                   key={user._id}
@@ -581,17 +581,17 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                                     });
                                   }}
                                   className={`p-3 cursor-pointer transition-colors ${
-                                    index !== availableUsers.length - 1 ? 'border-b border-gray-100' : ''
-                                  } ${selectedUsers.includes(user._id) ? 'bg-[#f0edff]' : 'hover:bg-gray-50'}`}
+                                    index !== availableUsers.length - 1 ? 'border-b border-border' : ''
+                                  } ${selectedUsers.includes(user._id) ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
                                 >
                                   <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#260559] to-[#3E2B66] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground text-xs font-bold flex-shrink-0">
                                         {(user.name || user.fullname)?.charAt(0).toUpperCase()}
                                       </div>
                                       <div className="min-w-0">
-                                        <p className="font-semibold text-gray-900 text-sm truncate">{user.name || user.fullname}</p>
-                                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                        <p className="font-semibold text-foreground text-sm truncate">{user.name || user.fullname}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                                       </div>
                                     </div>
                                     {selectedUsers.includes(user._id) && (
@@ -616,8 +616,8 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                               ))}
                             </div>
                           ) : (
-                            <div className="p-6 text-center bg-blue-50 border border-blue-200 rounded-lg">
-                              <p className="text-sm text-blue-800 font-medium mb-3">No users found</p>
+                            <div className="p-6 text-center bg-blue-50 border border-blue-200 dark:bg-blue-950/40 dark:border-blue-900 rounded-lg">
+                              <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-3">No users found</p>
                               <button
                                 onClick={() => {
                                   setAddMemberMode('new');
@@ -627,7 +627,7 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                                     roleId: roles[0]?._id || ''
                                   });
                                 }}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-[#3E2B66] text-white rounded-lg font-semibold text-sm hover:bg-[#260559] transition-colors"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors"
                               >
                                 <Plus className="w-4 h-4" />
                                 Invite as New User
@@ -644,8 +644,8 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                           disabled={addingMember}
                           className={`w-full px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
                             addingMember
-                              ? 'bg-gray-400 cursor-not-allowed text-white'
-                              : 'bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white hover:shadow-lg'
+                              ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                              : 'bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg'
                           }`}
                         >
                           {addingMember ? 'Adding...' : `Add ${selectedUsers.length} Member${selectedUsers.length > 1 ? 's' : ''}`}
@@ -656,30 +656,30 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
 
                   {/* New Member Mode */}
                   {addMemberMode === 'new' && (
-                    <div className="bg-gradient-to-br from-[#f8f7ff] to-white border border-[#e8e0fb] rounded-xl p-5 space-y-4">
+                    <div className="bg-muted/30 border border-border rounded-xl p-5 space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-800 mb-2">Full Name</label>
+                          <label className="block text-sm font-semibold text-foreground mb-2">Full Name</label>
                           <div className="relative">
-                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             <input
                               type="text"
                               value={newMemberData.name}
                               onChange={(e) => setNewMemberData({ ...newMemberData, name: e.target.value })}
-                              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white text-sm"
+                              className="w-full pl-10 pr-4 py-2.5 border border-input rounded-md bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                               placeholder="John Doe"
                             />
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-800 mb-2">Email Address</label>
+                          <label className="block text-sm font-semibold text-foreground mb-2">Email Address</label>
                           <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             <input
                               type="email"
                               value={newMemberData.email}
                               onChange={(e) => setNewMemberData({ ...newMemberData, email: e.target.value })}
-                              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white text-sm"
+                              className="w-full pl-10 pr-4 py-2.5 border border-input rounded-md bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                               placeholder="john@example.com"
                             />
                           </div>
@@ -687,7 +687,7 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                       </div>
 
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-800">Assign Role</label>
+                        <label className="block text-sm font-semibold text-foreground">Assign Role</label>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
                           <div className="flex-1 min-w-0">
                             <CustomRoleDropdown
@@ -709,13 +709,13 @@ export const TeamsManagementModal: React.FC<TeamsManagementModalProps> = ({
                             setAddMemberMode('existing');
                             setNewMemberData({ name: '', email: '', roleId: '' });
                           }}
-                          className=" w-auto px-4 py-2.5 border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          className=" w-auto px-4 py-2.5 border border-border rounded-md font-semibold text-sm text-foreground hover:bg-accent transition-colors"
                         >
                           Back
                         </button>
                         <button
                           onClick={handleCreateNewMember}
-                          className="w-auto px-4 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-md font-semibold text-sm hover:shadow-lg transition-all duration-200"
+                          className="w-auto px-4 py-2.5 bg-primary text-primary-foreground rounded-md font-semibold text-sm hover:bg-primary/90 hover:shadow-lg transition-all duration-200"
                         >
                           <span className="flex items-center justify-center gap-2">
                             <Plus className="w-4 h-4" />

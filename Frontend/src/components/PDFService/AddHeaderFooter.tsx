@@ -322,7 +322,7 @@ const AddHeaderFooter: React.FC = () => {
   if (isPreviewExpanded && previewUrl) {
     return (
       <div className="mx-auto space-y-6">
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-background shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
@@ -332,8 +332,8 @@ const AddHeaderFooter: React.FC = () => {
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Add Headers & Footers to PDF</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Add Headers & Footers to PDF</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Customize headers and footers with advanced formatting and positioning options
                 </p>
               </div>
@@ -342,12 +342,12 @@ const AddHeaderFooter: React.FC = () => {
         </div>
         
         <div className="max-w-7xl mx-auto p-6 space-y-6">
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-background rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900">Headers & Footers Preview</h2>
+              <h2 className="text-2xl font-semibold text-foreground">Headers & Footers Preview</h2>
               <button
                 onClick={handleCollapsePreview}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+                className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -356,7 +356,7 @@ const AddHeaderFooter: React.FC = () => {
               </button>
             </div>
             
-            <div className="border border-gray-300 rounded-lg overflow-hidden">
+            <div className="border border-border rounded-lg overflow-hidden">
               <iframe
                 src={previewUrl}
                 className="w-full h-[800px]"
@@ -367,7 +367,7 @@ const AddHeaderFooter: React.FC = () => {
             </div>
             
             <div className="mt-4 text-center">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Preview shows how your headers and footers will appear on the PDF
               </p>
             </div>
@@ -381,18 +381,18 @@ const AddHeaderFooter: React.FC = () => {
   if (addHeaderFooterResult && addHeaderFooterResult.success) {
     return (
       <div className="mx-auto space-y-6">
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-background shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
                    to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Add Headers & Footers to PDF</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Add Headers & Footers to PDF</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Customize headers and footers with advanced formatting and positioning options
                 </p>
               </div>
@@ -400,30 +400,30 @@ const AddHeaderFooter: React.FC = () => {
           </div>
         </div>
         <div className="max-w-7xl mx-auto p-6 space-y-6">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 p-8">
+          <div className="bg-gradient-to-r from-success to-success/20 rounded-xl border-2 border-success p-8">
             <div className="text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-20 h-20 bg-success rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10 text-success-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-3xl font-bold text-green-800 mb-3">
+              <h3 className="text-3xl font-bold text-success-foreground mb-3">
                 Headers & Footers Added Successfully!
               </h3>
-              <p className="text-lg text-green-700 mb-8">
+              <p className="text-lg text-success-foreground mb-8">
                 Your PDF has been processed with headers and footers and the updated document is ready for download.
               </p>
               {addHeaderFooterResult.file && (
-                <div className="bg-white border border-green-200 rounded-lg p-6 mb-8 shadow-sm">
+                <div className="bg-background border border-success rounded-lg p-6 mb-8 shadow-sm">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-12 h-12 bg-success rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-success-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
                     <div className="flex-1 text-left">
-                      <h4 className="font-semibold text-gray-900 text-lg">{addHeaderFooterResult.filename}</h4>
-                      <p className="text-sm text-gray-600">
+                      <h4 className="font-semibold text-foreground text-lg">{addHeaderFooterResult.filename}</h4>
+                      <p className="text-sm text-muted-foreground">
                         {formatFileSize(addHeaderFooterResult.file.size)} • {addHeaderFooterResult.pagesModified || 0} pages modified
                       </p>
                     </div>
@@ -433,7 +433,7 @@ const AddHeaderFooter: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={handleDownloadSuccess}
-                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-base font-medium shadow-md"
+                  className="bg-success text-success-foreground px-6 py-3 rounded-lg hover:bg-success/90 transition-colors flex items-center justify-center space-x-2 text-base font-medium shadow-md"
                   disabled={!addHeaderFooterResult?.downloadUrl}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -443,7 +443,7 @@ const AddHeaderFooter: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setAddHeaderFooterResult(null)}
-                  className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2 text-base font-medium shadow-md"
+                  className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 text-base font-medium shadow-md"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -452,7 +452,7 @@ const AddHeaderFooter: React.FC = () => {
                 </button>
                 <button
                   onClick={resetToStart}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-base font-medium shadow-md"
+                  className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 text-base font-medium shadow-md"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -469,18 +469,18 @@ const AddHeaderFooter: React.FC = () => {
 
   return (
     <div className="mx-auto space-y-6">
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
                  to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Add Headers & Footers to PDF</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Add Headers & Footers to PDF</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Customize headers and footers with advanced formatting and positioning options
               </p>
             </div>
@@ -508,14 +508,14 @@ const AddHeaderFooter: React.FC = () => {
                 />
                 <label
                   htmlFor="file-upload"
-                  className="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="cursor-pointer bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Choose PDF File
                 </label>
               </div>
             </div>
             {error && (
-              <div className="text-sm text-red-600">{error}</div>
+              <div className="text-sm text-destructive">{error}</div>
             )}
           </CardContent>
         </Card>
@@ -532,7 +532,7 @@ const AddHeaderFooter: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Header Section */}
               <div className="md:col-span-2">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Header Settings</h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">Header Settings</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center space-x-2">
                     <input
@@ -542,7 +542,7 @@ const AddHeaderFooter: React.FC = () => {
                       onChange={(e) => handleInputChange('headerEnabled', e.target.checked)}
                       className="rounded"
                     />
-                    <label htmlFor="headerEnabled" className="text-sm font-medium text-gray-700">
+                    <label htmlFor="headerEnabled" className="text-sm font-medium text-foreground">
                       Enable Header
                     </label>
                   </div>
@@ -550,11 +550,11 @@ const AddHeaderFooter: React.FC = () => {
                   {formData.headerEnabled && (
                     <>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Header Position</label>
+                        <label className="text-sm font-medium text-foreground">Header Position</label>
                         <select
                           value={formData.headerPosition}
                           onChange={(e) => handleInputChange('headerPosition', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
                           {positionOptions.map(option => (
                             <option key={option.value} value={option.value}>
@@ -565,11 +565,11 @@ const AddHeaderFooter: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Header Text</label>
+                        <label className="text-sm font-medium text-foreground">Header Text</label>
                         <select
                           value={formData.headerText}
                           onChange={(e) => handleInputChange('headerText', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
                           {headerFooterOptions.map(option => (
                             <option key={option.value} value={option.value}>
@@ -580,7 +580,7 @@ const AddHeaderFooter: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Custom Header Text (optional)</label>
+                        <label className="text-sm font-medium text-foreground">Custom Header Text (optional)</label>
                         <Input
                           type="text"
                           value={formData.customHeaderText}
@@ -596,7 +596,7 @@ const AddHeaderFooter: React.FC = () => {
 
               {/* Footer Section */}
               <div className="md:col-span-2">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Footer Settings</h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">Footer Settings</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center space-x-2">
                     <input
@@ -606,7 +606,7 @@ const AddHeaderFooter: React.FC = () => {
                       onChange={(e) => handleInputChange('footerEnabled', e.target.checked)}
                       className="rounded"
                     />
-                    <label htmlFor="footerEnabled" className="text-sm font-medium text-gray-700">
+                    <label htmlFor="footerEnabled" className="text-sm font-medium text-foreground">
                       Enable Footer
                     </label>
                   </div>
@@ -614,11 +614,11 @@ const AddHeaderFooter: React.FC = () => {
                   {formData.footerEnabled && (
                     <>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Footer Position</label>
+                        <label className="text-sm font-medium text-foreground">Footer Position</label>
                         <select
                           value={formData.footerPosition}
                           onChange={(e) => handleInputChange('footerPosition', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
                           {positionOptions.map(option => (
                             <option key={option.value} value={option.value}>
@@ -629,11 +629,11 @@ const AddHeaderFooter: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Footer Text</label>
+                        <label className="text-sm font-medium text-foreground">Footer Text</label>
                         <select
                           value={formData.footerText}
                           onChange={(e) => handleInputChange('footerText', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
                           {headerFooterOptions.map(option => (
                             <option key={option.value} value={option.value}>
@@ -644,7 +644,7 @@ const AddHeaderFooter: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Custom Footer Text (optional)</label>
+                        <label className="text-sm font-medium text-foreground">Custom Footer Text (optional)</label>
                         <Input
                           type="text"
                           value={formData.customFooterText}
@@ -660,7 +660,7 @@ const AddHeaderFooter: React.FC = () => {
 
               {/* Common Settings */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Font Size</label>
+                <label className="text-sm font-medium text-foreground">Font Size</label>
                 <Input
                   type="number"
                   min="8"
@@ -672,7 +672,7 @@ const AddHeaderFooter: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Font Color</label>
+                <label className="text-sm font-medium text-foreground">Font Color</label>
                 <div className="flex items-center space-x-2">
                   <Input
                     type="color"
@@ -691,7 +691,7 @@ const AddHeaderFooter: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Margin (px)</label>
+                <label className="text-sm font-medium text-foreground">Margin (px)</label>
                 <Input
                   type="number"
                   min="5"
@@ -704,7 +704,7 @@ const AddHeaderFooter: React.FC = () => {
 
               {/* Page Range */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Start Page</label>
+                <label className="text-sm font-medium text-foreground">Start Page</label>
                 <Input
                   type="number"
                   min="1"
@@ -715,7 +715,7 @@ const AddHeaderFooter: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">End Page (optional)</label>
+                <label className="text-sm font-medium text-foreground">End Page (optional)</label>
                 <Input
                   type="number"
                   min="1"
@@ -728,7 +728,7 @@ const AddHeaderFooter: React.FC = () => {
 
               {/* Exclude Pages */}
               <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-medium text-gray-700">Exclude Pages (optional)</label>
+                <label className="text-sm font-medium text-foreground">Exclude Pages (optional)</label>
                 <Input
                   type="text"
                   value={formData.excludePages}
@@ -736,7 +736,7 @@ const AddHeaderFooter: React.FC = () => {
                   placeholder="e.g., 1,3,5 (comma-separated)"
                   className="w-full"
                 />
-                <p className="text-xs text-gray-500">Enter page numbers separated by commas to exclude them from headers/footers</p>
+                <p className="text-xs text-muted-foreground">Enter page numbers separated by commas to exclude them from headers/footers</p>
               </div>
             </div>
           </CardContent>
@@ -758,7 +758,7 @@ const AddHeaderFooter: React.FC = () => {
           <Button
             onClick={handleAddHeaderFooter}
             disabled={isProcessing}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700"
+            className="px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {isProcessing ? 'Adding Headers & Footers...' : 'Add Headers & Footers'}
           </Button>
@@ -793,7 +793,7 @@ const AddHeaderFooter: React.FC = () => {
                   >
                     Previous
                   </Button>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     Page {currentPage} of {totalPages}
                   </span>
                   <Button
@@ -812,13 +812,13 @@ const AddHeaderFooter: React.FC = () => {
                 {pdfDocument ? (
                   <canvas
                     ref={canvasRef}
-                    className="border border-gray-300 rounded-lg shadow-sm"
+                    className="border border-border rounded-lg shadow-sm"
                     style={{ maxWidth: '100%', height: 'auto' }}
                   />
                 ) : (
                   <iframe
                     src={previewUrl}
-                    className="w-full h-96 border border-gray-300 rounded-lg"
+                    className="w-full h-96 border border-border rounded-lg"
                     title="Headers & Footers Preview"
                     onLoad={() => console.log('Preview iframe loaded successfully')}
                     onError={(e) => console.error('Preview iframe error:', e)}
@@ -826,7 +826,7 @@ const AddHeaderFooter: React.FC = () => {
                 )}
               </div>
               
-              <div className="text-sm text-gray-600 text-center">
+              <div className="text-sm text-muted-foreground text-center">
                 <p>Total pages: {result?.totalPages}</p>
               </div>
               
@@ -847,21 +847,21 @@ const AddHeaderFooter: React.FC = () => {
 
       {/* Results Section */}
       {result && result.success && (
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-success bg-success/10">
           <CardHeader>
-            <CardTitle className="text-green-800">Success!</CardTitle>
-            <CardDescription className="text-green-700">
+            <CardTitle className="text-success-foreground">Success!</CardTitle>
+            <CardDescription className="text-success-foreground">
               Headers and footers have been added successfully
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="text-sm text-green-700">
+              <div className="text-sm text-success-foreground">
                 <p><strong>File:</strong> {result.filename}</p>
                 <p><strong>Pages Modified:</strong> {result.pagesModified}</p>
                 <p><strong>Total Pages:</strong> {result.totalPages}</p>
                 {!result?.downloadUrl && (
-                  <p className="text-blue-600 mt-2">
+                  <p className="text-primary mt-2">
                     💡 <strong>Tip:</strong> Click "Add Headers & Footers" first to generate the complete PDF, then download it.
                   </p>
                 )}
@@ -869,7 +869,7 @@ const AddHeaderFooter: React.FC = () => {
               
               <Button
                 onClick={handleDownload}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3"
+                className="bg-success text-success-foreground hover:bg-success/90 px-6 py-3"
                 disabled={!result?.downloadUrl}
               >
                 {result?.downloadUrl ? 'Download PDF' : 'Generate PDF First'}
@@ -881,9 +881,9 @@ const AddHeaderFooter: React.FC = () => {
 
       {/* Error Display */}
       {error && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-destructive bg-destructive/10">
           <CardContent className="pt-6">
-            <div className="text-red-700 text-center">
+            <div className="text-destructive-foreground text-center">
               <p className="font-medium">Error:</p>
               <p>{error}</p>
             </div>

@@ -184,18 +184,18 @@ const AddPassword: React.FC = () => {
   if (addPasswordResult && addPasswordResult.success) {
     return (
       <div className="mx-auto space-y-6">
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-background shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
                 to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Add Password Protection</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Add Password Protection</h1>
+                <p className="mt-2 text-sm text-foreground">
                   Secure your PDFs with owner and user passwords
                 </p>
               </div>
@@ -238,24 +238,24 @@ const AddPassword: React.FC = () => {
     : 'Secure your PDFs with owner and user passwords';
 
   return (
-    <div className="min-h-screen bg-white mx-auto space-y-6">
+    <div className="min-h-screen bg-background mx-auto space-y-6">
       {/* Header */}
       <div className=" shadow-sm border-b p-2">
         <div className="flex items-center space-x-4">
-          <Link to={`/pdf-tools${location.search}`} className="text-gray-600 hover:text-gray-800">
+          <Link to={`/pdf-tools${location.search}`} className="text-muted-foreground hover:text-muted-foreground">
             <ArrowLeft className="h-6 w-6" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{headingTitle}</h1>
-            <p className="text-gray-600">{headingSubtitle}</p>
+            <h1 className="text-3xl font-bold text-foreground">{headingTitle}</h1>
+            <p className="text-muted-foreground">{headingSubtitle}</p>
           </div>
         </div>
       </div>
 
       {isLandingRoute && (
         <div className="max-w-4xl mx-auto mt-8 text-center">
-          <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
-          <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+          <h2 className="text-2xl font-semibold text-muted">{headingTitle}</h2>
+          <p className="text-muted mt-2">{headingSubtitle}</p>
         </div>
       )}
 
@@ -264,24 +264,24 @@ const AddPassword: React.FC = () => {
       {!selectedFile && (
         <div className="max-w-4xl mx-auto mt-2 md:mt-2">
           <div
-            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
+            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive ? 'border-primary bg-primary' : 'border-muted hover:border-muted-foreground'}`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-lg text-gray-600 mb-2">
+            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-lg text-muted-foreground mb-2">
               Drag and drop your PDF here, or{' '}
               <button
                 type="button"
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="text-primary hover:text-foreground font-medium"
               >
                 browse files
               </button>
             </p>
-            <p className="text-sm text-gray-500">Maximum file size: 10MB</p>
+            <p className="text-sm text-muted-foreground">Maximum file size: 10MB</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -312,7 +312,7 @@ const AddPassword: React.FC = () => {
               <CardContent className="space-y-4">
                 {/* Owner Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Owner Password (Optional)
                   </label>
                   <Input
@@ -329,15 +329,15 @@ const AddPassword: React.FC = () => {
                       </span>
                     </div>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Owner password provides full access to the PDF
                   </p>
                 </div>
 
                 {/* User Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    User Password <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    User Password <span className="text-destructive">*</span>
                   </label>
                   <Input
                     type="password"
@@ -354,7 +354,7 @@ const AddPassword: React.FC = () => {
                       </span>
                     </div>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     User password is required to open the PDF
                   </p>
                 </div>
@@ -385,9 +385,9 @@ const AddPassword: React.FC = () => {
                         className="mt-1"
                       />
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900">{option.label}</div>
-                        <p className="text-sm text-gray-600">{option.description}</p>
-                        <p className="text-xs text-gray-500">{option.security}</p>
+                        <div className="font-medium text-muted-foreground">{option.label}</div>
+                        <p className="text-sm text-muted-foreground">{option.description}</p>
+                        <p className="text-xs text-muted-foreground">{option.security}</p>
                       </div>
                     </label>
                   ))}
@@ -398,7 +398,7 @@ const AddPassword: React.FC = () => {
                   <Button
                     onClick={handleAddPassword}
                     disabled={!selectedFile || isProcessing}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    className="w-full bg-primary hover:bg-primary/70 text-primary-foreground"
                   >
                     <Lock className="h-4 w-4 mr-2" />
                     Add Password Protection
@@ -421,13 +421,13 @@ const AddPassword: React.FC = () => {
       {/* Error Display */}
       {error && (
         <div className="max-w-4xl mx-auto">
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-destructive bg-destructive/10">
             <CardContent className="pt-6">
-              <div className="flex items-center space-x-2 text-red-600">
+              <div className="flex items-center space-x-2 text-destructive">
                 <AlertCircle className="h-5 w-5" />
                 <span className="font-medium">Error</span>
               </div>
-              <p className="text-red-600 mt-2">{error}</p>
+              <p className="text-destructive mt-2">{error}</p>
             </CardContent>
           </Card>
         </div>
@@ -438,9 +438,9 @@ const AddPassword: React.FC = () => {
       {/* Processing Overlay */}
       {isProcessing && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span className="text-gray-700">Processing PDF...</span>
+          <div className="bg-card rounded-lg p-6 flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <span className="text-muted-foreground">Processing PDF...</span>
           </div>
         </div>
       )}

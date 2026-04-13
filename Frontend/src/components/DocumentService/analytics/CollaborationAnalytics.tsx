@@ -19,32 +19,32 @@ export function CollaborationAnalytics() {
       title: 'Active Collaborators',
       value: userEngagement.activeCollaborators.toString(),
       icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-blue-600 dark:text-blue-400',
+      bgColor: 'bg-blue-50 dark:bg-blue-950/40',
       change: '+12%'
     },
     {
       title: 'Comments This Week',
       value: documentMetrics.commentActivity.toString(),
       icon: MessageCircle,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bgColor: 'bg-emerald-50 dark:bg-emerald-950/40',
       change: '+8%'
     },
     {
       title: 'Version Updates',
       value: documentMetrics.versionActivity.toString(),
       icon: GitBranch,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-violet-600 dark:text-violet-400',
+      bgColor: 'bg-violet-50 dark:bg-violet-950/40',
       change: '+15%'
     },
     {
       title: 'Avg Session Length',
       value: userEngagement.averageSessionLength,
       icon: Clock,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      color: 'text-orange-600 dark:text-orange-400',
+      bgColor: 'bg-orange-50 dark:bg-orange-950/40',
       change: '+5%'
     }
   ];
@@ -63,9 +63,9 @@ export function CollaborationAnalytics() {
                     <Icon className={`w-6 h-6 ${stat.color}`} />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-sm text-gray-600">{stat.title}</p>
-                    <p className="text-xs text-green-600 mt-1">{stat.change} from last week</p>
+                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                    <p className="text-sm text-muted-foreground">{stat.title}</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">{stat.change} from last week</p>
                   </div>
                 </div>
               </CardContent>
@@ -79,22 +79,22 @@ export function CollaborationAnalytics() {
         {/* Document Collaboration */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Activity className="w-5 h-5" />
+            <CardTitle className="flex items-center space-x-2 text-foreground">
+              <Activity className="w-5 h-5 text-primary" />
               <span>Document Collaboration</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Collaborative Documents</span>
-                <span className="text-sm font-medium">
+                <span className="text-sm text-muted-foreground">Collaborative Documents</span>
+                <span className="text-sm font-medium text-foreground">
                   {documentMetrics.collaborativeDocuments} / {documentMetrics.totalDocuments}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full"
+                  className="bg-primary h-2 rounded-full"
                   style={{
                     width: `${(documentMetrics.collaborativeDocuments / documentMetrics.totalDocuments) * 100}%`
                   }}
@@ -102,17 +102,17 @@ export function CollaborationAnalytics() {
               </div>
               
               <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-bold text-gray-900">
+                <div className="text-center p-3 bg-muted/50 rounded-lg">
+                  <div className="text-lg font-bold text-foreground">
                     {documentMetrics.averageCollaborators}
                   </div>
-                  <div className="text-xs text-gray-600">Avg Collaborators</div>
+                  <div className="text-xs text-muted-foreground">Avg Collaborators</div>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-bold text-gray-900">
+                <div className="text-center p-3 bg-muted/50 rounded-lg">
+                  <div className="text-lg font-bold text-foreground">
                     {userEngagement.commentResolutionRate}%
                   </div>
-                  <div className="text-xs text-gray-600">Comment Resolution</div>
+                  <div className="text-xs text-muted-foreground">Comment Resolution</div>
                 </div>
               </div>
             </div>
@@ -122,38 +122,38 @@ export function CollaborationAnalytics() {
         {/* Workflow Performance */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <CheckCircle className="w-5 h-5" />
+            <CardTitle className="flex items-center space-x-2 text-foreground">
+              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span>Workflow Performance</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">On-time Completion</span>
-                <span className="text-sm font-medium">
+                <span className="text-sm text-muted-foreground">On-time Completion</span>
+                <span className="text-sm font-medium text-foreground">
                   {workflowPerformance.onTimeCompletionRate}%
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div
-                  className="bg-green-600 h-2 rounded-full"
+                  className="bg-emerald-600 dark:bg-emerald-500 h-2 rounded-full"
                   style={{ width: `${workflowPerformance.onTimeCompletionRate}%` }}
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-bold text-gray-900">
+                <div className="text-center p-3 bg-muted/50 rounded-lg">
+                  <div className="text-lg font-bold text-foreground">
                     {workflowPerformance.activeWorkflows}
                   </div>
-                  <div className="text-xs text-gray-600">Active Workflows</div>
+                  <div className="text-xs text-muted-foreground">Active Workflows</div>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-bold text-gray-900">
+                <div className="text-center p-3 bg-muted/50 rounded-lg">
+                  <div className="text-lg font-bold text-foreground">
                     {workflowPerformance.averageProcessingTime}
                   </div>
-                  <div className="text-xs text-gray-600">Avg Processing Time</div>
+                  <div className="text-xs text-muted-foreground">Avg Processing Time</div>
                 </div>
               </div>
             </div>
@@ -166,8 +166,8 @@ export function CollaborationAnalytics() {
         {/* Activity Trends */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="w-5 h-5" />
+            <CardTitle className="flex items-center space-x-2 text-foreground">
+              <TrendingUp className="w-5 h-5 text-primary" />
               <span>Activity Trends</span>
             </CardTitle>
           </CardHeader>
@@ -175,14 +175,14 @@ export function CollaborationAnalytics() {
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Daily Active Users</span>
-                  <span className="text-sm font-medium">Last 7 days</span>
+                  <span className="text-sm text-muted-foreground">Daily Active Users</span>
+                  <span className="text-sm font-medium text-foreground">Last 7 days</span>
                 </div>
                 <div className="flex items-end space-x-1 h-20">
                   {collaborationTrends.dailyActiveUsers.map((value, index) => (
                     <div
                       key={index}
-                      className="bg-blue-500 rounded-t flex-1"
+                      className="bg-primary/80 dark:bg-primary rounded-t flex-1 min-h-[4px]"
                       style={{
                         height: `${(value / Math.max(...collaborationTrends.dailyActiveUsers)) * 100}%`
                       }}
@@ -193,14 +193,14 @@ export function CollaborationAnalytics() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Weekly Comments</span>
-                  <span className="text-sm font-medium">Last 7 weeks</span>
+                  <span className="text-sm text-muted-foreground">Weekly Comments</span>
+                  <span className="text-sm font-medium text-foreground">Last 7 weeks</span>
                 </div>
                 <div className="flex items-end space-x-1 h-16">
                   {collaborationTrends.weeklyComments.map((value, index) => (
                     <div
                       key={index}
-                      className="bg-green-500 rounded-t flex-1"
+                      className="bg-emerald-500 dark:bg-emerald-600 rounded-t flex-1 min-h-[4px]"
                       style={{
                         height: `${(value / Math.max(...collaborationTrends.weeklyComments)) * 100}%`
                       }}
@@ -215,31 +215,31 @@ export function CollaborationAnalytics() {
         {/* Workflow Bottlenecks */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5" />
+            <CardTitle className="flex items-center space-x-2 text-foreground">
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               <span>Workflow Bottlenecks</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {workflowPerformance.bottleneckSteps.map((step, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200/60 dark:border-amber-900/50">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{step}</p>
-                    <p className="text-xs text-gray-600">Frequently delayed step</p>
+                    <p className="text-sm font-medium text-foreground">{step}</p>
+                    <p className="text-xs text-muted-foreground">Frequently delayed step</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-yellow-800">
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
                       {Math.floor(Math.random() * 5) + 2} days avg
                     </p>
-                    <p className="text-xs text-yellow-600">delay time</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400">delay time</p>
                   </div>
                 </div>
               ))}
               
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium text-blue-900">Recommendations</p>
-                <ul className="text-xs text-blue-700 mt-1 space-y-1">
+              <div className="mt-4 p-3 bg-primary/5 border border-primary/15 rounded-lg">
+                <p className="text-sm font-medium text-foreground">Recommendations</p>
+                <ul className="text-xs text-muted-foreground mt-1 space-y-1">
                   <li>• Consider parallel approval processes</li>
                   <li>• Set up automated reminders</li>
                   <li>• Add backup approvers for critical steps</li>
@@ -253,33 +253,33 @@ export function CollaborationAnalytics() {
       {/* User Engagement Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>User Engagement Summary</CardTitle>
+          <CardTitle className="text-foreground">User Engagement Summary</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {userEngagement.collaborationFrequency}
               </div>
-              <div className="text-sm text-gray-600">Sessions per week</div>
+              <div className="text-sm text-muted-foreground">Sessions per week</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 {userEngagement.documentCompletionRate}%
               </div>
-              <div className="text-sm text-gray-600">Completion rate</div>
+              <div className="text-sm text-muted-foreground">Completion rate</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-violet-600 dark:text-violet-400">
                 {documentMetrics.workflowsActive}
               </div>
-              <div className="text-sm text-gray-600">Active workflows</div>
+              <div className="text-sm text-muted-foreground">Active workflows</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                 {documentMetrics.workflowsCompleted}
               </div>
-              <div className="text-sm text-gray-600">Completed this month</div>
+              <div className="text-sm text-muted-foreground">Completed this month</div>
             </div>
           </div>
         </CardContent>

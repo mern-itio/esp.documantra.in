@@ -180,10 +180,10 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+      <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Workflow Designer</h2>
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">Workflow Designer</h2>
           <Button
             variant="ghost"
             size="sm"
@@ -199,7 +199,7 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
           {/* Workflow Settings */}
           <div className="space-y-4 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Workflow Name *
               </label>
               <Input
@@ -211,22 +211,22 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
                   }
                 }}
                 placeholder="Enter workflow name..."
-                className={errors.workflowName ? 'border-red-500 focus:ring-red-500' : ''}
+                className={errors.workflowName ? 'border-destructive focus:ring-destructive' : 'border-border focus:ring-primary'}
               />
               {errors.workflowName && (
-                <p className="mt-1 text-sm text-red-600">{errors.workflowName}</p>
+                <p className="mt-1 text-sm text-destructive">{errors.workflowName}</p>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Priority
                 </label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as any)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -236,7 +236,7 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Deadline (Optional)
                 </label>
                 <Input
@@ -251,7 +251,7 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
           {/* Workflow Steps */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Workflow Steps</h3>
+              <h3 className="text-lg font-medium text-foreground">Workflow Steps</h3>
               <Button onClick={addStep} size="sm">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Step
@@ -260,13 +260,13 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
 
             <div className="space-y-4">
               {steps.map((step, index) => (
-                <div key={`step-${index}`} className="border border-gray-200 rounded-lg p-4">
+                <div key={`step-${index}`} className="border border-border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
-                      <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-sm font-medium">
+                      <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
                         {index + 1}
                       </div>
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-medium text-foreground">
                         Step {index + 1}
                       </span>
                     </div>
@@ -277,7 +277,7 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
                           variant="ghost"
                           size="sm"
                           onClick={() => removeStep(index)}
-                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive/90"
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -287,22 +287,22 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-foreground mb-1">
                         Step Name *
                       </label>
                       <Input
                         value={step.name}
                         onChange={(e) => updateStep(index, 'name', e.target.value)}
                         placeholder="Enter step name..."
-                        className={errors.steps[index]?.name ? 'border-red-500 focus:ring-red-500' : ''}
+                        className={errors.steps[index]?.name ? 'border-destructive focus:ring-destructive' : 'border-border focus:ring-primary'}
                       />
                       {errors.steps[index]?.name && (
-                        <p className="mt-1 text-sm text-red-600">{errors.steps[index].name}</p>
+                        <p className="mt-1 text-sm text-destructive">{errors.steps[index].name}</p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-foreground mb-1">
                         Assignee Email *
                       </label>
                       <Input
@@ -315,31 +315,31 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
                         }}
                         placeholder="assignee@example.com"
                         type="email"
-                        className={errors.steps[index]?.assignee ? 'border-red-500 focus:ring-red-500' : ''}
+                        className={errors.steps[index]?.assignee ? 'border-destructive focus:ring-destructive' : 'border-border focus:ring-primary'}
                       />
                       {errors.steps[index]?.assignee && (
-                        <p className="mt-1 text-sm text-red-600">{errors.steps[index].assignee}</p>
+                        <p className="mt-1 text-sm text-destructive">{errors.steps[index].assignee}</p>
                       )}
                     </div>
                   </div>
 
                   <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Assignee Display Name *
                     </label>
                     <Input
                       value={step.assigneeName}
                       onChange={(e) => updateStep(index, 'assigneeName', e.target.value)}
                       placeholder="Enter display name"
-                      className={errors.steps[index]?.assigneeName ? 'border-red-500 focus:ring-red-500' : ''}
+                      className={errors.steps[index]?.assigneeName ? 'border-destructive focus:ring-destructive' : 'border-border focus:ring-primary'}
                     />
                     {errors.steps[index]?.assigneeName && (
-                      <p className="mt-1 text-sm text-red-600">{errors.steps[index].assigneeName}</p>
+                      <p className="mt-1 text-sm text-destructive">{errors.steps[index].assigneeName}</p>
                     )}
                   </div>
 
                   <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Description *
                     </label>
                     <textarea
@@ -348,20 +348,20 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
                       placeholder="Describe what needs to be done in this step..."
                       className={`w-full p-2 border rounded-md focus:outline-none focus:ring-2 ${
                         errors.steps[index]?.description 
-                          ? 'border-red-500 focus:ring-red-500' 
-                          : 'border-gray-300 focus:ring-blue-500'
+                          ? 'border-destructive focus:ring-destructive' 
+                          : 'border-border focus:ring-primary'
                       }`}
                       rows={2}
                     />
                     {errors.steps[index]?.description && (
-                      <p className="mt-1 text-sm text-red-600">{errors.steps[index].description}</p>
+                      <p className="mt-1 text-sm text-destructive">{errors.steps[index].description}</p>
                     )}
                   </div>
 
                   {/* Arrow to next step */}
                   {index < steps.length - 1 && (
                     <div className="flex justify-center mt-4">
-                      <ArrowDown className="w-5 h-5 text-gray-400" />
+                      <ArrowDown className="w-5 h-5 text-foreground" />
                     </div>
                   )}
                 </div>
@@ -371,8 +371,8 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-500">
+          <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
             {steps.length} step{steps.length !== 1 ? 's' : ''} configured
           </div>
           <div className="flex items-center space-x-3">
@@ -382,7 +382,7 @@ export function WorkflowDesigner({ documentId, onClose, onSave }: WorkflowDesign
             <Button 
               onClick={handleSave}
               disabled={isSaving}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+              className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Creating...' : 'Create Workflow'}
             </Button>

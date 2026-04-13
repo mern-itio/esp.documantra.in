@@ -278,34 +278,34 @@ const FindReplace: React.FC = () => {
       {error && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setError(null)}></div>
-          <div className="relative bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+          <div className="relative bg-background rounded-lg shadow-lg p-6 w-full max-w-md">
             <div className="flex items-start space-x-3">
-              <AlertCircle className="w-6 h-6 text-red-600 mt-0.5" />
+              <AlertCircle className="w-6 h-6 text-destructive mt-0.5" />
               <div className="flex-1">
-                <h4 className="text-lg font-semibold text-gray-900 mb-1">Action required</h4>
-                <p className="text-sm text-gray-700">{error}</p>
+                <h4 className="text-lg font-semibold text-foreground mb-1">Action required</h4>
+                <p className="text-sm text-muted-foreground">{error}</p>
               </div>
             </div>
             <div className="mt-4 text-right">
-              <Button onClick={() => setError(null)} className="bg-blue-600 hover:bg-blue-700">OK</Button>
+              <Button onClick={() => setError(null)} className="bg-primary hover:bg-primary/90">OK</Button>
             </div>
           </div>
         </div>
       )}
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center">
               <Link
                 to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-background rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Find & Replace</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Find & Replace</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Search and replace text across PDF documents with advanced options
                 </p>
               </div>
@@ -340,19 +340,19 @@ const FindReplace: React.FC = () => {
 
       {/* Success/Error Messages */}
       {success && (
-        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="mb-6 bg-success border border-success rounded-lg p-4">
           <div className="flex items-center">
-            <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-            <p className="text-green-800">{success}</p>
+            <CheckCircle className="w-5 h-5 text-success-foreground mr-2" />
+            <p className="text-success-foreground">{success}</p>
           </div>
         </div>
       )}
 
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="mb-6 bg-destructive border border-destructive rounded-lg p-4">
           <div className="flex items-center">
-            <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-            <p className="text-red-800">{error}</p>
+            <AlertCircle className="w-5 h-5 text-destructive-foreground mr-2" />
+            <p className="text-destructive-foreground">{error}</p>
           </div>
         </div>
       )}
@@ -361,16 +361,16 @@ const FindReplace: React.FC = () => {
         {/* Left Panel - File Upload and Configuration */}
         <div className={`space-y-6 ${selectedFile ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
           {/* File Upload Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-background rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+              <h2 className="text-xl font-bold text-foreground flex items-center">
                 <FileText className="w-5 h-5 mr-2" />
                 Upload PDF File
               </h2>            
             </div>
 
             {!selectedFile ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -380,30 +380,30 @@ const FindReplace: React.FC = () => {
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
+                  className="flex flex-col items-center space-y-2 text-muted-foreground hover:text-primary mx-auto"
                 >
                   <Upload className="w-12 h-12" />
                   <span className="text-lg font-medium">Click to upload PDF</span>
-                  <span className="text-sm text-gray-500">Maximum file size: 2MB</span>
+                  <span className="text-sm text-muted-foreground">Maximum file size: 2MB</span>
                 </button>
               </div>
             ) : (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="bg-success border border-success rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-green-600" />
+                    <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-success" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-green-900">{selectedFile.name}</h4>
-                      <p className="text-sm text-green-700">
+                      <h4 className="font-medium text-foreground">{selectedFile.name}</h4>
+                      <p className="text-sm text-muted-foreground">
                         Size: {findReplaceService.formatFileSize(selectedFile.size)}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={removeFile}
-                    className="text-red-600 hover:text-red-800 p-1 rounded-lg hover:bg-red-50 transition-colors"
+                    className="text-destructive hover:text-destructive/80 p-1 rounded-lg hover:bg-destructive/10 transition-colors"
                   >
                     <XCircle className="w-5 h-5" />
                   </button>
@@ -414,12 +414,12 @@ const FindReplace: React.FC = () => {
 
           </div>
             {!selectedFile && (
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-400">
-            <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
+          <div className="bg-background rounded-xl shadow-lg p-6 border-l-4 border-primary">
+            <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center">
               <Search className="w-5 h-5 mr-2" />
               Keyboard Shortcuts
             </h3>
-            <div className="space-y-1 text-sm text-blue-700">
+            <div className="space-y-1 text-sm text-muted-foreground">
               <p><strong>Ctrl+F:</strong> Open find toolbar</p>
               <p><strong>Ctrl+H:</strong> Toggle replace mode</p>
               <p><strong>F3:</strong> Find next match</p>
@@ -430,15 +430,15 @@ const FindReplace: React.FC = () => {
             )}
           {/* Configuration Options */}
           {selectedFile && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-background rounded-xl shadow-lg p-6">
               {/* Tab Navigation */}
-              <div className="flex border-b border-gray-200 mb-6">
+              <div className="flex border-b border-border mb-6">
                 <button
                   onClick={() => setActiveTab('options')}
                   className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === 'options'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-primary'
                   }`}
                 >
                   <Search className="w-4 h-4" />
@@ -452,7 +452,7 @@ const FindReplace: React.FC = () => {
                       className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                         activeTab === 'preview'
                           ? 'border-blue-500 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                          : 'border-transparent text-muted-foreground hover:text-primary'
                       }`}
                     >
                       <Eye className="w-4 h-4" />
@@ -463,8 +463,8 @@ const FindReplace: React.FC = () => {
                       onClick={() => setActiveTab('matches')}
                       className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                         activeTab === 'matches'
-                          ? 'border-blue-500 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                          ? 'border-primary text-primary'
+                          : 'border-transparent text-muted-foreground hover:text-primary'
                       }`}
                     >
                       <FileSearch className="w-4 h-4" />
@@ -478,8 +478,8 @@ const FindReplace: React.FC = () => {
                     onClick={() => setActiveTab('results')}
                     className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                       activeTab === 'results'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-primary'
                     }`}
                   >
                     <CheckCircle className="w-4 h-4" />
@@ -492,21 +492,21 @@ const FindReplace: React.FC = () => {
               {activeTab === 'options' && (
                 <div className="space-y-6">
                   <div className="text-center mb-4">
-                    <FindReplaceIcon className="w-12 h-12 mx-auto mb-2 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Find & Replace Configuration</h3>
-                    <p className="text-sm text-gray-600">Configure search and replace options</p>
+                    <FindReplaceIcon className="w-12 h-12 mx-auto mb-2 text-primary" />
+                    <h3 className="text-lg font-semibold text-foreground">Find & Replace Configuration</h3>
+                    <p className="text-sm text-muted-foreground">Configure search and replace options</p>
                   </div>
 
                   {/* Search and Replace Text */}
                   <div className="space-y-4">
-                    <h4 className="text-md font-semibold text-gray-800 border-b pb-2 flex items-center">
+                    <h4 className="text-md font-semibold text-foreground border-b pb-2 flex items-center">
                       <Search className="w-4 h-4 mr-2" />
                       Search & Replace
                     </h4>
 
                     <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-foreground mb-2">
                           Search Text *
                         </label>
                         <input
@@ -514,12 +514,12 @@ const FindReplace: React.FC = () => {
                           value={options.searchText}
                           onChange={(e) => handleOptionChange('searchText', e.target.value)}
                           placeholder="Enter text to search for..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-foreground mb-2">
                           Replace With
                         </label>
                         <input
@@ -527,7 +527,7 @@ const FindReplace: React.FC = () => {
                           value={options.replaceText}
                           onChange={(e) => handleOptionChange('replaceText', e.target.value)}
                           placeholder="Enter replacement text..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -535,7 +535,7 @@ const FindReplace: React.FC = () => {
 
                   {/* Search Options */}
                   <div className="space-y-4">
-                    <h4 className="text-md font-semibold text-gray-800 border-b pb-2 flex items-center">
+                    <h4 className="text-md font-semibold text-foreground border-b pb-2 flex items-center">
                       <CheckSquare className="w-4 h-4 mr-2" />
                       Search Options
                     </h4>
@@ -546,10 +546,10 @@ const FindReplace: React.FC = () => {
                           type="checkbox"
                           checked={options.useRegex}
                           onChange={(e) => handleOptionChange('useRegex', e.target.checked)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
                         />
-                        <Regex className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm text-gray-700">Use Regex</span>
+                        <Regex className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Use Regex</span>
                       </label>
 
                       <label className="flex items-center space-x-3">
@@ -557,10 +557,10 @@ const FindReplace: React.FC = () => {
                           type="checkbox"
                           checked={options.caseSensitive}
                           onChange={(e) => handleOptionChange('caseSensitive', e.target.checked)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
                         />
-                        <CaseSensitive className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm text-gray-700">Case Sensitive</span>
+                        <CaseSensitive className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Case Sensitive</span>
                       </label>
 
                       <label className="flex items-center space-x-3">
@@ -568,10 +568,10 @@ const FindReplace: React.FC = () => {
                           type="checkbox"
                           checked={options.wholeWord}
                           onChange={(e) => handleOptionChange('wholeWord', e.target.checked)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
                         />
-                        <WholeWord className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm text-gray-700">Whole Word</span>
+                        <WholeWord className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Whole Word</span>
                       </label>
 
                       <label className="flex items-center space-x-3">
@@ -579,18 +579,18 @@ const FindReplace: React.FC = () => {
                           type="checkbox"
                           checked={options.replaceAll}
                           onChange={(e) => handleOptionChange('replaceAll', e.target.checked)}
-                          className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                          className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
                         />
-                        <Zap className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm text-gray-700">Replace All</span>
+                        <Zap className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Replace All</span>
                       </label>
                     </div>
 
                     {/* Help text for Replace All */}
-                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="mt-3 p-3 bg-primary/10 border border-primary rounded-lg">
                       <div className="flex items-start space-x-2">
-                        <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-blue-800">
+                        <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-foreground">
                           <p className="font-medium mb-1">Replace All Option:</p>
                           <ul className="space-y-1 text-xs">
                             <li>• <strong>Unchecked:</strong> Replaces only the first match found</li>
@@ -606,7 +606,7 @@ const FindReplace: React.FC = () => {
                     <Button
                       onClick={handlePreview}
                       disabled={isProcessing || !selectedFile || !options.searchText.trim()}
-                      className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+                      className="flex items-center space-x-2 bg-primary hover:bg-primary/90"
                     >
                       <Eye className="w-4 h-4" />
                       <span>{isProcessing ? 'Processing...' : 'Preview'}</span>
@@ -615,7 +615,7 @@ const FindReplace: React.FC = () => {
                     <Button
                       onClick={handleFindReplace}
                       disabled={isProcessing || !selectedFile || !options.searchText.trim() || (!!preview && preview.totalMatches === 0)}
-                      className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+                      className="flex items-center space-x-2 bg-success hover:bg-success/90"
                     >
                       <Replace className="w-4 h-4" />
                       <span>
@@ -628,7 +628,7 @@ const FindReplace: React.FC = () => {
                       </span>
                     </Button>
                     {preview && preview.totalMatches === 0 && (
-                      <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        <div className="text-sm text-destructive-foreground bg-destructive/10 px-3 py-2 rounded-lg">
                         No matches found to replace
                       </div>
                     )}
@@ -649,15 +649,15 @@ const FindReplace: React.FC = () => {
               {activeTab === 'matches' && preview && (
                 <div className="space-y-6">
                   <div className="text-center mb-4">
-                    <FileSearch className="w-12 h-12 mx-auto mb-2 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Select Matches to Replace</h3>
-                    <p className="text-sm text-gray-600">
+                    <FileSearch className="w-12 h-12 mx-auto mb-2 text-primary" />
+                    <h3 className="text-lg font-semibold text-foreground">Select Matches to Replace</h3>
+                    <p className="text-sm text-muted-foreground">
                       Found {preview.totalMatches} matches. Select which ones to replace.
                     </p>
                   </div>
 
                   {/* Navigation and Selection Controls */}
-                  <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center p-4 bg-background rounded-lg">
                     <div className="flex items-center space-x-2">
                       <Button
                         onClick={() => setActiveTab('options')}
@@ -680,7 +680,7 @@ const FindReplace: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center space-x-4">
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-muted-foreground">
                         {(options.selectedMatches || []).length} of {preview.matches.length} selected
                       </span>
                       <div className="flex space-x-2">
@@ -710,8 +710,8 @@ const FindReplace: React.FC = () => {
                       <div
                         key={index}
                         className={`p-4 border rounded-lg transition-colors ${(options.selectedMatches || []).includes(index)
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-success bg-success/10'
+                            : 'border-border hover:border-primary'
                           }`}
                       >
                         <div className="flex items-start space-x-3">
@@ -719,22 +719,22 @@ const FindReplace: React.FC = () => {
                             type="checkbox"
                             checked={(options.selectedMatches || []).includes(index)}
                             onChange={(e) => handleMatchSelection(index, e.target.checked)}
-                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-1"
+                            className="w-4 h-4 text-primary border-border rounded focus:ring-primary mt-1"
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-2 mb-2">
-                              <span className="text-sm font-medium text-gray-900">
+                              <span className="text-sm font-medium text-foreground">
                                 Match #{index + 1}
                               </span>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-muted-foreground">
                                 Page {match.page} • Position {match.position}
                               </span>
                             </div>
-                            <div className="text-sm text-gray-700 bg-gray-100 p-2 rounded font-mono">
+                              <div className="text-sm text-foreground bg-background p-2 rounded font-mono">
                               {match.context}
                             </div>
-                            <div className="mt-1 text-xs text-gray-500">
-                              Found: <span className="font-semibold text-blue-600">"{match.text}"</span>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Found: <span className="font-semibold text-primary">"{match.text}"</span>
                             </div>
                           </div>
                         </div>
@@ -750,7 +750,7 @@ const FindReplace: React.FC = () => {
                         disabled={isProcessing || !options.replaceText.trim()}
                         className={`px-8 py-3 ${isProcessing || !options.replaceText.trim()
                             ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-green-600 hover:bg-green-700'
+                            : 'bg-success hover:bg-success/90'
                           } text-white`}
                       >
                         <Replace className="w-4 h-4 mr-2" />
@@ -758,7 +758,7 @@ const FindReplace: React.FC = () => {
                       </Button>
 
                       {!options.replaceText.trim() && (
-                        <div className="text-sm text-red-600">
+                        <div className="text-sm text-destructive-foreground">
                           Please enter replacement text in the Options tab
                         </div>
                       )}
@@ -771,13 +771,13 @@ const FindReplace: React.FC = () => {
               {activeTab === 'preview' && preview && (
                 <div className="space-y-6">
                   <div className="text-center mb-4">
-                    <Eye className="w-12 h-12 mx-auto mb-2 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Search Preview</h3>
-                    <p className="text-sm text-gray-600">Found {preview.totalMatches} matches</p>
+                    <Eye className="w-12 h-12 mx-auto mb-2 text-primary" />
+                    <h3 className="text-lg font-semibold text-foreground">Search Preview</h3>
+                    <p className="text-sm text-muted-foreground">Found {preview.totalMatches} matches</p>
                   </div>
 
                   {/* Navigation and Action Buttons */}
-                  <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center p-4 bg-background rounded-lg">
                     <div className="flex items-center space-x-2">
                       <Button
                         onClick={() => setActiveTab('options')}
@@ -808,7 +808,7 @@ const FindReplace: React.FC = () => {
                               handleFindReplace();
                             }}
                             disabled={isProcessing || (preview && preview.totalMatches === 0)}
-                            className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+                            className="flex items-center space-x-2 bg-success hover:bg-success/90"
                           >
                             <Replace className="w-4 h-4" />
                             <span>Replace All</span>
@@ -819,19 +819,19 @@ const FindReplace: React.FC = () => {
                               handleFindReplace();
                             }}
                             disabled={isProcessing || (preview && preview.totalMatches === 0)}
-                            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+                            className="flex items-center space-x-2 bg-primary hover:bg-primary/90"
                           >
                             <Replace className="w-4 h-4" />
                             <span>Replace First</span>
                           </Button>
                         </>
                       ) : (
-                        <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        <div className="text-sm text-destructive-foreground bg-destructive/10 px-3 py-2 rounded-lg">
                           Enter replacement text to proceed
                         </div>
                       )}
                       {preview && preview.totalMatches === 0 && (
-                        <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                          <div className="text-sm text-destructive-foreground bg-destructive/10 px-3 py-2 rounded-lg">
                           No matches found to replace
                         </div>
                       )}
@@ -840,15 +840,15 @@ const FindReplace: React.FC = () => {
 
                   {/* Visual Legend */}
                   {options.replaceText.trim() && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <div className="bg-primary/10 border border-primary rounded-lg p-3 mb-4">
                       <div className="flex items-center justify-center space-x-4 text-sm">
                         <div className="flex items-center space-x-1">
-                          <span className="bg-red-100 text-red-600 line-through px-2 py-1 rounded text-xs">OLD</span>
-                          <span className="text-gray-600">= Text to be replaced</span>
+                          <span className="bg-destructive/10 text-destructive line-through px-2 py-1 rounded text-xs">OLD</span>
+                          <span className="text-muted-foreground">= Text to be replaced</span>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">NEW</span>
-                          <span className="text-gray-600">= Replacement text</span>
+                          <span className="bg-success/10 text-success px-2 py-1 rounded text-xs">NEW</span>
+                          <span className="text-muted-foreground">= Replacement text</span>
                         </div>
                       </div>
                     </div>
@@ -857,37 +857,37 @@ const FindReplace: React.FC = () => {
                   {/* Matches */}
                   {preview.matches.length > 0 && (
                     <div className="space-y-4">
-                      <h4 className="text-md font-semibold text-gray-800 border-b pb-2 flex items-center">
+                      <h4 className="text-md font-semibold text-foreground border-b pb-2 flex items-center">
                         <FileSearch className="w-4 h-4 mr-2" />
                         Matches ({preview.matches.length})
                       </h4>
 
                       <div className="max-h-96 overflow-y-auto space-y-3">
                         {preview.matches.map((match, index) => (
-                          <div key={index} className="border border-gray-200 rounded-lg p-3">
+                          <div key={index} className="border border-border rounded-lg p-3">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-gray-600">Match {index + 1}</span>
-                              <span className="text-xs text-gray-500">Page {match.page}</span>
+                              <span className="text-sm font-medium text-foreground">Match {index + 1}</span>
+                              <span className="text-xs text-muted-foreground">Page {match.page}</span>
                             </div>
-                            <div className="text-sm text-gray-700">
-                              <span className="text-gray-500">
+                            <div className="text-sm text-foreground">
+                              <span className="text-muted-foreground">
                                 {match.context.substring(0, match.matchStart)}
                               </span>
                               {options.replaceText.trim() ? (
                                 <>
-                                  <span className="bg-red-100 text-red-600 line-through px-1 rounded">
+                                  <span className="bg-destructive/10 text-destructive line-through px-1 rounded">
                                     {match.context.substring(match.matchStart, match.matchEnd)}
                                   </span>
-                                  <span className="bg-green-100 text-green-600 px-1 rounded ml-1">
+                                  <span className="bg-success/10 text-success px-1 rounded ml-1">
                                     {options.replaceText}
                                   </span>
                                 </>
                               ) : (
-                                <span className="bg-yellow-200 px-1 rounded">
+                                <span className="bg-highlight px-1 rounded">
                                   {match.context.substring(match.matchStart, match.matchEnd)}
                                 </span>
                               )}
-                              <span className="text-gray-500">
+                              <span className="text-muted-foreground">
                                 {match.context.substring(match.matchEnd)}
                               </span>
                             </div>
@@ -900,9 +900,9 @@ const FindReplace: React.FC = () => {
                   {/* No Matches */}
                   {preview.matches.length === 0 && (
                     <div className="text-center py-8">
-                      <XCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-800 mb-2">No Matches Found</h3>
-                      <p className="text-gray-600 mb-4">Try adjusting your search criteria or check the spelling.</p>
+                        <XCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-foreground mb-2">No Matches Found</h3>
+                      <p className="text-muted-foreground mb-4">Try adjusting your search criteria or check the spelling.</p>
                       <Button
                         onClick={() => setActiveTab('options')}
                         variant="outline"
@@ -923,11 +923,11 @@ const FindReplace: React.FC = () => {
                     const totalMatches = result?.findReplaceResults?.totalMatches ?? 0;
                     return (
                       <div className="text-center mb-4">
-                        <CheckCircle className={`w-12 h-12 mx-auto mb-2 ${totalMatches === 0 ? 'text-gray-400' : 'text-green-600'}`} />
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <CheckCircle className={`w-12 h-12 mx-auto mb-2 ${totalMatches === 0 ? 'text-muted-foreground' : 'text-success'}`} />
+                        <h3 className="text-lg font-semibold text-foreground">
                           {totalMatches === 0 ? 'No Matches Found' : 'Find & Replace Results'}
                         </h3>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                           {totalMatches === 0 ? 'No changes were made' : 'Operation completed successfully'}
                         </p>
                       </div>
@@ -937,23 +937,23 @@ const FindReplace: React.FC = () => {
                   {/* Statistics */}
                   {stats && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-blue-50 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-blue-600">{stats.totalMatches}</div>
-                        <div className="text-sm text-blue-800">Total Matches</div>
+                        <div className="bg-primary/10 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-primary">{stats.totalMatches}</div>
+                        <div className="text-sm text-foreground">Total Matches</div>
                       </div>
-                      <div className="bg-green-50 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-green-600">{stats.totalReplacements}</div>
-                        <div className="text-sm text-green-800">Replacements</div>
+                      <div className="bg-success/10 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-success">{stats.totalReplacements}</div>
+                        <div className="text-sm text-foreground">Replacements</div>
                       </div>
-                      <div className="bg-purple-50 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-purple-600">{stats.pagesAffected}</div>
-                        <div className="text-sm text-purple-800">Pages Affected</div>
+                      <div className="bg-primary/10 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-primary">{stats.pagesAffected}</div>
+                        <div className="text-sm text-foreground">Pages Affected</div>
                       </div>
-                      <div className="bg-orange-50 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-orange-600">
+                      <div className="bg-primary/10 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-primary">
                           {result.findReplaceResults.searchText.length}
                         </div>
-                        <div className="text-sm text-orange-800">Search Length</div>
+                        <div className="text-sm text-foreground">Search Length</div>
                       </div>
                     </div>
                   )}
@@ -967,7 +967,7 @@ const FindReplace: React.FC = () => {
                         <Button
                           onClick={handleDownload}
                           disabled={disabled}
-                          className={`flex items-center space-x-2 mx-auto ${disabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                            className={`flex items-center space-x-2 mx-auto ${disabled ? 'bg-muted cursor-not-allowed' : 'bg-success hover:bg-success/90'}`}
                         >
                           <Download className="w-4 h-4" />
                           <span>{disabled ? 'No File to Download' : 'Download Processed PDF'}</span>
@@ -985,12 +985,12 @@ const FindReplace: React.FC = () => {
         {!selectedFile && (
           <div className="space-y-6">
             {/* Help Information */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <div className="bg-background rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                 <Info className="w-5 h-5 mr-2" />
                 How It Works
               </h3>
-              <div className="space-y-2 text-sm text-gray-600">
+              <div className="space-y-2 text-sm text-muted-foreground">
                 <p><strong>1. Upload:</strong> Select your PDF file</p>
                 <p><strong>2. Configure:</strong> Set search and replace options</p>
                 <p><strong>3. Preview:</strong> See matches before replacing</p>
@@ -1000,12 +1000,12 @@ const FindReplace: React.FC = () => {
             </div>
 
             {/* Features */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div className="bg-background rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                 <Zap className="w-5 h-5 mr-2" />
                 Features
               </h3>
-              <div className="space-y-2 text-sm text-gray-600">
+              <div className="space-y-2 text-sm text-muted-foreground">
                 <p>• Regular expression support</p>
                 <p>• Case-sensitive matching</p>
                 <p>• Whole word matching</p>
@@ -1020,20 +1020,20 @@ const FindReplace: React.FC = () => {
 
         {/* Results Section - Show when file is selected and operation is complete */}
         {selectedFile && result && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-background rounded-xl shadow-lg p-6">
             <div className="flex items-center space-x-2 mb-4">
-              <CheckCircle className="w-6 h-6 text-green-500" />
-              <h3 className="text-lg font-semibold text-green-800">Find & Replace Complete!</h3>
+              <CheckCircle className="w-6 h-6 text-success" />
+              <h3 className="text-lg font-semibold text-success">Find & Replace Complete!</h3>
             </div>
 
             <div className="space-y-3 mb-4">
               <div className="flex justify-between">
-                <span className="text-sm font-medium text-gray-700">File:</span>
-                <span className="text-sm text-gray-600">{result.filename}</span>
+                <span className="text-sm font-medium text-foreground">File:</span>
+                <span className="text-sm text-muted-foreground">{result.filename}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm font-medium text-gray-700">Pages:</span>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm font-medium text-foreground">Pages:</span>
+                <span className="text-sm text-muted-foreground">
                   {(() => {
                     // Try to get page count from backend result
                     if (result.totalPages && result.totalPages > 0) {
@@ -1057,12 +1057,12 @@ const FindReplace: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm font-medium text-gray-700">Search:</span>
-                <span className="text-sm text-gray-600 font-mono">{result.findReplaceResults.searchText}</span>
+                    <span className="text-sm font-medium text-foreground">Search:</span>
+                <span className="text-sm text-muted-foreground font-mono">{result.findReplaceResults.searchText}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm font-medium text-gray-700">Replace:</span>
-                <span className="text-sm text-gray-600 font-mono">{result.findReplaceResults.replaceText}</span>
+                <span className="text-sm font-medium text-foreground">Replace:</span>
+                <span className="text-sm text-muted-foreground font-mono">{result.findReplaceResults.replaceText}</span>
               </div>
             </div>
           </div>
@@ -1072,9 +1072,9 @@ const FindReplace: React.FC = () => {
       {/* Processing Overlay */}
       {isProcessing && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span className="text-gray-700">Processing find & replace...</span>
+          <div className="bg-background rounded-lg p-6 flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <span className="text-muted-foreground">Processing find & replace...</span>
           </div>
         </div>
       )}

@@ -32,9 +32,12 @@ const userSchema = new mongoose.Schema({
   pendingPhone: { type: String, default: null },
   // Two-factor authentication (2FA) - optional after signup
   twoFaEnabled: { type: Boolean, default: false },
-  twoFaMethod: { type: String, enum: ['email', 'sms'], default: 'email' },
+  twoFaMethod: { type: String, enum: ['email', 'sms', 'authenticator'], default: 'email' },
   twoFaOtpHash: { type: String, default: null },
   twoFaOtpExpires: { type: Date, default: null },
+  twoFaAuthenticatorSecret: { type: String, default: null },
+  twoFaAuthenticatorTempSecret: { type: String, default: null },
+  twoFaAuthenticatorVerifiedAt: { type: Date, default: null },
   // Trusted devices for 2FA (store hashed device ids)
   trustedDevices: [{
     deviceIdHash: { type: String, required: true },

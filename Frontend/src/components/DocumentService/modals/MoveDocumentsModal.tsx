@@ -3,7 +3,7 @@ import { X, Folder, Move } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
-interface FolderData {
+export interface FolderData {
   _id: string;
   name: string;
   description: string;
@@ -66,13 +66,13 @@ export function MoveDocumentsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed overflow-auto inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-full overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-black/50 p-4 backdrop-blur-xs dark:bg-black/60">
+      <div className="max-h-full w-full max-w-2xl overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center space-x-2">
-            <Move className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">
+            <Move className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">
               Move {selectedCount} Document{selectedCount !== 1 ? 's' : ''}
             </h2>
           </div>
@@ -91,7 +91,7 @@ export function MoveDocumentsModal({
           <div className="space-y-4">
             {/* Search */}
             <div>
-              <label htmlFor="folder-search" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="folder-search" className="mb-2 block text-sm font-medium text-foreground">
                 Search Folders
               </label>
               <div className="relative">
@@ -107,28 +107,28 @@ export function MoveDocumentsModal({
 
             {/* Folder Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="mb-3 block text-sm font-medium text-foreground">
                 Select Destination Folder
               </label>
               
               {/* Move to Root Option */}
               <div className="mb-4">
-                <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className="flex cursor-pointer items-center space-x-3 rounded-lg border border-border p-3 hover:bg-accent/50">
                   <input
                     type="radio"
                     name="folder-selection"
                     value="root"
                     checked={selectedFolderId === null}
                     onChange={() => setSelectedFolderId(null)}
-                    className="text-blue-600 focus:ring-blue-500"
+                    className="border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
                   />
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <Folder className="h-4 w-4 text-gray-600" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                      <Folder className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div>
-                      <span className="font-medium text-gray-900">Root Level (No Folder)</span>
-                      <p className="text-sm text-gray-500">Move documents to the main document area</p>
+                      <span className="font-medium text-foreground">Root Level (No Folder)</span>
+                      <p className="text-sm text-muted-foreground">Move documents to the main document area</p>
                     </div>
                   </div>
                 </label>
@@ -137,14 +137,14 @@ export function MoveDocumentsModal({
               {/* Available Folders */}
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {filteredFolders.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500">
+                  <div className="py-4 text-center text-muted-foreground">
                     {searchTerm ? 'No folders match your search' : 'No folders available'}
                   </div>
                 ) : (
                   filteredFolders.map((folder) => (
                     <label
                       key={folder._id}
-                      className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                      className="flex cursor-pointer items-center space-x-3 rounded-lg border border-border p-3 hover:bg-accent/50"
                     >
                       <input
                         type="radio"
@@ -152,7 +152,7 @@ export function MoveDocumentsModal({
                         value={folder._id}
                         checked={selectedFolderId === folder._id}
                         onChange={() => setSelectedFolderId(folder._id)}
-                        className="text-blue-600 focus:ring-blue-500"
+                        className="border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
                       />
                       <div className="flex items-center space-x-3">
                         <div
@@ -162,11 +162,11 @@ export function MoveDocumentsModal({
                           <Folder className="h-4 w-4 text-white" />
                         </div>
                         <div className="flex-1">
-                          <span className="font-medium text-gray-900">{folder.name}</span>
+                          <span className="font-medium text-foreground">{folder.name}</span>
                           {folder.description && (
-                            <p className="text-sm text-gray-500">{folder.description}</p>
+                            <p className="text-sm text-muted-foreground">{folder.description}</p>
                           )}
-                          <div className="flex items-center space-x-4 mt-1 text-xs text-gray-400">
+                          <div className="mt-1 flex items-center space-x-4 text-xs text-muted-foreground">
                             <span>{folder.documentCount} documents</span>
                             <span>{folder.folderCount} subfolders</span>
                             <span>{folder.totalSize > 0 ? `${(folder.totalSize / 1024 / 1024).toFixed(1)} MB` : '0 B'}</span>
@@ -180,12 +180,12 @@ export function MoveDocumentsModal({
             </div>
 
             {/* Summary */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2 text-blue-800">
-                <Move className="h-4 w-4" />
+            <div className="rounded-lg border border-primary/25 bg-card p-4 dark:bg-primary/15">
+              <div className="flex items-center space-x-2 text-foreground">
+                <Move className="h-4 w-4 text-primary" />
                 <span className="font-medium">Move Summary</span>
               </div>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {selectedCount} document{selectedCount !== 1 ? 's' : ''} will be moved to{' '}
                 {selectedFolderId === null ? (
                   'the root level'
@@ -212,7 +212,6 @@ export function MoveDocumentsModal({
               type="submit"
               onClick={handleSubmit}
               disabled={isMoving}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               {isMoving ? 'Moving...' : `Move ${selectedCount} Document${selectedCount !== 1 ? 's' : ''}`}
             </Button>

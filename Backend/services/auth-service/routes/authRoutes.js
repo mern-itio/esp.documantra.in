@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { login, googleLogin, verifyTwoFaLogin, getTwoFaSettings, updateTwoFaSettings, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, verifyActiveSession, validateSessionEndpoint } = require('../controllers/authController');
+const { login, googleLogin, verifyTwoFaLogin, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, verifyActiveSession, validateSessionEndpoint } = require('../controllers/authController');
 const { getMyReferral, listRewards, onFirstDocumentSentInternal } = require('../controllers/referralController');
 const {adminLogin} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail,insertNotifications,getNotifications,markNotificationReadById,markAllNotificationAsRead } = require('../controllers/mainController');
@@ -49,6 +49,8 @@ router.post('/api/auth/sessions/revoke', verifyJWT(), verifyActiveSession, revok
 router.get('/api/auth/validate-session', validateSessionEndpoint);
 router.get('/api/auth/2fa', verifyJWT(), getTwoFaSettings);
 router.post('/api/auth/2fa', verifyJWT(), updateTwoFaSettings);
+router.get('/api/auth/2fa/authenticator/setup', verifyJWT(), verifyActiveSession, setupAuthenticatorTwoFa);
+router.post('/api/auth/2fa/authenticator/verify-setup', verifyJWT(), verifyActiveSession, verifyAuthenticatorTwoFaSetup);
 router.get('/api/auth/switch-account/:accType', verifyJWT(), switchAccount);
 router.get('/api/users-list', verifyJWT(), getUsersList);
 router.post('/api/notifications/create', verifyJWT(),insertNotifications);

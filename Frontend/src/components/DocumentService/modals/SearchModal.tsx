@@ -69,13 +69,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm dark:bg-black/60">
+      <div className="max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center space-x-2">
-            <Search className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Advanced Search</h2>
+            <Search className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Advanced Search</h2>
           </div>
           <Button
             variant="ghost"
@@ -88,11 +88,11 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <div className="max-h-[60vh] overflow-y-auto p-6">
           {/* Search Query */}
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-foreground">
                 Search Documents
               </label>
               <Input
@@ -104,7 +104,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
             {/* File Types */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="mb-3 block text-sm font-medium text-foreground">
                 File Types
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -114,9 +114,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                       type="checkbox"
                       checked={localFilters.type?.includes(type.value) || false}
                       onChange={() => handleFileTypeToggle(type.value)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
                     />
-                    <span className="text-sm text-gray-700">{type.label}</span>
+                    <span className="text-sm text-foreground">{type.label}</span>
                   </label>
                 ))}
               </div>
@@ -124,7 +124,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
             {/* Tags */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="mb-3 block text-sm font-medium text-foreground">
                 Tags
               </label>
               <div className="flex flex-wrap gap-2">
@@ -132,10 +132,10 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <button
                     key={tag}
                     onClick={() => handleTagToggle(tag)}
-                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${
                       localFilters.tags?.includes(tag)
-                        ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                        ? 'border-primary/40 bg-primary/15 text-primary'
+                        : 'border-border bg-muted text-foreground hover:bg-accent'
                     }`}
                   >
                     {tag}
@@ -146,13 +146,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
             {/* Date Range */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                <Calendar className="w-4 h-4 inline mr-1" />
+              <label className="mb-3 block text-sm font-medium text-foreground">
+                <Calendar className="mr-1 inline h-4 w-4" />
                 Date Range
               </label>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">From</label>
+                  <label className="mb-1 block text-xs text-muted-foreground">From</label>
                   <Input
                     type="date"
                     value={localFilters.dateRange?.from || ''}
@@ -167,7 +167,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">To</label>
+                  <label className="mb-1 block text-xs text-muted-foreground">To</label>
                   <Input
                     type="date"
                     value={localFilters.dateRange?.to || ''}
@@ -186,7 +186,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
             {/* Additional Filters */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="mb-3 block text-sm font-medium text-foreground">
                 Additional Filters
               </label>
               <div className="space-y-2">
@@ -198,9 +198,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                       ...localFilters,
                       sharedOnly: e.target.checked || undefined
                     })}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
                   />
-                  <span className="text-sm text-gray-700">Shared documents only</span>
+                  <span className="text-sm text-foreground">Shared documents only</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -210,9 +210,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                       ...localFilters,
                       favoriteOnly: e.target.checked || undefined
                     })}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
                   />
-                  <span className="text-sm text-gray-700">Favorite documents only</span>
+                  <span className="text-sm text-foreground">Favorite documents only</span>
                 </label>
               </div>
             </div>
@@ -220,7 +220,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        <div className="flex items-center justify-between border-t border-border px-6 py-4">
           <Button 
             variant="outline" 
             onClick={handleClearFilters}
@@ -233,7 +233,6 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
             </Button>
             <Button 
               onClick={handleApplyFilters}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               Apply Filters
             </Button>

@@ -213,19 +213,19 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
   // Custom Success Area
   if (showSuccessArea && result) {
     return (
-      <div className="mx-auto p-2 space-y-6">
-        <div className="bg-white shadow-sm border-b">
+      <div className="mx-auto min-h-full w-full space-y-6 bg-background p-2 text-foreground">
+        <div className="border-b border-border bg-background shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
                 to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Set Permissions</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Set Permissions</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Control document permissions and access
                 </p>
               </div>
@@ -234,28 +234,28 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
         </div>
 
         {/* Success Area */}
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 p-8">
+        <div className="mx-auto w-full max-w-4xl">
+          <div className="rounded-xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 p-8 dark:border-emerald-800 dark:from-emerald-950/40 dark:via-green-950/35 dark:to-teal-950/40">
             <div className="text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <FiCheck className="w-10 h-10 text-green-600" />
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success/20 dark:bg-success/30">
+                <FiCheck className="h-10 w-10 text-success" />
               </div>
-              <h3 className="text-3xl font-bold text-green-800 mb-3">
+              <h3 className="mb-3 text-3xl font-bold text-foreground">
                 Permissions Set Successfully!
               </h3>
-              <p className="text-lg text-green-700 mb-8">
+              <p className="mb-8 text-lg text-muted-foreground">
                 Your PDF permissions have been configured and the document is ready for download.
               </p>
               
               {/* File Info Card */}
-              <div className="bg-white border border-green-200 rounded-lg p-6 mb-8 shadow-sm">
+              <div className="mb-8 rounded-lg border border-border bg-card p-6 shadow-sm">
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <FiLock className="w-6 h-6 text-green-600" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-success/10 dark:bg-success/20">
+                    <FiLock className="h-6 w-6 text-success" />
                   </div>
                   <div className="flex-1 text-left">
-                    <h4 className="font-semibold text-gray-900 text-lg">{result.filename}</h4>
-                    <p className="text-sm text-gray-600">
+                    <h4 className="text-lg font-semibold text-foreground">{result.filename}</h4>
+                    <p className="text-sm text-muted-foreground">
                       {result.fileSize} • {result.permissions.isPasswordProtected ? 'Password Protected' : 'Not Password Protected'}
                     </p>
                   </div>
@@ -267,14 +267,14 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                 <button
                   onClick={handleOpenSecurePDF}
                   disabled={!viewEnabled}
-                  className={`px-6 py-3 rounded-lg flex items-center justify-center space-x-2 text-base font-medium shadow-md transition-colors ${
+                  className={`flex items-center justify-center space-x-2 rounded-lg px-6 py-3 text-base font-medium shadow-md transition-colors ${
                     viewEnabled
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                      ? 'bg-success text-success-foreground hover:bg-success/90'
+                      : 'cursor-not-allowed bg-muted text-muted-foreground'
                   }`}
                 >
                   {!viewEnabled && (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-muted-foreground"></div>
                   )}
                   <FiEye className="w-5 h-5" />
                   <span>
@@ -286,7 +286,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                 
                 <button
                   onClick={() => setShowSuccessArea(false)}
-                  className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center space-x-2 text-base font-medium shadow-md"
+                  className="flex items-center justify-center space-x-2 rounded-lg bg-muted px-6 py-3 text-base font-medium text-muted-foreground shadow-md transition-colors hover:bg-muted/80"
                 >
                   <FiX className="w-5 h-5" />
                   <span>Back to Configuration</span>
@@ -299,7 +299,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                     setSelectedFile(null);
                     setCurrentPermissions(null);
                   }}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-base font-medium shadow-md"
+                  className="flex items-center justify-center space-x-2 rounded-lg bg-primary px-6 py-3 text-base font-medium text-primary-foreground shadow-md transition-colors hover:bg-primary/90"
                 >
                   <FiUpload className="w-5 h-5" />
                   <span>Start New</span>
@@ -313,19 +313,19 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
   }
 
   return (
-    <div className="mx-auto p-2 space-y-6">
-      <div className="bg-white shadow-sm border-b">
+    <div className="mx-auto min-h-full w-full space-y-6 bg-background p-2 text-foreground">
+      <div className="border-b border-border bg-background shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
               to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="rounded-lg p-2 transition-colors hover:bg-muted/80"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Set Permissions</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Set Permissions</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Control document permissions and access
               </p>
             </div>
@@ -336,25 +336,25 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
       {/* File Upload Section */}
       {!selectedFile && (
         <div
-          className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${dragActive
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
+          className={`rounded-xl border-2 border-dashed p-12 text-center transition-all duration-200 ${dragActive
+            ? 'border-primary bg-primary/15 dark:bg-primary/25'
+            : 'border-border hover:border-muted-foreground/40 hover:bg-muted/30 dark:hover:bg-muted/20'
             }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
         >
-          <FiUpload className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-          <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+          <FiUpload className="mx-auto mb-6 h-16 w-16 text-muted-foreground" />
+          <h3 className="mb-4 text-2xl font-semibold text-foreground">
             Drop your PDF here or click to browse
           </h3>
-          <p className="text-gray-600 mb-6 text-lg">
+          <p className="mb-6 text-lg text-muted-foreground">
             Upload a PDF to set permissions and access controls
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition-colors"
+            className="rounded-lg bg-primary px-8 py-3 text-lg font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Choose PDF File
           </button>
@@ -372,13 +372,13 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
       {selectedFile && (
         <div className="space-y-6">
           {/* File Info */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="rounded-lg border border-border bg-card p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <FiLock className="w-8 h-8 text-green-600" />
+                <FiLock className="h-8 w-8 text-success" />
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{selectedFile.name}</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="text-lg font-semibold text-foreground">{selectedFile.name}</h3>
+                  <p className="text-sm text-muted-foreground">
                     {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
@@ -387,7 +387,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                 <button
                   onClick={handleAnalyzePermissions}
                   disabled={analyzing}
-                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2"
+                  className="flex items-center space-x-2 rounded-lg bg-muted px-4 py-2 text-foreground transition-colors hover:bg-muted/80"
                 >
                   <FiEye className="w-4 h-4" />
                   <span>{analyzing ? 'Analyzing...' : 'Analyze Current'}</span>
@@ -398,7 +398,7 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                     setResult(null);
                     setCurrentPermissions(null);
                   }}
-                  className="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors flex items-center space-x-2"
+                  className="bg-destructive text-destructive-foreground px-4 py-2 rounded-lg hover:bg-destructive/80 transition-colors flex items-center space-x-2"
                 >
                   <FiX className="w-4 h-4" />
                   <span>Remove</span>
@@ -409,8 +409,8 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
 
           {/* Current Permissions Display */}
           {currentPermissions && (
-            <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
-              <h4 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+            <div className="rounded-lg border border-primary/30 bg-primary/10 p-6 dark:border-primary/40 dark:bg-primary/15">
+              <h4 className="text-lg font-semibold text-primary mb-4 flex items-center">
                 <FiEye className="w-5 h-5 mr-2" />
                 Current Permissions
               </h4>
@@ -418,17 +418,17 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                 {Object.entries(currentPermissions.permissions.permissions).map(([key, value]) => (
                   <div key={key} className="flex items-center space-x-2">
                     {value ? (
-                      <FiCheck className="w-4 h-4 text-green-600" />
+                      <FiCheck className="h-4 w-4 text-success" />
                     ) : (
-                      <FiX className="w-4 h-4 text-red-600" />
+                      <FiX className="h-4 w-4 text-destructive" />
                     )}
-                    <span className="text-sm text-blue-800 capitalize">
+                    <span className="text-sm text-muted-foreground capitalize">
                       {key.replace(/([A-Z])/g, ' $1').trim()}
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 text-sm text-blue-700">
+              <div className="mt-4 text-sm text-primary">
                 <p>Encryption: {currentPermissions.permissions.encryptionLevel}</p>
                 <p>Password Protected: {currentPermissions.permissions.isPasswordProtected ? 'Yes' : 'No'}</p>
                 <p>Owner Protected: {currentPermissions.permissions.isOwnerProtected ? 'Yes' : 'No'}</p>
@@ -437,30 +437,30 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
           )}
 
           {/* Permission Presets */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Quick Presets</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-lg border border-border bg-card p-6">
+            <h4 className="mb-4 text-lg font-semibold text-foreground">Quick Presets</h4>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <button
                 onClick={() => applyPreset('view-only')}
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                className="rounded-lg bg-muted px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted/80"
               >
                 View Only
               </button>
               <button
                 onClick={() => applyPreset('print-only')}
-                className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                className="rounded-lg bg-muted px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted/80"
               >
                 Print Only
               </button>
               <button
                 onClick={() => applyPreset('fill-forms')}
-                className="bg-green-100 text-green-700 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors text-sm"
+                className="rounded-lg bg-muted px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted/80"
               >
                 Fill Forms
               </button>
               <button
                 onClick={() => applyPreset('full-access')}
-                className="bg-purple-100 text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                className="rounded-lg bg-primary/15 px-4 py-2 text-sm text-primary transition-colors hover:bg-primary/25 dark:bg-primary/20 dark:hover:bg-primary/30"
               >
                 Full Access
               </button>
@@ -468,25 +468,25 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
           </div>
 
           {/* Granular Permissions */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="rounded-lg border border-border bg-card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-gray-900">Granular Permissions</h4>
+              <h4 className="text-lg font-semibold text-foreground">Granular Permissions</h4>
 
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Basic Permissions */}
               <div className="space-y-4">
-                <h5 className="font-medium text-gray-700">Basic Access</h5>
+                <h5 className="font-medium text-muted-foreground">Basic Access</h5>
 
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
                     checked={permissions.allowPrint}
                     onChange={(e) => updatePermission('allowPrint', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
-                  <span className="text-gray-700">Allow Printing</span>
+                  <span className="text-muted-foreground">Allow Printing</span>
                 </label>
 
                 <label className="flex items-center space-x-3">
@@ -494,9 +494,9 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                     type="checkbox"
                     checked={permissions.allowCopy}
                     onChange={(e) => updatePermission('allowCopy', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
-                  <span className="text-gray-700">Allow Copying</span>
+                  <span className="text-muted-foreground">Allow Copying</span>
                 </label>
 
                 <label className="flex items-center space-x-3">
@@ -504,9 +504,9 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                     type="checkbox"
                     checked={permissions.allowModify}
                     onChange={(e) => updatePermission('allowModify', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
-                  <span className="text-gray-700">Allow Modification</span>
+                  <span className="text-muted-foreground">Allow Modification</span>
                 </label>
 
                 <label className="flex items-center space-x-3">
@@ -514,24 +514,24 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                     type="checkbox"
                     checked={permissions.allowAnnotate}
                     onChange={(e) => updatePermission('allowAnnotate', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
-                  <span className="text-gray-700">Allow Annotations</span>
+                  <span className="text-muted-foreground">Allow Annotations</span>
                 </label>
               </div>
 
               {/* Advanced Permissions */}
               <div className="space-y-4">
-                <h5 className="font-medium text-gray-700">Advanced Features</h5>
+                <h5 className="font-medium text-muted-foreground">Advanced Features</h5>
 
                 <label className="flex items-center space-x-3">
                   <input
                     type="checkbox"
                     checked={permissions.allowFillForms}
                     onChange={(e) => updatePermission('allowFillForms', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
-                  <span className="text-gray-700">Allow Form Filling</span>
+                  <span className="text-muted-foreground">Allow Form Filling</span>
                 </label>
 
                 <label className="flex items-center space-x-3">
@@ -539,9 +539,9 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                     type="checkbox"
                     checked={permissions.allowExtractContent}
                     onChange={(e) => updatePermission('allowExtractContent', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
-                  <span className="text-gray-700">Allow Content Extraction</span>
+                  <span className="text-muted-foreground">Allow Content Extraction</span>
                 </label>
 
                 <label className="flex items-center space-x-3">
@@ -549,9 +549,9 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                     type="checkbox"
                     checked={permissions.allowAssemble}
                     onChange={(e) => updatePermission('allowAssemble', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
-                  <span className="text-gray-700">Allow Assembly</span>
+                  <span className="text-muted-foreground">Allow Assembly</span>
                 </label>
 
                 <label className="flex items-center space-x-3">
@@ -559,9 +559,9 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
                     type="checkbox"
                     checked={permissions.allowHighQualityPrint}
                     onChange={(e) => updatePermission('allowHighQualityPrint', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                   />
-                  <span className="text-gray-700">Allow High-Quality Print</span>
+                  <span className="text-muted-foreground">Allow High-Quality Print</span>
                 </label>
               </div>
             </div>
@@ -572,11 +572,11 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
             <button
               onClick={handleSetPermissions}
               disabled={processing}
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium text-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+              className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-medium text-lg hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
             >
               {processing ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-primary-foreground"></div>
                   <span>Setting Permissions...</span>
                 </>
               ) : (
@@ -592,29 +592,29 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
 
       {/* Results Section */}
       {result && (
-        <div className="bg-green-50 rounded-lg border border-green-200 p-6">
+        <div className="rounded-lg border border-success/30 bg-success/10 p-6 dark:border-success/40 dark:bg-success/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <FiCheck className="w-8 h-8 text-green-600" />
+              <FiCheck className="h-8 w-8 shrink-0 text-success" />
               <div>
-                <h3 className="text-lg font-semibold text-green-900">Permissions Set Successfully!</h3>
-                <p className="text-green-700">{result.message}</p>
+                <h3 className="text-lg font-semibold text-foreground">Permissions Set Successfully!</h3>
+                <p className="text-muted-foreground">{result.message}</p>
               </div>
             </div>
             <div className="flex space-x-2">
               <button
                 onClick={handleOpenSecurePDF}
                 disabled={!viewEnabled}
-                className={`px-6 py-2 rounded-lg flex items-center space-x-2 transition-colors ${viewEnabled
-                    ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                className={`flex items-center space-x-2 rounded-lg px-6 py-2 transition-colors ${viewEnabled
+                    ? 'bg-success text-success-foreground hover:bg-success/90'
+                    : 'cursor-not-allowed bg-muted text-muted-foreground'
                   }`}
               >
                 {!viewEnabled && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-muted-foreground"></div>
                 )}
-                <FiEye className="w-4 h-4" />
-                <span className='text-xs'>
+                <FiEye className="h-4 w-4" />
+                <span className="text-xs">
                   {viewEnabled
                     ? 'View Secure PDF'
                     : `Your file is getting ready... (${countdown}s)`}
@@ -623,22 +623,22 @@ const SetPermissions: React.FC<SetPermissionsProps> = ({ onPermissionsResult }) 
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
             <div className="text-sm">
-              <span className="font-medium text-green-800">File:</span>
-              <p className="text-green-700">{result.filename}</p>
+              <span className="font-medium text-foreground">File:</span>
+              <p className="text-muted-foreground">{result.filename}</p>
             </div>
             <div className="text-sm">
-              <span className="font-medium text-green-800">Size:</span>
-              <p className="text-green-700">{result.fileSize}</p>
+              <span className="font-medium text-foreground">Size:</span>
+              <p className="text-muted-foreground">{result.fileSize}</p>
             </div>
             <div className="text-sm">
-              <span className="font-medium text-green-800">Password Protected:</span>
-              <p className="text-green-700">{result.permissions.isPasswordProtected ? 'Yes' : 'No'}</p>
+              <span className="font-medium text-foreground">Password Protected:</span>
+              <p className="text-muted-foreground">{result.permissions.isPasswordProtected ? 'Yes' : 'No'}</p>
             </div>
             <div className="text-sm">
-              <span className="font-medium text-green-800">Owner Protected:</span>
-              <p className="text-green-700">{result.permissions.isOwnerProtected ? 'Yes' : 'No'}</p>
+              <span className="font-medium text-foreground">Owner Protected:</span>
+              <p className="text-muted-foreground">{result.permissions.isOwnerProtected ? 'Yes' : 'No'}</p>
             </div>
           </div>
         </div>

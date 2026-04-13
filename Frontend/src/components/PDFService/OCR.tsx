@@ -160,19 +160,19 @@ const OCR: React.FC = () => {
   // Show only result when OCR is successful - hide everything else
   if (result && result.success) {
     return (
-      <div className="mx-auto space-y-6">
-        <div className="bg-white shadow-sm border-b">
+      <div className="mx-auto min-h-full w-full space-y-6 bg-background text-foreground">
+        <div className="bg-background shadow-sm border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
                   to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">OCR & Text Recognition</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">OCR & Text Recognition</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                  High-accuracy OCR for scanned documents with 100+ language support
                 </p>
               </div>
@@ -184,78 +184,78 @@ const OCR: React.FC = () => {
         <div className="max-w-7xl mx-auto p-6">
           <Card className="p-6">
             <div className="text-center mb-6">
-              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">OCR Processing Complete!</h3>
-              <p className="text-gray-600">Your files have been processed successfully</p>
+              <CheckCircle className="w-16 h-16 text-emerald-600 dark:text-emerald-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-foreground mb-2">OCR Processing Complete!</h3>
+              <p className="text-muted-foreground">Your files have been processed successfully</p>
             </div>
 
             {/* Summary Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">{result.summary.totalFiles}</p>
-                <p className="text-sm text-gray-600">Total Files</p>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">{result.summary.totalFiles}</p>
+                <p className="text-sm text-muted-foreground">Total Files</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-muted rounded-lg">
                 <p className="text-2xl font-bold text-green-600">{result.summary.successfulFiles}</p>
-                <p className="text-sm text-gray-600">Successful</p>
+                <p className="text-sm text-muted-foreground">Successful</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-muted rounded-lg">
                 <p className="text-2xl font-bold text-red-600">{result.summary.failedFiles}</p>
-                <p className="text-sm text-gray-600">Failed</p>
+                <p className="text-sm text-muted-foreground">Failed</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-muted rounded-lg">
                 <p className="text-2xl font-bold text-blue-600">{result.summary.accuracy}</p>
-                <p className="text-sm text-gray-600">Accuracy</p>
+                <p className="text-sm text-muted-foreground">Accuracy</p>
               </div>
             </div>
 
             {/* Processing Details */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-lg font-bold text-gray-900">{getLanguageName(result.summary.language)}</p>
-                <p className="text-sm text-gray-600">Language</p>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-lg font-bold text-foreground">{getLanguageName(result.summary.language)}</p>
+                <p className="text-sm text-muted-foreground">Language</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-lg font-bold text-gray-900">{result.summary.outputFormat.toUpperCase()}</p>
-                <p className="text-sm text-gray-600">Output Format</p>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-lg font-bold text-foreground">{result.summary.outputFormat.toUpperCase()}</p>
+                <p className="text-sm text-muted-foreground">Output Format</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-lg font-bold text-gray-900">
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-lg font-bold text-foreground">
                   {result.results.reduce((sum, r) => sum + r.textLength, 0).toLocaleString()}
                 </p>
-                <p className="text-sm text-gray-600">Total Characters</p>
+                <p className="text-sm text-muted-foreground">Total Characters</p>
               </div>
             </div>
 
             {/* Individual Results */}
             <div className="space-y-4 mb-6">
-              <h4 className="font-medium text-gray-900">File Results:</h4>
+              <h4 className="font-medium text-foreground">File Results:</h4>
               {result.results.map((fileResult, index) => (
-                <div key={index} className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div key={index} className="p-4 bg-emerald-50 dark:bg-emerald-950/35 border border-emerald-200 dark:border-emerald-900 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-green-900">{fileResult.filename}</span>
+                    <span className="font-medium text-emerald-900 dark:text-emerald-200">{fileResult.filename}</span>
                     <Button
                       onClick={() => handleDownload(fileResult.outputFilename)}
                       size="sm"
                       variant="outline"
-                      className="text-green-700 border-green-300 hover:bg-green-100"
+                      className="text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-950/40"
                     >
                       <FileDown className="h-4 w-4 mr-1" />
                       Download {fileResult.outputFilename.endsWith('.txt') ? 'Text' : 'PDF'}
                     </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-green-700">
+                  <div className="grid grid-cols-2 gap-2 text-sm text-emerald-700 dark:text-emerald-300">
                     <div>
-                      <span className="text-green-600">Confidence:</span> {formatConfidence(fileResult.confidence)}
+                      <span className="text-emerald-600 dark:text-emerald-400">Confidence:</span> {formatConfidence(fileResult.confidence)}
                     </div>
                     <div>
-                      <span className="text-green-600">Text Length:</span> {fileResult.textLength} chars
+                      <span className="text-emerald-600 dark:text-emerald-400">Text Length:</span> {fileResult.textLength} chars
                     </div>
                     <div>
-                      <span className="text-green-600">Original:</span> {formatFileSize(fileResult.originalSize)}
+                      <span className="text-emerald-600 dark:text-emerald-400">Original:</span> {formatFileSize(fileResult.originalSize)}
                     </div>
                     <div>
-                      <span className="text-green-600">Processed:</span> {formatFileSize(fileResult.processedSize)}
+                      <span className="text-emerald-600 dark:text-emerald-400">Processed:</span> {formatFileSize(fileResult.processedSize)}
                     </div>
                   </div>
                 </div>
@@ -265,11 +265,11 @@ const OCR: React.FC = () => {
             {/* Errors */}
             {result.errors.length > 0 && (
               <div className="space-y-2 mb-6">
-                <h4 className="font-medium text-gray-900 text-red-600">Failed Files:</h4>
+                <h4 className="font-medium text-red-600 dark:text-red-400">Failed Files:</h4>
                 {result.errors.map((error, index) => (
-                  <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="font-medium text-red-900">{error.filename}</p>
-                    <p className="text-sm text-red-700">{error.error}</p>
+                  <div key={index} className="p-3 bg-red-50 dark:bg-red-950/35 border border-red-200 dark:border-red-900 rounded-lg">
+                    <p className="font-medium text-red-900 dark:text-red-200">{error.filename}</p>
+                    <p className="text-sm text-red-700 dark:text-red-300">{error.error}</p>
                   </div>
                 ))}
               </div>
@@ -304,19 +304,19 @@ const OCR: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto space-y-6">
-      <div className="bg-white shadow-sm border-b">
+    <div className="mx-auto min-h-full w-full space-y-6 bg-background text-foreground">
+      <div className="bg-background shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
                 to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">OCR & Text Recognition</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">OCR & Text Recognition</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                High-accuracy OCR for scanned documents with 100+ language support
               </p>
             </div>
@@ -331,18 +331,18 @@ const OCR: React.FC = () => {
             {selectedFiles.length === 0 && (
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">Upload Files</h2>
-                  <span className="text-sm text-gray-500">0/5 files</span>
+                  <h2 className="text-xl font-semibold text-foreground">Upload Files</h2>
+                  <span className="text-sm text-muted-foreground">0/5 files</span>
                 </div>
 
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
-                  <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-muted-foreground/40 transition-colors bg-muted/30 dark:bg-muted/20">
+                  <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <div className="space-y-2">
-                    <p className="text-lg font-medium text-gray-900">Select files for OCR</p>
-                    <p className="text-gray-500">
+                    <p className="text-lg font-medium text-foreground">Select files for OCR</p>
+                    <p className="text-muted-foreground">
                       Drag and drop image files here, or click to browse
                     </p>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                       Maximum 2MB. Upload JPG, PNG, TIFF, BMP for better result.
                     </p>
                   </div>
@@ -370,15 +370,15 @@ const OCR: React.FC = () => {
             {/* Selected Files Info - Show after file selection */}
             {selectedFiles.length > 0 && (
               <Card className="p-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="bg-primary/10 border border-primary/30 dark:bg-primary/15 dark:border-primary/40 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Eye className="w-6 h-6 text-blue-600" />
+                      <div className="w-12 h-12 bg-primary/15 rounded-lg flex items-center justify-center">
+                        <Eye className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Selected Files for OCR</h3>
-                        <p className="text-sm text-gray-600">
+                        <h3 className="text-lg font-semibold text-foreground">Selected Files for OCR</h3>
+                        <p className="text-sm text-muted-foreground">
                           {selectedFiles.length} file(s) selected
                         </p>
                       </div>
@@ -392,7 +392,7 @@ const OCR: React.FC = () => {
                           fileInputRef.current.value = '';
                         }
                       }}
-                      className="text-gray-500 hover:text-gray-700 transition-colors"
+                      className="text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -401,19 +401,19 @@ const OCR: React.FC = () => {
                   {/* Selected Files List */}
                   <div className="space-y-2">
                     {selectedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
                         <div className="flex items-center space-x-3">
                           <span className="text-2xl">{ocrService.getFileTypeIcon(file)}</span>
                           <div>
-                            <p className="font-medium text-gray-900">{file.name}</p>
-                            <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+                            <p className="font-medium text-foreground">{file.name}</p>
+                            <p className="text-sm text-muted-foreground">{formatFileSize(file.size)}</p>
                           </div>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => removeFile(index)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-destructive hover:text-destructive/90"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -427,21 +427,21 @@ const OCR: React.FC = () => {
             {/* OCR Settings */}
             <Card className="p-6">
               <div className="flex items-center space-x-2 mb-4">
-                <Settings className="h-5 w-5 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900">OCR Settings</h2>
+                <Settings className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold text-foreground">OCR Settings</h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Language Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     <Globe className="h-4 w-4 inline mr-2" />
                     Language
                   </label>
                   <select
                     value={selectedLanguage}
                     onChange={(e) => setSelectedLanguage(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-md"
+                    className="w-full p-2 border border-border rounded-md bg-background text-foreground"
                   >
                     {languages.map((lang) => (
                       <option key={lang.code} value={lang.code}>
@@ -449,7 +449,7 @@ const OCR: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {languages.find(l => l.code === selectedLanguage)?.confidence && 
                       `Expected accuracy: ${(languages.find(l => l.code === selectedLanguage)?.confidence! * 100).toFixed(1)}%`
                     }
@@ -458,7 +458,7 @@ const OCR: React.FC = () => {
 
                 {/* Accuracy Level */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     <Target className="h-4 w-4 inline mr-2" />
                     Accuracy Level
                   </label>
@@ -472,7 +472,7 @@ const OCR: React.FC = () => {
                         onChange={(e) => setAccuracy(e.target.value as any)}
                         className="text-blue-600"
                       />
-                      <span className="text-sm">Fast (Good for simple documents)</span>
+                      <span className="text-sm text-foreground">Fast (Good for simple documents)</span>
                     </label>
                     <label className="flex items-center space-x-2">
                       <input
@@ -483,7 +483,7 @@ const OCR: React.FC = () => {
                         onChange={(e) => setAccuracy(e.target.value as any)}
                         className="text-blue-600"
                       />
-                      <span className="text-sm">Balanced (Recommended)</span>
+                      <span className="text-sm text-foreground">Balanced (Recommended)</span>
                     </label>
                     <label className="flex items-center space-x-2">
                       <input
@@ -494,14 +494,14 @@ const OCR: React.FC = () => {
                         onChange={(e) => setAccuracy(e.target.value as any)}
                         className="text-blue-600"
                       />
-                      <span className="text-sm">High Accuracy (Best for complex layouts)</span>
+                      <span className="text-sm text-foreground">High Accuracy (Best for complex layouts)</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Output Format */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     <FileDown className="h-4 w-4 inline mr-2" />
                     Output Format
                   </label>
@@ -515,14 +515,14 @@ const OCR: React.FC = () => {
                         onChange={(e) => setOutputFormat(e.target.value as any)}
                         className="text-blue-600"
                       />
-                      <span className="text-sm">Plain Text</span>
+                      <span className="text-sm text-foreground">Plain Text</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Advanced Options */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     <Sparkles className="h-4 w-4 inline mr-2" />
                     Advanced Options
                   </label>
@@ -534,7 +534,7 @@ const OCR: React.FC = () => {
                         onChange={(e) => handleOptionChange('autoDeskew', e.target.checked)}
                         className="text-blue-600 rounded"
                       />
-                      <span className="text-sm">Auto-deskew pages</span>
+                      <span className="text-sm text-foreground">Auto-deskew pages</span>
                     </label>
                     <label className="flex items-center space-x-2">
                       <input
@@ -543,7 +543,7 @@ const OCR: React.FC = () => {
                         onChange={(e) => handleOptionChange('removeNoise', e.target.checked)}
                         className="text-blue-600 rounded"
                       />
-                      <span className="text-sm">Remove background noise</span>
+                      <span className="text-sm text-foreground">Remove background noise</span>
                     </label>
                     <label className="flex items-center space-x-2">
                       <input
@@ -552,7 +552,7 @@ const OCR: React.FC = () => {
                         onChange={(e) => handleOptionChange('enhanceImage', e.target.checked)}
                         className="text-blue-600 rounded"
                       />
-                      <span className="text-sm">Enhance image quality</span>
+                      <span className="text-sm text-foreground">Enhance image quality</span>
                     </label>
                     <label className="flex items-center space-x-2">
                       <input
@@ -561,7 +561,7 @@ const OCR: React.FC = () => {
                         onChange={(e) => handleOptionChange('preserveFormatting', e.target.checked)}
                         className="text-blue-600 rounded"
                       />
-                      <span className="text-sm">Preserve formatting</span>
+                      <span className="text-sm text-foreground">Preserve formatting</span>
                     </label>
                   </div>
                 </div>
@@ -587,17 +587,17 @@ const OCR: React.FC = () => {
             {isProcessing && (
               <Card className="p-6">
                 <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Processing files...</span>
                     <span>{progress.current}/{progress.total}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
                       style={{ width: `${progress.percentage}%` }}
                     />
                   </div>
-                  <p className="text-sm text-gray-500 text-center">
+                  <p className="text-sm text-muted-foreground text-center">
                     {progress.current > 0 && progress.current <= progress.total
                       ? `Processing: ${selectedFiles[progress.current - 1]?.name}`
                       : 'Preparing files...'}
@@ -608,12 +608,12 @@ const OCR: React.FC = () => {
 
             {/* Error Display */}
             {error && (
-              <Card className="p-6 border-red-200 bg-red-50">
+              <Card className="p-6 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/35">
                 <div className="flex items-center space-x-3">
-                  <AlertCircle className="h-6 w-6 text-red-600" />
+                  <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
                   <div>
-                    <h3 className="font-medium text-red-900">Error</h3>
-                    <p className="text-sm text-red-700">{error}</p>
+                    <h3 className="font-medium text-red-900 dark:text-red-200">Error</h3>
+                    <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
                   </div>
                 </div>
               </Card>

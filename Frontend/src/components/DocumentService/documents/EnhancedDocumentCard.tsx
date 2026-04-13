@@ -49,13 +49,18 @@ const getFileTypeIcon = (type: string) => {
 const getFileTypeColor = (type: string) => {
   const lowerType = type.toLowerCase();
 
-  if (['pdf'].includes(lowerType)) return 'text-red-600 bg-red-50';
-  if (['doc', 'docx'].includes(lowerType)) return 'text-blue-600 bg-blue-50';
-  if (['xls', 'xlsx', 'csv'].includes(lowerType)) return 'text-green-600 bg-green-50';
-  if (['ppt', 'pptx'].includes(lowerType)) return 'text-orange-600 bg-orange-50';
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].includes(lowerType)) return 'text-purple-600 bg-purple-50';
+  if (['pdf'].includes(lowerType))
+    return 'text-red-600 dark:text-red-400 bg-red-500/10 dark:bg-red-500/15';
+  if (['doc', 'docx'].includes(lowerType))
+    return 'text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/15';
+  if (['xls', 'xlsx', 'csv'].includes(lowerType))
+    return 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15';
+  if (['ppt', 'pptx'].includes(lowerType))
+    return 'text-orange-600 dark:text-orange-400 bg-orange-500/10 dark:bg-orange-500/15';
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].includes(lowerType))
+    return 'text-violet-600 dark:text-violet-400 bg-violet-500/10 dark:bg-violet-500/15';
 
-  return 'text-gray-600 bg-gray-50';
+  return 'text-muted-foreground bg-muted';
 };
 
 export function EnhancedDocumentCard({
@@ -100,8 +105,8 @@ export function EnhancedDocumentCard({
   return (
     <div
       className={cn(
-        "group relative bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer",
-        isSelected && "ring-2 ring-blue-500 border-blue-500"
+        'group relative rounded-lg border border-border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer',
+        isSelected && 'ring-2 ring-primary border-primary'
       )}
       onClick={handleCardClick}
     >
@@ -114,7 +119,7 @@ export function EnhancedDocumentCard({
             e.stopPropagation();
             onSelect(e.target.checked);
           }}
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          className="rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
 
@@ -125,7 +130,7 @@ export function EnhancedDocumentCard({
             {activeUsers.slice(0, 3).map((user) => (
               <div
                 key={user.id}
-                className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                className="w-6 h-6 rounded-full border-2 border-background shadow-sm"
                 style={{ backgroundColor: user.color }}
                 title={user.name}
               >
@@ -143,7 +148,7 @@ export function EnhancedDocumentCard({
               </div>
             ))}
             {activeUsers.length > 3 && (
-              <div className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white shadow-sm flex items-center justify-center text-xs font-medium text-gray-600">
+              <div className="w-6 h-6 rounded-full bg-muted border-2 border-background shadow-sm flex items-center justify-center text-xs font-medium text-muted-foreground">
                 +{activeUsers.length - 3}
               </div>
             )}
@@ -157,7 +162,7 @@ export function EnhancedDocumentCard({
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 w-6 p-0 bg-white shadow-sm border"
+            className="h-6 w-6 p-0 bg-background shadow-sm border border-border"
             onClick={(e) => {
               e.stopPropagation();
               setShowActions(!showActions);
@@ -167,26 +172,26 @@ export function EnhancedDocumentCard({
           </Button>
 
           {showActions && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
-              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
+            <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg py-1 z-20">
+              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
                 <Eye className="w-4 h-4" />
                 <span>Preview</span>
               </button>
-              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
+              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
                 <Download className="w-4 h-4" />
                 <span>Download</span>
               </button>
-              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
+              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
                 <Share2 className="w-4 h-4" />
                 <span>Share</span>
               </button>
-              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-gray-50">
+              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
                 <Move className="w-4 h-4" />
                 <span>Move</span>
               </button>
-              <div className="border-t border-gray-100 my-1" />
+              <div className="border-t border-border my-1" />
               {userPermissions.delete_own && (
-                <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+                <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10">
                   <Trash2 className="w-4 h-4" />
                   <span>Delete</span>
                 </button>
@@ -207,7 +212,7 @@ export function EnhancedDocumentCard({
           {/* Processing Status */}
           {analysis && (
             <div className="absolute top-1 right-1">
-              <Brain className="w-3 h-3 text-blue-600">
+              <Brain className="w-3 h-3 text-primary">
                 <title>Shared</title>
               </Brain>
             </div>
@@ -216,16 +221,16 @@ export function EnhancedDocumentCard({
 
         {/* Document Info */}
         <div className="space-y-1">
-          <h3 className="text-sm font-medium text-gray-900 truncate" title={document.name}>
+          <h3 className="text-sm font-medium text-foreground truncate" title={document.name}>
             {document.name}
           </h3>
 
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{formatFileSize(document.size)}</span>
             <span>{document.type.toUpperCase()}</span>
           </div>
 
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {formatDate(document.modifiedAt)}
           </p>
         </div>
@@ -236,13 +241,13 @@ export function EnhancedDocumentCard({
             {document.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full"
+                className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full"
               >
                 {tag}
               </span>
             ))}
             {document.tags.length > 2 && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground/80">
                 +{document.tags.length - 2}
               </span>
             )}
@@ -250,35 +255,35 @@ export function EnhancedDocumentCard({
         )}
 
         {/* Collaboration Status */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
           <div className="flex items-center space-x-3">
             {/* Comments */}
             {unresolvedComments > 0 && (
               <div className="flex items-center space-x-1" title={`${unresolvedComments} unresolved comments`}>
-                <MessageCircle className="w-3 h-3 text-orange-500" />
-                <span className="text-xs text-orange-600">{unresolvedComments}</span>
+                <MessageCircle className="w-3 h-3 text-orange-500 dark:text-orange-400" />
+                <span className="text-xs text-orange-600 dark:text-orange-400">{unresolvedComments}</span>
               </div>
             )}
 
             {/* Versions */}
             {versions.length > 1 && (
               <div className="flex items-center space-x-1" title={`${versions.length} versions`}>
-                <GitBranch className="w-3 h-3 text-blue-500" />
-                <span className="text-xs text-blue-600">{versions.length}</span>
+                <GitBranch className="w-3 h-3 text-primary" />
+                <span className="text-xs text-primary">{versions.length}</span>
               </div>
             )}
 
             {/* Active Workflows */}
             {activeWorkflows > 0 && (
               <div className="flex items-center space-x-1" title={`${activeWorkflows} active workflows`}>
-                <Workflow className="w-3 h-3 text-green-500" />
-                <span className="text-xs text-green-600">{activeWorkflows}</span>
+                <Workflow className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
+                <span className="text-xs text-emerald-600 dark:text-emerald-400">{activeWorkflows}</span>
               </div>
             )}
 
             {/* Shared indicator */}
             {document.shared && (
-              <Share2 className="w-3 h-3 text-blue-500">
+              <Share2 className="w-3 h-3 text-primary">
                 <title>Shared</title>
               </Share2>
             )}
@@ -286,20 +291,20 @@ export function EnhancedDocumentCard({
             {/* Views */}
             {document.views > 0 && (
               <div className="flex items-center space-x-1">
-                <Eye className="w-3 h-3 text-gray-400" />
-                <span className="text-xs text-gray-500">{document.views}</span>
+                <Eye className="w-3 h-3 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{document.views}</span>
               </div>
             )}
           </div>
 
           <button
             onClick={handleFavoriteToggle}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="p-1 hover:bg-accent rounded transition-colors"
           >
             {document.isFavorite ? (
-              <Star className="w-3 h-3 text-yellow-500 fill-current" />
+              <Star className="w-3 h-3 text-amber-500 dark:text-amber-400 fill-current" />
             ) : (
-              <StarOff className="w-3 h-3 text-gray-400" />
+              <StarOff className="w-3 h-3 text-muted-foreground" />
             )}
           </button>
         </div>

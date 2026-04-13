@@ -266,18 +266,18 @@ const AddWatermark: React.FC = () => {
   if (addWatermarkResult && addWatermarkResult.success) {
     return (
       <div className="mx-auto p-2 space-y-6">
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-background shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
                 to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="rounded-lg p-2 transition-colors hover:bg-muted/80"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="h-5 w-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Add Watermark</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Add Watermark</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Add text or image watermarks to your PDF documents with customizable positioning and styling
                 </p>
               </div>
@@ -327,7 +327,7 @@ const AddWatermark: React.FC = () => {
   return (
     <div className="mx-auto p-2 space-y-6">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
@@ -337,8 +337,8 @@ const AddWatermark: React.FC = () => {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Add Watermark</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Add Watermark</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Add text or image watermarks to your PDF documents with customizable positioning and styling
               </p>
             </div>
@@ -348,7 +348,7 @@ const AddWatermark: React.FC = () => {
 
       {/* Success/Error Messages */}
       {success && (
-        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="mb-6 bg-success border border-success-foreground rounded-lg p-4">
           <div className="flex items-center">
             <div className="w-5 h-5 text-green-500 mr-2">✓</div>
             <p className="text-green-800">{success}</p>
@@ -357,23 +357,23 @@ const AddWatermark: React.FC = () => {
       )}
 
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="mb-6 bg-destructive border border-destructive-foreground rounded-lg p-4">
           <div className="flex items-center">
-            <div className="w-5 h-5 text-red-500 mr-2">✗</div>
-            <p className="text-red-800">{error}</p>
+            <div className="w-5 h-5 text-destructive-foreground mr-2">✗</div>
+            <p className="text-destructive-foreground">{error}</p>
           </div>
         </div>
       )}
 
       {/* Tab Navigation */}
       <div className="flex justify-center mb-8">
-        <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm">
+        <div className="flex space-x-1 bg-background rounded-lg p-1 shadow-sm">
           <button
             onClick={() => setActiveTab('text')}
             className={`px-6 py-3 rounded-md font-medium transition-colors flex items-center space-x-2 ${
               activeTab === 'text'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
             }`}
           >
             <Type className="w-5 h-5" />
@@ -383,8 +383,8 @@ const AddWatermark: React.FC = () => {
             onClick={() => setActiveTab('image')}
             className={`px-6 py-3 rounded-md font-medium transition-colors flex items-center space-x-2 ${
               activeTab === 'image'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
             }`}
           >
             <Image className="w-5 h-5" />
@@ -394,18 +394,18 @@ const AddWatermark: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="bg-white rounded-xl shadow-lg p-8">
+      <div className="bg-background rounded-xl shadow-lg p-8">
         {/* File Upload Section - Only show when no PDF file selected */}
         {!selectedPdfFile && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload Files</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">Upload Files</h2>
           
           {/* PDF File Upload */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Select PDF File *
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
               <input
                 ref={pdfFileInputRef}
                 type="file"
@@ -415,14 +415,14 @@ const AddWatermark: React.FC = () => {
               />
               <button
                 onClick={() => pdfFileInputRef.current?.click()}
-                className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
+                className="flex flex-col items-center space-y-2 text-muted-foreground hover:text-primary mx-auto"
               >
                 <Upload className="w-12 h-12" />
                 <span className="text-lg font-medium">
                   {selectedPdfFile ? (selectedPdfFile as File).name : 'Click to upload PDF'}
                 </span>
                 {selectedPdfFile && (
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     Size: {addWatermarkService.formatFileSize((selectedPdfFile as File).size)}
                   </span>
                 )}
@@ -433,10 +433,10 @@ const AddWatermark: React.FC = () => {
           {/* Image File Upload (only for image watermark tab) */}
           {activeTab === 'image' && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Select Image File *
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
                 <input
                   ref={imageFileInputRef}
                   type="file"
@@ -446,14 +446,14 @@ const AddWatermark: React.FC = () => {
                 />
                 <button
                   onClick={() => imageFileInputRef.current?.click()}
-                  className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
+                  className="flex flex-col items-center space-y-2 text-muted-foreground hover:text-primary mx-auto"
                 >
                   <Image className="w-12 h-12" />
                   <span className="text-lg font-medium">
                     {selectedImageFile ? selectedImageFile.name : 'Click to upload image'}
                   </span>
                   {selectedImageFile && (
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-muted-foreground">
                       Size: {addWatermarkService.formatFileSize(selectedImageFile.size)}
                     </span>
                   )}
@@ -467,15 +467,15 @@ const AddWatermark: React.FC = () => {
         {/* Selected File Info - Show after file upload */
         }
         {selectedPdfFile && (
-          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="mb-8 bg-primary border border-primary-foreground rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Upload className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Selected PDF File</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="text-lg font-semibold text-foreground">Selected PDF File</h3>
+                  <p className="text-sm text-muted-foreground">
                     {(selectedPdfFile as File).name} • {addWatermarkService.formatFileSize((selectedPdfFile as File).size)}
                   </p>
                 </div>
@@ -492,7 +492,7 @@ const AddWatermark: React.FC = () => {
                   if (pdfFileInputRef.current) pdfFileInputRef.current.value = '';
                   if (imageFileInputRef.current) imageFileInputRef.current.value = '';
                 }}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -503,12 +503,12 @@ const AddWatermark: React.FC = () => {
         {/* Image File Upload - Always show on Image tab, even after PDF selected */}
         {selectedPdfFile && activeTab === 'image' && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload Image</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">Upload Image</h2>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Select Image File *
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
                 <input
                   ref={imageFileInputRef}
                   type="file"
@@ -518,14 +518,14 @@ const AddWatermark: React.FC = () => {
                 />
                 <button
                   onClick={() => imageFileInputRef.current?.click()}
-                  className="flex flex-col items-center space-y-2 text-gray-600 hover:text-blue-600 mx-auto"
+                  className="flex flex-col items-center space-y-2 text-muted-foreground hover:text-primary mx-auto"
                 >
                   <Image className="w-12 h-12" />
                   <span className="text-lg font-medium">
                     {selectedImageFile ? selectedImageFile.name : 'Click to upload image'}
                   </span>
                   {selectedImageFile && (
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-muted-foreground">
                       Size: {addWatermarkService.formatFileSize(selectedImageFile.size)}
                     </span>
                   )}
@@ -539,11 +539,11 @@ const AddWatermark: React.FC = () => {
         {activeTab === 'text' ? (
           /* Text Watermark Configuration */
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Text Watermark Settings</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">Text Watermark Settings</h2>
             
             {/* Watermark Presets */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-foreground mb-3">
                 Quick Presets
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -551,10 +551,10 @@ const AddWatermark: React.FC = () => {
                   <button
                     key={preset.value}
                     onClick={() => applyPreset(preset)}
-                    className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-left"
+                    className="p-3 border border-border rounded-lg hover:border-primary hover:bg-primary/10 transition-colors text-left"
                   >
-                    <div className="font-medium text-gray-900">{preset.label}</div>
-                    <div className="text-sm text-gray-600">{preset.description}</div>
+                    <div className="font-medium text-foreground">{preset.label}</div>
+                    <div className="text-sm text-muted-foreground">{preset.description}</div>
                   </button>
                 ))}
               </div>
@@ -562,7 +562,7 @@ const AddWatermark: React.FC = () => {
 
             {/* Text Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Watermark Text *
               </label>
               <Input
@@ -577,13 +577,13 @@ const AddWatermark: React.FC = () => {
             {/* Position and Styling */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Position
                 </label>
                 <select
                   value={textFormData.position}
                   onChange={(e) => handleInputChange('position', e.target.value, 'text')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   {positionOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -594,7 +594,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Font Size
                 </label>
                 <Input
@@ -608,7 +608,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Font Color
                 </label>
                 <div className="flex items-center space-x-2">
@@ -616,7 +616,7 @@ const AddWatermark: React.FC = () => {
                     type="color"
                     value={textFormData.fontColor}
                     onChange={(e) => handleInputChange('fontColor', e.target.value, 'text')}
-                    className="w-16 h-10 p-1 border border-gray-300 rounded"
+                    className="w-16 h-10 p-1 border border-border rounded"
                   />
                   <Input
                     type="text"
@@ -629,7 +629,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Opacity
                 </label>
                 <Input
@@ -644,7 +644,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Rotation (degrees)
                 </label>
                 <Input
@@ -661,7 +661,7 @@ const AddWatermark: React.FC = () => {
             {/* Page Range */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Start Page
                 </label>
                 <Input
@@ -674,7 +674,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   End Page (optional)
                 </label>
                 <Input
@@ -688,7 +688,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Exclude Pages (optional)
                 </label>
                 <Input
@@ -704,17 +704,17 @@ const AddWatermark: React.FC = () => {
         ) : (
           /* Image Watermark Configuration */
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Image Watermark Settings</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">Image Watermark Settings</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Position
                 </label>
                 <select
                   value={imageFormData.position}
                   onChange={(e) => handleInputChange('position', e.target.value, 'image')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   {positionOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -725,7 +725,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Opacity
                 </label>
                 <Input
@@ -740,7 +740,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Rotation (degrees)
                 </label>
                 <Input
@@ -754,7 +754,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Scale
                 </label>
                 <Input
@@ -772,7 +772,7 @@ const AddWatermark: React.FC = () => {
             {/* Page Range for Image */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Start Page
                 </label>
                 <Input
@@ -785,7 +785,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   End Page (optional)
                 </label>
                 <Input
@@ -799,7 +799,7 @@ const AddWatermark: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Exclude Pages (optional)
                 </label>
                 <Input
@@ -829,7 +829,7 @@ const AddWatermark: React.FC = () => {
           <Button
             onClick={activeTab === 'text' ? handleAddTextWatermark : handleAddImageWatermark}
             disabled={isProcessing || !selectedPdfFile || (activeTab === 'image' && !selectedImageFile)}
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-2 "
           >
             <Settings className="w-4 h-4" />
             <span>{isProcessing ? 'Processing...' : 'Add Watermark'}</span>
@@ -848,8 +848,8 @@ const AddWatermark: React.FC = () => {
         {/* Preview Section */}
         {previewUrl && (
           <div className="mt-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
-            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Preview</h3>
+            <div className="border border-border rounded-lg p-4">
               <iframe
                 src={previewUrl}
                 className="w-full h-96 border-0"
@@ -861,12 +861,12 @@ const AddWatermark: React.FC = () => {
 
         {/* Results Section */}
         {result && (
-          <div className="mt-8 p-6 bg-green-50 border border-green-200 rounded-lg">
+          <div className="mt-8 p-6 bg-success border border-success-foreground rounded-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-green-800">Watermark Added Successfully!</h3>
+              <h3 className="text-lg font-semibold text-success-foreground">Watermark Added Successfully!</h3>
               <Button
                 onClick={handleDownload}
-                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+                className="flex items-center space-x-2 bg-success hover:bg-success-foreground"
               >
                 <Download className="w-4 h-4" />
                 <span>Download Watermarked PDF</span>
@@ -875,16 +875,16 @@ const AddWatermark: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-medium text-gray-700">File:</span> {result.filename}
+                <span className="font-medium text-foreground">File:</span> {result.filename}
               </div>
               <div>
-                <span className="font-medium text-gray-700">Size:</span> {addWatermarkService.formatFileSize(result.fileSize)}
+                <span className="font-medium text-foreground">Size:</span> {addWatermarkService.formatFileSize(result.fileSize)}
               </div>
               <div>
-                <span className="font-medium text-gray-700">Pages Processed:</span> {result.pagesProcessed}
+                <span className="font-medium text-foreground">Pages Processed:</span> {result.pagesProcessed}
               </div>
               <div>
-                <span className="font-medium text-gray-700">Type:</span> {activeTab === 'text' ? 'Text Watermark' : 'Image Watermark'}
+                <span className="font-medium text-foreground">Type:</span> {activeTab === 'text' ? 'Text Watermark' : 'Image Watermark'}
               </div>
             </div>
           </div>

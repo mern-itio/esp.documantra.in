@@ -65,21 +65,23 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
         if (!value.trim()) return 'Organization name is required';
         if (value.trim().length < 2) return 'Organization name must be at least 2 characters';
         return '';
-      case 'website':
+      case 'website': {
         if (!value.trim()) return 'Website URL is required';
         const urlPattern = /^https?:\/\/.+\..+/i;
         if (!urlPattern.test(value.trim())) return 'Please enter a valid website URL';
         return '';
+      }
       case 'gst':
         if (!value.trim()) return 'GST number is required';
         if (value.trim().length < 10) return 'GST number must be at least 10 characters';
         return '';
-      case 'logo':
+      case 'logo': {
         if (value.trim()) {
           const urlPattern = /^https?:\/\/.+\..+/i;
           if (!urlPattern.test(value.trim())) return 'Please enter a valid logo URL';
         }
         return '';
+      }
       default:
         return '';
     }
@@ -88,8 +90,8 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
   const validateAll = (): boolean => {
     const nextErrors: Record<string, string> = {};
     
-    ['name', 'website', 'gst'].forEach((field) => {
-      const error = validateField(field, (formData as any)[field] || '');
+    (['name', 'website', 'gst'] as const).forEach((field) => {
+      const error = validateField(field, formData[field] || '');
       if (error) nextErrors[field] = error;
     });
 
@@ -242,9 +244,10 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
       setSuccess(true);
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error verifying organization:', err);
-      setFormError(err.response?.data?.message || err.message || 'Failed to submit verification request. Please try again.');
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      setFormError(e.response?.data?.message || e.message || 'Failed to submit verification request. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -253,19 +256,19 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60 backdrop-blur-sm">
+      <div className="bg-card text-card-foreground border border-border rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
+        <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-[#260559] to-[#3E2B66] rounded-lg">
-              <Building className="w-5 h-5 text-white" />
+            <div className="p-2 bg-primary rounded-lg">
+              <Building className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Verify Organization</h2>
+            <h2 className="text-2xl font-bold text-foreground">Verify Organization</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            className="text-muted-foreground hover:text-foreground transition-colors p-1"
             disabled={isLoading}
           >
             <X className="w-6 h-6" />
@@ -276,9 +279,9 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Success Message */}
           {success && (
-            <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded-lg flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <p className="text-green-800 text-sm font-medium">
+            <div className="p-4 bg-green-50 border-l-4 border-green-500 dark:bg-green-950/40 dark:border-green-700 rounded-lg flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <p className="text-green-800 dark:text-green-200 text-sm font-medium">
                 Verification request submitted successfully! Your request is pending review.
               </p>
             </div>
@@ -286,30 +289,30 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
 
           {/* Error Message */}
           {formError && (
-            <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-              <p className="text-red-600 text-sm font-medium">{formError}</p>
+            <div className="p-4 bg-red-50 border-l-4 border-red-500 dark:bg-red-950/40 dark:border-red-700 rounded-lg flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              <p className="text-red-600 dark:text-red-300 text-sm font-medium">{formError}</p>
             </div>
           )}
 
           {/* Organization Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-foreground mb-2">
               Organization Name <span className="text-red-500">*</span>
             </label>
             <div className="relative group">
               <Building className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors duration-300 ${
-                errors.name ? 'text-red-500' : 'text-gray-400 group-focus-within:text-[#3E2B66]'
+                errors.name ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'
               }`} />
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className={`w-full pl-10 pr-4 py-3 text-sm border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 ${
+                className={`w-full pl-10 pr-4 py-3 text-sm bg-background border-2 rounded-lg transition-all duration-300 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 ${
                   errors.name
                     ? 'border-red-400 focus:border-red-500'
-                    : 'border-gray-300 focus:border-[#3E2B66] hover:border-gray-400'
+                    : 'border-input focus:border-primary hover:border-border'
                 }`}
                 placeholder="Acme Corporation"
                 disabled={isLoading}
@@ -323,22 +326,22 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
 
           {/* Website */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-foreground mb-2">
               Website URL <span className="text-red-500">*</span>
             </label>
             <div className="relative group">
               <Globe className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors duration-300 ${
-                errors.website ? 'text-red-500' : 'text-gray-400 group-focus-within:text-[#3E2B66]'
+                errors.website ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'
               }`} />
               <input
                 type="url"
                 name="website"
                 value={formData.website}
                 onChange={handleInputChange}
-                className={`w-full pl-10 pr-4 py-3 text-sm border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 ${
+                className={`w-full pl-10 pr-4 py-3 text-sm bg-background border-2 rounded-lg transition-all duration-300 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 ${
                   errors.website
                     ? 'border-red-400 focus:border-red-500'
-                    : 'border-gray-300 focus:border-[#3E2B66] hover:border-gray-400'
+                    : 'border-input focus:border-primary hover:border-border'
                 }`}
                 placeholder="https://www.example.com"
                 disabled={isLoading}
@@ -352,22 +355,22 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
 
           {/* GST Number */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-foreground mb-2">
               GST Number <span className="text-red-500">*</span>
             </label>
             <div className="relative group">
               <FileText className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors duration-300 ${
-                errors.gst ? 'text-red-500' : 'text-gray-400 group-focus-within:text-[#3E2B66]'
+                errors.gst ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'
               }`} />
               <input
                 type="text"
                 name="gst"
                 value={formData.gst}
                 onChange={handleInputChange}
-                className={`w-full pl-10 pr-4 py-3 text-sm border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 ${
+                className={`w-full pl-10 pr-4 py-3 text-sm bg-background border-2 rounded-lg transition-all duration-300 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 ${
                   errors.gst
                     ? 'border-red-400 focus:border-red-500'
-                    : 'border-gray-300 focus:border-[#3E2B66] hover:border-gray-400'
+                    : 'border-input focus:border-primary hover:border-border'
                 }`}
                 placeholder="GST123456789"
                 disabled={isLoading}
@@ -381,22 +384,22 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
 
           {/* Logo URL */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-foreground mb-2">
               Organization Logo URL
             </label>
             <div className="relative group">
               <Upload className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors duration-300 ${
-                errors.logo ? 'text-red-500' : 'text-gray-400 group-focus-within:text-[#3E2B66]'
+                errors.logo ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'
               }`} />
               <input
                 type="url"
                 name="logo"
                 value={formData.logo}
                 onChange={handleInputChange}
-                className={`w-full pl-10 pr-4 py-3 text-sm border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 ${
+                className={`w-full pl-10 pr-4 py-3 text-sm bg-background border-2 rounded-lg transition-all duration-300 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 ${
                   errors.logo
                     ? 'border-red-400 focus:border-red-500'
-                    : 'border-gray-300 focus:border-[#3E2B66] hover:border-gray-400'
+                    : 'border-input focus:border-primary hover:border-border'
                 }`}
                 placeholder="https://www.example.com/logo.png"
                 disabled={isLoading}
@@ -409,8 +412,8 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
             {/* Logo Preview */}
             {logoPreview && (
               <div className="mt-3">
-                <p className="text-xs text-gray-600 mb-2">Preview:</p>
-                <div className="w-32 h-32 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                <p className="text-xs text-muted-foreground mb-2">Preview:</p>
+                <div className="w-32 h-32 border border-border rounded-lg overflow-hidden bg-muted flex items-center justify-center">
                   <img
                     src={logoPreview}
                     alt="Logo preview"
@@ -424,10 +427,10 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
 
           {/* Verification Documents */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-foreground mb-2">
               Verification Documents <span className="text-red-500">*</span>
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#3E2B66] transition-colors duration-300">
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors duration-300">
               <input
                 type="file"
                 id="documents"
@@ -442,11 +445,11 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
                 htmlFor="documents"
                 className={`cursor-pointer flex flex-col items-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <Upload className="h-8 w-8 text-gray-400" />
-                <span className="text-sm text-gray-600">
+                <Upload className="h-8 w-8 text-muted-foreground" />
+                <span className="text-sm text-foreground">
                   Click to upload or drag and drop
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   PDF, DOC, DOCX, JPG, PNG (Max 10MB each)
                 </span>
               </label>
@@ -461,20 +464,20 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
                 {documentFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    className="p-3 bg-muted/50 rounded-lg border border-border"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm text-gray-700">{file.name}</span>
-                        <span className="text-xs text-gray-500">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">{file.name}</span>
+                        <span className="text-xs text-muted-foreground">
                           ({(file.size / 1024 / 1024).toFixed(2)} MB)
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => removeDocument(index)}
-                        className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
+                        className="p-1 hover:bg-red-100 dark:hover:bg-red-950/40 rounded text-red-600 dark:text-red-400 transition-colors"
                         disabled={isLoading}
                       >
                         <X className="h-4 w-4" />
@@ -482,7 +485,7 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
                     </div>
 
                     {documentPreviews[index] && (
-                      <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="mt-2 border border-border rounded-lg overflow-hidden">
                         {file.type.startsWith('image/') ? (
                           <img
                             src={documentPreviews[index] as string}
@@ -496,7 +499,7 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
                             className="w-full h-40"
                           />
                         ) : (
-                          <div className="p-3 text-xs text-gray-500">Preview not available for this document type.</div>
+                          <div className="p-3 text-xs text-muted-foreground">Preview not available for this document type.</div>
                         )}
                       </div>
                     )}
@@ -507,18 +510,18 @@ export const VerifyOrganizationModal: React.FC<VerifyOrganizationModalProps> = (
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 text-gray-700 bg-gray-100 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+              className="px-6 py-2.5 text-foreground bg-muted rounded-lg font-semibold hover:bg-muted/80 transition-colors"
               disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg font-semibold hover:from-[#3E2B66] hover:to-[#260559] shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading || success}
             >
               {isLoading ? 'Submitting...' : success ? 'Submitted' : 'Submit Verification Request'}

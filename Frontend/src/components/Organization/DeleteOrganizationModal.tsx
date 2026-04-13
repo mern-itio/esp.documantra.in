@@ -41,19 +41,19 @@ export const DeleteOrganizationModal: React.FC<DeleteOrganizationModalProps> = (
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60 backdrop-blur-sm">
+      <div className="bg-card text-card-foreground border border-border rounded-xl shadow-2xl w-full max-w-md mx-4">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Delete Organization</h2>
+            <h2 className="text-xl font-bold text-foreground">Delete Organization</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            className="text-muted-foreground hover:text-foreground transition-colors p-1"
             disabled={isLoading}
           >
             <X className="w-6 h-6" />
@@ -62,10 +62,10 @@ export const DeleteOrganizationModal: React.FC<DeleteOrganizationModalProps> = (
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-gray-700 mb-4">
-            Are you sure you want to delete <span className="font-semibold text-gray-900">{organization?.name}</span>?
+          <p className="text-foreground mb-4">
+            Are you sure you want to delete <span className="font-semibold text-foreground">{organization?.name}</span>?
           </p>
-          <p className="text-sm text-gray-600 mb-6">
+          <p className="text-sm text-muted-foreground mb-6">
             This action cannot be undone. All data associated with this organization will be permanently deleted.
           </p>
 
@@ -74,7 +74,7 @@ export const DeleteOrganizationModal: React.FC<DeleteOrganizationModalProps> = (
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 text-gray-700 bg-gray-100 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+              className="px-6 py-2.5 text-foreground bg-muted rounded-lg font-semibold hover:bg-muted/80 transition-colors"
               disabled={isLoading}
             >
               Cancel
@@ -82,7 +82,7 @@ export const DeleteOrganizationModal: React.FC<DeleteOrganizationModalProps> = (
             <button
               type="button"
               onClick={handleDelete}
-              className="px-6 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
               {isLoading ? 'Deleting...' : 'Yes, Delete'}

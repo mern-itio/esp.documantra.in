@@ -519,25 +519,25 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
       {!pdfDocument && (
             <div
           className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${dragActive
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-primary bg-primary/10'
+              : 'border-border hover:border-primary'
             }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
         >
-          <FiUpload className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-          <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+          <FiUpload className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
+          <h3 className="text-2xl font-semibold text-foreground mb-4">
             Drop your PDF here or click to browse
           </h3>
-          <p className="text-gray-600 mb-2 text-lg">
+          <p className="text-muted-foreground mb-2 text-lg">
             Select a PDF file to crop its pages
           </p>
-          <p className="text-sm text-gray-500 mb-6">Maximum file size: 2MB</p>
+          <p className="text-sm text-muted-foreground mb-6">Maximum file size: 2MB</p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition-colors"
+            className="bg-primary text-foreground px-8 py-3 rounded-lg text-lg font-medium hover:bg-primary/80 transition-colors"
             style={{ cursor: 'pointer' }}
           >
             Choose PDF File
@@ -555,23 +555,23 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
         {pdfDocument && pdfInfo && (
           <div>
             {/* Document Info */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-background rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <FiFile className="w-12 h-12 text-blue-500" />
+                <FiFile className="w-12 h-12 text-primary" />
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{pdfDocument.name}</h3>
-                  <p className="text-gray-600">
+                      <h3 className="text-xl font-semibold text-foreground">{pdfDocument.name}</h3>
+                  <p className="text-muted-foreground">
                     {formatFileSize(pdfDocument.size)} • {pdfInfo.pages} pages
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     File size: {formatFileSize(pdfInfo.size)}
                   </p>
                 </div>
               </div>
               <button
                 onClick={removeDocument}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
                 style={{ cursor: 'pointer' }}
               >
                 <FiTrash2 className="h-6 w-6" />
@@ -580,13 +580,13 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
           </div>
 
           {/* PDF Viewer and Cropping Area */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-background rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900">Crop PDF Pages</h2>
+              <h2 className="text-2xl font-semibold text-foreground">Crop PDF Pages</h2>
               <div className="flex items-center space-x-4">
                 <button
                   onClick={clearAllCrops}
-                  className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                  className="px-4 py-2 text-sm bg-muted text-foreground rounded-md hover:bg-muted/80 transition-colors"
                   style={{ cursor: 'pointer' }}
                 >
                   Clear All Crops
@@ -595,8 +595,8 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
             </div>
 
             {/* Instructions */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-blue-800 text-sm">
+            <div className="bg-background border border-border rounded-lg p-4 mb-6">
+              <p className="text-foreground text-sm">
                 <strong>How to crop:</strong> Click and drag your mouse over the PDF page to select the area you want to keep.
                 The selected area will be highlighted in blue. You can make multiple selections on different pages.
               </p>
@@ -606,17 +606,17 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
               <button
                 onClick={prevPage}
                 disabled={currentPage <= 1}
-                className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <span className="text-lg font-medium text-gray-900">
+              <span className="text-lg font-medium text-foreground">
                 Page {currentPage} of {pdfInfo.pages}
               </span>
               <button
                 onClick={nextPage}
                 disabled={currentPage >= pdfInfo.pages}
-                className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ArrowRight className="w-5 h-5" />
               </button>
@@ -626,12 +626,12 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
             <div className="relative rounded-lg overflow-hidden mb-6">
               {loading ? (
                 <div className="flex items-center justify-center p-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <span className="ml-3 text-gray-600">Loading PDF pages...</span>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
+                  <span className="ml-3 text-muted-foreground">Loading PDF pages...</span>
                 </div>
               ) : pdfPages.length === 0 ? (
                 <div className="flex items-center justify-center p-12">
-                  <div className="text-center text-gray-500">
+                  <div className="text-center text-muted-foreground">
                     <p>No PDF pages loaded</p>
                     <p className="text-sm">Please wait for the PDF to process...</p>
                   </div>
@@ -644,14 +644,14 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseLeave}
-                  style={{ maxWidth: '500px', maxHeight: '100vh', border: '1px solid #ddd' }}
+                  style={{ maxWidth: '500px', maxHeight: '100vh', border: '1px solid #border' }}
                 >
                   {renderCurrentPage()}
 
                   {/* Active crop selection */}
                   {cropSelection && (
                     <div
-                      className="absolute border-2 border-blue-500  bg-opacity-20"
+                      className="absolute border-2 border-primary  bg-opacity-20"
                       style={{
                         left: Math.min(cropSelection.startX, cropSelection.endX),
                         top: Math.min(cropSelection.startY, cropSelection.endY),
@@ -675,7 +675,7 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
                     return (
                       <div
                         key={index}
-                        className="absolute border-2 border-green-500 bg-opacity-20"
+                        className="absolute border-2 border-primary bg-opacity-20"
                         style={{
                           left: crop.cropArea.x * scaleX,
                           top: crop.cropArea.y * scaleY,
@@ -691,18 +691,18 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
 
             {/* Crop Summary */}
             {cropAreas.length > 0 && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                <h3 className="font-medium text-green-800 mb-3">Crop Areas Selected</h3>
+              <div className="bg-background border border-border rounded-lg p-4 mb-6">
+                <h3 className="font-medium text-foreground mb-3">Crop Areas Selected</h3>
                 <div className="space-y-2">
                   {cropAreas.map((crop, index) => (
-                    <div key={index} className="flex items-center justify-between bg-white rounded p-3">
-                      <div className="text-sm text-green-700">
+                    <div key={index} className="flex items-center justify-between bg-card rounded p-3">
+                      <div className="text-sm text-foreground">
                         <span className="font-medium">Page {crop.page}</span> -
                         {Math.round(crop.cropArea.width)} × {Math.round(crop.cropArea.height)} pts
                       </div>
                       <button
                         onClick={() => removeCropArea(index)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-destructive hover:text-destructive/80"
                         style={{ cursor: 'pointer' }}
                       >
                         <FiTrash2 className="w-4 h-4" />
@@ -718,17 +718,17 @@ const CropPDF: React.FC<CropPDFProps> = ({ onCropResult }) => {
               <button
                 onClick={handleCrop}
                 disabled={cropping || cropAreas.length === 0}
-                className="bg-blue-600 text-white py-4 px-8 rounded-lg font-medium text-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center mx-auto"
+                className="bg-primary text-foreground py-4 px-8 rounded-lg font-medium text-lg hover:bg-primary/80 disabled:bg-muted disabled:cursor-not-allowed transition-colors flex items-center justify-center mx-auto"
                 style={{ cursor: 'pointer' }}
               >
                 {cropping ? (
                   <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-foreground mr-3"></div>
                     Cropping Pages...
                   </div>
                 ) : (
                   <div className="flex items-center">
-                    <FiCrop className="w-5 h-5 mr-2" />
+                    <FiCrop className="w-5 h-5 mr-2 text-foreground" />
                     Crop Pages ({cropAreas.length})
                   </div>
                 )}

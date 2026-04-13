@@ -175,19 +175,19 @@ const MakeSearchable: React.FC = () => {
   // Show only result when processing is successful - hide everything else
   if (results.length > 0 && !isProcessing) {
     return (
-      <div className="mx-auto space-y-6">
-        <div className="bg-white shadow-sm border-b">
+      <div className="mx-auto min-h-full w-full space-y-6 bg-background text-foreground">
+        <div className="bg-background shadow-sm border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-6">
               <Link
                 to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Make Searchable</h1>
-                <p className="mt-2 text-sm text-gray-600">
+                <h1 className="text-3xl font-bold text-foreground">Make Searchable</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Convert scanned PDFs to searchable documents with preserved layout
                 </p>
               </div>
@@ -199,62 +199,62 @@ const MakeSearchable: React.FC = () => {
         <div className="max-w-7xl mx-auto p-6">
           <Card className="p-6">
             <div className="text-center mb-6">
-              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Processing Complete!</h3>
-              <p className="text-gray-600">Your PDF is now selectable and searchable</p>
+              <CheckCircle className="w-16 h-16 text-emerald-600 dark:text-emerald-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-foreground mb-2">Processing Complete!</h3>
+              <p className="text-muted-foreground">Your PDF is now selectable and searchable</p>
             </div>
 
             {/* Summary Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">{results.length}</p>
-                <p className="text-sm text-gray-600">Files Processed</p>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-2xl font-bold text-foreground">{results.length}</p>
+                <p className="text-sm text-muted-foreground">Files Processed</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-muted rounded-lg">
                 <p className="text-2xl font-bold text-blue-600">{getLanguageName(results[0]?.language)}</p>
-                <p className="text-sm text-gray-600">Language</p>
+                <p className="text-sm text-muted-foreground">Language</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-muted rounded-lg">
                 <p className="text-2xl font-bold text-green-600">{getAccuracyLabel(results[0]?.accuracy)}</p>
-                <p className="text-sm text-gray-600">Accuracy</p>
+                <p className="text-sm text-muted-foreground">Accuracy</p>
               </div>
             </div>
 
             {/* Individual Results */}
             <div className="space-y-4 mb-6">
-              <h4 className="font-medium text-gray-900">File Results:</h4>
+              <h4 className="font-medium text-foreground">File Results:</h4>
               {results.map((result, index) => (
-                <div key={index} className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div key={index} className="p-4 bg-emerald-50 dark:bg-emerald-950/35 border border-emerald-200 dark:border-emerald-900 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-green-900">{result.filename}</span>
+                    <span className="font-medium text-emerald-900 dark:text-emerald-200">{result.filename}</span>
                     <Button
                       onClick={() => handleDownload(result.outputFilename)}
                       size="sm"
                       variant="outline"
-                      className="text-green-700 border-green-300 hover:bg-green-100"
+                      className="text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-950/40"
                     >
                       <Download className="h-4 w-4 mr-1" />
                       Download
                     </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-green-700">
+                  <div className="grid grid-cols-2 gap-2 text-sm text-emerald-700 dark:text-emerald-300">
                     <div>
-                      <span className="text-green-600">Language:</span> {getLanguageName(result.language)}
+                      <span className="text-emerald-600 dark:text-emerald-400">Language:</span> {getLanguageName(result.language)}
                     </div>
                     <div>
-                      <span className="text-green-600">Accuracy:</span> {getAccuracyLabel(result.accuracy)}
+                      <span className="text-emerald-600 dark:text-emerald-400">Accuracy:</span> {getAccuracyLabel(result.accuracy)}
                     </div>
                     <div>
-                      <span className="text-green-600">Original:</span> {makeSearchableService.formatFileSize(result.originalSize)}
+                      <span className="text-emerald-600 dark:text-emerald-400">Original:</span> {makeSearchableService.formatFileSize(result.originalSize)}
                     </div>
                     <div>
-                      <span className="text-green-600">Processed:</span> {makeSearchableService.formatFileSize(result.processedSize)}
+                      <span className="text-emerald-600 dark:text-emerald-400">Processed:</span> {makeSearchableService.formatFileSize(result.processedSize)}
                     </div>
                     <div>
-                      <span className="text-green-600">Text Length:</span> {result.textLength} chars
+                      <span className="text-emerald-600 dark:text-emerald-400">Text Length:</span> {result.textLength} chars
                     </div>
                     <div>
-                      <span className="text-green-600">Confidence:</span> {result.confidence}
+                      <span className="text-emerald-600 dark:text-emerald-400">Confidence:</span> {result.confidence}
                     </div>
                   </div>
                 </div>
@@ -291,19 +291,19 @@ const MakeSearchable: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto space-y-6">
-      <div className="bg-white shadow-sm border-b">
+    <div className="mx-auto min-h-full w-full space-y-6 bg-background text-foreground">
+      <div className="bg-background shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
               to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Make Searchable</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Make Searchable</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Convert scanned PDFs to searchable documents with preserved layout
               </p>
             </div>
@@ -316,16 +316,16 @@ const MakeSearchable: React.FC = () => {
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Upload a PDF that contains scanned images of text (not a PDF with selectable text)</h3>
             <div
-              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+              className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/60 transition-colors cursor-pointer bg-muted/30 dark:bg-muted/20"
               onClick={() => fileInputRef.current?.click()}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
             >
-              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">
-                Drop PDF files here or <span className="text-blue-600 font-medium">click to browse</span>
+              <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-2">
+                Drop PDF files here or <span className="text-primary font-medium">click to browse</span>
               </p>
-              <p className="text-sm text-gray-500">Supports up to 5 PDF files, 2MB each</p>
+              <p className="text-sm text-muted-foreground">Supports up to 5 PDF files, 2MB each</p>
             </div>
             <input
               ref={fileInputRef}
@@ -341,24 +341,24 @@ const MakeSearchable: React.FC = () => {
         {/* Selected Files Info - Show after file selection */}
         {selectedFiles.length > 0 && (
           <Card className="p-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="bg-primary/10 border border-primary/30 dark:bg-primary/15 dark:border-primary/40 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-blue-900">Selected PDF Files ({selectedFiles.length})</h3>
+                <h3 className="text-lg font-semibold text-foreground">Selected PDF Files ({selectedFiles.length})</h3>
                
               </div>
               <div className="space-y-2">
                 {selectedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
+                  <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
                     <div className="flex items-center space-x-3">
-                      <FileText className="h-5 w-5 text-blue-600" />
+                      <FileText className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="font-medium text-gray-900">{file.name}</p>
-                        <p className="text-sm text-gray-500">{makeSearchableService.formatFileSize(file.size)}</p>
+                        <p className="font-medium text-foreground">{file.name}</p>
+                        <p className="text-sm text-muted-foreground">{makeSearchableService.formatFileSize(file.size)}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => removeFile(index)}
-                      className="text-red-500 hover:text-red-700 p-1"
+                      className="text-destructive hover:text-destructive/90 p-1"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -379,13 +379,13 @@ const MakeSearchable: React.FC = () => {
           <div className="space-y-4">
             {/* Language Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Language
               </label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-border rounded-md bg-background text-foreground"
               >
                 {languages.map((lang) => (
                   <option key={lang.code} value={lang.code}>
@@ -397,13 +397,13 @@ const MakeSearchable: React.FC = () => {
 
             {/* Accuracy Level */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Accuracy Level
               </label>
               <select
                 value={accuracy}
                 onChange={(e) => setAccuracy(e.target.value as 'fast' | 'balanced' | 'accurate')}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-border rounded-md bg-background text-foreground"
               >
                 {accuracyLevels.map((level) => (
                   <option key={level.value} value={level.value}>
@@ -420,14 +420,14 @@ const MakeSearchable: React.FC = () => {
                   type="checkbox"
                   checked={preserveLayout}
                   onChange={(e) => setPreserveLayout(e.target.checked)}
-                  className="text-blue-600 rounded"
+                  className="text-primary rounded"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-foreground">
                   <Eye className="h-4 w-4 inline mr-2" />
                   Preserve Layout
                 </span>
               </label>
-              <p className="text-xs text-gray-500 ml-6">
+              <p className="text-xs text-muted-foreground ml-6">
                 Maintain original document formatting and structure
               </p>
 
@@ -436,14 +436,14 @@ const MakeSearchable: React.FC = () => {
                   type="checkbox"
                   checked={createInvisibleLayer}
                   onChange={(e) => setCreateInvisibleLayer(e.target.checked)}
-                  className="text-blue-600 rounded"
+                  className="text-primary rounded"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-foreground">
                   <EyeOff className="h-4 w-4 inline mr-2" />
                   Create Invisible Text Layer
                 </span>
               </label>
-              <p className="text-xs text-gray-500 ml-6">
+              <p className="text-xs text-muted-foreground ml-6">
                 Add searchable text without visual changes
               </p>
 
@@ -452,14 +452,14 @@ const MakeSearchable: React.FC = () => {
                   type="checkbox"
                   checked={enhanceImage}
                   onChange={(e) => setEnhanceImage(e.target.checked)}
-                  className="text-blue-600 rounded"
+                  className="text-primary rounded"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-foreground">
                   <ImageIcon className="h-4 w-4 inline mr-2" />
                   Enhance Image Quality
                 </span>
               </label>
-              <p className="text-xs text-gray-500 ml-6">
+              <p className="text-xs text-muted-foreground ml-6">
                 Improve image clarity for better OCR results
               </p>
 
@@ -468,43 +468,43 @@ const MakeSearchable: React.FC = () => {
                   type="checkbox"
                   checked={removeNoise}
                   onChange={(e) => setRemoveNoise(e.target.checked)}
-                  className="text-blue-600 rounded"
+                  className="text-primary rounded"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-foreground">
                   <Sparkles className="h-4 w-4 inline mr-2" />
                   Remove Noise
                 </span>
               </label>
-              <p className="text-xs text-gray-500 ml-6">
+              <p className="text-xs text-muted-foreground ml-6">
                 Clean up image artifacts and improve text clarity
               </p>
             </div>
 
             {/* Process Button - Integrated with settings */}
             {!isProcessing && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-4">
+              <div className="mt-6 pt-6 border-t border-border">
+                <div className="bg-gradient-to-r from-primary/10 to-indigo-500/10 dark:from-primary/15 dark:to-indigo-500/15 rounded-lg p-4 mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">Ready to Process</h4>
-                    <span className="text-sm text-blue-600 font-medium">
+                    <h4 className="font-medium text-foreground">Ready to Process</h4>
+                    <span className="text-sm text-primary font-medium">
                       {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''} selected
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-muted-foreground mb-3">
                     Your PDFs will be converted to searchable documents with the settings above.
                   </p>
                   <Button
                     onClick={handleMakeSearchable}
                     disabled={selectedFiles.length === 0}
                     size="lg"
-                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                    className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
                   >
                     <Search className="h-5 w-5 mr-2" />
                     {selectedFiles.length > 0 ? 'Make Searchable' : 'Select Files First'}
                   </Button>
                 </div>
                 {selectedFiles.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center">
+                  <p className="text-sm text-muted-foreground text-center">
                     Upload PDF files above to get started
                   </p>
                 )}
@@ -517,24 +517,24 @@ const MakeSearchable: React.FC = () => {
         {isProcessing && (
           <Card className="p-6">
             <div className="text-center mb-4">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-3">
-                <Search className="h-6 w-6 text-blue-600 animate-pulse" />
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/15 rounded-full mb-3">
+                <Search className="h-6 w-6 text-primary animate-pulse" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Processing Your PDFs</h3>
-              <p className="text-sm text-gray-600">Converting scanned PDFs to searchable documents...</p>
+              <h3 className="text-lg font-semibold text-foreground">Processing Your PDFs</h3>
+              <p className="text-sm text-muted-foreground">Converting scanned PDFs to searchable documents...</p>
             </div>
             <div className="space-y-3">
-              <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="w-full bg-muted rounded-full h-3">
                 <div 
-                  className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                  className="bg-primary h-3 rounded-full transition-all duration-500"
                   style={{ width: `${progress.percentage}%` }}
                 />
               </div>
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Processing {progress.total} file{progress.total !== 1 ? 's' : ''}</span>
                 <span>{Math.round(progress.percentage)}% complete</span>
               </div>
-              <p className="text-sm text-gray-500 text-center">
+              <p className="text-sm text-muted-foreground text-center">
                 {progress.percentage < 100 
                   ? 'Converting scanned PDFs to searchable documents...' 
                   : 'Finalizing results...'}
@@ -545,12 +545,12 @@ const MakeSearchable: React.FC = () => {
 
         {/* Error Display */}
         {error && (
-          <Card className="p-6 border-red-200 bg-red-50">
+          <Card className="p-6 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/35">
             <div className="flex items-center space-x-3">
               <AlertCircle className="h-6 w-6 text-red-600" />
               <div>
-                <h3 className="font-medium text-red-900">Error</h3>
-                <p className="text-sm text-red-700">{error}</p>
+                <h3 className="font-medium text-red-900 dark:text-red-200">Error</h3>
+                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
               </div>
             </div>
           </Card>

@@ -221,21 +221,21 @@ const SmartConversion: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
-            <Link to={`/pdf-tools${location.search}`} className="text-gray-500 hover:text-gray-700">
+            <Link to={`/pdf-tools${location.search}`} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-6 h-6" />
             </Link>
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+              <div className="p-2 bg-primary rounded-lg">
                 <Brain className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Smart Conversion</h1>
-                <p className="text-gray-600">AI-powered format detection and optimal conversion</p>
+                <h1 className="text-3xl font-bold text-foreground">Smart Conversion</h1>
+                <p className="text-muted-foreground">AI-powered format detection and optimal conversion</p>
               </div>
             </div>
           </div>
@@ -245,15 +245,15 @@ const SmartConversion: React.FC = () => {
         {/* Upload Section - Full Width Initially */}
         {!selectedFile && (
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
               <Upload className="w-5 h-5 mr-2" />
               Upload File
             </h3>
 
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
-                  ? 'border-blue-400 bg-blue-50'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary'
                 }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -264,8 +264,8 @@ const SmartConversion: React.FC = () => {
                 <div className="space-y-3">
                   {getFileIcon((selectedFile as File).name)}
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{(selectedFile as File).name}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm font-medium text-foreground">{(selectedFile as File).name}</p>
+                    <p className="text-xs text-muted-foreground">
                       {smartConversionService.formatFileSize((selectedFile as File).size)}
                     </p>
                   </div>
@@ -283,18 +283,18 @@ const SmartConversion: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto" />
+                  <Upload className="w-12 h-12 text-muted-foreground mx-auto" />
                   <div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       Drag and drop your file here, or{' '}
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="text-blue-600 hover:text-blue-500 font-medium"
+                        className="text-primary hover:text-primary/90 font-medium"
                       >
                         browse
                       </button>
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Upload PDF file and AI will give perfect format suggestion
                     </p>
                   
@@ -318,7 +318,7 @@ const SmartConversion: React.FC = () => {
             {/* File Info */}
             <div>
               <Card className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                   <FileText className="w-5 h-5 mr-2" />
                   File Information
                 </h3>
@@ -326,8 +326,8 @@ const SmartConversion: React.FC = () => {
                   <div className="flex items-center space-x-3">
                     {getFileIcon(selectedFile.name)}
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
+                      <p className="text-xs text-muted-foreground">
                         {smartConversionService.formatFileSize(selectedFile!.size)}
                       </p>
                     </div>
@@ -349,25 +349,25 @@ const SmartConversion: React.FC = () => {
               {/* Format Analysis */}
               {formatAnalysis && (
                 <Card className="p-6 mt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                     <Eye className="w-5 h-5 mr-2" />
                     Format Analysis
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Detected Format:</span>
-                      <span className="text-sm font-medium text-gray-900 capitalize">
+                        <span className="text-sm text-muted-foreground">Detected Format:</span>
+                      <span className="text-sm font-medium text-foreground capitalize">
                         {formatAnalysis.detectedFormat}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Confidence:</span>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm text-muted-foreground">Confidence:</span>
+                      <span className="text-sm font-medium text-foreground">
                         {Math.round(formatAnalysis.confidence * 100)}%
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Quality:</span>
+                      <span className="text-sm text-muted-foreground">Quality:</span>
                       <span className={`text-sm font-medium capitalize ${formatAnalysis.quality === 'excellent' ? 'text-green-600' :
                           formatAnalysis.quality === 'good' ? 'text-blue-600' :
                             formatAnalysis.quality === 'medium' ? 'text-yellow-600' :
@@ -377,7 +377,7 @@ const SmartConversion: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Complexity:</span>
+                      <span className="text-sm text-muted-foreground">Complexity:</span>
                       <span className={`text-sm font-medium capitalize ${formatAnalysis.complexity === 'low' ? 'text-green-600' :
                           formatAnalysis.complexity === 'medium' ? 'text-yellow-600' :
                             'text-red-600'
@@ -387,8 +387,8 @@ const SmartConversion: React.FC = () => {
                     </div>
                     {formatAnalysis.metadata.pageCount && (
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Pages:</span>
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm text-muted-foreground">Pages:</span>
+                        <span className="text-sm font-medium text-foreground">
                           {formatAnalysis.metadata.pageCount}
                         </span>
                       </div>
@@ -401,19 +401,19 @@ const SmartConversion: React.FC = () => {
             {/* Settings Column */}
             <div>
               <Card className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                   <Settings className="w-5 h-5 mr-2" />
                   Conversion Settings
                 </h3>
 
                 {/* Mode Selection */}
                 <div className="mb-4">
-                  <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                  <div className="flex space-x-1 bg-muted p-1 rounded-lg">
                     <button
                       onClick={() => setActiveMode('smart')}
                       className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeMode === 'smart'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
                       <Brain className="w-4 h-4 inline mr-1" />
@@ -422,8 +422,8 @@ const SmartConversion: React.FC = () => {
                     <button
                       onClick={() => setActiveMode('presets')}
                       className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeMode === 'presets'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
                       <Target className="w-4 h-4 inline mr-1" />
@@ -432,8 +432,8 @@ const SmartConversion: React.FC = () => {
                     <button
                       onClick={() => setActiveMode('custom')}
                       className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeMode === 'custom'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
                       <Gauge className="w-4 h-4 inline mr-1" />
@@ -444,13 +444,13 @@ const SmartConversion: React.FC = () => {
 
                 {/* Target Format */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Target Format
                   </label>
                   <select
                     value={targetFormat}
                     onChange={(e) => setTargetFormat(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border bg-card text-foreground border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     {formatAnalysis?.recommendations?.targetFormats?.map((format: string) => (
                       <option key={format} value={format}>
@@ -476,17 +476,17 @@ const SmartConversion: React.FC = () => {
                     {CONVERSION_PRESETS.map((preset) => (
                       <div
                         key={preset.name}
-                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedPreset?.name === preset.name
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                        className={`p-3 border bg-card text-foreground border-border rounded-lg cursor-pointer transition-colors ${selectedPreset?.name === preset.name
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary'
                           }`}
                         onClick={() => setSelectedPreset(preset)}
                       >
                         <div className="flex items-center space-x-3">
                           {getPresetIcon(preset)}
                           <div className="flex-1">
-                            <h4 className="text-sm font-medium text-gray-900">{preset.name}</h4>
-                            <p className="text-xs text-gray-600">{preset.description}</p>
+                              <h4 className="text-sm font-medium text-foreground">{preset.name}</h4>
+                            <p className="text-xs text-muted-foreground">{preset.description}</p>
                           </div>
                         </div>
                       </div>
@@ -498,13 +498,13 @@ const SmartConversion: React.FC = () => {
                 {activeMode === 'custom' && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Quality Level
                       </label>
                       <select
                         value={qualityLevel}
                         onChange={(e) => setQualityLevel(e.target.value as any)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option value="auto">Auto</option>
                         <option value="high">High</option>
@@ -519,9 +519,9 @@ const SmartConversion: React.FC = () => {
                         id="preserveLayout"
                         checked={preserveLayout}
                         onChange={(e) => setPreserveLayout(e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-border bg-card text-foreground focus:ring-primary"
                       />
-                      <label htmlFor="preserveLayout" className="text-sm text-gray-700">
+                      <label htmlFor="preserveLayout" className="text-sm text-foreground">
                         Preserve Layout
                       </label>
                     </div>
@@ -532,9 +532,9 @@ const SmartConversion: React.FC = () => {
                         id="optimizeForWeb"
                         checked={optimizeForWeb}
                         onChange={(e) => setOptimizeForWeb(e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-border bg-card text-foreground focus:ring-primary"
                       />
-                      <label htmlFor="optimizeForWeb" className="text-sm text-gray-700">
+                      <label htmlFor="optimizeForWeb" className="text-sm text-foreground">
                         Optimize for Web
                       </label>
                     </div>
@@ -546,7 +546,7 @@ const SmartConversion: React.FC = () => {
                   <Button
                     onClick={handleConvert}
                     disabled={!selectedFile || isConverting || isAnalyzing}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    className="w-full bg-primary hover:bg-primary/90"
                   >
                     {isConverting ? (
                       <>
@@ -577,7 +577,7 @@ const SmartConversion: React.FC = () => {
             {/* File Info */}
             <div>
               <Card className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                   <FileText className="w-5 h-5 mr-2" />
                   File Information
                 </h3>
@@ -585,8 +585,8 @@ const SmartConversion: React.FC = () => {
                   <div className="flex items-center space-x-3">
                     {getFileIcon(selectedFile!.name)}
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{selectedFile!.name}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm font-medium text-foreground">{selectedFile!.name}</p>
+                      <p className="text-xs text-muted-foreground">
                         {smartConversionService.formatFileSize(selectedFile!.size)}
                       </p>
                     </div>
@@ -600,38 +600,38 @@ const SmartConversion: React.FC = () => {
               {/* Progress */}
               {conversionProgress && (
                 <Card className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                     <Clock className="w-5 h-5 mr-2" />
                     Conversion Progress
                   </h3>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">
+                        <span className="text-muted-foreground">
                         {conversionProgress.currentFile}
                       </span>
-                      <span className="text-gray-900">
+                      <span className="text-foreground">
                         {conversionProgress.fileIndex + 1} of {conversionProgress.totalFiles}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-muted rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-primary h-2 rounded-full transition-all duration-300"
                         style={{ width: `${conversionProgress.progress}%` }}
                       />
                     </div>
-                    <p className="text-sm text-gray-600">{conversionProgress.message}</p>
+                    <p className="text-sm text-muted-foreground">{conversionProgress.message}</p>
                   </div>
                 </Card>
               )}
 
               {/* Error */}
               {error && (
-                <Card className="p-6 border-red-200 bg-red-50">
+                <Card className="p-6 border-destructive bg-destructive/10">
                   <div className="flex items-center space-x-3">
-                    <AlertCircle className="w-5 h-5 text-red-600" />
+                    <AlertCircle className="w-5 h-5 text-destructive" />
                     <div>
-                      <h3 className="text-sm font-medium text-red-800">Error</h3>
-                      <p className="text-sm text-red-700">{error}</p>
+                      <h3 className="text-sm font-medium text-destructive">Error</h3>
+                      <p className="text-sm text-destructive">{error}</p>
                     </div>
                   </div>
                 </Card>
@@ -640,41 +640,41 @@ const SmartConversion: React.FC = () => {
               {/* Single File Result */}
               {result && (
                 <Card className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                    <CheckCircle className="w-5 h-5 mr-2 text-success" />
                     Conversion Complete
                   </h3>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-gray-600">Source Format</p>
-                        <p className="text-sm font-medium text-gray-900 capitalize">
+                          <p className="text-sm text-muted-foreground">Source Format</p>
+                        <p className="text-sm font-medium text-foreground capitalize">
                           {result.conversion.sourceFormat}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Target Format</p>
-                        <p className="text-sm font-medium text-gray-900 capitalize">
+                          <p className="text-sm text-muted-foreground">Target Format</p>
+                        <p className="text-sm font-medium text-foreground capitalize">
                           {result.conversion.targetFormat}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Original Size</p>
-                        <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm text-muted-foreground">Original Size</p>
+                        <p className="text-sm font-medium text-foreground">
                           {smartConversionService.formatFileSize(result.conversion.originalSize)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Converted Size</p>
-                        <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm text-muted-foreground">Converted Size</p>
+                        <p className="text-sm font-medium text-foreground">
                           {smartConversionService.formatFileSize(result.conversion.convertedSize)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="p-4 bg-muted rounded-lg">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Size Change</span>
+                          <span className="text-sm text-muted-foreground">Size Change</span>
                         <span className={`text-sm font-medium ${result.conversion.sizeChange < 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
                           {result.conversion.sizeChange < 0 ? '-' : '+'}
@@ -685,7 +685,7 @@ const SmartConversion: React.FC = () => {
 
                     <Button
                       onClick={() => handleDownload(result.conversion.outputFilename, result.conversion.outputFilename)}
-                      className="w-full bg-green-600 hover:bg-green-700"
+                      className="w-full bg-success hover:bg-success/90"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       Download Converted File
@@ -698,9 +698,9 @@ const SmartConversion: React.FC = () => {
               {!result && !error && (
                 <Card className="p-6">
                   <div className="text-center py-8">
-                    <Sparkles className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Smart Conversion Ready</h3>
-                    <p className="text-gray-600">
+                    <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">Smart Conversion Ready</h3>
+                    <p className="text-muted-foreground">
                       Upload a file to get started with AI-powered format detection and optimal conversion.
                     </p>
                   </div>

@@ -195,7 +195,7 @@ const CreatePdfFormPage: React.FC = () => {
     if (!selectedField) return null;
 
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-card rounded-lg shadow-lg p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
           <Settings className="w-5 h-5 mr-2" />
           Field Properties
@@ -203,32 +203,32 @@ const CreatePdfFormPage: React.FC = () => {
         
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Field Name</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Field Name</label>
             <input
               type="text"
               value={selectedField.name}
               onChange={(e) => updateField(selectedField.id, { name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Label</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Label</label>
             <input
               type="text"
               value={selectedField.label}
               onChange={(e) => updateField(selectedField.id, { label: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Placeholder</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Placeholder</label>
             <input
               type="text"
               value={selectedField.placeholder || ''}
               onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
@@ -238,16 +238,16 @@ const CreatePdfFormPage: React.FC = () => {
               id="required"
               checked={selectedField.required}
               onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-primary border-border bg-background text-foreground rounded focus:ring-primary focus:border-primary"
             />
-            <label htmlFor="required" className="ml-2 text-sm text-gray-700">
+            <label htmlFor="required" className="ml-2 text-sm text-foreground">
               Required field
             </label>
           </div>
 
           {(selectedField.type === 'select' || selectedField.type === 'radio') && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Options</label>
+              <label className="block text-sm font-medium text-foreground mb-2">Options</label>
               {selectedField.options?.map((option, index) => (
                 <div key={index} className="flex items-center space-x-2 mb-2">
                   <input
@@ -258,16 +258,16 @@ const CreatePdfFormPage: React.FC = () => {
                       newOptions[index] = e.target.value;
                       updateField(selectedField.id, { options: newOptions });
                     }}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                   <button
                     onClick={() => {
                       const newOptions = selectedField.options?.filter((_, i) => i !== index);
                       updateField(selectedField.id, { options: newOptions });
                     }}
-                    className="p-2 text-red-500 hover:text-red-700"
+                    className="p-2 text-destructive hover:text-destructive-foreground"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />  
                   </button>
                 </div>
               ))}
@@ -298,7 +298,7 @@ const CreatePdfFormPage: React.FC = () => {
   };
 
   const renderFieldPreview = (field: FormField) => {
-    const baseClasses = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+    const baseClasses = "w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent";
     
     switch (field.type) {
       case 'text':
@@ -395,20 +395,20 @@ const CreatePdfFormPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto space-y-6">
+    <div className="mx-auto min-h-full w-full space-y-6 bg-background text-foreground">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
               to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Create PDF Form</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Create PDF Form</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Design interactive fillable forms with advanced field validation
               </p>
             </div>
@@ -421,7 +421,7 @@ const CreatePdfFormPage: React.FC = () => {
           {/* Left Sidebar - Field Types */}
           <div className="lg:col-span-1 space-y-6">
             {/* Form Settings */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-card rounded-lg shadow-lg p-6 border border-border">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <Palette className="w-5 h-5 mr-2" />
                 Form Settings
@@ -429,12 +429,12 @@ const CreatePdfFormPage: React.FC = () => {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Form Name</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Form Name</label>
                   <input
                     type="text"
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>
 
@@ -467,7 +467,7 @@ const CreatePdfFormPage: React.FC = () => {
             </div>
 
             {/* Field Types */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-card rounded-lg shadow-lg p-6 border border-border">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <Type className="w-5 h-5 mr-2" />
                 Add Fields
@@ -478,17 +478,17 @@ const CreatePdfFormPage: React.FC = () => {
                   <button
                     key={fieldType.type}
                     onClick={() => addField(fieldType.type)}
-                    className="w-full text-left p-3 text-sm border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                    className="w-full text-left p-3 text-sm border border-border rounded-lg hover:border-primary/60 hover:bg-primary/10 transition-colors"
                   >
-                    <div className="font-medium text-gray-900">{fieldType.name}</div>
-                    <div className="text-xs text-gray-500">{fieldType.description}</div>
+                    <div className="font-medium text-foreground">{fieldType.name}</div>
+                    <div className="text-xs text-muted-foreground">{fieldType.description}</div>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Templates */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-card rounded-lg shadow-lg p-6 border border-border">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <FileText className="w-5 h-5 mr-2" />
                 Templates
@@ -499,10 +499,10 @@ const CreatePdfFormPage: React.FC = () => {
                   <button
                     key={template.id}
                     onClick={() => loadTemplate(template)}
-                    className="w-full text-left p-3 text-sm border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                    className="w-full text-left p-3 text-sm border border-border rounded-lg hover:border-primary/60 hover:bg-primary/10 transition-colors"
                   >
-                    <div className="font-medium text-gray-900">{template.name}</div>
-                    <div className="text-xs text-gray-500">{template.description}</div>
+                    <div className="font-medium text-foreground">{template.name}</div>
+                    <div className="text-xs text-muted-foreground">{template.description}</div>
                   </button>
                 ))}
               </div>
@@ -512,7 +512,7 @@ const CreatePdfFormPage: React.FC = () => {
           {/* Center - Form Designer */}
           <div className="lg:col-span-2 space-y-6">
             {/* Form Preview */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-card rounded-lg shadow-lg p-6 border border-border">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold flex items-center">
                   <Eye className="w-5 h-5 mr-2" />
@@ -521,7 +521,7 @@ const CreatePdfFormPage: React.FC = () => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setShowPreview(!showPreview)}
-                    className="px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    className="px-3 py-2 text-sm text-muted-foreground bg-muted rounded-lg hover:bg-muted/80 transition-colors"
                   >
                     {showPreview ? 'Hide Preview' : 'Show Preview'}
                   </button>
@@ -546,12 +546,12 @@ const CreatePdfFormPage: React.FC = () => {
               </div>
 
               {showPreview && (
-                <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                <div className="border border-border rounded-lg p-6 bg-muted/30 dark:bg-muted/20">
                   <h2 className="text-2xl font-bold text-center mb-6">{formName}</h2>
                   <div className="space-y-4">
                     {formFields.map((field) => (
                       <div key={field.id} className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium text-foreground">
                           {field.label}
                           {field.required && <span className="text-red-500 ml-1">*</span>}
                         </label>
@@ -571,17 +571,17 @@ const CreatePdfFormPage: React.FC = () => {
                       key={field.id}
                       className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                         selectedField?.id === field.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-muted-foreground/40'
                       }`}
                       onClick={() => setSelectedField(field)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-foreground">
                             {index + 1}. {field.label}
                           </span>
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
                             {field.type}
                           </span>
                           {field.required && (

@@ -20,8 +20,8 @@ export function PresenceIndicator({ users, maxVisible = 5 }: PresenceIndicatorPr
         >
           <div
             className={cn(
-              "w-8 h-8 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-xs font-medium text-white",
-              user.isTyping && "ring-2 ring-blue-400 ring-opacity-75 animate-pulse"
+              "w-8 h-8 rounded-full border-2 border-background shadow-sm flex items-center justify-center text-xs font-medium text-white",
+              user.isTyping && "ring-2 ring-primary/70 animate-pulse"
             )}
             style={{ backgroundColor: user.color }}
           >
@@ -38,21 +38,21 @@ export function PresenceIndicator({ users, maxVisible = 5 }: PresenceIndicatorPr
 
           {/* Activity Indicator */}
           {user.isTyping && (
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white" />
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 dark:bg-emerald-400 rounded-full border-2 border-background" />
           )}
 
           {/* Tooltip */}
-          <div className="absolute bottom-top left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+          <div className="absolute bottom-top left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground border border-border text-xs rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
             {user.name}
             {user.isTyping && (
-              <span className="block text-green-300">typing...</span>
+              <span className="block text-emerald-600 dark:text-emerald-400">typing...</span>
             )}
           </div>
         </div>
       ))}
 
       {remainingCount > 0 && (
-        <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white shadow-sm flex items-center justify-center text-xs font-medium text-gray-600">
+        <div className="w-8 h-8 rounded-full bg-muted border-2 border-background shadow-sm flex items-center justify-center text-xs font-medium text-muted-foreground">
           +{remainingCount}
         </div>
       )}

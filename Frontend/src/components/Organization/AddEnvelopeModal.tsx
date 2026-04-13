@@ -34,14 +34,20 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
-          console.log(folder);
-      fetchOrganizationEnvelopes();
-      setSelectedEnvelopes([]);
-      setSearchQuery('');
-
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    setSelectedEnvelopes([]);
+    setSearchQuery('');
+    (async () => {
+      try {
+        const response = await organizationApi.get(
+          `/api/organization/fetch-non-folder-envelopes/${folder?._id}`
+        );
+        setEnvelopes(response.data.data);
+      } catch (err) {
+        console.log(err);
+      }
+    })();
+  }, [isOpen, folder?._id]);
   const handleCreateEnvelope = () => {
     navigate("/e-sign/create");
   };
@@ -66,10 +72,11 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
       toast.success(`${selectedEnvelopes.length} enve lope(s) added to folder successfully!`);
       onAdded();
       onClose();     
-    } catch (error:any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
         'Failed to add envelopes';
 
       toast.error(errorMessage)
@@ -82,34 +89,25 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
     envelope.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     envelope.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const fetchOrganizationEnvelopes = async () =>{
-    try{
-      const response = await organizationApi.get(`/api/organization/fetch-non-folder-envelopes/${folder?._id}`);
-        setEnvelopes(response.data.data);
-    }catch (err){
-      console.log(err);
-    }
-  }
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60 backdrop-blur-sm">
+      <div className="bg-card text-card-foreground border border-border rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-[#260559] to-[#3E2B66] rounded-lg">
-              <FileText className="w-5 h-5 text-white" />
+            <div className="p-2 bg-primary rounded-lg">
+              <FileText className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Add Envelopes</h2>
-              <p className="text-sm text-gray-600">{folder?.folderName || folder?.name}</p>
+              <h2 className="text-2xl font-bold text-foreground">Add Envelopes</h2>
+              <p className="text-sm text-muted-foreground">{folder?.folderName || folder?.name}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            className="text-muted-foreground hover:text-foreground transition-colors p-1"
           >
             <X className="w-6 h-6" />
           </button>
@@ -120,12 +118,12 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
           <div className="space-y-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3E2B66] focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                 placeholder="Search envelopes..."
               />
             </div>
@@ -134,18 +132,18 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
             {filteredEnvelopes.length > 0 ? (
               <div className="max-h-96 overflow-y-auto space-y-2">
                 {filteredEnvelopes.map((envelope) => (
-                  <div key={envelope.id || envelope._id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={envelope.id || envelope._id} className="border border-border rounded-lg p-4 bg-muted/30 dark:bg-muted/20">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
                           checked={selectedEnvelopes.includes(envelope?.id || envelope?._id)}
                           onChange={() => handleEnvelopeSelect(envelope?.id || envelope?._id)}
-                          className="w-4 h-4 text-[#3E2B66] border-gray-300 rounded focus:ring-[#3E2B66]"
+                          className="w-4 h-4 rounded border-input text-primary focus:ring-2 focus:ring-ring focus:ring-offset-0 focus:ring-offset-background"
                         />
                         <div>
-                          <p className="font-medium text-gray-900">{envelope.name}</p>
-                          <p className="text-sm text-gray-500">Status: {envelope.status}</p>
+                          <p className="font-medium text-foreground">{envelope.name}</p>
+                          <p className="text-sm text-muted-foreground">Status: {envelope.status}</p>
                         </div>
                       </div>
                     </div>
@@ -154,12 +152,12 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <p className="text-gray-500 mb-4">
+                <p className="text-muted-foreground mb-4">
                   No Envelope found. Please create envelope for organization.
                 </p>
             <button
               onClick={handleCreateEnvelope}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg font-semibold hover:from-[#3E2B66] hover:to-[#260559] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+              className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
             >
               <Plus className="w-5 h-5" />
               <span>
@@ -173,7 +171,7 @@ export const AddEnvelopeModal: React.FC<AddEnvelopeModalProps> = ({
               <button
                 onClick={handleAdd}
                 disabled={isLoading}
-                className="w-full px-4 py-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg font-semibold hover:from-[#3E2B66] hover:to-[#260559] transition-all duration-300 disabled:opacity-50"
+                className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all duration-300 disabled:opacity-50"
               >
                 {isLoading ? 'Adding...' : `Add ${selectedEnvelopes.length} envelope${selectedEnvelopes.length > 1 ? 's' : ''}`}
               </button>

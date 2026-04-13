@@ -83,16 +83,16 @@ const OrganizationFolder: React.FC = () => {
     }
 
   return (
-    <div className="bg-white h-full p-6">
+    <div className="bg-background text-foreground h-full p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Folders</h2>
-          <p className="text-sm text-slate-600">All folders for this organization</p>
+          <h2 className="text-2xl font-semibold text-foreground">Folders</h2>
+          <p className="text-sm text-muted-foreground">All folders for this organization</p>
         </div>
         <div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="w-full inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap">
+            className="w-full inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap">
             <Plus className="w-4 h-4" /> Create Folder
           </button>
         </div>
@@ -121,15 +121,15 @@ const OrganizationFolder: React.FC = () => {
       <div className="space-y-6">
         {folders.length === 0 ? (
           <div className="text-center py-12">
-            <Folder className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No folders yet</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <Folder className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <h3 className="mt-2 text-sm font-medium text-foreground">No folders yet</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
               Get started by creating your first folder to organize your documents.
             </p>
             <div className="mt-6">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="w-small inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white rounded-lg text-sm font-medium hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap">
+                className="w-small inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap">
                 <Plus className="w-4 h-4" /> Create Your First Folder
               </button>
             </div>
@@ -142,7 +142,7 @@ const OrganizationFolder: React.FC = () => {
               <Card
                 onClick={handleFolderClick(folder?._id)}
                 key={folder?._id}
-                className="cursor-pointer bg-emerald-50 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                className="cursor-pointer bg-card border border-border hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
               >
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-4">
@@ -153,10 +153,10 @@ const OrganizationFolder: React.FC = () => {
                       <DynamicIcon className="h-8 w-8 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">
+                      <h3 className="text-lg font-semibold text-foreground truncate">
                         {folder?.folderName}
                       </h3>
-                      <div className="flex items-center space-x-4 mt-3 text-xs text-gray-500">
+                      <div className="flex items-center space-x-4 mt-3 text-xs text-muted-foreground">
 
                         {/* Envelopes */}
                         <div className="relative group flex items-center space-x-1 cursor-pointer">
@@ -164,7 +164,7 @@ const OrganizationFolder: React.FC = () => {
                           <span>{folder.envelopes?.length || 0}</span>
 
                           {/* Tooltip */}
-                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
+                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-popover text-popover-foreground border border-border px-2 py-1 text-[10px] shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-10">
                             {folder.envelopes?.length || 0} envelopes
                           </div>
                         </div>
@@ -173,7 +173,7 @@ const OrganizationFolder: React.FC = () => {
                         <div className="relative group flex items-center space-x-1 cursor-pointer" onClick={() => { setSelectedFolder(folder); setShowShareModal(true); }}>
                           <User className="h-3 w-3" />
                           <span>{folder.sharedPeople?.length || 0}</span>
-                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
+                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-popover text-popover-foreground border border-border px-2 py-1 text-[10px] shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-10">
                             {folder.sharedPeople?.length || 0} users
                           </div>
                         </div>
@@ -182,7 +182,7 @@ const OrganizationFolder: React.FC = () => {
                         <div className="relative group flex items-center space-x-1 cursor-pointer" onClick={() => { setSelectedFolder(folder); setShowShareRoleModal(true); }}>
                           <Users className="h-3 w-3" />
                           <span>{folder.sharedRoles?.length || 0}</span>
-                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
+                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-popover text-popover-foreground border border-border px-2 py-1 text-[10px] shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-10">
                             {folder.sharedRoles?.length || 0} roles
                           </div>
                         </div>
@@ -191,7 +191,7 @@ const OrganizationFolder: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
                     <div className="flex items-center space-x-2">
                       {folder.isOwner ? (
                         <Badge variant="default">Owner</Badge>
@@ -199,7 +199,7 @@ const OrganizationFolder: React.FC = () => {
                         <Badge variant="secondary">Shared</Badge>
                       )}
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-muted-foreground">
                       Date: {folder.createdAt.split('T')[0]}
                     </div>
                   </div>

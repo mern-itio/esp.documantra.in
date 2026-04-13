@@ -319,7 +319,7 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
     
     if (thumbnail) {
       return (
-        <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200 bg-white">
+        <div className="w-full h-40 rounded-lg overflow-hidden border border-border bg-background">
           <img 
             src={thumbnail} 
             alt={`Page ${pageNumber} preview`}
@@ -332,7 +332,7 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
     // Fallback to loading state if thumbnail not available
     return (
       <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden">
-        <div className="text-center text-gray-600">
+        <div className="text-center text-muted-foreground">
           <div className="text-lg font-semibold mb-1">Page {pageNumber}</div>
           <div className="text-xs">Loading preview...</div>
         </div>
@@ -374,7 +374,7 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
       ) : (
         <>
           {/* File Upload Section */}
-      <div className="bg-white rounded-xl shadow-lg ">
+      <div className="bg-background rounded-xl shadow-lg ">
         {/* <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload PDF Document</h2> */}
         
         {!document ? (
@@ -382,7 +382,7 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
             className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
               dragActive 
                 ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
+                : 'border-border hover:border-primary'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -390,17 +390,17 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
             onDrop={handleDrop}
           >
             <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-lg text-gray-600 mb-2">
+            <p className="text-lg text-muted-foreground mb-2">
               Drag and drop your PDF here, or{' '}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="text-primary hover:text-primary/80 font-medium"
               >
                 browse files
               </button>
             </p>
-            <p className="text-sm text-gray-500">Maximum file size: 2MB</p>
+            <p className="text-sm text-muted-foreground">Maximum file size: 2MB</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -410,20 +410,20 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
             />
           </div>
         ) : (
-          <div className="bg-gray-50 rounded-lg p-6">
+          <div className="bg-card rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <FiFile className="h-8 w-8 text-red-500" />
+                <FiFile className="h-8 w-8 text-primary" />
                 <div>
-                  <h3 className="font-medium text-gray-900">{document.name}</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="font-medium text-foreground">{document.name}</h3>
+                  <p className="text-sm text-muted-foreground">
                     {formatFileSize(document.size)} • {pdfInfo?.pages || 'Unknown'} pages
                   </p>
                 </div>
               </div>
               <button
                 onClick={removeDocument}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <FiTrash2 className="h-5 h-5" />
               </button>
@@ -434,12 +434,12 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
 
       {/* Page Preview Section - Always visible when PDF is loaded */}
       {document && pdfInfo && (
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-background rounded-xl shadow-lg p-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Page Preview & Selection</h2>
+            <h2 className="text-2xl font-semibold text-foreground">Page Preview & Selection</h2>
             <button
               onClick={() => setShowPagePreview(!showPagePreview)}
-              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+              className="flex items-center space-x-2 text-primary hover:text-primary/80 transition-colors"
             >
               {showPagePreview ? <FiX className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
               <span>{showPagePreview ? 'Hide' : 'Show'} Preview</span>
@@ -454,8 +454,8 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
                     {/* Page Preview Card */}
                     <div className={`border-2 rounded-lg p-2 transition-all cursor-pointer ${
                       page.isSelected
-                        ? 'border-red-500 bg-red-50'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-background hover:border-primary'
                     }`}>
                       {/* Page Preview */}
                       {generatePagePreview(page.pageNumber)}
@@ -463,7 +463,7 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
                       {/* Page Number Label */}
                       <div className="text-center mt-1">
                         <span className={`text-xs font-medium ${
-                          page.isSelected ? 'text-red-700' : 'text-gray-700'
+                          page.isSelected ? 'text-primary' : 'text-foreground'
                         }`}>
                           Page {page.pageNumber}
                         </span>
@@ -471,7 +471,7 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
                       
                       {/* Selection Indicator */}
                       {page.isSelected && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
                           <FiX className="w-3 h-3 text-white" />
                         </div>
                       )}
@@ -488,26 +488,26 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
               </div>
               
               {/* Selection Summary */}
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <div className="mt-6 p-4 bg-background rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-blue-800">
+                    <p className="text-sm text-foreground">
                       Selected: <span className="font-semibold">{selectedPages.filter(p => p.isSelected).length}</span> pages
                     </p>
-                    <p className="text-sm text-blue-600">
+                    <p className="text-sm text-foreground">
                       Pages to delete: {selectedPages.filter(p => p.isSelected).map(p => p.pageNumber).join(', ') || 'None'}
                     </p>
                   </div>
                   <div className="flex space-x-2">
                     <button
                       onClick={selectAllPages}
-                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      className="px-3 py-1 text-sm bg-primary text-foreground rounded-md hover:bg-primary/80 transition-colors"
                     >
                       Select All
                     </button>
                     <button
                       onClick={deselectAllPages}
-                      className="px-3 py-1 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                      className="px-3 py-1 text-sm bg-muted text-foreground rounded-md hover:bg-muted/80 transition-colors"
                     >
                       Deselect All
                     </button>
@@ -521,12 +521,12 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
 
       {/* Delete Options Section */}
       {document && pdfInfo && (
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Delete Options</h2>
+        <div className="bg-card rounded-xl shadow-lg p-8">
+          <h2 className="text-2xl font-semibold text-foreground mb-6">Delete Options</h2>
           
           {/* Delete Mode Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-foreground mb-3">
               Deletion Method
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -539,12 +539,12 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
                   onClick={() => setDeleteMode(mode.value as any)}
                   className={`p-4 rounded-lg border-2 text-left transition-all ${
                     deleteMode === mode.value
-                      ? 'border-red-500 bg-red-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-primary'
                   }`}
                 >
-                  <div className="font-medium text-gray-900">{mode.label}</div>
-                  <div className="text-sm text-gray-500">{mode.desc}</div>
+                  <div className="font-medium text-foreground">{mode.label}</div>
+                  <div className="text-sm text-muted-foreground">{mode.desc}</div>
                 </button>
               ))}
             </div>
@@ -553,7 +553,7 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
           {/* Mode-specific inputs */}
           {deleteMode === 'bulk' && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Page Numbers to Delete
               </label>
               <input
@@ -561,14 +561,14 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
                 value={pageNumbers}
                 onChange={(e) => setPageNumbers(e.target.value)}
                 placeholder="e.g., 1-5, 7, 9-12"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-muted-foreground mt-2">
                 Enter page numbers separated by commas. Use ranges like "5-7" for consecutive pages.
               </p>
               {pageNumbers && (
-                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
+                <div className="mt-3 p-3 bg-background rounded-lg">
+                  <p className="text-sm text-foreground">
                     Pages to delete: {parsePageNumbers(pageNumbers).join(', ')}
                   </p>
                 </div>
@@ -580,11 +580,11 @@ const DeletePDF: React.FC<DeletePDFProps> = ({ onDeleteComplete }) => {
           <button
             onClick={handleDelete}
             disabled={deleting || (deleteMode === 'individual' && selectedPages.filter(p => p.isSelected).length === 0)}
-            className="w-full bg-red-600 text-white py-4 px-6 rounded-lg font-medium text-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            className="w-full bg-primary text-foreground py-4 px-6 rounded-lg font-medium text-lg hover:bg-primary/80 disabled:bg-muted disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           >
             {deleting ? (
               <>
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground mr-3"></div>
                 Deleting Pages...
               </>
             ) : (

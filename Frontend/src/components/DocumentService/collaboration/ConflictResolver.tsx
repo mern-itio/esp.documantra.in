@@ -46,13 +46,13 @@ export function ConflictResolver({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-5 h-5 text-amber-600" />
-            <h2 className="text-lg font-semibold text-gray-900">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <h2 className="text-lg font-semibold text-foreground">
               Resolve Editing Conflicts ({conflicts.length})
             </h2>
           </div>
@@ -60,7 +60,6 @@ export function ConflictResolver({
             <Button
               onClick={onResolveAll}
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
             >
               <GitMerge className="w-4 h-4 mr-2" />
               Auto-Resolve All
@@ -82,22 +81,22 @@ export function ConflictResolver({
             {conflicts.map((conflict) => (
               <div
                 key={conflict.id}
-                className="border border-amber-200 rounded-lg p-4 bg-amber-50"
+                className="border border-amber-200 dark:border-amber-900/60 rounded-lg p-4 bg-amber-50/80 dark:bg-amber-950/30"
               >
                 {/* Conflict Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm font-medium text-amber-800">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-sm font-medium text-amber-900 dark:text-amber-200">
                       {conflict.type.charAt(0).toUpperCase() + conflict.type.slice(1)} Conflict
                     </span>
-                    <span className="text-xs text-amber-600">
+                    <span className="text-xs text-amber-700 dark:text-amber-400">
                       Line {conflict.position.line}, Column {conflict.position.column}
                     </span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Users className="w-3 h-3 text-amber-600" />
-                    <span className="text-xs text-amber-600">
+                    <Users className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    <span className="text-xs text-amber-700 dark:text-amber-400">
                       {conflict.conflictingUsers.length} users
                     </span>
                   </div>
@@ -105,38 +104,38 @@ export function ConflictResolver({
 
                 {/* Original Content */}
                 <div className="mb-3">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-foreground mb-1">
                     Original Content:
                   </label>
-                  <div className="p-2 bg-gray-100 rounded text-sm font-mono">
+                  <div className="p-2 bg-muted rounded-md text-sm font-mono text-foreground">
                     {conflict.originalContent}
                   </div>
                 </div>
 
                 {/* Conflicting Changes */}
                 <div className="space-y-2 mb-4">
-                  <label className="block text-xs font-medium text-gray-700">
+                  <label className="block text-xs font-medium text-foreground">
                     Conflicting Changes:
                   </label>
                   {conflict.conflictingUsers.map((user) => (
                     <div key={user.id} className="flex items-start space-x-3">
                       <div className="flex-shrink-0">
-                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-xs font-medium text-blue-800">
+                        <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center">
+                          <span className="text-xs font-medium text-primary">
                             {user.name.charAt(0)}
                           </span>
                         </div>
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-foreground">
                             {user.name}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground">
                             {new Date(user.timestamp).toLocaleTimeString()}
                           </span>
                         </div>
-                        <div className="p-2 bg-white border rounded text-sm font-mono">
+                        <div className="p-2 bg-background border border-border rounded-md text-sm font-mono text-foreground">
                           {user.change}
                         </div>
                       </div>
@@ -188,14 +187,14 @@ export function ConflictResolver({
                 {/* Custom Resolution Input */}
                 {selectedConflict === conflict.id && (
                   <div className="mt-3 space-y-2">
-                    <label className="block text-xs font-medium text-gray-700">
+                    <label className="block text-xs font-medium text-foreground">
                       Custom Resolution:
                     </label>
                     <textarea
                       value={customResolution}
                       onChange={(e) => setCustomResolution(e.target.value)}
                       placeholder="Enter your custom resolution..."
-                      className="w-full p-2 border border-gray-300 rounded text-sm font-mono"
+                      className="w-full p-2 border border-input rounded-md text-sm font-mono bg-background text-foreground"
                       rows={3}
                     />
                     <div className="flex space-x-2">
@@ -225,8 +224,8 @@ export function ConflictResolver({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
+        <div className="px-6 py-4 border-t border-border flex items-center justify-between bg-muted/20">
+          <div className="text-sm text-muted-foreground">
             {conflicts.length} conflict{conflicts.length !== 1 ? 's' : ''} need{conflicts.length === 1 ? 's' : ''} resolution
           </div>
           <div className="flex items-center space-x-3">
@@ -235,7 +234,6 @@ export function ConflictResolver({
             </Button>
             <Button 
               onClick={onResolveAll}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               Auto-Resolve All Conflicts
             </Button>

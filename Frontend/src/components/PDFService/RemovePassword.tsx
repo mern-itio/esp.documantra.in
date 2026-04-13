@@ -158,24 +158,24 @@ const RemovePassword: React.FC = () => {
     : 'Unlock your password-protected PDFs with ease';
 
   return (
-    <div className="min-h-screen bg-white mx-auto space-y-6">
+    <div className="min-h-screen bg-background mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b p-2">
+      <div className="bg-card shadow-sm border-b p-2">
         <div className="flex items-center space-x-4">
-          <Link to={`/pdf-tools${location.search}`} className="text-gray-600 hover:text-gray-800">
+          <Link to={`/pdf-tools${location.search}`} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-6 w-6" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{headingTitle}</h1>
-            <p className="text-gray-600">{headingSubtitle}</p>
+            <h1 className="text-3xl font-bold text-foreground">{headingTitle}</h1>
+            <p className="text-muted-foreground">{headingSubtitle}</p>
           </div>
         </div>
       </div>
 
       {isLandingRoute && (
         <div className="max-w-4xl mx-auto mt-8 text-center">
-          <h2 className="text-2xl font-semibold text-gray-900">{headingTitle}</h2>
-          <p className="text-gray-600 mt-2">{headingSubtitle}</p>
+          <h2 className="text-2xl font-semibold text-foreground">{headingTitle}</h2>
+          <p className="text-muted-foreground mt-2">{headingSubtitle}</p>
         </div>
       )}
 
@@ -183,24 +183,24 @@ const RemovePassword: React.FC = () => {
       {!selectedFile && (
         <div className="max-w-4xl mx-auto mt-2 md:mt-2">
           <div
-            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
+            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive ? 'border-primary bg-primary/50' : 'border-foreground/300 hover:border-foreground/50'}`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-lg text-gray-600 mb-2">
+            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-lg text-muted-foreground mb-2">
               Drag and drop your PDF here, or{' '}
               <button
                 type="button"
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="text-primary hover:text-primary/80 font-medium"
               >
                 browse files
               </button>
             </p>
-            <p className="text-sm text-gray-500">Maximum file size: 10MB</p>
+            <p className="text-sm text-muted-foreground">Maximum file size: 10MB</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -219,10 +219,10 @@ const RemovePassword: React.FC = () => {
 
           {/* Protection Check Result */}
           {isCheckingProtection && (
-            <Card className="border-blue-200 bg-blue-50">
+            <Card className="border-primary bg-primary/50">
               <CardContent className="pt-6">
-                <div className="flex items-center space-x-2 text-blue-600">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <div className="flex items-center space-x-2 text-primary">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                   <span className="text-sm">Checking password protection...</span>
                 </div>
               </CardContent>
@@ -230,9 +230,9 @@ const RemovePassword: React.FC = () => {
           )}
 
           {protectionCheck && (
-            <Card className={`border-2 ${protectionCheck.isProtected ? 'border-orange-200 bg-orange-50' : 'border-green-200 bg-green-50'}`}>
+            <Card className={`border-2 ${protectionCheck.isProtected ? 'border-destructive bg-destructive/50' : 'border-success bg-success/50'}`}>
               <CardHeader>
-                <CardTitle className={`flex items-center space-x-2 ${protectionCheck.isProtected ? 'text-orange-800' : 'text-green-800'}`}>
+                <CardTitle className={`flex items-center space-x-2 ${protectionCheck.isProtected ? 'text-destructive' : 'text-success'}`}>
                   {protectionCheck.isProtected ? (
                     <Lock className="h-5 w-5" />
                   ) : (
@@ -241,7 +241,7 @@ const RemovePassword: React.FC = () => {
                   <span>Protection Status</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className={`${protectionCheck.isProtected ? 'text-orange-800' : 'text-green-800'}`}>
+              <CardContent className={`${protectionCheck.isProtected ? 'text-destructive' : 'text-success'}`}>
                 <div className="space-y-2">
                   <p className="font-medium">{protectionCheck.message}</p>
                   {protectionCheck.isProtected && protectionCheck.encryptionType && (
@@ -269,8 +269,8 @@ const RemovePassword: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    PDF Password <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    PDF Password <span className="text-destructive">*</span>
                   </label>
                   <div className="relative">
                     <Input
@@ -284,7 +284,7 @@ const RemovePassword: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -293,7 +293,7 @@ const RemovePassword: React.FC = () => {
                       )}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Enter the password that was used to protect this PDF
                   </p>
                 </div>
@@ -307,7 +307,7 @@ const RemovePassword: React.FC = () => {
               <Button
                 onClick={handleRemovePassword}
                 disabled={!selectedFile || !password || isProcessing}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                className="w-full bg-destructive hover:bg-destructive/80 text-destructive-foreground"
               >
                 <Unlock className="h-4 w-4 mr-2" />
                 Remove Password Protection
@@ -331,7 +331,7 @@ const RemovePassword: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <CheckCircle className="h-5 w-5 text-success" />
                   <span>Password Protection Removed</span>
                 </CardTitle>
                 <CardDescription>
@@ -341,26 +341,26 @@ const RemovePassword: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="font-medium text-gray-700">Filename:</span>
-                    <p className="text-gray-600">{result.filename}</p>
+                    <span className="font-medium text-muted-foreground">Filename:</span>
+                    <p className="text-muted-foreground">{result.filename}</p>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-700">Pages:</span>
-                    <p className="text-gray-600">{result.totalPages}</p>
+                    <span className="font-medium text-muted-foreground">Pages:</span>
+                    <p className="text-muted-foreground">{result.totalPages}</p>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-700">Status:</span>
-                    <p className="text-gray-600">Unprotected</p>
+                    <span className="font-medium text-muted-foreground">Status:</span>
+                    <p className="text-muted-foreground">Unprotected</p>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-700">Tool Used:</span>
-                    <p className="text-gray-600">{result.protectionInfo?.tool || 'qpdf'}</p>
+                    <span className="font-medium text-muted-foreground">Tool Used:</span>
+                    <p className="text-muted-foreground">{result.protectionInfo?.tool || 'qpdf'}</p>
                   </div>
                 </div>
 
                 <Button
                   onClick={handleDownload}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  className="w-full bg-success hover:bg-success/80 text-foreground"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download Unprotected PDF
@@ -371,26 +371,26 @@ const RemovePassword: React.FC = () => {
 
           {/* Error Display */}
           {error && (
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-destructive bg-destructive/10">
               <CardContent className="pt-6">
-                <div className="flex items-center space-x-2 text-red-600">
+                <div className="flex items-center space-x-2 text-destructive">
                   <AlertCircle className="h-5 w-5" />
                   <span className="font-medium">Error</span>
                 </div>
-                <p className="text-red-600 mt-2">{error}</p>
+                <p className="text-destructive mt-2">{error}</p>
               </CardContent>
             </Card>
           )}
 
           {/* Help Information */}
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-primary bg-primary/10">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-blue-800">
+              <CardTitle className="flex items-center space-x-2 text-primary">
                 <Info className="h-5 w-5" />
                 <span>How Password Removal Works</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-blue-800 text-sm space-y-2">
+            <CardContent className="text-primary text-sm space-y-2">
               <p><strong>Upload:</strong> Select your password-protected PDF file.</p>
               <p><strong>Check:</strong> We'll automatically verify if the file is password protected.</p>
               <p><strong>Enter Password:</strong> Provide the password that was used to protect the PDF.</p>
@@ -400,14 +400,14 @@ const RemovePassword: React.FC = () => {
           </Card>
 
           {/* Security Note */}
-          <Card className="border-yellow-200 bg-yellow-50">
+          <Card className="border-highlight bg-highlight/10">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-yellow-800">
+              <CardTitle className="flex items-center space-x-2 text-highlight">
                 <Shield className="h-5 w-5" />
                 <span>Security Note</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-yellow-800 text-sm">
+            <CardContent className="text-highlight text-sm">
               <p>Only remove password protection from PDFs you own or have permission to modify. The unlocked PDF will no longer be protected and can be accessed by anyone.</p>
             </CardContent>
           </Card>
@@ -418,9 +418,9 @@ const RemovePassword: React.FC = () => {
       {/* Processing Overlay */}
       {isProcessing && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"></div>
-            <span className="text-gray-700">Removing password protection...</span>
+          <div className="bg-card rounded-lg p-6 flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-destructive"></div>
+            <span className="text-muted-foreground">Removing password protection...</span>
           </div>
         </div>
       )}

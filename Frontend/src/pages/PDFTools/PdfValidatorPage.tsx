@@ -108,18 +108,18 @@ const PdfValidatorPage: React.FC = () => {
   return (
     <div className="mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
                  to={`/pdf-tools${location.search}`}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">PDF Validator</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">PDF Validator</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Validate PDF standards compliance and check for errors
               </p>
             </div>
@@ -128,15 +128,15 @@ const PdfValidatorPage: React.FC = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="border-b border-gray-200">
+      <div className="bg-background rounded-lg shadow p-6">
+        <div className="border-b border-border">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('validation')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'validation'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'
               }`}
             >
               <Shield className="w-4 h-4 inline mr-2" />
@@ -146,8 +146,8 @@ const PdfValidatorPage: React.FC = () => {
               onClick={() => setActiveTab('standards')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'standards'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-muted-foreground hover:border-border'
               }`}
             >
               <Target className="w-4 h-4 inline mr-2" />
@@ -162,14 +162,14 @@ const PdfValidatorPage: React.FC = () => {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* File Upload Section */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload PDF for Validation</h2>
+            <div className="bg-background rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Upload PDF for Validation</h2>
             
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+              <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
               <div className="mt-4">
                 <label className="cursor-pointer">
-                  <span className="text-blue-600 hover:text-blue-500 font-medium">
+                  <span className="text-primary hover:text-foreground font-medium">
                     Click to upload PDF
                   </span>
                   <input
@@ -180,10 +180,10 @@ const PdfValidatorPage: React.FC = () => {
                     className="hidden"
                   />
                 </label>
-                <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
+                <p className="text-sm text-muted-foreground mt-1">or drag and drop</p>
               </div>
               {selectedFile && (
-                <p className="text-sm text-gray-600 mt-2">
+                <p className="text-sm text-muted-foreground mt-2">
                   Selected: {selectedFile.name}
                 </p>
               )}
@@ -194,7 +194,7 @@ const PdfValidatorPage: React.FC = () => {
                 <button
                   onClick={handleValidatePdf}
                   disabled={isProcessing}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 disabled:opacity-50"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -209,15 +209,15 @@ const PdfValidatorPage: React.FC = () => {
 
           {/* Validation Results */}
           {activeTab === 'validation' && validationResult && (
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-background rounded-lg shadow">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Validation Results</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Validation Results</h3>
                   <div className="flex items-center space-x-2">
                     <span className={`text-2xl font-bold ${getScoreColor(validationResult.overallScore)}`}>
                       {validationResult.overallScore}%
                     </span>
-                    <span className="text-sm text-gray-500">Overall Score</span>
+                    <span className="text-sm text-muted-foreground">Overall Score</span>
                   </div>
                 </div>
 
@@ -226,7 +226,7 @@ const PdfValidatorPage: React.FC = () => {
                   {Object.entries(validationResult.standards).map(([standard, data]) => (
                     <div key={standard} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900 capitalize">{standard}</h4>
+                        <h4 className="font-medium text-foreground capitalize">{standard}</h4>
                         <div className="flex items-center space-x-2">
                           {getComplianceIcon(data.compliant)}
                           <span className={`text-sm font-medium ${getScoreColor(data.score)}`}>
@@ -234,7 +234,7 @@ const PdfValidatorPage: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-border rounded-full h-2">
                         <div
                           className={`h-2 rounded-full ${
                             data.score >= 90 ? 'bg-green-500' : 
@@ -244,7 +244,7 @@ const PdfValidatorPage: React.FC = () => {
                         ></div>
                       </div>
                       {data.issues.length > 0 && (
-                        <p className="text-xs text-gray-600 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {data.issues.length} issue{data.issues.length !== 1 ? 's' : ''} found
                         </p>
                       )}
@@ -257,18 +257,18 @@ const PdfValidatorPage: React.FC = () => {
                   <div className="space-y-4">
                     {validationResult.errors.length > 0 && (
                       <div>
-                        <h4 className="font-medium text-red-900 mb-2 flex items-center">
+                          <h4 className="font-medium text-destructive mb-2 flex items-center">
                           <XCircle className="w-4 h-4 mr-2" />
                           Errors ({validationResult.errors.length})
                         </h4>
                         <div className="space-y-2">
                           {validationResult.errors.map((error, index) => (
-                            <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div key={index} className="bg-destructive border border-destructive rounded-lg p-3">
                               <div className="flex items-start">
                                 {getSeverityIcon(error.severity)}
                                 <div className="ml-2">
-                                  <p className="text-sm text-red-800">{error.message}</p>
-                                  <p className="text-xs text-red-600 mt-1">Location: {error.location}</p>
+                                  <p className="text-sm text-destructive-foreground">{error.message}</p>
+                                  <p className="text-xs text-destructive mt-1">Location: {error.location}</p>
                                 </div>
                               </div>
                             </div>
@@ -279,18 +279,18 @@ const PdfValidatorPage: React.FC = () => {
 
                     {validationResult.warnings.length > 0 && (
                       <div>
-                        <h4 className="font-medium text-yellow-900 mb-2 flex items-center">
+                        <h4 className="font-medium text-warning mb-2 flex items-center">
                           <AlertTriangle className="w-4 h-4 mr-2" />
                           Warnings ({validationResult.warnings.length})
                         </h4>
                         <div className="space-y-2">
                           {validationResult.warnings.map((warning, index) => (
-                            <div key={index} className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div key={index} className="bg-warning border border-warning rounded-lg p-3">
                               <div className="flex items-start">
                                 {getSeverityIcon(warning.severity)}
                                 <div className="ml-2">
-                                  <p className="text-sm text-yellow-800">{warning.message}</p>
-                                  <p className="text-xs text-yellow-600 mt-1">Location: {warning.location}</p>
+                                  <p className="text-sm text-warning-foreground">{warning.message}</p>
+                                  <p className="text-xs text-warning mt-1">Location: {warning.location}</p>
                                 </div>
                               </div>
                             </div>
@@ -304,21 +304,21 @@ const PdfValidatorPage: React.FC = () => {
                 {/* Recommendations */}
                 {validationResult.recommendations.length > 0 && (
                   <div className="mt-6">
-                    <h4 className="font-medium text-blue-900 mb-2 flex items-center">
+                    <h4 className="font-medium text-primary mb-2 flex items-center">
                       <Zap className="w-4 h-4 mr-2" />
                       Recommendations
                     </h4>
                     <div className="space-y-2">
                       {validationResult.recommendations.map((rec, index) => (
-                        <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div key={index} className="bg-primary border border-primary rounded-lg p-3">
                           <div className="flex items-start">
-                            <Info className="w-4 h-4 text-blue-500 mt-0.5" />
+                            <Info className="w-4 h-4 text-primary mt-0.5" />
                             <div className="ml-2">
-                              <p className="text-sm text-blue-800">{rec.message}</p>
+                                <p className="text-sm text-primary-foreground">{rec.message}</p>
                               <span className={`text-xs px-2 py-1 rounded-full mt-1 inline-block ${
-                                rec.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-green-100 text-green-800'
+                                rec.priority === 'high' ? 'bg-destructive text-destructive-foreground' :
+                                rec.priority === 'medium' ? 'bg-warning text-warning-foreground' :
+                                'bg-success text-success-foreground'
                               }`}>
                                 {rec.priority} priority
                               </span>
@@ -335,27 +335,27 @@ const PdfValidatorPage: React.FC = () => {
 
           {/* Standards Reference */}
           {activeTab === 'standards' && standards && (
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-background rounded-lg shadow">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">PDF Standards Reference</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-6">PDF Standards Reference</h3>
                 
                 <div className="space-y-6">
                   {Object.entries(standards).map(([standard, data]) => (
                     <div key={standard} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div>
-                          <h4 className="font-medium text-gray-900">{data.name}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{data.description}</p>
+                          <h4 className="font-medium text-foreground">{data.name}</h4>
+                          <p className="text-sm text-muted-foreground mt-1">{data.description}</p>
                         </div>
-                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                        <span className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded-full">
                           {standard.toUpperCase()}
                         </span>
                       </div>
                       <div>
-                        <h5 className="text-sm font-medium text-gray-700 mb-2">Validation Checks:</h5>
+                        <h5 className="text-sm font-medium text-foreground mb-2">Validation Checks:</h5>
                         <ul className="space-y-1">
                           {data.checks.map((check: string, index: number) => (
-                            <li key={index} className="text-sm text-gray-600 flex items-start">
+                            <li key={index} className="text-sm text-muted-foreground flex items-start">
                               <CheckSquare className="w-3 h-3 text-green-500 mt-1 mr-2 flex-shrink-0" />
                               {check}
                             </li>
@@ -373,52 +373,52 @@ const PdfValidatorPage: React.FC = () => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Features */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Features</h2>
+            <div className="bg-background border border-border rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Features</h2>
             <div className="space-y-3">
-              <div className="flex items-center text-sm text-gray-600">
-                <Shield className="w-4 h-4 mr-2 text-blue-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Shield className="w-4 h-4 mr-2 text-primary" />
                 Standards validation
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <BarChart3 className="w-4 h-4 mr-2 text-purple-600" />
+                <div className="flex items-center text-sm text-muted-foreground">
+                <BarChart3 className="w-4 h-4 mr-2 text-primary" />
                 Compliance reporting
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <AlertTriangle className="w-4 h-4 mr-2 text-orange-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <AlertTriangle className="w-4 h-4 mr-2 text-primary" />
                 Error detection
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <Target className="w-4 h-4 mr-2 text-indigo-600" />
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Target className="w-4 h-4 mr-2 text-primary" />
                 Standards reference
               </div>
             </div>
           </div>
 
           {/* Supported Standards */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Supported Standards</h2>
+          <div className="bg-background border border-border rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Supported Standards</h2>
             <div className="space-y-2">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>PDF/A:</strong> Long-term preservation
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>PDF/UA:</strong> Accessibility compliance
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>PDF/X:</strong> Print production
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 <strong>General:</strong> Basic structure validation
               </div>
             </div>
           </div>
 
           {/* Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-primary border border-primary rounded-lg p-4">
             <div className="flex items-start">
-              <Info className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-blue-800">
+              <Info className="w-5 h-5 text-primary-foreground mr-2 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-primary-foreground">
                 <p className="font-medium mb-1">How it works:</p>
                 <p>Upload a PDF to validate against industry standards. Get detailed compliance reports and recommendations for improvement.</p>
               </div>

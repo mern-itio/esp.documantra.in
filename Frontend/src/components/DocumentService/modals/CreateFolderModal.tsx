@@ -38,9 +38,10 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
       setFolderIcon('Folder');
       setError(null);
       onClose();
-    } catch (error: any) {
-      console.error('Error creating folder:', error);
-      setError(error.message || 'Failed to create folder. Please try again.');
+    } catch (err: unknown) {
+      console.error('Error creating folder:', err);
+      const message = err instanceof Error ? err.message : 'Failed to create folder. Please try again.';
+      setError(message);
     } finally {
       setIsCreating(false);
     }
@@ -58,13 +59,13 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs dark:bg-black/60">
+      <div className="w-full max-w-md rounded-lg border border-border bg-card text-card-foreground shadow-xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center space-x-2">
-            <Folder className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Create New Folder</h2>
+            <Folder className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Create New Folder</h2>
           </div>
           <Button
             variant="ghost"
@@ -72,7 +73,7 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
             className="h-8 w-8 p-0"
             onClick={handleClose}
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
 
@@ -80,21 +81,21 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
             {parentFolderName && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
+              <div className="rounded-lg border border-primary/25 bg-primary/10 p-3 dark:bg-primary/15">
+                <p className="text-sm text-foreground">
                   Creating folder in: <span className="font-medium">{parentFolderName}</span>
                 </p>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-800">{error}</p>
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 dark:bg-destructive/20">
+                <p className="text-sm text-destructive">{error}</p>
               </div>
             )}
             
             <div>
-              <label htmlFor="folder-name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="folder-name" className="mb-2 block text-sm font-medium text-foreground">
                 Folder Name
               </label>
               <Input
@@ -108,11 +109,12 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
                 }}
                 autoFocus
                 required
+                className="border-input bg-background text-foreground"
               />
             </div>
 
             <div>
-              <label htmlFor="folder-description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="folder-description" className="mb-2 block text-sm font-medium text-foreground">
                 Description (Optional)
               </label>
               <Input
@@ -121,12 +123,13 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
                 placeholder="Enter folder description..."
                 value={folderDescription}
                 onChange={(e) => setFolderDescription(e.target.value)}
+                className="border-input bg-background text-foreground"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="folder-color" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="folder-color" className="mb-2 block text-sm font-medium text-foreground">
                   Color
                 </label>
                 <div className="flex items-center space-x-2">
@@ -135,14 +138,14 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
                     type="color"
                     value={folderColor}
                     onChange={(e) => setFolderColor(e.target.value)}
-                    className="w-10 h-10 rounded border border-gray-300"
+                    className="h-10 w-10 rounded border border-border bg-background"
                   />
-                  <span className="text-sm text-gray-500">{folderColor}</span>
+                  <span className="text-sm text-muted-foreground">{folderColor}</span>
                 </div>
               </div>
               
               <div>
-                <label htmlFor="folder-icon" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="folder-icon" className="mb-2 block text-sm font-medium text-foreground">
                   Icon
                 </label>
                 <Input
@@ -151,25 +154,26 @@ export function CreateFolderModal({ isOpen, onClose, onSubmit, parentFolderName 
                   placeholder="Folder"
                   value={folderIcon}
                   onChange={(e) => setFolderIcon(e.target.value)}
+                  className="border-input bg-background text-foreground"
                 />
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end space-x-3 mt-6">
+          <div className="mt-6 flex items-center justify-end space-x-3">
             <Button 
               type="button" 
               variant="outline" 
               onClick={handleClose}
               disabled={isCreating}
+              className="border-border"
             >
               Cancel
             </Button>
             <Button 
               type="submit"
               disabled={!folderName.trim() || isCreating}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               {isCreating ? 'Creating...' : 'Create Folder'}
             </Button>

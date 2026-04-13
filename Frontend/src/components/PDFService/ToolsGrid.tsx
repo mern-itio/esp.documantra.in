@@ -69,36 +69,36 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
   const getBadgeColor = (badge: string) => {
     switch (badge.toLowerCase()) {
       case 'popular':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success text-success-foreground';
       case 'new':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary text-primary-foreground';
       case 'ai':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-primary text-primary-foreground';
       case 'batch':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-warning text-warning-foreground';
       case 'security':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive text-destructive-foreground';
       case 'legal':
-        return 'bg-indigo-100 text-indigo-800';
+        return 'bg-primary text-primary-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="h-screen bg-background space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-foreground">
             {getCategoryDisplayName(selectedCategory)}
             {searchQuery && (
-              <span className="text-base font-normal text-gray-500 ml-2">
+              <span className="text-base font-normal text-muted-foreground ml-2">
                 - Results for "{searchQuery}"
               </span>
             )}
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             Choose from {tools.length} professional PDF processing tools
           </p>
         </div>
@@ -124,13 +124,13 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
           return (
             <div
               key={tool.id}
-              className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-200 cursor-pointer group relative"
+              className="bg-card rounded-xl border border-border p-6 hover:shadow-lg hover:border-primary transition-all duration-200 cursor-pointer group relative"
               onClick={() => onToolSelect(tool)}
             >
               {/* Premium Badge */}
               {tool.premium && (
                 <div className="absolute -top-2 -right-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gradient-to-br from-warning to-warning-foreground rounded-full flex items-center justify-center">
                     <Crown className="w-4 h-4 text-white" />
                   </div>
                 </div>
@@ -138,14 +138,14 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
 
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                  <Icon className="w-6 h-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center group-hover:bg-primary/90 transition-colors">
+                  <Icon className="w-6 h-6 text-primary-foreground" />
                 </div>
                 
                 <div className="flex items-center space-x-1">
                   {isRecent && (
                     <div className="p-1">
-                      <Clock className="w-4 h-4 text-orange-500" />
+                      <Clock className="w-4 h-4 text-warning" />
                     </div>
                   )}
                   <button
@@ -153,11 +153,11 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
                       e.stopPropagation();
                       onToggleFavorite(tool.id || '');
                     }}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    className="p-1 hover:bg-muted rounded transition-colors"
                   >
                     <Star className={clsx(
                       'w-4 h-4',
-                      isFavorite ? 'text-yellow-500 fill-current' : 'text-gray-400'
+                      isFavorite ? 'text-warning fill-current' : 'text-muted-foreground'
                     )} />
                   </button>
                 </div>
@@ -167,7 +167,7 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
               <div className="space-y-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                       {tool.name}
                     </h3>
                     {tool.badge && (
@@ -179,7 +179,7 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 line-clamp-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2">
                     {tool.description}
                   </p>
                 </div>
@@ -189,20 +189,20 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
                   {(tool.features || []).slice(0, 2).map((feature) => (
                     <span
                       key={feature}
-                      className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
+                      className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded"
                     >
                       {feature.replace(/_/g, ' ')}
                     </span>
                   ))}
                   {(tool.features || []).length > 2 && (
-                    <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                    <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
                       +{(tool.features || []).length - 2} more
                     </span>
                   )}
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-between pt-2 border-t border-border">
                   <div className="flex items-center space-x-2">
                     <div className={clsx(
                       'px-2 py-1 text-xs font-medium rounded',
@@ -217,13 +217,13 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
                       <Zap className="w-3 h-3 mr-1" />
                       {tool.popularity || 50}%
                     </div>
-                    <div className="px-2 py-1 text-xs font-medium text-amber-800">
+                    <div className="px-2 py-1 text-xs font-medium text-warning">
                       Cost: {requiredCredits} credit
                     </div>
                   </div>
                   
                   {tool.avgProcessingTime && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       ~{tool.avgProcessingTime}
                     </div>
                   )}
@@ -237,7 +237,7 @@ export const ToolsGrid: React.FC<ToolsGridProps> = ({
       {/* No Results */}
       {tools.length === 0 && (
         <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Icons.Search className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No tools found</h3>

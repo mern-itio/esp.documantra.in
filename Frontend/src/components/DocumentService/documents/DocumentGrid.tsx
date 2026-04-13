@@ -1,8 +1,8 @@
-
 import { DocumentCard } from './DocumentCard';
 import { EmptyState } from '../common/EmptyState';
 import { FileText } from 'lucide-react';
 import { useDocumentStore } from '../../common/store/documentStore';
+import type { Document } from '../../common/types';
 
 export function DocumentGrid() {
   const { 
@@ -52,7 +52,7 @@ export function DocumentGrid() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 text-foreground">
       {/* Selection Header */}
       {documents.length > 0 && (
         <div className="flex items-center justify-between mb-4">
@@ -61,15 +61,15 @@ export function DocumentGrid() {
               type="checkbox"
               checked={selectedDocuments.length === documents.length}
               onChange={(e) => handleSelectAll(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
             />
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               {documents.length} document{documents.length !== 1 ? 's' : ''}
             </span>
           </div>
-          
+
           {selectedDocuments.length > 0 && (
-            <span className="text-sm text-blue-600 font-medium">
+            <span className="text-sm font-medium text-primary">
               {selectedDocuments.length} selected
             </span>
           )}
@@ -78,7 +78,7 @@ export function DocumentGrid() {
 
       {/* Document Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {documents.map((document: any) => (
+        {documents.map((document: Document) => (
           <DocumentCard
             key={document.id}
             document={document}

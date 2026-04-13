@@ -428,21 +428,21 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
       {documents.length < 2 && (
         <div
           className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDragging
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-primary bg-primary/10'
+              : 'border-border hover:border-primary'
             }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             {documents.length === 0 
               ? 'Drop PDF files here or click to browse'
               : 'Add more PDF files to merge'
             }
           </h3>
-          <p className="text-gray-500 mb-4">
+          <p className="text-muted-foreground mb-4">
             {documents.length === 0 
               ? 'Select multiple PDF files to merge together'
               : 'Upload at least one more PDF to start merging'
@@ -450,7 +450,7 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
           </p>
           <button
             onClick={openFileDialog}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/80 transition-colors"
           >
             {documents.length === 0 ? 'Choose Files' : 'Add More Files'}
           </button>
@@ -467,21 +467,21 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
 
       {/* File Info Section - Show when 2 or more documents */}
       {documents.length >= 2 && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+        <div className="bg-success/10 border border-success rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <Info className="w-4 h-4 text-green-600" />
+              <div className="w-8 h-8 bg-success/10 rounded-full flex items-center justify-center">
+                <Info className="w-4 h-4 text-success" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-green-900">Ready to Merge</h3>
-                <p className="text-sm text-green-700">
+                  <h3 className="text-lg font-semibold text-foreground">Ready to Merge</h3>
+                <p className="text-sm text-muted-foreground">
                   {documents.length} PDF files ready for merging
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-green-600 font-medium">
+              <div className="text-sm text-success font-medium">
                 {formatFileSize(totalSize)} • {totalPages} pages
               </div>
             </div>
@@ -491,7 +491,7 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
           <div className="flex justify-center">
             <button
               onClick={openFileDialog}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/80 transition-colors text-sm"
             >
               Add More Files
             </button>
@@ -510,9 +510,9 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
       {/* Summary Info - Matching the image design */}
       {documents.length > 0 && (
         <div className="flex items-center justify-center">
-          <div className="bg-gray-100 rounded-full px-4 py-2 flex items-center space-x-2">
-            <Info className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-600 font-medium">
+          <div className="bg-muted rounded-full px-4 py-2 flex items-center space-x-2">
+            <Info className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground font-medium">
               {formatFileSize(totalSize)} - {totalPages} pages
             </span>
           </div>
@@ -522,12 +522,12 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
       {/* Document Cards - Matching the image layout exactly */}
       {documents.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 text-center">Document Order</h3>
+          <h3 className="text-lg font-semibold text-foreground text-center">Document Order</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {documents.map((doc, index) => (
               <div
                 key={doc.id}
-                className={`bg-white rounded-xl border border-gray-200 p-4 transition-all duration-200 hover:shadow-md ${dragOverIndex === index ? 'border-blue-400 shadow-lg' : ''
+                className={`bg-background rounded-xl border border-border p-4 transition-all duration-200 hover:shadow-md ${dragOverIndex === index ? 'border-primary shadow-lg' : ''
                   }`}
                 draggable
                 onDragStart={(e) => handleDragStart(e, index)}
@@ -536,11 +536,11 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
               >
                 <div className="relative">
                   {/* Document Preview Thumbnail */}
-                  <div className="w-full h-48 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center relative overflow-hidden">
+                  <div className="w-full h-48 bg-muted rounded-lg border border-border flex items-center justify-center relative overflow-hidden">
                     {doc.isProcessing ? (
                       <div className="flex flex-col items-center space-y-2">
-                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                        <span className="text-xs text-gray-500">Processing...</span>
+                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                        <span className="text-xs text-muted-foreground">Processing...</span>
                       </div>
                     ) : doc.firstPagePreview ? (
                       <img 
@@ -552,28 +552,28 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
                       <>
                         {/* PDF Preview Background */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-6xl text-gray-200 font-bold">D</div>
+                          <div className="text-6xl text-muted-foreground font-bold">D</div>
                         </div>
 
                         {/* Oltio Logo */}
-                        <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                        <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium">
                           Oltio
                         </div>
 
                         {/* Orange Highlight Circle */}
-                        <div className="absolute bottom-4 right-4 w-3 h-3 bg-orange-400 rounded-full"></div>
+                        <div className="absolute bottom-4 right-4 w-3 h-3 bg-primary rounded-full"></div>
 
                         {/* Left Side Lines */}
                         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 space-y-1">
                           {[1, 2, 3].map((i) => (
-                            <div key={i} className="w-8 h-1 bg-blue-600 rounded"></div>
+                              <div key={i} className="w-8 h-1 bg-primary/10 rounded"></div>
                           ))}
                         </div>
 
                         {/* Right Side Text Lines */}
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 space-y-1 text-right">
                           {[1, 2, 3].map((i) => (
-                            <div key={i} className="w-16 h-1 bg-gray-300 rounded"></div>
+                            <div key={i} className="w-16 h-1 bg-muted-foreground rounded"></div>
                           ))}
                         </div>
                       </>
@@ -584,29 +584,29 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
                   <div className="absolute top-2 right-2 flex space-x-1">
                     <button
                       onClick={() => removeDocument(doc.id)}
-                      className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center hover:bg-red-100 transition-colors"
+                      className="w-6 h-6 bg-muted rounded-full flex items-center justify-center hover:bg-red-100 transition-colors"
                     >
-                      <X className="w-3 h-3 text-gray-600 hover:text-red-600" />
+                      <X className="w-3 h-3 text-muted-foreground hover:text-red-600" />
                     </button>
                   </div>
                 </div>
 
                 {/* Document Info */}
                 <div className="mt-3 text-center">
-                  <h4 className="font-medium text-gray-900 text-sm truncate">
+                  <h4 className="font-medium text-foreground text-sm truncate">
                     {doc.name}
                   </h4>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     {formatFileSize(doc.size)} • {doc.pages} page{doc.pages !== 1 ? 's' : ''}
                   </div>
                   {doc.error && (
-                    <div className="text-xs text-red-600 mt-1">{doc.error}</div>
+                    <div className="text-xs text-destructive mt-1">{doc.error}</div>
                   )}
                 </div>
 
                 {/* Drag Handle */}
                 <div className="absolute top-2 left-2">
-                  <GripVertical className="w-4 h-4 text-gray-400 cursor-grab active:cursor-grabbing" />
+                  <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
                 </div>
               </div>
             ))}
@@ -616,10 +616,10 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
 
       {/* Warning Message */}
       {showWarning && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+        <div className="bg-warning/10 border border-warning rounded-lg p-4 text-center">
           <div className="flex items-center justify-center space-x-2">
-            <Info className="w-5 h-5 text-yellow-600" />
-            <span className="text-yellow-800 font-medium">
+            <Info className="w-5 h-5 text-warning" />
+            <span className="text-warning font-medium">
               Please upload at least 2 PDF files to merge
             </span>
           </div>
@@ -632,7 +632,7 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
           <button
             onClick={handleMerge}
             disabled={isMerging}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 mx-auto"
+            className="bg-primary text-foreground px-8 py-3 rounded-lg hover:bg-primary/80 disabled:bg-muted disabled:cursor-not-allowed transition-colors flex items-center space-x-2 mx-auto"
           >
             {isMerging ? (
               <>
@@ -650,13 +650,13 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
           {/* Progress Bar */}
           {isMerging && (
             <div className="mt-4 max-w-md mx-auto">
-              <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
                   style={{ width: `${mergeProgress}%` }}
                 />
               </div>
-              <div className="text-sm text-gray-600 mt-2">{mergeProgress}% complete</div>
+              <div className="text-sm text-muted-foreground mt-2">{mergeProgress}% complete</div>
             </div>
           )}
         </div>
@@ -664,10 +664,10 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
 
       {/* Instructions */}
       {documents.length === 0 && (
-        <div className="text-center text-gray-500">
+        <div className="text-center text-muted-foreground">
           <p>Upload at least 2 PDF files to get started</p>
           <p className="text-sm mt-1">Drag and drop to reorder documents after upload</p>
-          <div className="mt-4 text-xs text-gray-400">
+          <div className="mt-4 text-xs text-muted-foreground">
             <p>• Maximum file size: 5MB per file</p>
             <p>• Maximum total size: 25MB</p>
             <p>• Only PDF files are supported</p>
@@ -677,7 +677,7 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
 
       {/* Single File Instructions */}
       {documents.length === 1 && (
-        <div className="text-center text-gray-500">
+        <div className="text-center text-muted-foreground">
           <p>Upload one more PDF file to start merging</p>
           <p className="text-sm mt-1">Drag and drop to reorder documents after upload</p>
         </div>
@@ -685,9 +685,9 @@ const MergePDF: React.FC<MergePDFProps> = ({ onMergeComplete }) => {
 
           {/* Error Summary */}
           {documents.some(doc => doc.error) && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-red-800 mb-2">Some files have errors:</h4>
-              <ul className="text-sm text-red-700 space-y-1">
+              <div className="bg-destructive/10 border border-destructive rounded-lg p-4">
+              <h4 className="text-sm font-medium text-destructive mb-2">Some files have errors:</h4>
+              <ul className="text-sm text-destructive space-y-1">
                 {documents.filter(doc => doc.error).map(doc => (
                   <li key={doc.id}>• {doc.name}: {doc.error}</li>
                 ))}

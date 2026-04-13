@@ -25,20 +25,20 @@ const DeletePDFPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header with back button */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
              <Link
                    to={`/pdf-tools${location.search}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Delete PDF Pages</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-foreground">Delete PDF Pages</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Remove unwanted pages from your PDF documents with precision and ease
               </p>
             </div>
@@ -53,15 +53,15 @@ const DeletePDFPage: React.FC = () => {
 
       {/* Success/Error Modal */}
       {deleteResult && (
-        <div className="fixed inset-0  bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0  bg-background/50 backdrop-blur-xs flex items-center justify-center z-50">
+            <div className="bg-background border border-border shadow-lg rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-foreground">
                 {deleteResult.success ? 'Pages Deleted Successfully!' : 'Deletion Failed'}
               </h3>
               <button
                 onClick={() => setDeleteResult(null)}
-                className="text-gray-400 hover:text-gray-600"
+                  className="text-muted-foreground hover:text-foreground"
               >
                 <FiX className="w-5 h-5" />
               </button>
@@ -69,23 +69,23 @@ const DeletePDFPage: React.FC = () => {
             
             <div className="mb-4">
               {deleteResult.success ? (
-                <div className="text-green-600">
+                <div className="text-primary">
                   <p className="mb-2">{deleteResult.message}</p>
                   {deleteResult.deletedPages && (
-                    <p className="text-sm text-gray-600 mb-2">
+                    <p className="text-sm text-muted-foreground mb-2">
                       Deleted pages: {deleteResult.deletedPages.join(', ')}
                     </p>
                   )}
                   {deleteResult.file && (
                     <div className="mt-3">
-                      <p className="text-sm text-gray-600 mb-2">Download your updated PDF:</p>
+                      <p className="text-sm text-muted-foreground mb-2">Download your updated PDF:</p>
                       <button
                         onClick={() => {
                           if (deleteResult.downloadUrl) {
                             handleDownload(deleteResult.downloadUrl, deleteResult.file?.filename || 'deleted_pages.pdf');
                           }
                         }}
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        className="inline-flex items-center px-4 py-2 bg-primary text-foreground rounded-md hover:bg-primary/80 transition-colors"
                       >
                         <FiDownload className="w-4 h-4 mr-2" />
                         Download PDF
@@ -94,7 +94,7 @@ const DeletePDFPage: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <div className="text-red-600">
+                <div className="text-destructive">
                   <p>{deleteResult.message || deleteResult.error}</p>
                 </div>
               )}
@@ -103,7 +103,7 @@ const DeletePDFPage: React.FC = () => {
             <div className="flex justify-end">
               <button
                 onClick={() => setDeleteResult(null)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                className="px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted/80 transition-colors"
               >
                 Close
               </button>

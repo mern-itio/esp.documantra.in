@@ -6,14 +6,11 @@ interface DocumentLayoutProps {
 
 export function DocumentLayout({ children }: DocumentLayoutProps) {
   return (
-    <div className=" bg-gray-50 flex flex-col ">   
-
-      <div className="flex-1 flex overflow-hidden"> 
-        <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex h-screen flex-col bg-background text-foreground">
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <DocumentHeader />
-          <main className="flex-1 overflow-auto p-1">
-            {children}
-          </main>
+          <main className="flex-1 overflow-auto p-1">{children}</main>
         </div>
       </div>
     </div>
