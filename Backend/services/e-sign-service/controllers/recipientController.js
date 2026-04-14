@@ -178,3 +178,23 @@ exports.updateAuthStatus = async (req, res) => {
     });
   }
 };
+exports.saveAadhaar = async (req, res) => {
+  try {
+    const { currentUserId, aadhaarNumber } = req.body;
+    if (!currentUserId || !aadhaarNumber) {
+      return res.status(400).json({ message: 'currentUserId and aadhaarNumber are required' });
+    }
+    const updated = await Recipient.findByIdAndUpdate(
+      { _id: currentUserId },
+      { aadhaarNumber: aadhaarNumber },
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ message: 'Recipient not found' });
+    }
+    return res.status(200).json({ data: updated });
+  } catch (err) {
+    console.error('saveAadhaar error', err);
+    return res.status(500).json({ message: 'Failed to save Aadhaar number' });
+  }
+};

@@ -28,6 +28,8 @@ interface Props {
   onRecipientComplete?: () => void;
   /** Opens the terms/conditions modal (with the same options dropdown) */
   onRequestActions?: () => void;
+  signatureProvider:string
+  signatureMethod:string
 }
 
 Modal.setAppElement("#root");
@@ -82,7 +84,9 @@ const DocumentViewerContent: React.FC<Props> = ({
   setSignatureFields,
   isViewOnly = false,
   onRecipientComplete,
-  onRequestActions
+  onRequestActions,
+  signatureProvider,
+  signatureMethod
 }) => {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
@@ -103,7 +107,33 @@ const DocumentViewerContent: React.FC<Props> = ({
         return null;
     }
   };
+  async function postRedirect(url:any, txnRef:any) {
+   const form = window.document.createElement("form");
+   form.method = "POST";
+   form.action = url;
 
+   const input = window.document.createElement("input");
+   input.type = "hidden";
+   input.name = "txnref";
+   input.value = txnRef;
+
+   form.appendChild(input);
+   window.document.body.appendChild(form);
+   form.submit();
+  }
+  async function completeSignature(envelopeID:any, currentUserId:any){
+
+    const env = String(envelopeID ?? "");
+    const rid = String(currentUserId ?? "");
+    const response = await eSignApi.post('/api/e-sign/public/signature-complete',{
+      envelopeId:envelopeID,
+      currentUserId:currentUserId,
+      selfValue:selfValue
+    });
+    if(response?.status == 200 ){
+       navigate(`/e-sign/signer/status/${env}/${rid}`);
+    }
+  }
 
   // Get matched signer for a field (self-signer mode only)
   const getMatchedSigner = (field: any) => {
@@ -191,6 +221,18 @@ const DocumentViewerContent: React.FC<Props> = ({
   };
 
   const [recipientSignature, setRecipientSignature] = useState<string | null>(getInitialSignature());
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const rawData = params.get("data");
+    if (!rawData) return;
+    const data = JSON.parse(decodeURIComponent(rawData));
+    const response = {
+      data
+    };
+    console.log(response);
+    handleSuccess(response,data?.fieldId);
+
+}, []);
 
   // Update signature when data changes based on mode
   useEffect(() => {
@@ -230,6 +272,14 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [auditTrailError, setAuditTrailError] = useState<string | null>(null);
   const [auditTrail, setAuditTrail] = useState<any[]>([]);
   const auditTrailFetchedKeyRef = useRef<string | null>(null);
+
+  // Aadhaar modal states
+  const [showAadhaarModal, setShowAadhaarModal] = useState(false);
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
+  const [aadhaarError, setAadhaarError] = useState('');
+  const [aadhaarSaved, setAadhaarSaved] = useState(false);
+  const [aadhaarSaving, setAadhaarSaving] = useState(false);
+  const [pendingField, setPendingField] = useState<any>(null);
 
   const openAuditTrailModal = async () => {
     if (!isViewOnly) return;
@@ -410,9 +460,9 @@ const DocumentViewerContent: React.FC<Props> = ({
   const activeInputIdRef = useRef<string | null>(null);
   const currentFieldIdRef = useRef<string | null>(null);
   const [buttonStyle, setButtonStyle] = useState<React.CSSProperties>({});
-  const buttonUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const buttonUpdateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastButtonPositionRef = useRef<{ top: number; left: number } | null>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isNavigatingRef = useRef<boolean>(false);
   const isRefreshingSelfSignerRef = useRef<boolean>(false);
   const pendingNavigationRef = useRef<boolean>(false);
@@ -1013,6 +1063,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       alert("Please save a signature before submitting!");
       return;
     }
+    if(signatureMethod=="aadhaarSignature"){
+      const response = await checkRecipientRequireDetails(currentUserId);
+      if(response?.status==200 && response?.data?.data?.flag === false){
+        setPendingField(field);
+        setShowAadhaarModal(true);
+        return;
+      }
+    }
     const fieldKeyRaw = field?._id || field?.fieldId;
     const fieldKey = normalizeMongoId(fieldKeyRaw);
     if (fieldKey) setSigningFieldIds((prev) => ({ ...prev, [fieldKey]: true }));
@@ -1089,52 +1147,18 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         signerName: signerName,
         selfValue: selfValue || "",
         cycleId:cycleId || "",
-        initials: initialsValue || undefined
+        initials: initialsValue || undefined,
+        mode,
+        signatureMethod,
+        signatureProvider
       };
       // Allow long finalize (stamp embedding + certificate + emails)
       const response = await eSignApi.post("/api/e-sign/public/add-signature", payload, { timeout: 180000 });
       if (response?.status === 200) {
-        const key = fieldKey;
-        setLocalSignedMap((p) => ({ ...(p || {}), [key]: recipientSignature }));
-        triggerConfetti();
-        
-        // Handle post-signature navigation based on mode
-        switch (mode) {
-          case MODE.SELF_SIGNER: {
-            if (cycleId) {
-              // Mark navigation as pending
-              pendingNavigationRef.current = true;
-              // Wait a bit for the backend to update, then refresh
-              setTimeout(() => {
-                getSelfSigner();
-                // Navigation will be triggered in getSelfSigner's finally block
-              }, 500);
-            }
-            break;
-          }
-          case MODE.RECIPIENT: {
-            // Recipient mode: navigate to next field
-            setTimeout(() => {
-              goToNext();
-            }, 300);
-            break;
-          }
-        }
-        
-        if (response?.data?.fieldRemmaning === false) {
-          if (mode === MODE.RECIPIENT) {
-            try {
-              onRecipientComplete?.();
-            } catch (err) {
-              console.error('onRecipientComplete callback error:', err);
-            }
-          }
-          setShowCompleteButton(true);
-          // If parent provided a completion handler, it controls what happens next.
-          // Fallback to legacy thank-you navigation when no callback is provided.
-          if (!onRecipientComplete) {
-            navigate("/e-sign/signer/thank-you");
-          }
+        if(response?.data?.signMethod == "V_Sign"){
+          await postRedirect(response?.data?.authUrl, response?.data?.txnRef);
+        }else{
+          await handleSuccess(response,fieldKey);
         }
       }else{
         console.error("submit response:", response);
@@ -1155,6 +1179,52 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       window.clearInterval(statusTicker);
       if (isMountedRef.current) setSigningStatusText("Finalizing document...");
       clearSigningState();
+    }
+  };
+  async function checkRecipientRequireDetails(currentUserId:any){
+    const response = await eSignApi.post('/api/e-sign/public/recipients/validate',{
+      signatureMethod:signatureMethod,
+      currentUserId:currentUserId,
+      selfValue
+    });
+    if(response.status==200){
+      return response;
+    }
+  }
+
+  const handleAadhaarSubmit = async () => {
+    // Validation
+    if (!aadhaarNumber || aadhaarNumber.length !== 12 || !/^\d+$/.test(aadhaarNumber)) {
+      setAadhaarError('Please enter a valid 12-digit Aadhaar number.');
+      return;
+    }
+    setAadhaarError('');
+    setAadhaarSaving(true);
+
+    try {
+      // Assume API to save Aadhaar
+      const response = await eSignApi.post('/api/e-sign/public/save-aadhaar', {
+        aadhaarNumber,
+        currentUserId,
+        envelopeID,
+        selfValue
+      });
+      if (response?.status === 200) {
+        setAadhaarSaved(true);
+        setShowAadhaarModal(false);
+        setAadhaarNumber('');
+        // Proceed with signing
+        const field = pendingField;
+        setPendingField(null);
+        doSign(field);
+      } else {
+        setAadhaarError('Failed to save Aadhaar number. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error saving Aadhaar:', err);
+      setAadhaarError('An error occurred. Please try again.');
+    } finally {
+      setAadhaarSaving(false);
     }
   };
     const issueCertificate = async (recipientId: any, envelopeId: any, selfVal: any) => {
@@ -1382,6 +1452,50 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       origin: { x: 0.5, y: 0.35 },
     });
   };
+  async function handleSuccess(response:any,fieldKey:any){
+    const key = fieldKey;
+        setLocalSignedMap((p) => ({ ...(p || {}), [key]: recipientSignature }));
+        triggerConfetti();
+        
+        // Handle post-signature navigation based on mode
+        switch (mode) {
+          case MODE.SELF_SIGNER: {
+            if (cycleId) {
+              // Mark navigation as pending
+              pendingNavigationRef.current = true;
+              // Wait a bit for the backend to update, then refresh
+              setTimeout(() => {
+                getSelfSigner();
+                // Navigation will be triggered in getSelfSigner's finally block
+              }, 500);
+            }
+            break;
+          }
+          case MODE.RECIPIENT: {
+            // Recipient mode: navigate to next field
+            setTimeout(() => {
+              goToNext();
+            }, 300);
+            break;
+          }
+        }
+        
+        if (response?.data?.fieldRemmaining === false) {
+          if (mode === MODE.RECIPIENT) {
+            try {
+              onRecipientComplete?.();
+            } catch (err) {
+              console.error('onRecipientComplete callback error:', err);
+            }
+          }
+          setShowCompleteButton(true);
+          // If parent provided a completion handler, it controls what happens next.
+          // Fallback to legacy thank-you navigation when no callback is provided.
+          if (!onRecipientComplete) {
+            navigate("/e-sign/signer/thank-you");
+          }
+        }
+  }
 
   // PDF stack for one file: must keep a stable component type (useMemo), not a nested `const X = () =>`,
   // or react-pdf <Document> remounts on every parent re-render (e.g. signing progress text).
@@ -2306,12 +2420,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                     type="button"
                     onClick={() => {
                       if (completeCtaState === "done") return;
+                      completeSignature(envelopeID, currentUserId)
                       setCompleteCtaState("done");
-                      window.setTimeout(() => {
-                        const env = String(envelopeID ?? "");
-                        const rid = String(currentUserId ?? "");
-                        navigate(`/e-sign/signer/status/${env}/${rid}`);
-                      }, 1500);
                     }}
                     className={
                       completeCtaState === "done"
@@ -2815,6 +2925,88 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Aadhaar Number Modal */}
+      {showAadhaarModal && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0"
+            onClick={() => setShowAadhaarModal(false)}
+            aria-hidden="true"
+          />
+          <div
+            className="relative w-full max-w-md overflow-hidden rounded-lg bg-white shadow-2xl ring-1 ring-gray-200"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Enter Aadhaar Number</h3>
+                <p className="text-sm text-gray-600">Please provide your 12-digit Aadhaar number to proceed with Aadhaar signature.</p>
+              </div>
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                onClick={() => setShowAadhaarModal(false)}
+                aria-label="Close modal"
+              >
+                <span className="text-xl leading-none">&times;</span>
+              </button>
+            </div>
+
+            <div className="px-6 py-4">
+              <div>
+                <div className="mb-4">
+                  <label htmlFor="aadhaar" className="block text-sm font-medium text-gray-700">
+                    Aadhaar Number
+                  </label>
+                  <input
+                    type="text"
+                    id="aadhaar"
+                    value={aadhaarNumber}
+                    onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                    placeholder="Enter 12-digit Aadhaar number"
+                    maxLength={12}
+                  />
+                  {aadhaarError && (
+                    <p className="mt-1 text-sm text-red-600">{aadhaarError}</p>
+                  )}
+                  <p className="mt-2 text-xs text-gray-500">
+                    * We will securely store this Aadhaar number so future signing steps can be completed faster for you.
+                  </p>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAadhaarModal(false)}
+                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAadhaarSubmit}
+                    disabled={aadhaarSaving}
+                    className={`rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${aadhaarSaving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'}`}
+                  >
+                    {aadhaarSaving ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent" />
+                        Saving...
+                      </span>
+                    ) : (
+                      'Submit'
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
