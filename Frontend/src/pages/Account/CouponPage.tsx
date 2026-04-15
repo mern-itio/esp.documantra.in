@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { Search, Ticket, TicketPercent } from "lucide-react";
+import { ArrowLeft, Search, Ticket } from "lucide-react";
 import { coupons, type Coupon, type CouponStatus } from "../../data/coupons";
 import CouponCard from "./coupon/CouponCard";
 import CouponModal from "./coupon/CouponModal";
+import { Link } from "react-router-dom";
 
 const tabs: { label: string; value: CouponStatus | "all" }[] = [
   { label: "All", value: "all" },
@@ -32,9 +33,11 @@ export default function CouponPage() {
       <header className="border-b border-border bg-card">
         <div className="container  mx-auto px-4 py-6">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#2CA58D]/10 flex items-center justify-center">
-              <TicketPercent className="w-[18px] h-[18px] text-accent" />
-            </div>
+            <Link to="/account/rewards"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-muted"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
             <div>
               <h1 className="text-xl font-semibold leading-tight">Coupons</h1>
               <p className="text-xs text-muted-foreground">Your available discount codes & vouchers</p>

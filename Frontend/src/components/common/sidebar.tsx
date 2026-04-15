@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Plus, HelpCircle, CreditCard, Share, Library, Gift } from 'lucide-react';
 import { useAuth } from '../AuthService/AuthContext';
+import { APP_NAME } from '../constants/appConfig';
 
 interface SidebarProps {
   activeView?: string;
@@ -337,7 +338,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center space-x-2 animate-fade-in">
             <Building2 className="h-7 w-7 text-primary transition-transform duration-300 hover:scale-110 hover:rotate-6" />
             <div>
-              <Link to="/dashboard"><h1 className="text-base font-semibold text-foreground transition-colors duration-300 hover:text-primary">Draft&Sign</h1></Link>
+              <Link to="/dashboard"><h1 className="text-base font-semibold text-foreground transition-colors duration-300 hover:text-primary">{APP_NAME}</h1></Link>
             </div>
           </div>
         )}

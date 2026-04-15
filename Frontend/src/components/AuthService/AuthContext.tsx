@@ -39,6 +39,15 @@ interface AuthContextType {
   sendSignupPhoneOtp: (signupToken: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean }>;
   verifySignupPhoneOtp: (signupToken: string, phoneOtp: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean; loggedIn: boolean }>;
   verifyTwoFaLogin: (twoFaToken: string, otp: string) => Promise<void>;
+  getTwoFaRecoveryQuestions: (twoFaToken: string) => Promise<{ questions: string[]; emailChoices: Array<{ key: 'primary' | 'recovery'; label: string; masked: string }> }>;
+  verifyTwoFaRecoveryAnswer: (twoFaToken: string, question: string, answer: string) => Promise<{ verified: boolean; question: string }>;
+  verifyTwoFaRecoveryAnswers: (
+    twoFaToken: string,
+    answers: Array<{ question: string; answer: string }>,
+    destination: 'primary' | 'recovery',
+    options?: { verifyOnly?: boolean }
+  ) => Promise<{ recoveryToken: string; destinationMasked: string; verified?: boolean }>;
+  verifyTwoFaRecoveryOtp: (recoveryToken: string, otp: string) => Promise<void>;
   accountType: 'user' | 'organization';
   organizationId: string | null;
   organizationDetail: any | null;
@@ -264,11 +273,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   class TwoFaRequiredError extends Error {
     twoFaToken?: string;
     method?: 'email' | 'sms' | 'authenticator';
-    constructor(message: string, twoFaToken?: string, method?: 'email' | 'sms' | 'authenticator') {
+    recoveryAvailable?: boolean;
+    constructor(message: string, twoFaToken?: string, method?: 'email' | 'sms' | 'authenticator', recoveryAvailable?: boolean) {
       super(message);
       this.name = 'TwoFaRequiredError';
       this.twoFaToken = twoFaToken;
       this.method = method;
+      this.recoveryAvailable = recoveryAvailable;
     }
   }
 
@@ -360,7 +371,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           throw new TwoFaRequiredError(
             data?.message || 'Two-factor authentication required',
             data?.twoFaToken,
-            data?.method
+            data?.method,
+            !!data?.recoveryAvailable
           );
         }
         throw new Error(data?.message || 'Login failed');
@@ -469,6 +481,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const data = await apiRequest(API_ENDPOINTS.AUTH.VERIFY_2FA_LOGIN, {
       method: 'POST',
       body: JSON.stringify({ twoFaToken, otp: otp.trim(), deviceId, deviceLabel: 'browser' }),
+    });
+    await applyLoginPayload(data);
+  };
+
+  const getTwoFaRecoveryQuestions = async (twoFaToken: string) => {
+    const data = await apiRequest(API_ENDPOINTS.AUTH.GET_2FA_RECOVERY_QUESTIONS, {
+      method: 'POST',
+      body: JSON.stringify({ twoFaToken }),
+    });
+    return {
+      questions: Array.isArray(data?.questions) ? data.questions : [],
+      emailChoices: Array.isArray(data?.emailChoices) ? data.emailChoices : [],
+    };
+  };
+
+  const verifyTwoFaRecoveryAnswer = async (twoFaToken: string, question: string, answer: string) => {
+    try {
+      const resp = await authApi.post(API_ENDPOINTS.AUTH.VERIFY_2FA_RECOVERY_ANSWER, {
+        twoFaToken,
+        question,
+        answer,
+      });
+      return {
+        verified: !!resp?.data?.verified,
+        question: String(resp?.data?.question || question),
+      };
+    } catch (err: any) {
+      const apiMessage = err?.response?.data?.message || 'Incorrect answer.'
+      const wrongQuestions = Array.isArray(err?.response?.data?.wrongQuestions)
+        ? err.response.data.wrongQuestions
+        : [question]
+      const wrapped: any = new Error(apiMessage)
+      wrapped.wrongQuestions = wrongQuestions
+      throw wrapped
+    }
+  };
+
+  const verifyTwoFaRecoveryAnswers = async (
+    twoFaToken: string,
+    answers: Array<{ question: string; answer: string }>,
+    destination: 'primary' | 'recovery',
+    options?: { verifyOnly?: boolean }
+  ) => {
+    try {
+      const resp = await authApi.post(API_ENDPOINTS.AUTH.VERIFY_2FA_RECOVERY_ANSWERS, {
+        twoFaToken,
+        answers,
+        destination,
+        verifyOnly: !!options?.verifyOnly,
+      });
+      const data = resp?.data || {};
+      return {
+        recoveryToken: String(data?.recoveryToken || ''),
+        destinationMasked: String(data?.destinationMasked || ''),
+        verified: !!data?.verified,
+      };
+    } catch (err: any) {
+      const apiMessage = err?.response?.data?.message || 'Could not verify security answers.'
+      const wrongQuestions = Array.isArray(err?.response?.data?.wrongQuestions)
+        ? err.response.data.wrongQuestions
+        : []
+      const wrapped: any = new Error(apiMessage)
+      wrapped.wrongQuestions = wrongQuestions
+      throw wrapped
+    }
+  };
+
+  const verifyTwoFaRecoveryOtp = async (recoveryToken: string, otp: string) => {
+    const deviceId = getOrCreateDeviceId();
+    const data = await apiRequest(API_ENDPOINTS.AUTH.VERIFY_2FA_RECOVERY_OTP, {
+      method: 'POST',
+      body: JSON.stringify({ recoveryToken, otp: otp.trim(), deviceId, deviceLabel: 'browser' }),
     });
     await applyLoginPayload(data);
   };
@@ -667,6 +751,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sendSignupPhoneOtp,
     verifySignupPhoneOtp,
     verifyTwoFaLogin,
+    getTwoFaRecoveryQuestions,
+    verifyTwoFaRecoveryAnswer,
+    verifyTwoFaRecoveryAnswers,
+    verifyTwoFaRecoveryOtp,
     accountType,
     organizationId,
     organizationDetail,

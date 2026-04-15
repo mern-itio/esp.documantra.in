@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Button } from '../../components/DocumentService/ui/button';
 import { DocumentCard } from '../../components/DocumentService/documents/DocumentCard';
+import { DocumentList } from '../../components/DocumentService/documents/DocumentList';
 import { CollaborationHub } from '../../components/DocumentService/collaboration/CollaborationHub';
 import { useDocumentStore } from '../../components/common/store/documentStore';
 import { documentAPI } from '../../services/api';
@@ -244,10 +245,16 @@ const TrashPage: React.FC = () => {
       )}
 
       {/* Content */}
-      <div className={viewMode === 'grid' 
-        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        : "space-y-2"
-      }>
+      {viewMode === 'list' ? (
+        <DocumentList
+          documents={filteredDocuments}
+          variant="trash"
+          onRestore={handleRestore}
+          onPermanentDelete={handlePermanentlyDelete}
+          onDocumentSelect={(doc) => setSelectedDocument(doc)}
+        />
+      ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredDocuments.map((document: Document) => {
           const isSelected = selectedDocuments.includes(document.id);
           return (
@@ -295,6 +302,7 @@ const TrashPage: React.FC = () => {
           );
         })}
       </div>
+      )}
    
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
           <div className="flex items-center space-x-2">

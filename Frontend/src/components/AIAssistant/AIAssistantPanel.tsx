@@ -551,7 +551,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#4D0080] underline break-all"
+            className="text-primary underline break-all"
           >
             {label}
           </a>
@@ -575,7 +575,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                         e.preventDefault();
                         handleDocumentClick(docLink.id, docLink.name, docLink.serviceType, docLink.docType);
                       }}
-                      className="text-[#4D0080] underline cursor-pointer hover:text-purple-800"
+                      className="text-primary underline cursor-pointer hover:text-primary/80"
                     >
                       {docLink.name}
                     </a>
@@ -893,7 +893,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
   return (
     <div
       ref={panelRef}
-      className="fixed right-0 top-0 h-full bg-white shadow-2xl z-[60] flex border-l border-slate-200 overflow-hidden"
+      className="fixed right-0 top-0 h-full bg-background shadow-2xl z-[60] flex border-l border-border overflow-hidden"
       style={{ width: `${chatAreaWidth}px` }}
     >
       <div
@@ -901,24 +901,24 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
           e.preventDefault();
           setIsResizing(true);
         }}
-        className="w-1 cursor-col-resize hover:bg-purple-400 transition-colors z-10 group relative flex-shrink-0 bg-transparent"
+        className="w-1 cursor-col-resize hover:bg-primary transition-colors z-10 group relative flex-shrink-0 bg-transparent"
         title="Drag to resize panel"
       >
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-16 bg-slate-300 group-hover:bg-purple-500 rounded transition-colors" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-16 bg-border group-hover:bg-primary rounded transition-colors" />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-visible">
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-gradient-to-r from-purple-50 to-white relative">
+          <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-primary/5 to-background relative">
           <div className="flex items-center space-x-2">
-            <Bot className="w-5 h-5 text-[#4D0080]" />
-            <h2 className="text-lg font-semibold text-slate-900">AI Assistant</h2>
+            <Bot className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">AI Assistant</h2>
           </div>
           <div className="flex items-center space-x-2">
             <div className="relative">
               <button
                 ref={historyButtonRef}
                 onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
-                className={`p-1.5 rounded-lg transition-colors ${showHistoryDropdown ? 'bg-purple-100 text-[#4D0080]' : 'hover:bg-slate-100 text-slate-500'
+                className={`p-1.5 rounded-lg transition-colors ${showHistoryDropdown ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground'
                   }`}
                 title="Chat History"
               >
@@ -928,7 +928,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
               {showHistoryDropdown && createPortal(
                 <div
                   ref={historyDropdownRef}
-                  className="fixed bg-white rounded-lg shadow-xl border border-slate-200 z-[70] max-h-[600px] flex flex-col"
+                  className="fixed bg-background rounded-lg shadow-xl border border-border z-[70] max-h-[600px] flex flex-col"
                   style={{
                     width: `${Math.min(320, Math.max(280, chatAreaWidth - 100))}px`,
                     minWidth: '280px',
@@ -937,11 +937,11 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                     maxHeight: 'calc(100vh - 80px)'
                   }}
                 >
-                  <div className="p-3 border-b border-slate-200 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-slate-900">Chat History</h3>
+                  <div className="p-3 border-b border-border flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-foreground">Chat History</h3>
                     <button
                       onClick={handleNewChat}
-                      className="p-1.5 rounded-lg hover:bg-purple-50 text-[#4D0080] transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
                       title="New Chat"
                     >
                       <Plus className="w-4 h-4" />
@@ -952,10 +952,10 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                   <div className="flex-1 overflow-y-auto p-2">
                     {isLoadingConversations ? (
                       <div className="flex items-center justify-center p-4">
-                        <Loader2 className="w-5 h-5 text-[#4D0080] animate-spin" />
+                        <Loader2 className="w-5 h-5 text-primary animate-spin" />
                       </div>
                     ) : conversations.length === 0 ? (
-                      <div className="p-4 text-center text-slate-500 text-sm">
+                      <div className="p-4 text-center text-muted-foreground text-sm">
                         No conversations yet. Start a new chat!
                       </div>
                     ) : (
@@ -968,8 +968,8 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                               setShowHistoryDropdown(false);
                             }}
                             className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${currentConversationId === conv.id
-                                ? 'bg-purple-100 border border-purple-300'
-                                : 'hover:bg-slate-100 border border-transparent'
+                                ? 'bg-primary/10 border border-primary'
+                                : 'hover:bg-primary/10 border border-transparent'
                               }`}
                           >
                             {editingTitleId === conv.id ? (
@@ -985,7 +985,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                                     setEditingTitleId(null);
                                   }
                                 }}
-                                className="w-full px-2 py-1 text-sm border border-purple-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-2 py-1 text-sm border border-primary rounded focus:outline-none focus:ring-2 focus:ring-primary"
                                 autoFocus
                                 onClick={(e) => e.stopPropagation()}
                               />
@@ -994,34 +994,34 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center space-x-2 mb-1">
-                                      <MessageSquare className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                                      <p className="text-sm font-medium text-slate-900 truncate">
+                                      <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                      <p className="text-sm font-medium text-foreground truncate">
                                         {conv.title}
                                       </p>
                                     </div>
                                     {conv.preview && (
-                                      <p className="text-xs text-slate-500 truncate ml-6">
+                                      <p className="text-xs text-muted-foreground truncate ml-6">
                                         {conv.preview}
                                       </p>
                                     )}
-                                    <p className="text-xs text-slate-400 mt-1 ml-6">
+                                    <p className="text-xs text-muted-foreground mt-1 ml-6">
                                       {formatDate(conv.updatedAt)}
                                     </p>
                                   </div>
                                   <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                       onClick={(e) => handleEditTitle(conv, e)}
-                                      className="p-1 hover:bg-slate-200 rounded transition-colors"
+                                      className="p-1 hover:bg-primary/10 rounded transition-colors"
                                       title="Edit title"
                                     >
-                                      <Edit2 className="w-3 h-3 text-slate-500" />
+                                      <Edit2 className="w-3 h-3 text-muted-foreground" />
                                     </button>
                                     <button
                                       onClick={(e) => handleDeleteConversation(conv.id, e)}
-                                      className="p-1 hover:bg-red-100 rounded transition-colors"
+                                      className="p-1 hover:bg-destructive/10 rounded transition-colors"
                                       title="Delete conversation"
                                     >
-                                      <Trash2 className="w-3 h-3 text-red-500" />
+                                      <Trash2 className="w-3 h-3 text-destructive" />
                                     </button>
                                   </div>
                                 </div>
@@ -1039,36 +1039,36 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
 
             <button
               onClick={handleNewChat}
-              className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors"
               title="New Chat"
             >
-              <Plus className="w-4 h-4 text-slate-500" />
+              <Plus className="w-4 h-4 text-muted-foreground" />
             </button>
             <button
               onClick={handleClear}
-              className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors"
               title="Clear conversation"
             >
-              <Trash2 className="w-4 h-4 text-slate-500" />
+              <Trash2 className="w-4 h-4 text-muted-foreground" />
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors"
             >
-              <X className="w-5 h-5 text-slate-500" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-slate-50">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-primary/5">
           {isInitializing ? (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-6 h-6 text-[#4D0080] animate-spin" />
+              <Loader2 className="w-6 h-6 text-primary animate-spin" />
             </div>
           ) : messages.length === 0 ? (
-            <div className="text-center text-slate-500 mt-8">
-              <Bot className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+            <div className="text-center text-muted-foreground mt-8">
+              <Bot className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <p>Start a conversation with your AI assistant</p>
             </div>
           ) : (
@@ -1079,30 +1079,30 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
               >
                 <div
                   className={`max-w-[80%] rounded-lg px-4 py-2 break-words ${message.role === 'user'
-                      ? 'bg-[#4D0080] text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : message.isError
                         ? 'bg-red-50 text-red-900 border border-red-200'
-                        : 'bg-white text-slate-900 border border-slate-200'
+                        : 'bg-card text-foreground border border-border'
                     }`}
                 >
                   {message.role === 'assistant' && message.action && (
-                    <div className="flex items-center space-x-2 mb-2 pb-2 border-b border-slate-200">
+                    <div className="flex items-center space-x-2 mb-2 pb-2 border-b border-border">
                       {message.isError ? (
                         <AlertCircle className="w-4 h-4 text-red-500" />
                       ) : (
                         getActionIcon(message.action)
                       )}
-                      <span className="text-xs font-medium text-slate-600">
+                      <span className="text-xs font-medium text-muted-foreground">
                         {message.isError ? 'ERROR' : message.action.replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
                   )}
                   {message.isError && (
-                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="mt-2 p-2 bg-yellow-50 border border-border rounded-lg">
                       <div className="flex items-start space-x-2">
                         <Lightbulb className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                          <p className="text-xs text-yellow-800 mb-2">
+                            <p className="text-xs text-muted-foreground mb-2">
                             Help the AI learn! If you perform this action manually, we can record it so the AI does it correctly next time.
                           </p>
                           {message.patternId ? (
@@ -1113,13 +1113,13 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                                 const failedParams = message.failedParameters || message.parameters || {};
                                 handleShowCorrection(message.patternId!, userCmd, failedAct, failedParams);
                               }}
-                              className="text-xs px-3 py-1.5 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors flex items-center space-x-1"
+                              className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors flex items-center space-x-1"
                             >
                               <CheckCircle className="w-3 h-3" />
                               <span>Record Correction</span>
                             </button>
                           ) : (
-                            <p className="text-xs text-yellow-700 italic">
+                            <p className="text-xs text-muted-foreground italic">
                               Perform the action manually and the system will auto-detect it within 5 minutes.
                             </p>
                           )}
@@ -1150,8 +1150,8 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                   </div>
                   {/* Render clickable search results */}
                   {message.searchResults && message.searchResults.length > 0 && (
-                    <div className="mt-3 space-y-2 pt-3 border-t border-slate-200">
-                      <p className="text-xs font-medium text-slate-600 mb-2">Search Results:</p>
+                    <div className="mt-3 space-y-2 pt-3 border-t border-border">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Search Results:</p>
                       {message.searchResults.map((doc: any, idx: number) => {
                         // For e-sign envelopes, use metadata.name first, then documentName, then metadata.subject
                         const displayName = (doc.serviceType === 'e-sign-service' || doc.source === 'e-sign-service' || doc.documentType === 'envelope')
@@ -1167,24 +1167,24 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                               doc.serviceType,
                               doc.documentType
                             )}
-                            className="w-full text-left p-2 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-[#4D0080] transition-all group"
+                            className="w-full text-left p-2 rounded-md bg-primary/5 hover:bg-primary/10 border border-border hover:border-primary transition-all group"
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-xs font-semibold text-[#4D0080]">#{idx + 1}</span>
-                                  <p className="text-sm font-medium text-slate-900 truncate group-hover:text-[#4D0080]">
+                                  <span className="text-xs font-semibold text-primary">#{idx + 1}</span>
+                                  <p className="text-sm font-medium text-foreground truncate group-hover:text-primary">
                                     {displayName}
                                   </p>
                                 </div>
                                 {doc.metadata?.description && (
-                                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                                     {doc.metadata.description}
                                   </p>
                                 )}
-                                <div className="flex items-center space-x-3 mt-1 text-xs text-slate-400">
+                                    <div className="flex items-center space-x-3 mt-1 text-xs text-muted-foreground">
                                   {doc.serviceType === 'e-sign-service' && (
-                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
                                       E-Sign
                                     </span>
                                   )}
@@ -1199,7 +1199,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
                                   )}
                                 </div>
                               </div>
-                              <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#4D0080] flex-shrink-0 ml-2" />
+                              <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary flex-shrink-0 ml-2" />
                             </div>
                           </button>
                         );
@@ -1213,7 +1213,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
           {isLoading && (
             <div className="flex justify-start">
               <div className="flex items-center justify-center h-full">
-                <span className="text-sm text-[#4D0080] font-medium">
+                <span className="text-sm text-primary font-medium">
                   Thinking
                   <span className="inline-block w-[1ch] animate-dot"><Dot className="w-2 h-2" /></span>
                   <span className="inline-block w-[1ch] animate-dot animation-delay-200"><Dot className="w-2 h-2" /></span>
@@ -1227,30 +1227,30 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-slate-200 bg-white overflow-x-hidden">
+        <div className="p-4 border-t border-border bg-background overflow-x-hidden">
           {/* Attached Files Display */}
           {attachedFiles.length > 0 && (
             <div className="mb-2 space-y-1">
               {attachedFiles.map((file, idx) => (
                 <div
                   key={`${file.name}-${file.size}-${idx}`}
-                  className="p-2 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between"
+                  className="p-2 bg-primary/5 border border-primary rounded-lg flex items-center justify-between"
                 >
                   <div className="flex items-center space-x-2 flex-1 min-w-0">
-                    <Paperclip className="w-4 h-4 text-[#4D0080] flex-shrink-0" />
-                    <span className="text-sm text-slate-700 truncate">
+                    <Paperclip className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="text-sm text-foreground truncate">
                       {file.name || 'Unknown file'}
                     </span>
-                    <span className="text-xs text-slate-500 flex-shrink-0">
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
                       ({(file.size / 1024 / 1024).toFixed(2)} MB)
                     </span>
                   </div>
                   <button
                     onClick={() => handleRemoveFile(idx)}
-                    className="p-1 hover:bg-purple-100 rounded transition-colors flex-shrink-0"
+                    className="p-1 hover:bg-primary/10 rounded transition-colors flex-shrink-0"
                     title="Remove file"
                   >
-                    <XCircle className="w-4 h-4 text-[#4D0080]" />
+                    <XCircle className="w-4 h-4 text-primary" />
                   </button>
                 </div>
               ))}
@@ -1270,10 +1270,10 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
             />
             <label
               htmlFor="ai-assistant-file-input"
-              className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors flex-shrink-0"
+              className="p-2 border border-border rounded-lg hover:bg-primary/10 cursor-pointer transition-colors flex-shrink-0"
               title="Attach file"
             >
-              <Paperclip className="w-5 h-5 text-slate-600" />
+              <Paperclip className="w-5 h-5 text-muted-foreground" />
             </label>
 
             <textarea
@@ -1282,14 +1282,14 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={attachedFiles.length > 0 ? "Write your message and I'll send these document(s)..." : "Type your command... (e.g., 'search documents sent to Receipient Name')"}
-              className="flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent max-h-40 overflow-y-auto"
+              className="flex-1 resize-none rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent max-h-40 overflow-y-auto"
               rows={2}
               disabled={isLoading}
             />
             <button
               onClick={handleSend}
               disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-              className="p-2 bg-[#4D0080] text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -1298,7 +1298,7 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
               )}
             </button>
           </div>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             Press Enter to send, Shift+Enter for new line
           </p>
         </div>
@@ -1306,22 +1306,22 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({ isOpen, onClose }) 
 
       {/* Correction Modal */}
       {showCorrectionModal && currentFailedPattern && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+          <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-border">
+            <div className="p-6 border-b border-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Lightbulb className="w-5 h-5 text-yellow-600" />
-                  <h3 className="text-lg font-semibold text-slate-900">Help AI Learn</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Help AI Learn</h3>
                 </div>
                 <button
                   onClick={() => {
                     setShowCorrectionModal(false);
                     setCurrentFailedPattern(null);
                   }}
-                  className="p-1 hover:bg-slate-100 rounded transition-colors"
+                  className="p-1 hover:bg-primary/10 rounded transition-colors"
                 >
-                  <X className="w-5 h-5 text-slate-500" />
+                  <X className="w-5 h-5 text-muted-foreground" />
                 </button>
               </div>
             </div>
@@ -1414,17 +1414,17 @@ const CorrectionForm: React.FC<CorrectionFormProps> = ({ failedPattern, onRecord
   return (
     <div className="p-6 space-y-4">
       <div>
-        <p className="text-sm text-slate-600 mb-2">
+        <p className="text-sm text-muted-foreground mb-2">
           <strong>Your Command:</strong> "{failedPattern.userCommand}"
         </p>
-        <p className="text-sm text-slate-600 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           <strong>AI Attempted:</strong> {failedPattern.failedAction}
         </p>
         {autoDetected && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="mb-4 p-3 bg-success/10 border border-success/30 rounded-lg">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              <p className="text-sm text-green-800">
+              <CheckCircle className="w-4 h-4 text-success" />
+              <p className="text-sm text-foreground">
                 We detected you performed this action manually. The correction has been pre-filled below.
               </p>
             </div>
@@ -1433,13 +1433,13 @@ const CorrectionForm: React.FC<CorrectionFormProps> = ({ failedPattern, onRecord
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           Correct Action *
         </label>
         <select
           value={action}
           onChange={(e) => setAction(e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="search_document">Search Document</option>
           <option value="send_document">Send Document</option>
@@ -1455,45 +1455,45 @@ const CorrectionForm: React.FC<CorrectionFormProps> = ({ failedPattern, onRecord
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           Correct Parameters (JSON) *
         </label>
         <textarea
           value={parameters}
           onChange={(e) => setParameters(e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
+          className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
           rows={8}
           placeholder='{"recipients": [{"email": "user@example.com", "name": "User"}], "signatureFields": [...]}'
         />
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Enter the correct parameters as JSON. This is what the AI should have used.
         </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           Description (Optional)
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           rows={3}
           placeholder="Describe what you did to complete this action correctly..."
         />
       </div>
 
-      <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
+      <div className="flex items-center justify-end space-x-3 pt-4 border-t border-border">
         <button
           onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+          className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-primary/10 transition-colors"
         >
           Cancel
         </button>
         <button
           onClick={handleSubmit}
           disabled={!action || !parameters || isSubmitting}
-          className="px-4 py-2 text-sm font-medium text-white bg-[#4D0080] rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+            className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
         >
           {isSubmitting ? (
             <>

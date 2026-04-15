@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { login, googleLogin, verifyTwoFaLogin, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, verifyActiveSession, validateSessionEndpoint } = require('../controllers/authController');
+const { login, googleLogin, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoverySingleAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp, sendRecoveryEmailOtp, verifyRecoveryEmailOtp, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, regenerateAuthenticatorBackupCodes, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, verifyActiveSession, validateSessionEndpoint } = require('../controllers/authController');
 const { getMyReferral, listRewards, onFirstDocumentSentInternal } = require('../controllers/referralController');
 const {adminLogin} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail,insertNotifications,getNotifications,markNotificationReadById,markAllNotificationAsRead } = require('../controllers/mainController');
@@ -28,6 +28,10 @@ router.get('/status', (_, res) => res.send('Auth Service is running and changing
 router.post('/login', loginLimiter, login);
 router.post('/google-login', loginLimiter, googleLogin);
 router.post('/2fa/verify-login', loginLimiter, verifyTwoFaLogin);
+router.post('/2fa/recovery/questions', loginLimiter, getTwoFaRecoveryQuestions);
+router.post('/2fa/recovery/verify-answer', loginLimiter, verifyTwoFaRecoverySingleAnswer);
+router.post('/2fa/recovery/verify-answers', loginLimiter, verifyTwoFaRecoveryAnswers);
+router.post('/2fa/recovery/verify-otp', loginLimiter, verifyTwoFaRecoveryOtp);
 router.post('/admin/login', loginLimiter, adminLogin);
 router.post('/register', otpLimiter, register);
 router.post('/signup/send-email-otp', otpLimiter, sendSignupEmailOtp);
@@ -49,8 +53,11 @@ router.post('/api/auth/sessions/revoke', verifyJWT(), verifyActiveSession, revok
 router.get('/api/auth/validate-session', validateSessionEndpoint);
 router.get('/api/auth/2fa', verifyJWT(), getTwoFaSettings);
 router.post('/api/auth/2fa', verifyJWT(), updateTwoFaSettings);
+router.post('/api/auth/2fa/recovery-email/send-otp', verifyJWT(), verifyActiveSession, otpLimiter, sendRecoveryEmailOtp);
+router.post('/api/auth/2fa/recovery-email/verify-otp', verifyJWT(), verifyActiveSession, verifyRecoveryEmailOtp);
 router.get('/api/auth/2fa/authenticator/setup', verifyJWT(), verifyActiveSession, setupAuthenticatorTwoFa);
 router.post('/api/auth/2fa/authenticator/verify-setup', verifyJWT(), verifyActiveSession, verifyAuthenticatorTwoFaSetup);
+router.post('/api/auth/2fa/authenticator/regenerate-backup-codes', verifyJWT(), verifyActiveSession, regenerateAuthenticatorBackupCodes);
 router.get('/api/auth/switch-account/:accType', verifyJWT(), switchAccount);
 router.get('/api/users-list', verifyJWT(), getUsersList);
 router.post('/api/notifications/create', verifyJWT(),insertNotifications);
