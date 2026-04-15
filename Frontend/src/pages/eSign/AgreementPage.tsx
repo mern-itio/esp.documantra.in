@@ -1615,6 +1615,265 @@ const AgreementPage: React.FC = () => {
     }
   };
 
+          
+  const renderAgreementRowActions = (agreement: Agreement) => (
+                        <div className="flex items-center justify-end gap-2 relative">
+                          {agreement.status === 'in-progress' && agreement.direction !== 'Received' && (() => {
+                            const env = envelopesData.find(e => e.id === agreement.id);
+                            const recipientList = env?.recipients || [];
+                            const hasPendingNonInPerson = recipientList.some((r) => {
+                              const role = (r.role || '').toString().toLowerCase();
+                              const status = (r.status || '').toString().toLowerCase();
+                              const isCompleted = status === 'completed' || status === 'signed';
+                              const isCopy = role === 'carbon_copy' || role === 'cc';
+                              const isInPerson = role === 'in_person_signer';
+                              return !isCompleted && !isCopy && !isInPerson;
+                            });
+                            const hasPendingInPerson = recipientList.some((r) => {
+                              const role = (r.role || '').toString().toLowerCase();
+                              const status = (r.status || '').toString().toLowerCase();
+                              const isCompleted = status === 'completed' || status === 'signed';
+                              return role === 'in_person_signer' && !isCompleted;
+                            });
+
+                            if (hasPendingNonInPerson) {
+                              return (
+                                <button
+                                  onClick={() => handleRowResend(agreement)}
+                                  disabled={rowResendLoadingId === agreement.id}
+                                  className={`resend-envelope-button ${rowResendLoadingId === agreement.id ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                >
+                                  {!rowResendLoadingId && (
+                                    <div>
+                                      <Mail className="envelope-icon envelope-closed" />
+                                      <MailOpen className="envelope-icon envelope-open" />
+                                    </div>
+                                  )}
+                                  {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
+                                </button>
+                              );
+                            }
+
+                            if (hasPendingInPerson) {
+                              return (
+                                <button
+                                  onClick={() => openInPersonSigning(agreement.id)}
+                                  className="px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 border border-primary text-primary hover:bg-muted"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  Sign now
+                                </button>
+                              );
+                            }
+
+                            return null;
+                          })()}
+                          {agreement.status === "draft" && agreement.direction !== 'Received' && (
+                            <button
+                              onClick={() =>
+                                agreement?.isPowerForm
+                                  ? handleView(agreement.id)
+                                  : handleContinue(agreement.id)
+                              }
+                              className={agreement.isPowerForm ? "view-eye-button" : "continue-application"}
+                            >
+                              {agreement.isPowerForm ? (
+                                <div>
+                                  <EyeClosed className="eye-icon eye-closed" />
+                                  <Eye className="eye-icon eye-open" />
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="pencil"></div>
+                                  <div className="folder">
+                                    <div className="top">
+                                      <svg viewBox="0 0 24 27">
+                                        <path d="M1,0 L23,0 C23.5522847,-1.01453063e-16 24,0.44771525 24,1 L24,8.17157288 C24,8.70200585 23.7892863,9.21071368 23.4142136,9.58578644 L20.5857864,12.4142136 C20.2107137,12.7892863 20,13.2979941 20,13.8284271 L20,26 C20,26.5522847 19.5522847,27 19,27 L1,27 C0.44771525,27 6.76353751e-17,26.5522847 0,26 L0,1 C-6.76353751e-17,0.44771525 0.44771525,1.01453063e-16 1,0 Z"></path>
+                                      </svg>
+                                    </div>
+                                    <div className="paper"></div>
+                                  </div>
+                                </div>
+                              )}
+                              {agreement.isPowerForm ? "View" : "Continue"}
+                            </button>
+                          )}
+
+                          {agreement.status === 'completed' && agreement.direction !== 'Received' && (
+                            <button
+                              onClick={() => handleManageAction('download', agreement.id)}
+                              className="download-btn-sparkle px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 relative overflow-visible"
+                            >
+                              <Download className="w-4 h-4 relative z-10 text-primary" />
+                              <span className="relative z-10 text-primary">Download</span>
+                              <div className="sparkle-star-1">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                              <div className="sparkle-star-2">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                              <div className="sparkle-star-3">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                              <div className="sparkle-star-4">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                              <div className="sparkle-star-5">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                              <div className="sparkle-star-6">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlSpace="preserve"
+                                  version="1.1"
+                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
+                                  viewBox="0 0 784.11 815.53"
+                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                >
+                                  <g id="Layer_x0020_1">
+                                    <path
+                                      className="sparkle-fill"
+                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                              </div>
+                            </button>
+                          )}
+                          {agreement.status === 'declined' && agreement.direction !== 'Received' && (
+                            <button
+                              type="button"
+                              disabled
+                              className="px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 border border-rose-200 bg-rose-50 text-rose-700 cursor-not-allowed"
+                            >
+                              <X className="w-4 h-4" />
+                              Declined
+                            </button>
+                          )}
+                          {agreement.status === 'deleted' && agreement.direction !== 'Received' && (
+                            <>
+                              <button
+                                onClick={() => handleRestore(agreement.id)}
+                                className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent-green/10 hover:border-accent-green/40 hover:text-accent-green transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                              >
+                                Restore
+                              </button>
+                              <button
+                                onClick={() => handlePermanentDelete(agreement.id)}
+                                className="px-4 py-2 border border-destructive/40 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 hover:border-destructive/60 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Delete Permanently
+                              </button>
+                            </>
+                          )}
+
+                          {agreement.status !== 'deleted' && agreement.direction !== 'Received' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const target = e.currentTarget as HTMLElement;
+                                const rect = target.getBoundingClientRect();
+                                const menuWidth = 224;
+                                const menuHeight = 180; // approximate menu height (adjust as needed)
+                                const spaceBelow = window.innerHeight - rect.bottom;
+                                const openUpward = spaceBelow < menuHeight + 16; // if not enough space below, open upward
+
+                                const left = Math.max(8, rect.right - menuWidth + window.scrollX);
+                                const top = openUpward
+                                  ? rect.top + window.scrollY - menuHeight - 8 // open upward
+                                  : rect.bottom + window.scrollY + 8; // open downward
+
+                                setMenuPosition({ top, left });
+                                setOpenMenuId(openMenuId === agreement.id ? null : agreement.id);
+                              }}
+                              className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all duration-200 group/menu"
+                              title="More options"
+                            >
+                              <MoreVertical className="w-4 h-4 group-hover/menu:rotate-90 transition-transform duration-200" />
+                            </button>
+                          )}
+                          {agreement.direction === 'Received' && (
+                            <button
+                              onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
+                              className="px-4 py-2 border border-primary bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 hover:border-primary/90 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                            >
+                              View
+                            </button>
+                          )}
+                        </div>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1878,261 +2137,7 @@ const AgreementPage: React.FC = () => {
                         );
                       })}
                       <td className="px-6 py-4 align-top whitespace-nowrap text-sm font-medium text-card-foreground" data-tour="row-actions">
-                        <div className="flex items-center justify-end gap-2 relative">
-                          {agreement.status === 'in-progress' && agreement.direction !== 'Received' && (() => {
-                            const env = envelopesData.find(e => e.id === agreement.id);
-                            const recipientList = env?.recipients || [];
-                            const hasPendingNonInPerson = recipientList.some((r) => {
-                              const role = (r.role || '').toString().toLowerCase();
-                              const status = (r.status || '').toString().toLowerCase();
-                              const isCompleted = status === 'completed' || status === 'signed';
-                              const isCopy = role === 'carbon_copy' || role === 'cc';
-                              const isInPerson = role === 'in_person_signer';
-                              return !isCompleted && !isCopy && !isInPerson;
-                            });
-                            const hasPendingInPerson = recipientList.some((r) => {
-                              const role = (r.role || '').toString().toLowerCase();
-                              const status = (r.status || '').toString().toLowerCase();
-                              const isCompleted = status === 'completed' || status === 'signed';
-                              return role === 'in_person_signer' && !isCompleted;
-                            });
-
-                            if (hasPendingNonInPerson) {
-                              return (
-                                <button
-                                  onClick={() => handleRowResend(agreement)}
-                                  disabled={rowResendLoadingId === agreement.id}
-                                  className={`resend-envelope-button ${rowResendLoadingId === agreement.id ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                >
-                                  {!rowResendLoadingId && (
-                                    <div>
-                                      <Mail className="envelope-icon envelope-closed" />
-                                      <MailOpen className="envelope-icon envelope-open" />
-                                    </div>
-                                  )}
-                                  {rowResendLoadingId === agreement.id ? 'Resending…' : 'Resend'}
-                                </button>
-                              );
-                            }
-
-                            if (hasPendingInPerson) {
-                              return (
-                                <button
-                                  onClick={() => openInPersonSigning(agreement.id)}
-                                  className="px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 border border-primary text-primary hover:bg-muted"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  Sign now
-                                </button>
-                              );
-                            }
-
-                            return null;
-                          })()}
-                          {agreement.status === "draft" && agreement.direction !== 'Received' && (
-                            <button
-                              onClick={() =>
-                                agreement?.isPowerForm
-                                  ? handleView(agreement.id)
-                                  : handleContinue(agreement.id)
-                              }
-                              className={agreement.isPowerForm ? "view-eye-button" : "continue-application"}
-                            >
-                              {agreement.isPowerForm ? (
-                                <div>
-                                  <EyeClosed className="eye-icon eye-closed" />
-                                  <Eye className="eye-icon eye-open" />
-                                </div>
-                              ) : (
-                                <div>
-                                  <div className="pencil"></div>
-                                  <div className="folder">
-                                    <div className="top">
-                                      <svg viewBox="0 0 24 27">
-                                        <path d="M1,0 L23,0 C23.5522847,-1.01453063e-16 24,0.44771525 24,1 L24,8.17157288 C24,8.70200585 23.7892863,9.21071368 23.4142136,9.58578644 L20.5857864,12.4142136 C20.2107137,12.7892863 20,13.2979941 20,13.8284271 L20,26 C20,26.5522847 19.5522847,27 19,27 L1,27 C0.44771525,27 6.76353751e-17,26.5522847 0,26 L0,1 C-6.76353751e-17,0.44771525 0.44771525,1.01453063e-16 1,0 Z"></path>
-                                      </svg>
-                                    </div>
-                                    <div className="paper"></div>
-                                  </div>
-                                </div>
-                              )}
-                              {agreement.isPowerForm ? "View" : "Continue"}
-                            </button>
-                          )}
-
-                          {agreement.status === 'completed' && agreement.direction !== 'Received' && (
-                            <button
-                              onClick={() => handleManageAction('download', agreement.id)}
-                              className="download-btn-sparkle px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 relative overflow-visible"
-                            >
-                              <Download className="w-4 h-4 relative z-10 text-primary" />
-                              <span className="relative z-10 text-primary">Download</span>
-                              <div className="sparkle-star-1">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  xmlSpace="preserve"
-                                  version="1.1"
-                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
-                                  viewBox="0 0 784.11 815.53"
-                                  xmlnsXlink="http://www.w3.org/1999/xlink"
-                                >
-                                  <g id="Layer_x0020_1">
-                                    <path
-                                      className="sparkle-fill"
-                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
-                                    ></path>
-                                  </g>
-                                </svg>
-                              </div>
-                              <div className="sparkle-star-2">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  xmlSpace="preserve"
-                                  version="1.1"
-                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
-                                  viewBox="0 0 784.11 815.53"
-                                  xmlnsXlink="http://www.w3.org/1999/xlink"
-                                >
-                                  <g id="Layer_x0020_1">
-                                    <path
-                                      className="sparkle-fill"
-                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
-                                    ></path>
-                                  </g>
-                                </svg>
-                              </div>
-                              <div className="sparkle-star-3">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  xmlSpace="preserve"
-                                  version="1.1"
-                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
-                                  viewBox="0 0 784.11 815.53"
-                                  xmlnsXlink="http://www.w3.org/1999/xlink"
-                                >
-                                  <g id="Layer_x0020_1">
-                                    <path
-                                      className="sparkle-fill"
-                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
-                                    ></path>
-                                  </g>
-                                </svg>
-                              </div>
-                              <div className="sparkle-star-4">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  xmlSpace="preserve"
-                                  version="1.1"
-                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
-                                  viewBox="0 0 784.11 815.53"
-                                  xmlnsXlink="http://www.w3.org/1999/xlink"
-                                >
-                                  <g id="Layer_x0020_1">
-                                    <path
-                                      className="sparkle-fill"
-                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
-                                    ></path>
-                                  </g>
-                                </svg>
-                              </div>
-                              <div className="sparkle-star-5">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  xmlSpace="preserve"
-                                  version="1.1"
-                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
-                                  viewBox="0 0 784.11 815.53"
-                                  xmlnsXlink="http://www.w3.org/1999/xlink"
-                                >
-                                  <g id="Layer_x0020_1">
-                                    <path
-                                      className="sparkle-fill"
-                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
-                                    ></path>
-                                  </g>
-                                </svg>
-                              </div>
-                              <div className="sparkle-star-6">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  xmlSpace="preserve"
-                                  version="1.1"
-                                  style={{ shapeRendering: 'geometricPrecision', textRendering: 'geometricPrecision', fillRule: 'evenodd', clipRule: 'evenodd' }}
-                                  viewBox="0 0 784.11 815.53"
-                                  xmlnsXlink="http://www.w3.org/1999/xlink"
-                                >
-                                  <g id="Layer_x0020_1">
-                                    <path
-                                      className="sparkle-fill"
-                                      d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z"
-                                    ></path>
-                                  </g>
-                                </svg>
-                              </div>
-                            </button>
-                          )}
-                          {agreement.status === 'declined' && agreement.direction !== 'Received' && (
-                            <button
-                              type="button"
-                              disabled
-                              className="px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 border border-rose-200 bg-rose-50 text-rose-700 cursor-not-allowed"
-                            >
-                              <X className="w-4 h-4" />
-                              Declined
-                            </button>
-                          )}
-                          {agreement.status === 'deleted' && agreement.direction !== 'Received' && (
-                            <>
-                              <button
-                                onClick={() => handleRestore(agreement.id)}
-                                className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent-green/10 hover:border-accent-green/40 hover:text-accent-green transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
-                              >
-                                Restore
-                              </button>
-                              <button
-                                onClick={() => handlePermanentDelete(agreement.id)}
-                                className="px-4 py-2 border border-destructive/40 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 hover:border-destructive/60 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 inline-flex items-center gap-2"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Delete Permanently
-                              </button>
-                            </>
-                          )}
-
-                          {agreement.status !== 'deleted' && agreement.direction !== 'Received' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const target = e.currentTarget as HTMLElement;
-                                const rect = target.getBoundingClientRect();
-                                const menuWidth = 224;
-                                const menuHeight = 180; // approximate menu height (adjust as needed)
-                                const spaceBelow = window.innerHeight - rect.bottom;
-                                const openUpward = spaceBelow < menuHeight + 16; // if not enough space below, open upward
-
-                                const left = Math.max(8, rect.right - menuWidth + window.scrollX);
-                                const top = openUpward
-                                  ? rect.top + window.scrollY - menuHeight - 8 // open upward
-                                  : rect.bottom + window.scrollY + 8; // open downward
-
-                                setMenuPosition({ top, left });
-                                setOpenMenuId(openMenuId === agreement.id ? null : agreement.id);
-                              }}
-                              className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all duration-200 group/menu"
-                              title="More options"
-                            >
-                              <MoreVertical className="w-4 h-4 group-hover/menu:rotate-90 transition-transform duration-200" />
-                            </button>
-                          )}
-                          {agreement.direction === 'Received' && (
-                            <button
-                              onClick={() => navigate(`/e-sign/envelope/${agreement.id}`)}
-                              className="px-4 py-2 border border-primary bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 hover:border-primary/90 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
-                            >
-                              View
-                            </button>
-                          )}
-                        </div>
+                        {renderAgreementRowActions(agreement)}
                       </td>
                     </tr>
                   );

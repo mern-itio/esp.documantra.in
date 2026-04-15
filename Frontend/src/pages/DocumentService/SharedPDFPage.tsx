@@ -7,6 +7,7 @@ import { Card } from '../../components/DocumentService/ui/card';
 import Badge from '../../components/DocumentService/ui/badge';
 import { useDocumentStore } from '../../components/common/store/documentStore';
 import PDFShareModal from '../../components/DocumentService/sharing/PDFShareModal';
+import { cn } from '../../components/common/lib/utils';
 
 const SharedPDFPage: React.FC = () => {
   const [sharedDocuments, setSharedDocuments] = useState<SharedDocument[]>([]);
@@ -427,6 +428,20 @@ const renderPage = useCallback(async (pageNumber: number) => {
     return <Badge variant="default" className="text-xs">Active</Badge>;
   };
 
+  const handleSharedSelectAll = (selectAll: boolean) => {
+    if (selectAll) {
+      setSelectedDocuments(filteredDocuments.map((d) => d.id));
+    } else {
+      setSelectedDocuments([]);
+    }
+  };
+
+  const getRecipientList = (doc: SharedDocument) => [
+    ...(doc.toRecipients || []),
+    ...(doc.ccRecipients || []),
+    ...(doc.bccRecipients || []),
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -458,11 +473,161 @@ const renderPage = useCallback(async (pageNumber: number) => {
             </p>
           )}
         </div>
+      ) : viewMode === 'list' ? (
+        <div className="p-6 overflow-x-auto">
+          <div className="min-w-[900px] rounded-lg border border-border bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b border-border bg-card">
+              <div className="flex items-center gap-4">
+                <input
+                  type="checkbox"
+                  checked={
+                    filteredDocuments.length > 0 &&
+                    selectedDocuments.length === filteredDocuments.length
+                  }
+                  onChange={(e) => handleSharedSelectAll(e.target.checked)}
+                  className="rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <div className="grid grid-cols-12 gap-3 flex-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <div className="col-span-4">Name</div>
+                  <div className="col-span-3">Recipients</div>
+                  <div className="col-span-1 text-center">Views</div>
+                  <div className="col-span-1 text-center">Downloads</div>
+                  <div className="col-span-1">Status</div>
+                  <div className="col-span-2 text-right">Actions</div>
+                </div>
+              </div>
+            </div>
+            <div className="divide-y divide-border">
+              {filteredDocuments.map((doc) => {
+                const isSelected = selectedDocuments.includes(doc.id);
+                const recipients = getRecipientList(doc);
+                return (
+                  <div
+                    key={doc.id}
+                    className={cn(
+                      'px-4 py-3 transition-colors hover:bg-accent/50',
+                      isSelected && 'bg-accent/50'
+                    )}
+                    onDoubleClick={() => handleViewDocument(doc)}
+                  >
+                    <div className="flex items-start gap-4">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          if (e.target.checked) {
+                            setSelectedDocuments([...selectedDocuments, doc.id]);
+                          } else {
+                            setSelectedDocuments(
+                              selectedDocuments.filter((id) => id !== doc.id)
+                            );
+                          }
+                        }}
+                        className="mt-1 rounded border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                      <div className="grid grid-cols-12 gap-3 flex-1 items-start">
+                        <div className="col-span-4 flex items-start gap-2 min-w-0">
+                          <FileText
+                            size={18}
+                            className="text-blue-600 flex-shrink-0 mt-0.5"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {doc.document?.name || 'Untitled document'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDate(doc.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="col-span-3 min-w-0">
+                          <div className="flex flex-wrap gap-1">
+                            {recipients.slice(0, 3).map((recipient: { email: string }, index: number) => (
+                              <Badge key={index} variant="outline" className="text-xs max-w-full truncate">
+                                {recipient.email}
+                              </Badge>
+                            ))}
+                            {recipients.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{recipients.length - 3} more
+                              </Badge>
+                            )}
+                            {recipients.length === 0 && (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="col-span-1 text-center text-sm text-muted-foreground">
+                          {doc.viewCount}
+                        </div>
+                        <div className="col-span-1 text-center text-sm text-muted-foreground">
+                          {doc.downloadCount}
+                        </div>
+                        <div className="col-span-1 flex items-center">
+                          {getStatusBadge(doc)}
+                        </div>
+                        <div className="col-span-2 flex flex-wrap items-center justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewDocument(doc)}
+                          >
+                            <ExternalLink size={14} className="mr-1" />
+                            View
+                          </Button>
+                          {doc.isOwner && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCopyLink(doc.shareToken)}
+                                title={
+                                  copiedLink === doc.shareToken
+                                    ? 'Link copied!'
+                                    : 'Copy share link'
+                                }
+                                className={
+                                  copiedLink === doc.shareToken
+                                    ? 'bg-green-50 text-green-600 border-green-200'
+                                    : ''
+                                }
+                              >
+                                {copiedLink === doc.shareToken ? (
+                                  <Copy size={14} className="text-green-600" />
+                                ) : (
+                                  <Link size={14} />
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleShareDocument(doc)}
+                                title="Share this document"
+                              >
+                                <Share size={14} />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRevokeShare(doc.shareToken)}
+                                title="Revoke access"
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       ) : (
-        <div className={`p-4 ${viewMode === 'grid' 
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
-          : 'space-y-4'
-        }`}>
+        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredDocuments.map((doc) => {
             const isSelected = selectedDocuments.includes(doc.id);
             return (

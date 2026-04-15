@@ -16,6 +16,8 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const OTP_EXPIRY_MINUTES = 10;
 const SIGNUP_TOKEN_EXPIRY = '15m';
 const TWO_FA_TOKEN_EXPIRY = '10m';
+const TWO_FA_RECOVERY_TOKEN_EXPIRY = '10m';
+const MIN_RECOVERY_QUESTIONS = 3;
 
 authenticator.options = {
   window: [1, 1],
@@ -64,6 +66,29 @@ function hashOtp(otp) {
   return crypto.createHash('sha256').update(String(otp)).digest('hex');
 }
 
+function hashRecoveryAnswer(answer) {
+  return crypto.createHash('sha256').update(`2fa-recovery-answer:${String(answer || '').trim().toLowerCase()}`).digest('hex');
+}
+
+/** 10 backup codes, formatted as XXXX-XXXX (8 digits); one-time use each */
+function generateBackupCodes(count = 10) {
+  const codes = [];
+  for (let i = 0; i < count; i += 1) {
+    const a = String(Math.floor(1000 + Math.random() * 9000));
+    const b = String(Math.floor(1000 + Math.random() * 9000));
+    codes.push(`${a}-${b}`);
+  }
+  return codes;
+}
+
+function normalizeBackupCode(input) {
+  return String(input || '').replace(/\D/g, '').slice(0, 8);
+}
+
+function hashBackupCode(normalizedDigits) {
+  return crypto.createHash('sha256').update(`2fa-backup:${normalizedDigits}`).digest('hex');
+}
+
 function normalizeOtpCode(otp) {
   return String(otp || '').replace(/\s|-/g, '').trim();
 }
@@ -88,6 +113,27 @@ function maskPhone(phoneDigits) {
   return `***${d.slice(-4)}`;
 }
 
+function maskQuestion(question) {
+  return String(question || '').trim().slice(0, 200);
+}
+
+function sanitizeRecoveryQuestions(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => ({
+      question: maskQuestion(item?.question),
+      answer: String(item?.answer || '').trim(),
+    }))
+    .filter((item) => item.question && item.answer);
+}
+
+function recoveryEmailChoices(user) {
+  const choices = [];
+  if (user?.email) choices.push({ key: 'primary', label: 'Primary email', masked: maskEmail(user.email) });
+  if (user?.recoveryEmail) choices.push({ key: 'recovery', label: 'Recovery email', masked: maskEmail(user.recoveryEmail) });
+  return choices;
+}
+
 function issueTwoFaToken(userId, deviceIdHash) {
   return jwt.sign(
     { userId: String(userId), purpose: '2fa_login', deviceIdHash },
@@ -100,6 +146,27 @@ function decodeTwoFaToken(twoFaToken) {
   const decoded = jwt.verify(twoFaToken, process.env.ACCESS_TOKEN_SECRET);
   if (decoded?.purpose !== '2fa_login' || !decoded?.userId || !decoded?.deviceIdHash) {
     throw new Error('Invalid 2FA token');
+  }
+  return decoded;
+}
+
+function issueTwoFaRecoveryToken(userId, deviceIdHash, destination) {
+  return jwt.sign(
+    { userId: String(userId), purpose: '2fa_recovery_login', deviceIdHash, destination },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: TWO_FA_RECOVERY_TOKEN_EXPIRY }
+  );
+}
+
+function decodeTwoFaRecoveryToken(token) {
+  const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+  if (
+    decoded?.purpose !== '2fa_recovery_login'
+    || !decoded?.userId
+    || !decoded?.deviceIdHash
+    || !decoded?.destination
+  ) {
+    throw new Error('Invalid 2FA recovery token');
   }
   return decoded;
 }
@@ -298,6 +365,7 @@ const login = async (req, res) => {
         message: `Enter the code we sent to ${destInfo.destination}`,
         method: destInfo.method,
         twoFaToken,
+        recoveryAvailable: Array.isArray(user.twoFaRecoveryQuestions) && user.twoFaRecoveryQuestions.length >= MIN_RECOVERY_QUESTIONS,
         deviceIdRequired: true,
         ...(didHash ? {} : { note: 'deviceId missing; provide deviceId to trust this device after verification' })
       });
@@ -378,8 +446,23 @@ const verifyTwoFaLogin = async (req, res) => {
     if (!user.twoFaAuthenticatorSecret) {
       return res.status(400).json({ message: 'Authenticator app is not configured. Please update your 2FA settings.' });
     }
-    const validTotp = authenticator.check(code, user.twoFaAuthenticatorSecret);
-    if (!validTotp) return res.status(400).json({ message: 'Invalid authenticator code' });
+    const validTotp = code.length === 6 && authenticator.check(code, user.twoFaAuthenticatorSecret);
+    if (validTotp) {
+      // ok
+    } else if (code.length === 8 && Array.isArray(user.twoFaBackupCodeHashes) && user.twoFaBackupCodeHashes.length > 0) {
+      const h = hashBackupCode(code);
+      const idx = user.twoFaBackupCodeHashes.indexOf(h);
+      if (idx === -1) {
+        return res.status(400).json({ message: 'Invalid authenticator code' });
+      }
+      user.twoFaBackupCodeHashes.splice(idx, 1);
+    } else {
+      return res.status(400).json({
+        message: code.length === 8
+          ? 'Invalid backup code'
+          : 'Invalid authenticator code',
+      });
+    }
   } else {
     const now = new Date();
     if (!user.twoFaOtpExpires || user.twoFaOtpExpires < now) {
@@ -432,23 +515,227 @@ const verifyTwoFaLogin = async (req, res) => {
   });
 };
 
+const getTwoFaRecoveryQuestions = async (req, res) => {
+  const { twoFaToken } = req.body;
+  if (!twoFaToken) return res.status(400).json({ message: '2FA token is required.' });
+
+  let decoded;
+  try {
+    decoded = decodeTwoFaToken(twoFaToken);
+  } catch {
+    return res.status(400).json({ message: 'Invalid or expired 2FA session. Please login again.' });
+  }
+
+  const user = await User.findById(decoded.userId).select('twoFaEnabled twoFaRecoveryQuestions email recoveryEmail');
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  if (!user.twoFaEnabled) return res.status(400).json({ message: '2FA is not enabled for this user' });
+  const questions = (user.twoFaRecoveryQuestions || []).map((item) => item.question).filter(Boolean);
+  if (questions.length < MIN_RECOVERY_QUESTIONS) {
+    return res.status(400).json({ message: 'Recovery questions are not set for this account.' });
+  }
+
+  return res.status(200).json({
+    questions,
+    emailChoices: recoveryEmailChoices(user),
+  });
+};
+
+const verifyTwoFaRecoveryAnswers = async (req, res) => {
+  const { twoFaToken, answers, destination, verifyOnly } = req.body;
+  if (!twoFaToken) return res.status(400).json({ message: '2FA token is required.' });
+
+  let decoded;
+  try {
+    decoded = decodeTwoFaToken(twoFaToken);
+  } catch {
+    return res.status(400).json({ message: 'Invalid or expired 2FA session. Please login again.' });
+  }
+
+  const user = await User.findById(decoded.userId);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  const storedQuestions = Array.isArray(user.twoFaRecoveryQuestions) ? user.twoFaRecoveryQuestions : [];
+  if (storedQuestions.length < MIN_RECOVERY_QUESTIONS) {
+    return res.status(400).json({ message: 'Recovery questions are not set for this account.' });
+  }
+
+  const given = sanitizeRecoveryQuestions(answers);
+  if (given.length < MIN_RECOVERY_QUESTIONS) {
+    return res.status(400).json({ message: `Please answer at least ${MIN_RECOVERY_QUESTIONS} security questions.` });
+  }
+
+  const answerMap = new Map(given.map((item) => [item.question.toLowerCase(), hashRecoveryAnswer(item.answer)]));
+  const wrongQuestions = storedQuestions
+    .filter((item) => answerMap.get(String(item.question || '').toLowerCase()) !== item.answerHash)
+    .map((item) => String(item.question || ''))
+    .filter(Boolean);
+  if (wrongQuestions.length > 0) {
+    return res.status(400).json({
+      message: 'Some security answers are incorrect.',
+      wrongQuestions,
+    });
+  }
+
+  if (verifyOnly) {
+    return res.status(200).json({
+      message: 'Security answers verified.',
+      verified: true,
+    });
+  }
+
+  const choice = String(destination || 'primary').toLowerCase();
+  let emailDestination = user.email;
+  if (choice === 'recovery') {
+    if (!user.recoveryEmail) return res.status(400).json({ message: 'Recovery email is not configured for this account.' });
+    emailDestination = user.recoveryEmail;
+  }
+
+  const otp = generateOtp();
+  user.twoFaRecoveryOtpHash = hashOtp(otp);
+  user.twoFaRecoveryOtpExpires = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+  await user.save({ validateBeforeSave: false });
+  await sendVerificationOtpEmail(emailDestination, otp, user.fullname, OTP_EXPIRY_MINUTES);
+
+  const recoveryToken = issueTwoFaRecoveryToken(user._id, decoded.deviceIdHash, choice);
+
+  return res.status(200).json({
+    message: `Recovery OTP sent to ${maskEmail(emailDestination)}.`,
+    recoveryToken,
+    destination: choice,
+    destinationMasked: maskEmail(emailDestination),
+  });
+};
+
+const verifyTwoFaRecoverySingleAnswer = async (req, res) => {
+  const { twoFaToken, question, answer } = req.body;
+  if (!twoFaToken || !question || !String(answer || '').trim()) {
+    return res.status(400).json({ message: '2FA token, question and answer are required.' });
+  }
+
+  let decoded;
+  try {
+    decoded = decodeTwoFaToken(twoFaToken);
+  } catch {
+    return res.status(400).json({ message: 'Invalid or expired 2FA session. Please login again.' });
+  }
+
+  const user = await User.findById(decoded.userId).select('twoFaEnabled twoFaRecoveryQuestions');
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  if (!user.twoFaEnabled) return res.status(400).json({ message: '2FA is not enabled for this user' });
+
+  const storedQuestions = Array.isArray(user.twoFaRecoveryQuestions) ? user.twoFaRecoveryQuestions : [];
+  if (storedQuestions.length < MIN_RECOVERY_QUESTIONS) {
+    return res.status(400).json({ message: 'Recovery questions are not set for this account.' });
+  }
+
+  const target = storedQuestions.find(
+    (item) => String(item.question || '').toLowerCase() === String(question || '').trim().toLowerCase()
+  );
+  if (!target) return res.status(400).json({ message: 'Invalid security question.' });
+
+  const match = target.answerHash === hashRecoveryAnswer(answer);
+  if (!match) {
+    return res.status(400).json({
+      message: 'Incorrect answer.',
+      wrongQuestions: [String(target.question || question)],
+    });
+  }
+
+  return res.status(200).json({
+    message: 'Answer verified.',
+    verified: true,
+    question: String(target.question || question),
+  });
+};
+
+const verifyTwoFaRecoveryOtp = async (req, res) => {
+  const { recoveryToken, otp, deviceId, deviceLabel } = req.body;
+  if (!recoveryToken || !otp) {
+    return res.status(400).json({ message: 'Recovery token and OTP are required.' });
+  }
+
+  let decoded;
+  try {
+    decoded = decodeTwoFaRecoveryToken(recoveryToken);
+  } catch {
+    return res.status(400).json({ message: 'Invalid or expired recovery session. Please login again.' });
+  }
+
+  const user = await User.findById(decoded.userId);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  const now = new Date();
+  if (!user.twoFaRecoveryOtpExpires || user.twoFaRecoveryOtpExpires < now) {
+    return res.status(400).json({ message: 'Recovery OTP expired. Please restart recovery.' });
+  }
+  const match = user.twoFaRecoveryOtpHash === hashOtp(normalizeOtpCode(otp));
+  if (!match) return res.status(400).json({ message: 'Invalid recovery OTP.' });
+
+  user.twoFaRecoveryOtpHash = null;
+  user.twoFaRecoveryOtpExpires = null;
+
+  const did = String(deviceId || '').trim();
+  const didHash = did ? hashDeviceId(did) : decoded.deviceIdHash;
+  if (didHash && didHash !== 'unknown') {
+    const label = String(deviceLabel || '').trim().slice(0, 80);
+    const existing = (user.trustedDevices || []).some((d) => d.deviceIdHash === didHash);
+    if (!existing) {
+      user.trustedDevices = (user.trustedDevices || []).concat([{
+        deviceIdHash: didHash,
+        label,
+        lastUsedAt: new Date(),
+        createdAt: new Date(),
+      }]);
+    } else {
+      const idx = user.trustedDevices.findIndex((d) => d.deviceIdHash === didHash);
+      if (idx >= 0) user.trustedDevices[idx].lastUsedAt = new Date();
+    }
+  }
+
+  await user.save({ validateBeforeSave: false });
+
+  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
+  const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
+  const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
+  const options = { httpOnly: true, expiresIn: expireIn };
+
+  return res.cookie('accessToken', generateToken, options).status(200).json({
+    status: 201,
+    message: 'User is logged in successfully',
+    user_id: user._id,
+    token: generateToken,
+    type: 'user',
+    phone: user.phone,
+    plan: user.plan || 'free',
+    isFirstLogin: user.isFirstLogin
+  });
+};
+
 // 2FA: get and update settings (authenticated)
 const getTwoFaSettings = async (req, res) => {
   const userId = req.user?.data?.id || req.user?.id || req.user?._id;
   if (!userId) return res.status(401).json({ message: 'Not authenticated' });
-  const user = await User.findById(userId).select('twoFaEnabled twoFaMethod twoFaAuthenticatorSecret');
+  const user = await User.findById(userId).select('twoFaEnabled twoFaMethod twoFaAuthenticatorSecret twoFaBackupCodeHashes recoveryEmail recoveryEmailVerified pendingRecoveryEmail twoFaRecoveryQuestions');
   if (!user) return res.status(404).json({ message: 'User not found' });
+  const backupHashes = user.twoFaBackupCodeHashes || [];
   return res.status(200).json({
     twoFaEnabled: !!user.twoFaEnabled,
     twoFaMethod: user.twoFaMethod || 'email',
     authenticatorConfigured: !!user.twoFaAuthenticatorSecret,
+    backupCodesRemaining: backupHashes.length,
+    recoveryEmail: user.recoveryEmail || '',
+    recoveryEmailMasked: user.recoveryEmail ? maskEmail(user.recoveryEmail) : '',
+    recoveryEmailVerified: !!user.recoveryEmailVerified,
+    pendingRecoveryEmail: user.pendingRecoveryEmail || '',
+    pendingRecoveryEmailMasked: user.pendingRecoveryEmail ? maskEmail(user.pendingRecoveryEmail) : '',
+    hasRecoveryQuestions: Array.isArray(user.twoFaRecoveryQuestions) && user.twoFaRecoveryQuestions.length >= MIN_RECOVERY_QUESTIONS,
+    recoveryQuestionsLocked: Array.isArray(user.twoFaRecoveryQuestions) && user.twoFaRecoveryQuestions.length >= MIN_RECOVERY_QUESTIONS,
+    recoveryQuestions: (user.twoFaRecoveryQuestions || []).map((item) => item.question),
   });
 };
 
 const updateTwoFaSettings = async (req, res) => {
   const userId = req.user?.data?.id || req.user?.id || req.user?._id;
   if (!userId) return res.status(401).json({ message: 'Not authenticated' });
-  const { enabled, method } = req.body;
+  const { enabled, method, recoveryQuestions } = req.body;
   const user = await User.findById(userId);
   if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -460,11 +747,114 @@ const updateTwoFaSettings = async (req, res) => {
     return res.status(400).json({ message: 'Set up your authenticator app first before enabling it.' });
   }
 
+  const questions = sanitizeRecoveryQuestions(recoveryQuestions);
+  const hasExistingQuestions = Array.isArray(user.twoFaRecoveryQuestions) && user.twoFaRecoveryQuestions.length >= MIN_RECOVERY_QUESTIONS;
+  if (nextEnabled) {
+    const hasExistingRecoveryEmail = !!user.recoveryEmail;
+    const hasIncomingQuestions = questions.length >= MIN_RECOVERY_QUESTIONS;
+    const hasVerifiedRecoveryEmail = hasExistingRecoveryEmail && !!user.recoveryEmailVerified;
+    if (!hasExistingQuestions && !hasIncomingQuestions) {
+      return res.status(400).json({ message: `Add at least ${MIN_RECOVERY_QUESTIONS} security questions for account recovery.` });
+    }
+    if (!hasVerifiedRecoveryEmail) {
+      return res.status(400).json({ message: 'Please verify your recovery email before enabling 2FA.' });
+    }
+  }
+
+  if (questions.length > 0) {
+    if (hasExistingQuestions) {
+      return res.status(400).json({ message: 'Security questions are locked after setup and cannot be changed.' });
+    }
+    if (questions.length < MIN_RECOVERY_QUESTIONS) {
+      return res.status(400).json({ message: `Please provide at least ${MIN_RECOVERY_QUESTIONS} complete security questions.` });
+    }
+    user.twoFaRecoveryQuestions = questions.map((item) => ({
+      question: item.question,
+      answerHash: hashRecoveryAnswer(item.answer),
+    }));
+  }
+
   user.twoFaEnabled = nextEnabled;
   user.twoFaMethod = nextMethod;
   await user.save({ validateBeforeSave: false });
 
-  return res.status(200).json({ message: '2FA settings updated', twoFaEnabled: !!user.twoFaEnabled, twoFaMethod: user.twoFaMethod });
+  return res.status(200).json({
+    message: '2FA settings updated',
+    twoFaEnabled: !!user.twoFaEnabled,
+    twoFaMethod: user.twoFaMethod,
+    recoveryEmail: user.recoveryEmail || '',
+    recoveryEmailMasked: user.recoveryEmail ? maskEmail(user.recoveryEmail) : '',
+    recoveryEmailVerified: !!user.recoveryEmailVerified,
+    pendingRecoveryEmail: user.pendingRecoveryEmail || '',
+    pendingRecoveryEmailMasked: user.pendingRecoveryEmail ? maskEmail(user.pendingRecoveryEmail) : '',
+    hasRecoveryQuestions: Array.isArray(user.twoFaRecoveryQuestions) && user.twoFaRecoveryQuestions.length >= MIN_RECOVERY_QUESTIONS,
+    recoveryQuestionsLocked: Array.isArray(user.twoFaRecoveryQuestions) && user.twoFaRecoveryQuestions.length >= MIN_RECOVERY_QUESTIONS,
+  });
+};
+
+const sendRecoveryEmailOtp = async (req, res) => {
+  const userId = req.user?.data?.id || req.user?.id || req.user?._id;
+  const { recoveryEmail } = req.body || {};
+  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+  const normalizedRecoveryEmail = String(recoveryEmail || '').trim().toLowerCase();
+  if (!normalizedRecoveryEmail) return res.status(400).json({ message: 'Recovery email is required.' });
+  if (!isEmailValid(normalizedRecoveryEmail)) {
+    return res.status(400).json({ message: 'Recovery email format is invalid.' });
+  }
+
+  const user = await User.findById(userId);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  const otp = generateOtp();
+  user.recoveryEmailOtpHash = hashOtp(otp);
+  user.recoveryEmailOtpExpires = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+  user.pendingRecoveryEmail = normalizedRecoveryEmail;
+  user.recoveryEmailVerified = false;
+  await user.save({ validateBeforeSave: false });
+
+  await sendVerificationOtpEmail(normalizedRecoveryEmail, otp, user.fullname, OTP_EXPIRY_MINUTES);
+
+  return res.status(200).json({
+    message: 'OTP sent to recovery email.',
+    pendingRecoveryEmail: normalizedRecoveryEmail,
+    pendingRecoveryEmailMasked: maskEmail(normalizedRecoveryEmail),
+    recoveryEmailVerified: false,
+  });
+};
+
+const verifyRecoveryEmailOtp = async (req, res) => {
+  const userId = req.user?.data?.id || req.user?.id || req.user?._id;
+  const { otp } = req.body || {};
+  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+  if (!otp) return res.status(400).json({ message: 'OTP is required.' });
+
+  const user = await User.findById(userId);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  if (!user.pendingRecoveryEmail) {
+    return res.status(400).json({ message: 'No recovery email pending verification.' });
+  }
+
+  const now = new Date();
+  if (!user.recoveryEmailOtpExpires || user.recoveryEmailOtpExpires < now) {
+    return res.status(400).json({ message: 'OTP expired. Please resend.' });
+  }
+  const match = user.recoveryEmailOtpHash === hashOtp(String(otp).trim());
+  if (!match) return res.status(400).json({ message: 'Invalid OTP.' });
+
+  user.recoveryEmail = user.pendingRecoveryEmail;
+  user.recoveryEmailVerified = true;
+  user.pendingRecoveryEmail = null;
+  user.recoveryEmailOtpHash = null;
+  user.recoveryEmailOtpExpires = null;
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json({
+    message: 'Recovery email verified successfully.',
+    recoveryEmail: user.recoveryEmail,
+    recoveryEmailMasked: user.recoveryEmail ? maskEmail(user.recoveryEmail) : '',
+    recoveryEmailVerified: !!user.recoveryEmailVerified,
+  });
 };
 
 const setupAuthenticatorTwoFa = async (req, res) => {
@@ -514,6 +904,8 @@ const verifyAuthenticatorTwoFaSetup = async (req, res) => {
   user.twoFaOtpHash = null;
   user.twoFaOtpExpires = null;
   user.twoFaAuthenticatorVerifiedAt = new Date();
+  const plainBackupCodes = generateBackupCodes(10);
+  user.twoFaBackupCodeHashes = plainBackupCodes.map((c) => hashBackupCode(normalizeBackupCode(c)));
   await user.save({ validateBeforeSave: false });
 
   return res.status(200).json({
@@ -521,6 +913,37 @@ const verifyAuthenticatorTwoFaSetup = async (req, res) => {
     twoFaEnabled: !!user.twoFaEnabled,
     twoFaMethod: user.twoFaMethod,
     authenticatorConfigured: true,
+    backupCodes: plainBackupCodes,
+    backupCodesRemaining: user.twoFaBackupCodeHashes.length,
+  });
+};
+
+const regenerateAuthenticatorBackupCodes = async (req, res) => {
+  const userId = req.user?.data?.id || req.user?.id || req.user?._id;
+  if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+  const totp = normalizeOtpCode(req.body?.code);
+  if (!totp || totp.length !== 6) {
+    return res.status(400).json({ message: 'Enter your current 6-digit authenticator app code.' });
+  }
+
+  const user = await User.findById(userId);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  if (!user.twoFaAuthenticatorSecret) {
+    return res.status(400).json({ message: 'Authenticator app is not configured.' });
+  }
+  if (!authenticator.check(totp, user.twoFaAuthenticatorSecret)) {
+    return res.status(400).json({ message: 'Invalid authenticator code.' });
+  }
+
+  const plainBackupCodes = generateBackupCodes(10);
+  user.twoFaBackupCodeHashes = plainBackupCodes.map((c) => hashBackupCode(normalizeBackupCode(c)));
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json({
+    message: 'New backup codes generated. Previous codes are no longer valid.',
+    backupCodes: plainBackupCodes,
+    backupCodesRemaining: user.twoFaBackupCodeHashes.length,
   });
 };
 
@@ -1366,10 +1789,17 @@ const validateSessionEndpoint = async (req, res) => {
 module.exports = {
   login,
   verifyTwoFaLogin,
+  getTwoFaRecoveryQuestions,
+  verifyTwoFaRecoverySingleAnswer,
+  verifyTwoFaRecoveryAnswers,
+  verifyTwoFaRecoveryOtp,
+  sendRecoveryEmailOtp,
+  verifyRecoveryEmailOtp,
   getTwoFaSettings,
   updateTwoFaSettings,
   setupAuthenticatorTwoFa,
   verifyAuthenticatorTwoFaSetup,
+  regenerateAuthenticatorBackupCodes,
   register,
   // Sequential signup verification
   sendSignupEmailOtp,

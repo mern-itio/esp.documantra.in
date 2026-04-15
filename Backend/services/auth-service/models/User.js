@@ -38,6 +38,19 @@ const userSchema = new mongoose.Schema({
   twoFaAuthenticatorSecret: { type: String, default: null },
   twoFaAuthenticatorTempSecret: { type: String, default: null },
   twoFaAuthenticatorVerifiedAt: { type: Date, default: null },
+  recoveryEmail: { type: String, default: null },
+  recoveryEmailVerified: { type: Boolean, default: false },
+  pendingRecoveryEmail: { type: String, default: null },
+  recoveryEmailOtpHash: { type: String, default: null },
+  recoveryEmailOtpExpires: { type: Date, default: null },
+  twoFaRecoveryQuestions: [{
+    question: { type: String, required: true },
+    answerHash: { type: String, required: true },
+  }],
+  twoFaRecoveryOtpHash: { type: String, default: null },
+  twoFaRecoveryOtpExpires: { type: Date, default: null },
+  /** SHA-256 hashes of one-time backup codes (8 digits); plain codes shown only once at generation */
+  twoFaBackupCodeHashes: { type: [String], default: [] },
   // Trusted devices for 2FA (store hashed device ids)
   trustedDevices: [{
     deviceIdHash: { type: String, required: true },

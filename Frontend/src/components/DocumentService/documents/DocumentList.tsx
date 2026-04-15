@@ -12,7 +12,8 @@ import {
   Download,
   Trash2,
   Archive,
-  ArchiveRestore
+  ArchiveRestore,
+  RotateCcw
 } from 'lucide-react';
 import { EmptyState } from '../common/EmptyState';
 import { Button } from '../ui/button';
@@ -40,9 +41,21 @@ const getFileTypeIcon = (type: string) => {
 
 interface DocumentListProps {
   onDocumentSelect?: (document: Document) => void;
+  /** When provided, shows this list instead of store-filtered documents (Favorites, Recent, etc.). */
+  documents?: Document[];
+  /** Trash page: compact row actions instead of the default menu. */
+  variant?: 'default' | 'trash';
+  onRestore?: (documentId: string) => void;
+  onPermanentDelete?: (documentId: string) => void;
 }
 
-export function DocumentList({ onDocumentSelect }: DocumentListProps) {
+export function DocumentList({
+  onDocumentSelect,
+  documents: documentsProp,
+  variant = 'default',
+  onRestore,
+  onPermanentDelete,
+}: DocumentListProps) {
   const { 
     getFilteredDocuments, 
     selectedDocuments, 
@@ -54,7 +67,7 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
     moveToTrash
   } = useDocumentStore();
   
-  const documents = getFilteredDocuments();
+  const documents = documentsProp ?? getFilteredDocuments();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
 
@@ -218,6 +231,40 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
 
                     {/* Actions */}
                     <div className="col-span-1">
+                      {variant === 'trash' && onRestore && onPermanentDelete ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRestore(document.id);
+                            }}
+                            title="Restore document"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2 text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (
+                                window.confirm(
+                                  'Permanently delete this document? This cannot be undone.'
+                                )
+                              ) {
+                                onPermanentDelete(document.id);
+                              }
+                            }}
+                            title="Permanently delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={(e) => {
@@ -319,6 +366,7 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
                           )}
                         </div>
                       </div>
+                      )}
                     </div>
                   </div>
                 </div>

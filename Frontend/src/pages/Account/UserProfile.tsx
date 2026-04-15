@@ -13,7 +13,8 @@ const UserProfile: React.FC = () => {
   const navigate = useNavigate();
 
   const [twoFaEnabled, setTwoFaEnabled] = useState<boolean>(false);
-  const [twoFaMethod, setTwoFaMethod] = useState<'email' | 'sms'>('email');
+  const [twoFaMethod, setTwoFaMethod] = useState<AuthMethod>('email');
+  type AuthMethod = 'email' | 'sms' | 'authenticator';
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -21,12 +22,14 @@ const UserProfile: React.FC = () => {
     email: '',
     company: '',
     phone: '',
-    address: ''
+    address: '',
+    recoveryEmail: ''
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   
-  const [otpModal, setOtpModal] = useState<{ type: 'email' | 'phone' | null, visible: boolean, otp: string, loading: boolean, error: string }>({ type: null, visible: false, otp: '', loading: false, error: '' });
+  const [otpModal, setOtpModal] = useState<{ type: 'email' | 'phone' | 'recovery' | null, visible: boolean, otp: string, loading: boolean, error: string }>({ type: null, visible: false, otp: '', loading: false, error: '' });
+  const [recoveryEmail, setRecoveryEmail] = useState('');
   
   // Get plan name from subscription context (most up-to-date) or fallback to user.plan
   const planName = userPlan?.name || (user as any)?.plan || null;
@@ -53,7 +56,13 @@ const UserProfile: React.FC = () => {
     const u: any = user || {};
     return {
       enabled: !!u.twoFaEnabled,
-      method: (u.twoFaMethod === 'sms' ? 'sms' : 'email') as 'email' | 'sms',
+      method: (
+        u.twoFaMethod === 'sms'
+          ? 'sms'
+          : u.twoFaMethod === 'authenticator'
+            ? 'authenticator'
+            : 'email'
+      ) as AuthMethod,
     };
   }, [user]);
 
@@ -66,7 +75,14 @@ const UserProfile: React.FC = () => {
       try {
         const resp = await authApi.get('/api/auth/2fa');
         setTwoFaEnabled(!!resp.data?.twoFaEnabled);
-        setTwoFaMethod(resp.data?.twoFaMethod === 'sms' ? 'sms' : 'email');
+        setTwoFaMethod(
+          resp.data?.twoFaMethod === 'sms'
+            ? 'sms'
+            : resp.data?.twoFaMethod === 'authenticator'
+              ? 'authenticator'
+              : 'email'
+        );
+        setRecoveryEmail(String(resp.data?.recoveryEmail || ''));
       } catch (e: any) {
         // ignore if endpoint not reachable; UI still shows from context
       }
@@ -80,7 +96,8 @@ const UserProfile: React.FC = () => {
       email: (user as any)?.email || '',
       company: (user as any)?.company || '',
       phone: (user as any)?.phone || '',
-      address: (user as any)?.address || ''
+      address: (user as any)?.address || '',
+      recoveryEmail: recoveryEmail || ''
     });
     setSaveError('');
     setIsEditing(true);
@@ -97,6 +114,7 @@ const UserProfile: React.FC = () => {
     try {
       let emailChanged = formData.email !== (user as any)?.email;
       let phoneChanged = formData.phone !== (user as any)?.phone;
+      let recoveryEmailChanged = formData.recoveryEmail.trim() !== (recoveryEmail || '');
 
       // Save basic profile
       const profileResp = await authApi.put('/api/auth/profile', {
@@ -126,6 +144,13 @@ const UserProfile: React.FC = () => {
         return; // wait for OTP verify
       }
 
+      if (recoveryEmailChanged) {
+        await authApi.post('/api/auth/2fa/recovery-email/send-otp', { recoveryEmail: formData.recoveryEmail.trim() });
+        setOtpModal({ type: 'recovery', visible: true, otp: '', loading: false, error: '' });
+        setIsSaving(false);
+        return; // wait for OTP verify
+      }
+
       setIsEditing(false);
     } catch (error: any) {
       setSaveError(error.response?.data?.message || 'Failed to save profile');
@@ -148,9 +173,13 @@ const UserProfile: React.FC = () => {
         }
         
         let phoneChanged = formData.phone !== (user as any)?.phone;
+        let recoveryEmailChanged = formData.recoveryEmail.trim() !== (recoveryEmail || '');
         if (phoneChanged) {
           await authApi.post('/api/auth/profile/phone/send-otp', { phone: formData.phone });
           setOtpModal({ type: 'phone', visible: true, otp: '', loading: false, error: '' });
+        } else if (recoveryEmailChanged) {
+          await authApi.post('/api/auth/2fa/recovery-email/send-otp', { recoveryEmail: formData.recoveryEmail.trim() });
+          setOtpModal({ type: 'recovery', visible: true, otp: '', loading: false, error: '' });
         } else {
           setOtpModal({ type: null, visible: false, otp: '', loading: false, error: '' });
           setIsEditing(false);
@@ -164,6 +193,17 @@ const UserProfile: React.FC = () => {
           localStorage.setItem('userData', JSON.stringify(currentUser));
           window.dispatchEvent(new Event('dns-extension-auth-synced'));
         }
+        const recoveryEmailChanged = formData.recoveryEmail.trim() !== (recoveryEmail || '');
+        if (recoveryEmailChanged) {
+          await authApi.post('/api/auth/2fa/recovery-email/send-otp', { recoveryEmail: formData.recoveryEmail.trim() });
+          setOtpModal({ type: 'recovery', visible: true, otp: '', loading: false, error: '' });
+        } else {
+          setOtpModal({ type: null, visible: false, otp: '', loading: false, error: '' });
+          setIsEditing(false);
+        }
+      } else if (otpModal.type === 'recovery') {
+        await authApi.post('/api/auth/2fa/recovery-email/verify-otp', { otp: otpModal.otp });
+        setRecoveryEmail(formData.recoveryEmail.trim());
         setOtpModal({ type: null, visible: false, otp: '', loading: false, error: '' });
         setIsEditing(false);
       }
@@ -311,7 +351,22 @@ const UserProfile: React.FC = () => {
                   <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">—</div>
                 )}
               </div>
-              <div className="md:col-span-2">
+              <div >
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Recovery email</label>
+                {isEditing ? (
+                  <input
+                    type="email"
+                    value={formData.recoveryEmail}
+                    onChange={(e) => setFormData({ ...formData, recoveryEmail: e.target.value })}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                ) : (
+                  <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+                    {recoveryEmail || '—'}
+                  </div>
+                )}
+              </div>
+              <div >
                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">Address</label>
                 {isEditing ? (
                   <textarea
@@ -358,7 +413,15 @@ const UserProfile: React.FC = () => {
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">Security</p>
               <h4 className="mt-3 text-lg font-semibold text-foreground">Two-factor authentication</h4>
               <p className="mt-2 text-sm text-muted-foreground">
-                {twoFaEnabled ? `Enabled via ${twoFaMethod === 'sms' ? 'SMS OTP' : 'Email code'}.` : 'Currently disabled.'}
+                {twoFaEnabled
+                  ? `Enabled via ${
+                    twoFaMethod === 'sms'
+                      ? 'SMS OTP'
+                      : twoFaMethod === 'authenticator'
+                        ? 'Authenticator app'
+                        : 'Email code'
+                  }.`
+                  : 'Currently disabled.'}
               </p>
               <span className="mt-5 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition group-hover:bg-primary/90">
                 Manage Security
@@ -405,10 +468,10 @@ const UserProfile: React.FC = () => {
               <X className="h-5 w-5" />
             </button>
             <h3 className="mb-2 text-xl font-semibold text-foreground">
-              Verify {otpModal.type === 'email' ? 'Email' : 'Phone'}
+              Verify {otpModal.type === 'email' ? 'Email' : otpModal.type === 'phone' ? 'Phone' : 'Recovery Email'}
             </h3>
             <p className="mb-6 text-sm text-muted-foreground">
-              Please enter the code sent to your new {otpModal.type}.
+              Please enter the code sent to your new {otpModal.type === 'recovery' ? 'recovery email' : otpModal.type}.
             </p>
             
             {otpModal.error && (

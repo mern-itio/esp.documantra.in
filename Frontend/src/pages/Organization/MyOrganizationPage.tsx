@@ -130,7 +130,7 @@ const MyOrganizationPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-sm bg-primary flex items-center justify-center shadow-sm">
-                <Building2 className="w-5 h-5 text-foreground" />
+                <Building2 className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground tracking-tight">Organizations</h1>

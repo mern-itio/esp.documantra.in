@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { useAuthInitialization } from '../../hooks/useAuthInitialization';
 import { DocumentCard } from '../../components/DocumentService/documents/DocumentCard';
+import { DocumentList } from '../../components/DocumentService/documents/DocumentList';
 import { EmptyState } from '../../components/DocumentService/common/EmptyState';
 import { CollaborationHub } from '../../components/DocumentService/collaboration/CollaborationHub';
 import { Users } from 'lucide-react';
@@ -119,14 +120,20 @@ export function SharedDocumentsPage() {
     );
   }
 
-  // Use the same grid/list logic as EnhancedDocumentGrid
-  const gridClasses = viewMode === 'grid' 
-    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'
-    : 'space-y-2';
+  if (viewMode === 'list') {
+    return (
+      <DocumentList
+        documents={filteredDocuments}
+        onDocumentSelect={(doc) => setSelectedDocument(doc)}
+      />
+    );
+  }
+
+  const gridClasses =
+    'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4';
 
   return (
     <div className="space-y-6">
-      {/* Content */}
       <div className={gridClasses}>
         {filteredDocuments.map((document: Document) => {
           const isSelected = selectedDocuments.includes(document.id);

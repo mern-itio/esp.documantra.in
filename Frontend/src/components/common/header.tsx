@@ -254,6 +254,46 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
     }
   };
 
+  const handleAccountSwitch = async (type: 'user' | 'organization', org?: Organization) => {
+    try {
+      if (type === 'organization' && org?._id) {
+        await switchAccount('organization', org._id);
+      } else {
+        await switchAccount('user');
+      }
+
+      setShowSwitcher(false);
+      setShowUserMenu(false);
+
+      await Swal.fire({
+        icon: 'success',
+        title: type === 'organization' ? 'Switched to organization account' : 'Switched to main account',
+        text: type === 'organization'
+          ? `You are now using ${org?.name ?? 'the organization account'}.`
+          : 'You are now using your main user account.',
+        confirmButtonColor: '#260559',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-xl',
+          confirmButton: 'px-5 py-2.5 rounded-lg font-medium'
+        }
+      });
+    } catch (error) {
+      console.error('Switch account error:', error);
+      Swal.fire({
+        title: 'Unable to switch account',
+        text: 'Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#DC2626',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'rounded-xl',
+          confirmButton: 'px-5 py-2.5 rounded-lg font-medium'
+        }
+      });
+    }
+  };
+
   const formatName = (name?: string) => {
     if (!name) return 'User';
     return name
@@ -559,7 +599,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                 className={`mt-1 w-full rounded-lg px-3 py-2 text-left text-xs flex items-center gap-2 ${
                   accountType === 'user' ? 'bg-accent text-accent-foreground ring-1 ring-border' : 'hover:bg-background'
                 }`}
-                onClick={async () => { await switchAccount('user'); setShowSwitcher(false); }}
+                onClick={() => handleAccountSwitch('user')}
               >
                 <User className="h-4 w-4" /> {formatName((user as any)?.fullname)}
               </button>
@@ -571,7 +611,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                       ? 'bg-accent text-accent-foreground ring-1 ring-border'
                       : 'hover:bg-background'
                   }`}
-                  onClick={async () => { await switchAccount('organization', org._id); setShowSwitcher(false); }}
+                  onClick={() => handleAccountSwitch('organization', org)}
                 >
                   <Building2 className="h-4 w-4" /> {org.name}
                 </button>
