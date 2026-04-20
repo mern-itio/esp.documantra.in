@@ -50,7 +50,7 @@ app.listen(PORT, () => {
   
   const runScheduledWorker = async () => {
     if (isWorkerRunning) {
-      console.log('[Scheduled Worker] Skipping - previous run still in progress');
+      // console.log('[Scheduled Worker] Skipping - previous run still in progress');
       return;
     }
     
@@ -58,7 +58,7 @@ app.listen(PORT, () => {
       const mongoose = require('mongoose');
       
       if (mongoose.connection.readyState !== 1) {
-        console.log('[Scheduled Worker] Skipping - database not connected (state:', mongoose.connection.readyState, ')');
+        // console.log('[Scheduled Worker] Skipping - database not connected (state:', mongoose.connection.readyState, ')');
         return;
       }
       
@@ -66,7 +66,7 @@ app.listen(PORT, () => {
       if (!global._scheduledWorkerController) {
         try {
           global._scheduledWorkerController = require('./controllers/mainController');
-          console.log('[Scheduled Worker] Controller loaded successfully');
+          // console.log('[Scheduled Worker] Controller loaded successfully');
         } catch (requireError) {
           console.error('[Scheduled Worker] Failed to load controller:', requireError.message);
           throw requireError;
@@ -75,7 +75,7 @@ app.listen(PORT, () => {
       if (global._scheduledWorkerController.processScheduledEnvelopes) {
         const result = await global._scheduledWorkerController.processScheduledEnvelopes();
         if (result && result.processed > 0) {
-          console.log(`[Scheduled Worker] ✅ Processed ${result.processed} scheduled envelope(s)`);
+          // console.log(`[Scheduled Worker] ✅ Processed ${result.processed} scheduled envelope(s)`);
         }
       } else {
         console.error('[Scheduled Worker] processScheduledEnvelopes function not found in controller');
@@ -119,8 +119,8 @@ app.listen(PORT, () => {
           });
         }, 60000); 
         
-        console.log('✅ Scheduled envelope worker started - will process scheduled envelopes every minute');
-        console.log('[Scheduled Worker] Worker initialized at:', new Date().toISOString());
+        // console.log('✅ Scheduled envelope worker started - will process scheduled envelopes every minute');
+        // console.log('[Scheduled Worker] Worker initialized at:', new Date().toISOString());
       } else {
        
         console.log('[Scheduled Worker] Waiting for database connection... (state:', mongoose.connection.readyState, ')');

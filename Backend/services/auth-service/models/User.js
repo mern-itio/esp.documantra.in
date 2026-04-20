@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   address: { type: String, required: false, default: '' },
   company: { type: String, required: false, default: '' },
   phone: { type: String, required: false, sparse: true },
+  aadharNumber:{type: String, required:false},
   password: { type: String, required: false },
   googleId: { type: String, required: false, unique: true, sparse: true },
   gender: { type: String, enum: ['male', 'female', 'other'], required: false, default: null },

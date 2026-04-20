@@ -3,12 +3,14 @@ const mongoose = require('mongoose');
 
 const RecipientSchema = new mongoose.Schema({
   UserId: { type: mongoose.Schema.Types.ObjectId, default:null },
+  authUserId:{type: mongoose.Schema.Types.ObjectId, default:null},
   name: { type: String, required: true },
   email: { type: String, required: true, lowercase: true, trim: true },
   title: { type: String, default: '' },
   company: { type: String, default: '' },
   address: { type: String, default: '' },
   phone: { type: String, default: null },
+  aadhaarNumber:{type: String, required:false},
   signature: {type: String, default: null},
   initials: { type: String, default: null },
 }, { timestamps: true });

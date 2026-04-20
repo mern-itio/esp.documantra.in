@@ -188,3 +188,20 @@ services:
     - /app/services/identity-service/node_modules
 
     command: npm run dev
+
+  pdf-java-service:
+    build:
+      context: .
+      dockerfile: services/pdf-java-service/Dockerfile
+    ports:
+      - "2115:2115"
+    volumes:
+      - ./services/pdf-java-service:/app/services/pdf-java-service:cached
+    environment:
+      - JAVA_OPTS=-Xmx1G -Xms512m
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G

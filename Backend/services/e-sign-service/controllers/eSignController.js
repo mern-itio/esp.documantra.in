@@ -197,7 +197,7 @@ const insertRecipient = async (req, res) => {
       }
         // If not found, create a new recipient with UserId
         recipient = await Recipient.create({
-          UserId: recUserId,
+          authUserId: recUserId,
           name: r.name,
           email: r.email
         });

@@ -2,9 +2,9 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 // Configure multer storage (files go to /uploads folder)
-const { envelopesDetail,getSignatureFields,addSignature, activityLogs,getEnvelopePower,signerInitiate,getSelfSigner,saveNonSignatureField,saveupdateSignature,LinkUserRecipient, assignEnvelopeToSomeoneElsePublic, declineEnvelopePublic,acceptTerms,fetchCurrentRecipient, getRecipientAuditTrail } = require('../controllers/mainController');
+const { envelopesDetail,getSignatureFields,addSignature, activityLogs,getEnvelopePower,signerInitiate,getSelfSigner,saveNonSignatureField,saveupdateSignature,LinkUserRecipient, assignEnvelopeToSomeoneElsePublic, declineEnvelopePublic,acceptTerms,fetchCurrentRecipient, getRecipientAuditTrail,completeSignature,validateRecipient } = require('../controllers/mainController');
 
-const {updateAuthStatus} = require('../controllers/recipientController');
+const {updateAuthStatus,saveAadhaar} = require('../controllers/recipientController');
 const vSignController = require('../controllers/vSignController');
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -23,6 +23,7 @@ router.get('/envelope/:id', envelopesDetail);
 router.get('/document/signature-fields/:id/:mode?', getSignatureFields);
 router.post('/save-signature', saveupdateSignature);
 router.post('/add-signature', addSignature); 
+router.post('/signature-complete',completeSignature);
 router.get('/envelope/activity-log/:envelopeId', activityLogs);
 router.get('/envelope/power/:powerFormId/:envelopeId',getEnvelopePower);
 router.post('/envelope/signer-initiate',signerInitiate);
@@ -33,9 +34,11 @@ router.post('/envelope/assign-to-someone-else', assignEnvelopeToSomeoneElsePubli
 router.post('/envelope/decline', declineEnvelopePublic);
 router.get('/envelope/:envelopeId/recipient/:recipientId/audit-trail', getRecipientAuditTrail);
 router.post('/recipients/update-verification-status',updateAuthStatus);
+router.post('/recipients/validate',validateRecipient);
+router.post('/save-aadhaar', saveAadhaar);  
 router.post('/envelope/accept-terms',acceptTerms);
 router.post('/fetch/current-recipient',fetchCurrentRecipient);
 //V Sign
-router.post('/start-esign', vSignController.startEsign);
+// router.post('/start-esign', vSignController.startEsign);
 router.post('/v-sign/response', vSignController.esignResponse);
 module.exports = router;
