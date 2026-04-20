@@ -64,7 +64,7 @@ exports.esignResponse = async (req, res) => {
         message: "All fields completed. Redirecting to signing complete page.",
         fieldRemmaining: remainingFields
       }));
-      res.redirect(`${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${recipientId}?data=${payload}`);
+     return res.redirect(`${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${recipientId}?data=${payload}`);
     } 
   } catch (err) {
     console.error(err);

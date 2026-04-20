@@ -25,6 +25,8 @@ const archiver = require('archiver');
 const { json } = require('stream/consumers');
 const signingServices = require('../services/signing');
 const signatureOperationServices = require('../services/signatureOperationServices');
+const {prepareDocForSignature, pdfToBase64, base64ToPdf, embedFieldsValueToPDF} = require('../services/pdfService');
+const { x } = require('pdfkit');
 
 const envelopesData = async (req, res) => {
   const userId = req?.user?.data?.id;
@@ -1044,6 +1046,67 @@ const addSignature = async (req, res) => {
     if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId) {
       return res.status(400).json({ message: 'All required parameters are missing' });
     }
+    // Prepare PDF
+    const document = await Document.findById(documentId);
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+    // Fetch Signature Field to get coordinates and page number
+    const AllFields = await signatureOperationServices.fetchAllFieldsOfDocument(envelopeId, documentId);
+    const withSignatureFlag = false;
+    if(!document.preparedDoc){
+      const preparePDFPayload = await payloadForPreparePDF(AllFields, withSignatureFlag,document?.filePath);
+      const prepareDoc = await prepareDocForSignature(preparePDFPayload);
+      if(!prepareDoc || !prepareDoc.pdfBase64){
+        return res.status(500).json({ message: 'Failed to prepare PDF for signature' });
+      }
+      const preparedPDFBase64 = prepareDoc.pdfBase64;
+      const preparedDir = path.join(process.cwd(), 'uploads', 'prepared');
+      if (!fs.existsSync(preparedDir)) {
+        fs.mkdirSync(preparedDir, { recursive: true });
+      }
+      const outPath = path.join(
+        preparedDir,
+        `${'prepared'}_${Date.now()}_${path.basename(document.filePath)}`
+      );
+      // convert back to pdf and save
+      const preparedPDF = await base64ToPdf(preparedPDFBase64, outPath);
+      if (!preparedPDF) {
+        return res.status(500).json({ message: 'Failed to convert prepared PDF' });
+      }
+      const preparDocUpdateData = {
+        preparedDoc: outPath
+      }
+      const updateDocWithPreparedFile = await signatureOperationServices.updateDocument(documentId, preparDocUpdateData);
+      if (!updateDocWithPreparedFile) {
+        return res.status(500).json({ message: 'Failed to update document with prepared PDF' });
+      }
+
+    }
+    // Function to Embed field values to the preared PDF
+    const embedFieldsPayload = await payloadForEmbedFieldsValue(AllFields, documentId, recipientId, withSignatureFlag);
+    const embedFieldsWithValue = await embedFieldsValueToPDF(embedFieldsPayload);
+    console.log("Embedding Step: Field values embedded into PDF", embedFieldsWithValue);
+    if(!embedFieldsWithValue || !embedFieldsWithValue.pdfBase64){
+      return res.status(500).json({ message: 'Failed to embed field values into PDF' });
+    }
+    const embeddedPDFBase64 = embedFieldsWithValue.pdfBase64;
+    const preparedDir = path.join(process.cwd(), 'uploads', 'prepared');
+    const outPath = path.join(
+        preparedDir,
+        `${'prepared'}_${Date.now()}_${path.basename(document.filePath)}`
+      );
+    const preparedPDF = await base64ToPdf(embeddedPDFBase64, outPath);
+    if (!preparedPDF) {
+        return res.status(500).json({ message: 'Failed to convert prepared PDF' });
+      }
+    const preparDocUpdateData = {
+        preparedDoc: outPath
+      }
+    const updateDocWithPreparedFile = await signatureOperationServices.updateDocument(documentId, preparDocUpdateData);
+      if (!updateDocWithPreparedFile) {
+        return res.status(500).json({ message: 'Failed to update document with prepared PDF' });
+      }
     if(signatureMethod == "Digital_Signature"){
     // Generate certificate if not exist...
       if (!certificateId) {
@@ -1088,8 +1151,7 @@ const addSignature = async (req, res) => {
               recipientId,
               fieldId,
               signatureImageBase64,
-            }
-            return res.status(200).json({message:"Request is here...."});
+            };
           result = await signingServices[signatureProvider][signatureMethod](data);
         }catch (err){
           console.log(err);
@@ -1099,8 +1161,8 @@ const addSignature = async (req, res) => {
         console.log("Invalid signing mode");
         return res.status(400).json({ message: 'Invalid signing mode' });
     }
-
-    return res.status(result.status).json(result.response);
+    console.log("Signature Process Result:", result);
+    return res.status(result?.status).json(result?.response);
 
   } catch (err) {
     console.error('addSignature error:', err);
@@ -3333,6 +3395,75 @@ const validateRecipient = async (req, res) =>{
       }catch (err){
         console.log(err);
       }
+  }
+}
+async function payloadForPreparePDF(AllFields,withSignatureFlag,documentPath){
+
+  let fildData = [];
+  const fileBase64 = await pdfToBase64(documentPath);
+  if(withSignatureFlag){
+        fildData = AllFields
+                  .filter(field => field.type!=="signature")
+                  .map(field =>({
+                  fieldId: field._id,
+                  page: field.page,
+                  x: field.x,
+                  y: field.y,
+                  width: field.width,
+                  height: field.height,
+                  type: field.type,
+                  label: field.label,
+                  }));
+  }else{
+        fildData = AllFields
+              .filter(field => field.type!=="signature")
+              .map(field =>({
+              fieldId: field._id,
+              page: field.page,
+              x: field.x,
+              y: field.y,
+              width: field.width,
+              height: field.height,
+              type: field.type,
+              label: field.label,
+              }));
+  }
+  return {
+    pdfBase64: fileBase64,
+    fields: fildData
+  }
+
+}
+async function payloadForEmbedFieldsValue(AllFields, documentId, recipientId, withSignatureFlag){
+  const Documents = await Document.findById(documentId);
+  const documentPath = Documents?.preparedDoc;
+  const fileBase64 = await pdfToBase64(documentPath);
+  try{
+    let fieldValues = [];
+    if(withSignatureFlag){
+      fieldValues = AllFields
+                 .filter(field => field.recipientId && field.recipientId.toString() === recipientId.toString())
+                  .map(field =>({
+                    fieldId: field?._id,
+                    value: field?.signature,
+                  }));
+
+    }else{
+        fieldValues = AllFields
+              .filter(field => field.recipientId && field.recipientId.toString() === recipientId.toString())
+              .filter(field => field.type !== "signature")
+              .map(field =>({
+                fieldId: field?._id,
+                value: field?.signature,
+              }));
+    }
+    return{
+      pdfBase64: fileBase64,
+      fieldValues
+    }
+  }catch (err){
+    console.log(err);
+    throw new Error("Error occurred while preparing payload for embedding fields value to PDF");
   }
 }
 module.exports = {

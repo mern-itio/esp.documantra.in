@@ -191,7 +191,7 @@ exports.saveAadhaar = async (req, res) => {
     );
     if (!updated) {
       return res.status(404).json({ message: 'Recipient not found' });
-    }
+    } 
     return res.status(200).json({ data: updated });
   } catch (err) {
     console.error('saveAadhaar error', err);

@@ -3,9 +3,9 @@ const path = require('path');
 const axios = require('axios');
 const Document = require('../../models/Document');
 const signatureTransactions = require('../../models/signatureTransactions');
-const VUTILITY = "http://localhost:7077";
-const VSIGN_AUTHPAGE = "https://esignuat.vsign.in/esp";
-const ASP_ID = "IIPLUAT001";
+const VUTILITY = process.env.UTILITY_URL || 'http://localhost:7077';
+const VSIGN_AUTHPAGE = process.env.VSIGN_AUTHPAGE || "https://esignuat.vsign.in/esp";
+const ASP_ID = process.env.ASP_ID || "IIPLUAT001";
 const signatureOperationServices = require("../signatureOperationServices");
 const { fetchRecipientById } = require("../recipientService")
 module.exports = {
@@ -18,7 +18,7 @@ module.exports = {
     if (!docRecord) return res.status(404).json({ message: "Document not found" });
     // GET ALL FIELDS
     const allFields  = await signatureOperationServices.fetchRecipientAllFields(envelopeId, recipientId,documentId);// Fetch all fields of recipient to get co-ordinates for placing signature in case of multiple signature fields for same recipient. Also required for generating signaturedetailsString for V-Sign in case of multiple fields.
-    const signaturedetailsString = allFields.map(s => `${s.page}-${s.x},${s.y},250,60`).join(";");// Generate signaturedetailsString in format "page-x,y,width,height;page-x,y,width,height"
+    const signaturedetailsString = allFields.filter(f => f.type === 'signature').map(s => `${s.page}-${s.x},${s.y},250,60`).join(";");// Generate signaturedetailsString in format "page-x,y,width,height;page-x,y,width,height"
     const baseDir = path.join(__dirname, '../..', 'uploads');// Base directory for all file operations, adjust as needed
     const imgPath = path.join(baseDir, 'signImages', `sign_${recipientId}.png`);    // Save Signature Image
     const cleanBase64 = signatureImageBase64.replace(/^data:image\/\w+;base64,/, '');
@@ -32,11 +32,11 @@ module.exports = {
     const tempInfoPath = path.join(baseDir, 'vSignTemp');// Base directory for temporary V-Sign information
     const SignedfileName = `${time}-signed-${documentId}.pdf`;// Unique name for the signed PDF
     const pdfDestinationPath = path.join(baseDir, 'signed',envelopeId, SignedfileName);// Final destination path for the signed PDF
-    const responseUrl = 'http://localhost:2103/api/e-sign/public/v-sign/response';// URL to receive V-Sign response
+    const responseUrl = process.env.VSIGN_CALLBACK_URL || "http://localhost:2103/api/e-sign/public/v-sign/response";
     const txn = `${Date.now()}`; // TRANSACTION ID
     const pfxPath = path.join(baseDir, 'vSign', 'signCertificate.pfx');
-    const pfxPassword = "abc1234";
-    const pfxAlias = "{05AE2E10-4F6D-41A6-9F83-4D0025CA28A0}";
+    const pfxPassword = process.env.PFX_PASSWORD || "abc1234";
+    const pfxAlias = process.env.PFX_ALIAS || "{05AE2E10-4F6D-41A6-9F83-4D0025CA28A0}";
     const signingAlgorithm = "RSA";
     const maxWaitPeriod = "1440";
     const ver = "21";
@@ -49,7 +49,7 @@ module.exports = {
         pdfbase64val:pdfPath,
         docInfo:SignedfileName,
         docUrl:"",
-        reason:"Demo Test eSign by DnS",
+        reason:`Signature for ${recipient?.name}`,
         signaturedetails:"",
         signaturedetailsType:"signaturedetailsString",
         signaturedetailsString:signaturedetailsString

@@ -87,6 +87,7 @@ async function updateDocumentWithSignedPdf(documentId, signedPdfPath){
       return;
     }
     const finalPath = signedPdfPath.replace(".pdf", "Final.pdf");
+    docRecord.preparedDoc = finalPath;
     docRecord.signedFileName = path.basename(finalPath);
     docRecord.signedFilePath = finalPath;
     docRecord.signedFileSize = fs.statSync(finalPath).size;
@@ -97,12 +98,37 @@ async function updateDocumentWithSignedPdf(documentId, signedPdfPath){
     console.error(`Error updating document ${documentId} with signed PDF path:`, err);
   }
 }
+async function updateDocument(documentId,paylad){
+  try{
+    const updatedDoc = await Document.findByIdAndUpdate(
+        documentId,
+        { $set: paylad },
+        { new: true }
+    );
+    return updatedDoc;
+  }catch(err){
+    console.error(`Error updating document ${documentId} with payload:`, err);
+
+  }
+}
 async function pendingRecipients(envelopeId){
   const penRecipient = await RecipientPermission.find({
     envelopeId:envelopeId,
     status: { $ne: 'completed' }
   });
   return penRecipient;
+}
+async function fetchAllFieldsOfDocument(envelopeId, documentId){
+  try{
+    const allFields = await SignatureFields.find({
+        envelopeId: envelopeId,
+        documentId: documentId
+    });
+    return allFields;
+  }catch(err){
+    console.error(`Error fetching all fields for document ${documentId} in envelope ${envelopeId}:`, err);
+    return [];
+  } 
 }
 module.exports = {
   markFieldAsCompleted,
@@ -112,5 +138,7 @@ module.exports = {
   fetchRecipientAllFields,
   markAllFieldsOfRecipientAsCompleted,
   updateDocumentWithSignedPdf,
-  pendingRecipients
+  pendingRecipients,
+  fetchAllFieldsOfDocument,
+  updateDocument
 };
