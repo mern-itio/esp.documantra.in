@@ -277,7 +277,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [showAadhaarModal, setShowAadhaarModal] = useState(false);
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [aadhaarError, setAadhaarError] = useState('');
-  const [aadhaarSaved, setAadhaarSaved] = useState(false);
+  const [_aadhaarSaved, setAadhaarSaved] = useState(false);
   const [aadhaarSaving, setAadhaarSaving] = useState(false);
   const [pendingField, setPendingField] = useState<any>(null);
 
