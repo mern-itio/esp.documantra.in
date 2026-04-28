@@ -770,6 +770,7 @@ const authRoutes = [
   // moved to no-sidebar layout group below
   { path: '/e-sign/sign/:token', element: <EsignSigningPage /> },
   { path: '/e-sign/create', element: <EnvelopeCreator /> },
+  { path: '/e-sign/edit/:envelopeId', element: <EnvelopeCreator /> },
 
   { path: '/e-sign/analytics', element: <EsignAnalytics /> },
   { path: '/e-sign/aggrement', element: <AgreementPage /> },
@@ -941,7 +942,6 @@ const router = createBrowserRouter([
         ),
         children: [
           { path: '/e-sign/envelope/:id', element: <EnvelopeDetailPage /> },
-          { path: '/e-sign/edit/:envelopeId', element: <EnvelopeCreator /> },
           { path: '/e-sign/guide', element: <EnvelopeGuideSupport /> },
           { path: '/e-sign/form-builder/:id', element: <FormBuilder /> },
 

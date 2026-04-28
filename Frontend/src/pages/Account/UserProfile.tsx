@@ -31,10 +31,8 @@ const UserProfile: React.FC = () => {
   const [otpModal, setOtpModal] = useState<{ type: 'email' | 'phone' | 'recovery' | null, visible: boolean, otp: string, loading: boolean, error: string }>({ type: null, visible: false, otp: '', loading: false, error: '' });
   const [recoveryEmail, setRecoveryEmail] = useState('');
   
-  // Get plan name from subscription context (most up-to-date) or fallback to user.plan
   const planName = userPlan?.name || (user as any)?.plan || null;
   
-  // Check if user has a paid plan
   const isPaidPlan = userPlan && !isFreePlan();
 
   const accountId = (user as any)?.accountId || (user as any)?.id || (user as any)?._id || 'N/A';
@@ -116,14 +114,12 @@ const UserProfile: React.FC = () => {
       let phoneChanged = formData.phone !== (user as any)?.phone;
       let recoveryEmailChanged = formData.recoveryEmail.trim() !== (recoveryEmail || '');
 
-      // Save basic profile
       const profileResp = await authApi.put('/api/auth/profile', {
         fullname: formData.fullname,
         company: formData.company,
         address: formData.address
       });
       
-      // Update local storage and context
       if (profileResp.data?.token) {
         localStorage.setItem('accessToken', profileResp.data.token);
         localStorage.setItem('userData', JSON.stringify({ ...user, ...profileResp.data.user }));
@@ -134,21 +130,21 @@ const UserProfile: React.FC = () => {
         await authApi.post('/api/auth/profile/email/send-otp', { email: formData.email });
         setOtpModal({ type: 'email', visible: true, otp: '', loading: false, error: '' });
         setIsSaving(false);
-        return; // wait for OTP verify
+        return; 
       }
 
       if (phoneChanged) {
         await authApi.post('/api/auth/profile/phone/send-otp', { phone: formData.phone });
         setOtpModal({ type: 'phone', visible: true, otp: '', loading: false, error: '' });
         setIsSaving(false);
-        return; // wait for OTP verify
+        return; 
       }
 
       if (recoveryEmailChanged) {
         await authApi.post('/api/auth/2fa/recovery-email/send-otp', { recoveryEmail: formData.recoveryEmail.trim() });
         setOtpModal({ type: 'recovery', visible: true, otp: '', loading: false, error: '' });
         setIsSaving(false);
-        return; // wait for OTP verify
+        return; 
       }
 
       setIsEditing(false);

@@ -181,6 +181,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     // Collapse sidebar when on /e-sign/create
     if (
       location.pathname.startsWith('/e-sign/create') ||
+      location.pathname.startsWith('/e-sign/edit/') ||
       location.pathname.startsWith('/e-sign/powerforms')
     ) {
       setIsOpen(false);
