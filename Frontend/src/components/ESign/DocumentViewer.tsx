@@ -123,6 +123,9 @@ const DocumentViewerContent: React.FC<Props> = ({
   }
   async function completeSignature(envelopeID:any, currentUserId:any){
 
+    if(mode === MODE.SELF_SIGNER){
+      navigate("/e-sign/signer/thank-you");
+    }
     const env = String(envelopeID ?? "");
     const rid = String(currentUserId ?? "");
     const response = await eSignApi.post('/api/e-sign/public/signature-complete',{
@@ -737,6 +740,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   };
 
   const getSelfSigner = async (): Promise<void> => {
+    console.log("Loading self-signer data for cycleId:", cycleId);
     // Prevent multiple simultaneous calls
     if (isRefreshingSelfSignerRef.current) {
       return Promise.resolve();
@@ -1064,6 +1068,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       return;
     }
     if(signatureMethod=="aadhaarSignature"){
+      console.log(signatureMethod);
+      console.log("Checking if recipient require details");
       const response = await checkRecipientRequireDetails(currentUserId);
       if(response?.status==200 && response?.data?.data?.flag === false){
         setPendingField(field);
@@ -1460,6 +1466,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         // Handle post-signature navigation based on mode
         switch (mode) {
           case MODE.SELF_SIGNER: {
+            console.log("Refreshing self-signer data...");
             if (cycleId) {
               // Mark navigation as pending
               pendingNavigationRef.current = true;
@@ -1479,8 +1486,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             break;
           }
         }
-        
-        if (response?.data?.fieldRemmaining === false) {
+
+        if (response?.data?.fieldRemmaining === false || response?.data?.fieldRemmaning == false) {
+          console.log("All fields completed!");
           if (mode === MODE.RECIPIENT) {
             try {
               onRecipientComplete?.();
@@ -1488,6 +1496,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               console.error('onRecipientComplete callback error:', err);
             }
           }
+          console.log("Showing complete button");
           setShowCompleteButton(true);
           // If parent provided a completion handler, it controls what happens next.
           // Fallback to legacy thank-you navigation when no callback is provided.

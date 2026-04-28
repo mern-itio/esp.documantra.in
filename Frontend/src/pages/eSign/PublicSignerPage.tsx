@@ -108,8 +108,8 @@ const EnvelopeDetails: React.FC = () => {
   const [showSigningDoneModal, setShowSigningDoneModal] = useState(false);
   const initialCompletionRedirectRef = useRef(true);
   const [sessionIp, setSessionIp] = useState<string>(""); // best-effort
-  const [signatureProvider, setSignatureProvider] = useState<string>("vSign");
-  const [signatureMethod, setSignatureMethod] = useState<string>("aadhaarSignature");
+  const [signatureProvider, setSignatureProvider] = useState<string>("draftnSign");
+  const [signatureMethod, setSignatureMethod] = useState<string>("Digital_Signature");
 
   useEffect(() => {
     // Close the dropdown when clicking outside it
@@ -190,8 +190,8 @@ const EnvelopeDetails: React.FC = () => {
         setEnvelope(response.data.data);
         const docs = response.data.data.documents || [];
         setAllDocuments(docs);
-        setSignatureProvider("vSign");
-        setSignatureMethod("aadhaarSignature");
+        setSignatureProvider("draftnSign");
+        setSignatureMethod("Digital_Signature");
         const recipients = response.data.data.recipients || [];
         setAllRecipients(recipients);
         if(!cycleId){

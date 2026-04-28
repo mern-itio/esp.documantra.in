@@ -1054,6 +1054,7 @@ const addSignature = async (req, res) => {
     if (!document) {
       return res.status(404).json({ message: 'Document not found' });
     }
+    if(signatureMethod == "aadharSignature"){
     // Fetch Signature Field to get coordinates and page number
     const AllFields = await signatureOperationServices.fetchAllFieldsOfDocument(envelopeId, documentId);
     const withSignatureFlag = false;
@@ -1110,6 +1111,7 @@ const addSignature = async (req, res) => {
       if (!updateDocWithPreparedFile) {
         return res.status(500).json({ message: 'Failed to update document with prepared PDF' });
       }
+    }
     if(signatureMethod == "Digital_Signature"){
     // Generate certificate if not exist...
       if (!certificateId) {
