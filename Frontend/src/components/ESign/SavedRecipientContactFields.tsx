@@ -19,8 +19,8 @@ type Props = {
 const fieldClass = (hasError: boolean) =>
   `w-full px-3 py-2 border rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 ${
     hasError
-      ? "border-red-400 focus:border-red-500 focus:ring-red-200"
-      : "border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+      ? "border-destructive focus:border-destructive focus:ring-destructive"
+      : "border-muted focus:border-primary focus:ring-primary"
   }`;
 
 const SavedRecipientContactFields: React.FC<Props> = ({
@@ -34,8 +34,8 @@ const SavedRecipientContactFields: React.FC<Props> = ({
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Name <span className="text-red-500">*</span>
+        <label className="mb-1 block text-sm font-medium text-muted-foreground">
+          Name <span className="text-destructive">*</span>
         </label>
         <input
           type="text"
@@ -47,13 +47,13 @@ const SavedRecipientContactFields: React.FC<Props> = ({
           autoComplete="name"
         />
         {errors.name ? (
-          <p className="mt-1 text-xs text-red-600">{errors.name}</p>
+          <p className="mt-1 text-xs text-destructive">{errors.name}</p>
         ) : null}
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">
-          Email <span className="text-red-500">*</span>
+        <label className="mb-1 block text-sm font-medium text-muted-foreground">
+          Email <span className="text-destructive">*</span>
         </label>
         <input
           type="email"
@@ -65,12 +65,12 @@ const SavedRecipientContactFields: React.FC<Props> = ({
           autoComplete="email"
         />
         {errors.email ? (
-          <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+          <p className="mt-1 text-xs text-destructive">{errors.email}</p>
         ) : null}
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Title</label>
+        <label className="mb-1 block text-sm font-medium text-muted-foreground">Title</label>
         <input
           type="text"
           value={values.title}
@@ -81,12 +81,12 @@ const SavedRecipientContactFields: React.FC<Props> = ({
           autoComplete="organization-title"
         />
         {errors.title ? (
-          <p className="mt-1 text-xs text-red-600">{errors.title}</p>
+          <p className="mt-1 text-xs text-destructive">{errors.title}</p>
         ) : null}
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Company</label>
+        <label className="mb-1 block text-sm font-medium text-muted-foreground">Company</label>
         <input
           type="text"
           value={values.company}
@@ -97,12 +97,12 @@ const SavedRecipientContactFields: React.FC<Props> = ({
           autoComplete="organization"
         />
         {errors.company ? (
-          <p className="mt-1 text-xs text-red-600">{errors.company}</p>
+          <p className="mt-1 text-xs text-destructive">{errors.company}</p>
         ) : null}
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Phone</label>
+        <label className="mb-1 block text-sm font-medium text-muted-foreground">Phone</label>
         <PhoneInput
           country="in"
           value={values.phone}
@@ -114,20 +114,20 @@ const SavedRecipientContactFields: React.FC<Props> = ({
           }}
           containerClass="w-full"
           dropdownStyle={{ zIndex: phoneDropdownZIndex }}
-          inputClass={`!w-full !pl-12 !pr-3 !py-2 !text-sm !border !rounded-lg !bg-gray focus:!outline-none focus:!ring-2 !transition-colors ${
+          inputClass={`!w-full !pl-12 !pr-3 !py-2 !text-sm !border !rounded-lg !bg-muted focus:!outline-none focus:!ring-2 !transition-colors ${
             errors.phone
-              ? "!border-red-400 focus:!border-red-500 focus:!ring-red-200"
-              : "!border-gray-300 focus:!border-purple-500 focus:!ring-purple-200"
+              ? "!border-destructive focus:!border-destructive focus:!ring-destructive"
+              : "!border-border focus:!border-primary focus:!ring-primary"
           }`}
-          buttonClass="!border !border-gray-300 !bg-white !rounded-l-lg"
+          buttonClass="!border !border-border !bg-card !rounded-l-lg"
         />
         {errors.phone ? (
-          <p className="mt-1 text-xs text-red-600">{errors.phone}</p>
+          <p className="mt-1 text-xs text-destructive">{errors.phone}</p>
         ) : null}
       </div>
 
       <div >
-        <label className="mb-1 block text-sm font-medium text-gray-700">Address</label>
+        <label className="mb-1 block text-sm font-medium text-muted-foreground">Address</label>
         <input
         type="text"
           value={values.address}
@@ -138,7 +138,7 @@ const SavedRecipientContactFields: React.FC<Props> = ({
           autoComplete="street-address"
         />
         {errors.address ? (
-          <p className="mt-1 text-xs text-red-600">{errors.address}</p>
+          <p className="mt-1 text-xs text-destructive">{errors.address}</p>
         ) : null}
       </div>
     </div>

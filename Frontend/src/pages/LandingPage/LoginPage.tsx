@@ -39,7 +39,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [_error, setError] = useState('')
+  const [error, setError] = useState('')
   const [step, setStep] = useState<LoginStep>('login')
   const [signupToken, setSignupToken] = useState<string>('')
   const [emailOtp, setEmailOtp] = useState('')
@@ -544,11 +544,11 @@ const LoginPage = () => {
                   </div>
                 </div>
 
-                {/* {error && (
+                {error && (
                   <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
                     {error}
                   </div>
-                )} */}
+                )}
 
                 {step === 'verify' ? (
                   twoFaToken ? (
