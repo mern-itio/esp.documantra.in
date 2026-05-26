@@ -193,8 +193,8 @@ export class SubscriptionService {
 
       const response = await subscriptionApi.get(url, { responseType: 'blob' });
       const blob = new Blob([response.data], {
-        type: response.headers['content-type'] || 'application/octet-stream',
-      });
+      type: String(response.headers['content-type'] || 'application/octet-stream'),     
+	  });
 
       // Derive filename from headers if available
       const disposition = response.headers['content-disposition'] || '';

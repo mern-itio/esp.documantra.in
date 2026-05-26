@@ -1,13 +1,11 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Smartphone, CheckCircle2, XCircle } from 'lucide-react'
 import { useAuth } from '../../components/AuthService/AuthContext'
 import { APP_NAME } from '../../components/constants/appConfig'
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
-import ReCAPTCHA from 'react-google-recaptcha'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"
-const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY_HERE"
 const SIGNUP_REFERRER_STORAGE_KEY = 'signupReferrerUserId'
 
 type LoginStep = 'login' | 'verify'
@@ -64,8 +62,7 @@ const LoginPage = () => {
   const [currentRecoveryQuestionIndex, setCurrentRecoveryQuestionIndex] = useState(0)
   const [completedRecoveryQuestions, setCompletedRecoveryQuestions] = useState<Record<string, boolean>>({})
   const [wrongRecoveryQuestions, setWrongRecoveryQuestions] = useState<string[]>([])
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
-  const recaptchaRef = useRef<ReCAPTCHA>(null)
+  
 
   const REMEMBER_ME_KEY = 'dns_rememberMe'
   const REMEMBERED_EMAIL_KEY = 'dns_rememberedEmail'
@@ -112,10 +109,7 @@ const LoginPage = () => {
     e.preventDefault()
     setError('')
 
-    if (!recaptchaToken) {
-      setError('Please complete the reCAPTCHA verification.')
-      return
-    }
+    
 
     setIsLoading(true)
 
@@ -131,16 +125,10 @@ const LoginPage = () => {
       } catch {
         // ignore localStorage errors
       }
-      await login(email, password, recaptchaToken)
+      await login(email, password, 'disabled')
       const returnTo = (location.state as any)?.returnTo || '/dashboard'
       navigate(returnTo)
     } catch (error) {
-      // Reset reCAPTCHA on error
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset()
-      }
-      setRecaptchaToken(null)
-
       const anyErr: any = error
       if (anyErr?.name === 'VerificationRequiredError') {
         if (anyErr?.signupToken) setSignupToken(anyErr.signupToken)
@@ -493,7 +481,7 @@ const LoginPage = () => {
                   </span>
                 </h1>
                 <p className="max-w-xl text-sm md:text-base text-slate-600">
-                  Pick up where you left off. Review contracts, send proposals, or finalize eSignatures â€“ all from one
+                  Pick up where you left off. Review contracts, send proposals, or finalize eSignatures – all from one
                   secure workspace designed for modern teams.
                 </p>
               </div>
@@ -999,17 +987,11 @@ const LoginPage = () => {
                       </Link>
                     </div>
 
-                    <div className="flex justify-center my-4">
-                      <ReCAPTCHA
-                        ref={recaptchaRef}
-                        sitekey={RECAPTCHA_SITE_KEY}
-                        onChange={(token) => setRecaptchaToken(token)}
-                      />
-                    </div>
+                    
 
                     <button
                       type="submit"
-                      disabled={isLoading || !recaptchaToken}
+                      disabled={isLoading}
                       className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#084bdc] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#084bdc]/30 transition hover:bg-[#084bdc]/90 disabled:cursor-not-allowed disabled:bg-[#084bdc]/50"
                     >
                       {isLoading ? (

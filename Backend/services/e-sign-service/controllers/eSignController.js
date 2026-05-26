@@ -128,7 +128,7 @@ const Upload = async (req, res) => {
           envelopeId: envelope._id,
           fileName: file.filename,
           mimeType: file.mimetype,
-          filePath: file.path,
+          filePath: `${process.env.PUBLIC_ESIGN_URL}/uploads/${encodeURIComponent(file.filename)}`,          
           fileSize: file.size
         });
         await doc.save();

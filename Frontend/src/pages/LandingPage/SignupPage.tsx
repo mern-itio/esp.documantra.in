@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Building, Locate, FileText, PenTool, Shield, Sparkles, CheckCircle2, ArrowLeft, Smartphone, RotateCcw, Check, Gift, X } from 'lucide-react'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { useAuth } from '../../components/AuthService/AuthContext'
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
-import ReCAPTCHA from 'react-google-recaptcha'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"
-const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY_HERE"
 
 type SignupStep = 'form' | 'verify'
 const OTP_EXPIRY_SECONDS = 10 * 60
@@ -55,8 +53,6 @@ const SignupPage = () => {
   const [passwordChecks, setPasswordChecks] = useState({ letter: false, number: false, length: false })
   const [passwordFocused, setPasswordFocused] = useState(false)
   const [bookOpen, setBookOpen] = useState(false)
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
-  const recaptchaRef = useRef<ReCAPTCHA>(null)
   const [referralInviteBannerDismissed, setReferralInviteBannerDismissed] = useState(false)
 
   const formatOtpCountdown = (expiresAt: number | null) => {
@@ -159,10 +155,6 @@ const SignupPage = () => {
 
     if (!validateAll(formData)) return
     
-    if (!recaptchaToken) {
-      setFormError('Please complete the reCAPTCHA verification.')
-      return
-    }
 
     setIsLoading(true)
     try {
@@ -173,7 +165,7 @@ const SignupPage = () => {
         company: formData.company,
         address: formData.address,
         password: formData.password,
-        recaptchaToken: recaptchaToken,
+        recaptchaToken: 'disabled',
         ...(referrerUserIdForSignup ? { referrerUserId: referrerUserIdForSignup } : {}),
       })
       setSignupToken(token)
@@ -186,13 +178,7 @@ const SignupPage = () => {
       setPhoneOtpSent(false)
       setPhoneOtpExpiresAt(null)
       setStep('verify')
-    } catch (error) {
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset()
-      }
-      setRecaptchaToken(null)
-      
-      setFormError((error as Error)?.message || 'An error occurred during signup. Please try again.')
+    } catch (error) {setFormError((error as Error)?.message || 'An error occurred during signup. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -472,7 +458,7 @@ const SignupPage = () => {
                       <p className="mt-1 text-sm text-emerald-900/90">
                         Finish signup, then <span className="font-medium">send your first document</span> from this
                         account to unlock your welcome reward. Your referrer gets credit at the same time. Track progress
-                        in <span className="font-medium">Profile → Rewards</span>.
+                        in <span className="font-medium">Profile ? Rewards</span>.
                       </p>
                     </div>
                   </div>
@@ -878,22 +864,16 @@ const SignupPage = () => {
                   </label>
                 </div>
 
-                <div className="flex justify-center my-4">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey={RECAPTCHA_SITE_KEY}
-                    onChange={(token) => setRecaptchaToken(token)}
-                  />
-                </div>
+                
 
                 <button
                   type="submit"
-                  disabled={isLoading || !recaptchaToken}
+                  disabled={isLoading}
                   className="group w-full bg-gradient-to-r from-[#260559] to-[#3E2B66] text-white text-base font-semibold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:from-[#3E2B66] hover:to-[#4d3577] transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-100"
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
-                      <span className="animate-spin">⏳</span>
+                      <span className="animate-spin">?</span>
                       Creating Account...
                     </span>
                   ) : (

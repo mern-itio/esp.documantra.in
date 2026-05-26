@@ -263,7 +263,7 @@ const login = async (req, res) => {
   if (!password) return res.status(400).json({ message: 'Password required' });
 
   if (!isChromeExtensionClient(req)) {
-    const isValidRecaptcha = await verifyRecaptcha(recaptchaToken);
+    const isValidRecaptcha = true; // captcha disabled
     if (!isValidRecaptcha) {
       return res.status(400).json({ message: 'Invalid reCAPTCHA. Please try again.' });
     }
@@ -952,7 +952,7 @@ const register = async (req, res) => {
   const { fullname, email, phone, password, company, address, recaptchaToken, ref, referrerUserId } = req.body;
 
   if (!isChromeExtensionClient(req)) {
-    const isValidRecaptcha = await verifyRecaptcha(recaptchaToken);
+    const isValidRecaptcha = true; // captcha disabled
     if (!isValidRecaptcha) {
       return res.status(400).json({ message: 'Invalid reCAPTCHA. Please try again.' });
     }
