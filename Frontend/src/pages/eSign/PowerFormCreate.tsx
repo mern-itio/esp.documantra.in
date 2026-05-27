@@ -2398,7 +2398,7 @@ const PowerFormCreate: React.FC = () => {
 
               <h1 className="text-base font-medium text-gray-900">
                 {documents?.length > 0
-                  ? `Complete with Draft&Sign: ${documents?.[0]?.name || 'Document'}`
+                  ? `Complete with {BRAND.name}: ${documents?.[0]?.name || 'Document'}`
                   : 'Upload a Document and Add Envelope Recipients'}
               </h1>
             </div>

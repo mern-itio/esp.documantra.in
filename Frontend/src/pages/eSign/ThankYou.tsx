@@ -69,7 +69,7 @@ export default function ThankYouPage() {
         <h1 className="text-3xl font-extrabold tracking-tight mb-3">Thank you for signing!</h1>
         <p className="text-lg max-w-[28rem] mx-auto opacity-90 mb-6">Once all recipients have signed, you will receive the final signed document and the certificate at your email.</p>
 
-        <a href="/" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white text-[#260559] font-semibold shadow-lg hover:scale-[1.02] transition-transform">
+        <a href="/login" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white text-[#260559] font-semibold shadow-lg hover:scale-[1.02] transition-transform">
           Explore
         </a>
       </div>

@@ -209,7 +209,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
         {/* Breadcrumb */}
         <div className="mb-6">
           <nav className="flex items-center space-x-2 text-sm text-gray-600">
-            <Link to="/" className="hover:text-primary-600">Home</Link>
+            <Link to="/login" className="hover:text-primary-600">Home</Link>
             <span>/</span>
             <Link to="/pdf-tools" className="hover:text-primary-600">PDF Tools</Link>
             <span>/</span>

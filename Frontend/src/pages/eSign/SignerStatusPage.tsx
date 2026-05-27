@@ -1166,7 +1166,7 @@ export default function SignerStatusPage() {
                               <Link to="/account/rewards" className="font-medium underline">
                                 Rewards
                               </Link>{" "}
-                              while signed in as this signer, or confirm this email is registered in Draft&Sign.
+                              while signed in as this signer, or confirm this email is registered in {BRAND.name}.
                             </p>
                           </div>
                         )}

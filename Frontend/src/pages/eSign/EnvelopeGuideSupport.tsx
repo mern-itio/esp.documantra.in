@@ -120,10 +120,10 @@ const EnvelopeGuideSupport: React.FC = () => {
       case 'getting-started':
         return (
           <div id="getting-started" className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-900">Getting Started with Draft&Sign</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Getting Started with {BRAND.name}</h1>
             <div className="prose max-w-none">
               <p className="text-lg text-gray-700 leading-relaxed">
-                Welcome to Draft&Sign! This guide will walk you through the complete process of sending documents for signature, from uploading your documents to receiving signed copies.
+                Welcome to {BRAND.name}! This guide will walk you through the complete process of sending documents for signature, from uploading your documents to receiving signed copies.
               </p>
               
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 my-6 rounded">
@@ -243,7 +243,7 @@ const EnvelopeGuideSupport: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900">Upload Documents to an Envelope</h1>
             <div className="prose max-w-none">
               <p className="text-lg text-gray-700 leading-relaxed mb-6">
-                The first step in creating an envelope is uploading your documents. Draft&Sign supports PDF files for signing.
+                The first step in creating an envelope is uploading your documents. {BRAND.name} supports PDF files for signing.
               </p>
 
               <div className="space-y-6">
@@ -1026,7 +1026,7 @@ const EnvelopeGuideSupport: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900">Troubleshooting</h1>
             <div className="prose max-w-none">
               <p className="text-lg text-gray-700 leading-relaxed mb-6">
-                Common issues and solutions for sending and signing documents with Draft&Sign.
+                Common issues and solutions for sending and signing documents with {BRAND.name}.
               </p>
 
               <div className="space-y-6">
@@ -1181,7 +1181,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                     <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Browser compatibility</h3>
                       <p className="text-gray-700 text-sm mb-2">
-                        Draft&Sign works best with modern browsers. Recommended browsers:
+                        {BRAND.name} works best with modern browsers. Recommended browsers:
                       </p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
                         <li>Google Chrome (latest version)</li>
@@ -1210,8 +1210,8 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
                         <li>Contact the person who sent you the document</li>
-                        <li>Check the Draft&Sign Support Center for additional resources</li>
-                        <li>Contact Draft&Sign support with details about your issue</li>
+                        <li>Check the {BRAND.name} Support Center for additional resources</li>
+                        <li>Contact {BRAND.name} support with details about your issue</li>
                         <li>Include screenshots if possible to help diagnose the problem</li>
                       </ul>
                     </div>

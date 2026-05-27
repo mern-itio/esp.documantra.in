@@ -354,7 +354,7 @@ const SignupPage = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Welcome to Draft&Sign</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Welcome to {BRAND.name}</h1>
                 <p className="text-gray-600 mt-1">Your document management dashboard</p>
               </div>
               <div className="flex items-center space-x-2">
@@ -431,7 +431,7 @@ const SignupPage = () => {
                   </div>
                   <h1 className="text-xl font-bold text-gray-900">Create Your Account</h1>
                 </div>
-                <p className="text-gray-600">Join thousands of users who trust Draft&Sign for their document needs</p>
+                <p className="text-gray-600">Join thousands of users who trust {BRAND.name} for their document needs</p>
               </div>
               {formError && (
                 <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-shake">

@@ -7,12 +7,19 @@ import Footer from '../components/LandingPage/Footer';
 const GuestLayout: React.FC = () => {
   const location = useLocation();
 
-
-  const HIDE_HEADER_FOOTER_ROUTES: string[] = [
+const HIDE_HEADER_FOOTER_ROUTES: string[] = [
+    '/login',
     '/signup',
+    '/dashboard',
+    '/documents',
+    '/templates',
+    '/profile',
+    '/settings',
     '/sign-pdf-online/signer',
     '/sign-pdf-online/plan',
-  ];
+];
+
+
   const shouldHideHeaderFooter = HIDE_HEADER_FOOTER_ROUTES.some((path) => location.pathname === path);
   
   return (

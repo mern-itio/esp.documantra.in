@@ -123,7 +123,7 @@ const AIPoweredFeaturesPage = () => {
       company: "Global Financial Services"
     },
     {
-      quote: "Draft&Sign's AI document generation has transformed how we create legal documents. The quality and accuracy are impressive.",
+      quote: "{BRAND.name}'s AI document generation has transformed how we create legal documents. The quality and accuracy are impressive.",
       author: "Sarah Johnson",
       position: "General Counsel",
       company: "TechCorp Inc."
@@ -550,7 +550,7 @@ const AIPoweredFeaturesPage = () => {
               AI Feature Roadmap
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Exciting AI capabilities coming soon to the Draft&Sign platform
+              Exciting AI capabilities coming soon to the {BRAND.name} platform
             </p>
           </div>
 
@@ -671,7 +671,7 @@ const AIPoweredFeaturesPage = () => {
               Experience the Power of AI in Document Management
             </h2>
             <p className="text-xl text-indigo-100 mb-8 leading-relaxed">
-              Join thousands of organizations that are transforming their document workflows with Draft&Sign's AI-powered features.
+              Join thousands of organizations that are transforming their document workflows with {BRAND.name}'s AI-powered features.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">

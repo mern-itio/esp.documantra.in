@@ -183,19 +183,19 @@ const DocuSignerVsHelloSignPage = () => {
 
   const testimonials = [
     {
-      quote: "We switched from HelloSign to Draft&Sign and immediately gained access to dozens of PDF tools we were paying for separately. The cost savings are significant, and having everything in one platform has streamlined our workflow.",
+      quote: "We switched from HelloSign to {BRAND.name} and immediately gained access to dozens of PDF tools we were paying for separately. The cost savings are significant, and having everything in one platform has streamlined our workflow.",
       author: "Thomas Wilson",
       position: "Operations Manager",
       company: "Nexus Solutions"
     },
     {
-      quote: "Draft&Sign's legal templates are a game-changer. With HelloSign, we had to create all our templates from scratch or pay lawyers to draft them. Draft&Sign's template library has saved us thousands in legal fees.",
+      quote: "{BRAND.name}'s legal templates are a game-changer. With HelloSign, we had to create all our templates from scratch or pay lawyers to draft them. {BRAND.name}'s template library has saved us thousands in legal fees.",
       author: "Jennifer Martinez",
       position: "Legal Administrator",
       company: "Vertex Consulting"
     },
     {
-      quote: "The free plan from Draft&Sign gives us everything HelloSign charged for, plus PDF tools we were paying another vendor to use. For a small business like ours, this makes a huge difference to our bottom line.",
+      quote: "The free plan from {BRAND.name} gives us everything HelloSign charged for, plus PDF tools we were paying another vendor to use. For a small business like ours, this makes a huge difference to our bottom line.",
       author: "David Chang",
       position: "Founder",
       company: "Innovate Design Studio"
@@ -208,9 +208,9 @@ const DocuSignerVsHelloSignPage = () => {
         {/* Hero Section */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
           <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 p-8 text-white">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">Draft&Sign vs HelloSign: The Complete Comparison</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">{BRAND.name} vs HelloSign: The Complete Comparison</h1>
             <p className="text-xl text-primary-100 max-w-3xl">
-              Discover why Draft&Sign offers superior value with more features and lower prices than HelloSign.
+              Discover why {BRAND.name} offers superior value with more features and lower prices than HelloSign.
             </p>
           </div>
           
@@ -227,7 +227,7 @@ const DocuSignerVsHelloSignPage = () => {
                   </div>
                 </div>
                 <p className="text-gray-700 mb-6">
-                  While HelloSign focuses primarily on e-signatures, Draft&Sign provides a comprehensive document platform with e-signatures, 30+ PDF tools, legal templates, and AI-powered features—all in one integrated solution.
+                  While HelloSign focuses primarily on e-signatures, {BRAND.name} provides a comprehensive document platform with e-signatures, 30+ PDF tools, legal templates, and AI-powered features—all in one integrated solution.
                 </p>
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
@@ -256,7 +256,7 @@ const DocuSignerVsHelloSignPage = () => {
                   </div>
                 </div>
                 <p className="text-gray-700 mb-6">
-                  Draft&Sign delivers exceptional value compared to HelloSign with lower prices across all plan tiers. Our free forever plan includes features that HelloSign only offers in their paid plans, and our paid plans cost 40-60% less than comparable HelloSign plans.
+                  {BRAND.name} delivers exceptional value compared to HelloSign with lower prices across all plan tiers. Our free forever plan includes features that HelloSign only offers in their paid plans, and our paid plans cost 40-60% less than comparable HelloSign plans.
                 </p>
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
@@ -291,7 +291,7 @@ const DocuSignerVsHelloSignPage = () => {
                       <th className="text-left p-3 w-1/2">Feature</th>
                       <th className="text-center p-3 w-1/4">
                         <div className="flex flex-col items-center">
-                          <span className="text-primary-600 font-bold">Draft&Sign</span>
+                          <span className="text-primary-600 font-bold">{BRAND.name}</span>
                           <span className="text-xs text-gray-500">Our Platform</span>
                         </div>
                       </th>
@@ -341,7 +341,7 @@ const DocuSignerVsHelloSignPage = () => {
         {/* Pricing Comparison */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Pricing Comparison</h2>
-          <p className="text-gray-600 mb-6">See how much you can save by choosing Draft&Sign over HelloSign</p>
+          <p className="text-gray-600 mb-6">See how much you can save by choosing {BRAND.name} over HelloSign</p>
           
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -350,7 +350,7 @@ const DocuSignerVsHelloSignPage = () => {
                   <th className="text-left p-4">Plan</th>
                   <th className="p-4">
                     <div className="flex flex-col items-center">
-                      <span className="text-primary-600 font-bold">Draft&Sign</span>
+                      <span className="text-primary-600 font-bold">{BRAND.name}</span>
                       <span className="text-xs text-gray-500">Price</span>
                     </div>
                   </th>
@@ -363,7 +363,7 @@ const DocuSignerVsHelloSignPage = () => {
                   <th className="p-4">
                     <div className="flex flex-col items-center">
                       <span className="text-green-600 font-bold">Your Savings</span>
-                      <span className="text-xs text-gray-500">with Draft&Sign</span>
+                      <span className="text-xs text-gray-500">with {BRAND.name}</span>
                     </div>
                   </th>
                 </tr>
@@ -439,7 +439,7 @@ const DocuSignerVsHelloSignPage = () => {
               <div>
                 <h4 className="font-medium text-green-800">Annual Savings Potential</h4>
                 <p className="text-sm text-green-700 mt-1">
-                  Organizations typically save 40-60% on their document management costs by switching from HelloSign to Draft&Sign. For a team of 10 users, this can translate to $2,400-$3,600 in annual savings, plus additional savings from the included PDF tools and legal templates.
+                  Organizations typically save 40-60% on their document management costs by switching from HelloSign to {BRAND.name}. For a team of 10 users, this can translate to $2,400-$3,600 in annual savings, plus additional savings from the included PDF tools and legal templates.
                 </p>
               </div>
             </div>
@@ -448,7 +448,7 @@ const DocuSignerVsHelloSignPage = () => {
 
         {/* Key Advantages */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Advantages of Draft&Sign over HelloSign</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Advantages of {BRAND.name} over HelloSign</h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-gray-50 rounded-xl p-6">
@@ -457,7 +457,7 @@ const DocuSignerVsHelloSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Integrated PDF Tools</h3>
               <p className="text-gray-700">
-                Draft&Sign includes 30+ PDF tools that HelloSign doesn't offer, eliminating the need for separate PDF software subscriptions and saving you hundreds of dollars annually.
+                {BRAND.name} includes 30+ PDF tools that HelloSign doesn't offer, eliminating the need for separate PDF software subscriptions and saving you hundreds of dollars annually.
               </p>
             </div>
             
@@ -467,7 +467,7 @@ const DocuSignerVsHelloSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Free Forever Plan</h3>
               <p className="text-gray-700">
-                Unlike HelloSign, Draft&Sign offers a genuinely useful free plan with 10 envelopes per month, full access to PDF tools, and legal templates—perfect for individuals and small businesses.
+                Unlike HelloSign, {BRAND.name} offers a genuinely useful free plan with 10 envelopes per month, full access to PDF tools, and legal templates—perfect for individuals and small businesses.
               </p>
             </div>
             
@@ -477,7 +477,7 @@ const DocuSignerVsHelloSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Legal Template Library</h3>
               <p className="text-gray-700">
-                Draft&Sign provides 45+ professionally drafted legal templates that HelloSign doesn't offer, saving you thousands in potential legal fees and consultation costs.
+                {BRAND.name} provides 45+ professionally drafted legal templates that HelloSign doesn't offer, saving you thousands in potential legal fees and consultation costs.
               </p>
             </div>
             
@@ -487,7 +487,7 @@ const DocuSignerVsHelloSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">AI-Powered Features</h3>
               <p className="text-gray-700">
-                Draft&Sign's advanced AI capabilities for document generation, field detection, and content analysis are not available in HelloSign, making document preparation faster and more accurate.
+                {BRAND.name}'s advanced AI capabilities for document generation, field detection, and content analysis are not available in HelloSign, making document preparation faster and more accurate.
               </p>
             </div>
             
@@ -497,7 +497,7 @@ const DocuSignerVsHelloSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">More Affordable Team Features</h3>
               <p className="text-gray-700">
-                Draft&Sign offers team collaboration features at lower price points than HelloSign, making advanced workflow capabilities accessible to small and medium-sized businesses.
+                {BRAND.name} offers team collaboration features at lower price points than HelloSign, making advanced workflow capabilities accessible to small and medium-sized businesses.
               </p>
             </div>
             
@@ -507,7 +507,7 @@ const DocuSignerVsHelloSignPage = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Simpler Implementation</h3>
               <p className="text-gray-700">
-                Draft&Sign's intuitive interface and streamlined onboarding process gets teams up and running in minutes, compared to HelloSign's more complex implementation process.
+                {BRAND.name}'s intuitive interface and streamlined onboarding process gets teams up and running in minutes, compared to HelloSign's more complex implementation process.
               </p>
             </div>
           </div>
@@ -541,7 +541,7 @@ const DocuSignerVsHelloSignPage = () => {
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Easy Migration from HelloSign</h2>
           <p className="text-gray-600 mb-6">
-            Switching from HelloSign to Draft&Sign is simple with our migration tools and dedicated support.
+            Switching from HelloSign to {BRAND.name} is simple with our migration tools and dedicated support.
           </p>
           
           <div className="grid md:grid-cols-3 gap-6">
@@ -551,7 +551,7 @@ const DocuSignerVsHelloSignPage = () => {
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Import Your Templates</h3>
               <p className="text-gray-700 text-sm">
-                Our template converter automatically imports and adapts your existing HelloSign templates to work with Draft&Sign.
+                Our template converter automatically imports and adapts your existing HelloSign templates to work with {BRAND.name}.
               </p>
             </div>
             
@@ -591,55 +591,55 @@ const DocuSignerVsHelloSignPage = () => {
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Is Draft&Sign as legally binding as HelloSign?</h3>
+                <h3 className="font-semibold text-gray-900">Is {BRAND.name} as legally binding as HelloSign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Yes, absolutely. Draft&Sign's electronic signatures are equally legally binding and compliant with all major e-signature laws including ESIGN Act, UETA, and eIDAS. Our signatures provide the same level of legal validity and court admissibility as HelloSign, with comprehensive audit trails and certificate of completion documentation.
+                  Yes, absolutely. {BRAND.name}'s electronic signatures are equally legally binding and compliant with all major e-signature laws including ESIGN Act, UETA, and eIDAS. Our signatures provide the same level of legal validity and court admissibility as HelloSign, with comprehensive audit trails and certificate of completion documentation.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">How difficult is it to switch from HelloSign to Draft&Sign?</h3>
+                <h3 className="font-semibold text-gray-900">How difficult is it to switch from HelloSign to {BRAND.name}?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Switching is remarkably easy. Draft&Sign provides migration tools to import your templates, contacts, and workflows. Most customers complete their migration in less than a day, and our dedicated migration specialists are available to assist with the transition. We also provide comprehensive training resources to help your team get up to speed quickly.
+                  Switching is remarkably easy. {BRAND.name} provides migration tools to import your templates, contacts, and workflows. Most customers complete their migration in less than a day, and our dedicated migration specialists are available to assist with the transition. We also provide comprehensive training resources to help your team get up to speed quickly.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Is Draft&Sign as secure as HelloSign?</h3>
+                <h3 className="font-semibold text-gray-900">Is {BRAND.name} as secure as HelloSign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Draft&Sign implements the same enterprise-grade security measures as HelloSign, including 256-bit SSL encryption, SOC 2 Type II certification, GDPR compliance, and tamper-evident seals. We also offer advanced security features like multi-factor authentication, detailed access controls, and comprehensive audit logs. Your documents and data are equally secure with Draft&Sign.
+                  {BRAND.name} implements the same enterprise-grade security measures as HelloSign, including 256-bit SSL encryption, SOC 2 Type II certification, GDPR compliance, and tamper-evident seals. We also offer advanced security features like multi-factor authentication, detailed access controls, and comprehensive audit logs. Your documents and data are equally secure with {BRAND.name}.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Does Draft&Sign offer the same API capabilities as HelloSign?</h3>
+                <h3 className="font-semibold text-gray-900">Does {BRAND.name} offer the same API capabilities as HelloSign?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Draft&Sign offers more comprehensive API capabilities than HelloSign, with more generous access at lower price points. Our API allows for the same document preparation, sending, signing, and status tracking functionalities. The key difference is that Draft&Sign includes API access in our free tier (10 calls/month) and offers more affordable API call packages in our paid plans.
+                  {BRAND.name} offers more comprehensive API capabilities than HelloSign, with more generous access at lower price points. Our API allows for the same document preparation, sending, signing, and status tracking functionalities. The key difference is that {BRAND.name} includes API access in our free tier (10 calls/month) and offers more affordable API call packages in our paid plans.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">How much can I save by switching from HelloSign to Draft&Sign?</h3>
+                <h3 className="font-semibold text-gray-900">How much can I save by switching from HelloSign to {BRAND.name}?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Most organizations save 40-60% on their document management costs by switching to Draft&Sign. For example, a business with 10 users on HelloSign's Business plan paying approximately $400/month could switch to Draft&Sign's equivalent plan for around $200/month—a savings of $2,400 annually. Additionally, the included PDF tools and legal templates eliminate the need for separate subscriptions to those services, potentially saving thousands more.
+                  Most organizations save 40-60% on their document management costs by switching to {BRAND.name}. For example, a business with 10 users on HelloSign's Business plan paying approximately $400/month could switch to {BRAND.name}'s equivalent plan for around $200/month—a savings of $2,400 annually. Additionally, the included PDF tools and legal templates eliminate the need for separate subscriptions to those services, potentially saving thousands more.
                 </p>
               </div>
             </div>
@@ -650,7 +650,7 @@ const DocuSignerVsHelloSignPage = () => {
         <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 text-white text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Save Money and Get More Features?</h2>
           <p className="text-xl text-primary-100 max-w-3xl mx-auto mb-8">
-            Join thousands of businesses that have switched from HelloSign to Draft&Sign for better features at lower prices.
+            Join thousands of businesses that have switched from HelloSign to {BRAND.name} for better features at lower prices.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">

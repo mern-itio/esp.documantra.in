@@ -97,7 +97,7 @@ app.post('/webhook', (req, res) => {
             Automate Documents with <span className="gradient-text">Developer-Friendly APIs</span>
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Integrate Draft&Sign powerful document automation into your applications
+            Integrate {BRAND.name} powerful document automation into your applications
           </p>
         </div>
 

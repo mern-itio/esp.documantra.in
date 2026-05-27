@@ -3023,7 +3023,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
       {/* Footer (sticky full-width) */}
       <div className="fixed bottom-0 left-0 right-0 border-t bg-white text-xs text-gray-600 flex items-center justify-between px-4 py-3 z-50">
-        <div>Powered by Draft&Sign</div>
+        <div>Powered by {BRAND.name}</div>
         <div className="flex items-center gap-4">
           <Link to="/terms-of-service"><span>Terms of Use</span></Link>
           <Link to="/privacy-policy"><span>Privacy</span></Link>

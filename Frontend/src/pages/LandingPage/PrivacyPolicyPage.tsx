@@ -75,7 +75,7 @@ const PrivacyPolicyPage = () => {
       content: (
         <>
           <p className="mb-4">
-            Draft&Sign ("we," "our," or "us") is committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website, mobile applications, APIs, and any related services (collectively, the "Services").
+            {BRAND.name} ("we," "our," or "us") is committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website, mobile applications, APIs, and any related services (collectively, the "Services").
           </p>
           <p className="mb-4">
             <strong>Our Privacy Philosophy:</strong> We believe in transparency, data minimization, and user control. We collect only the information necessary to provide and improve our Services, and we give you meaningful choices about how your data is used and shared.
@@ -326,7 +326,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <p className="text-green-800 font-medium">We Do Not Sell Your Personal Information</p>
                 <p className="text-green-700 text-sm mt-1">
-                  Draft&Sign does not sell, rent, or trade your personal information to third parties for their marketing purposes. We only share your information as described in this Privacy Policy.
+                  {BRAND.name} does not sell, rent, or trade your personal information to third parties for their marketing purposes. We only share your information as described in this Privacy Policy.
                 </p>
               </div>
             </div>
@@ -408,7 +408,7 @@ const PrivacyPolicyPage = () => {
         <>
           <h4 className="text-lg font-semibold mb-2">Transfer Mechanisms</h4>
           <p className="mb-4">
-            Draft&Sign is based in the United States and processes data on servers located in various countries. When we transfer personal data from the European Economic Area (EEA), United Kingdom, or Switzerland to countries without an adequacy decision, we use these legal mechanisms:
+            {BRAND.name} is based in the United States and processes data on servers located in various countries. When we transfer personal data from the European Economic Area (EEA), United Kingdom, or Switzerland to countries without an adequacy decision, we use these legal mechanisms:
           </p>
           <ul className="list-disc pl-6 mb-4">
             <li><strong>Adequacy Decisions:</strong> Transfers to countries with adequate protection (EU Commission approved)</li>
@@ -819,7 +819,7 @@ const PrivacyPolicyPage = () => {
             For users in the European Union, our EU representative pursuant to Article 27 of the GDPR is:
           </p>
           <div className="bg-gray-50 p-4 rounded-lg mb-4">
-            <p className="mb-1"><strong>Name:</strong> Draft&Sign EU Representative</p>
+            <p className="mb-1"><strong>Name:</strong> {BRAND.name} EU Representative</p>
             <p className="mb-1"><strong>Email:</strong> eu-representative@draftandsign.com</p>
             <p><strong>Address:</strong> 1 Dublin Square, Dublin, Ireland</p>
           </div>
@@ -829,7 +829,7 @@ const PrivacyPolicyPage = () => {
             For users in the United Kingdom, our UK representative pursuant to the UK GDPR is:
           </p>
           <div className="bg-gray-50 p-4 rounded-lg mb-4">
-            <p className="mb-1"><strong>Name:</strong> Draft&Sign UK Representative</p>
+            <p className="mb-1"><strong>Name:</strong> {BRAND.name} UK Representative</p>
             <p className="mb-1"><strong>Email:</strong> uk-representative@draftandsign.com</p>
             <p><strong>Address:</strong> 1 London Bridge, London, UK</p>
           </div>
@@ -946,7 +946,7 @@ const PrivacyPolicyPage = () => {
             <div className="flex items-center gap-3 mb-4 bg-blue-50 p-4 rounded-lg">
               <Shield className="h-6 w-6 text-blue-600 flex-shrink-0" />
               <p className="text-blue-800">
-                This Privacy Policy explains how Draft&Sign collects, uses, and protects your personal information when you use our e-signature, PDF tools, document management, and related services.
+                This Privacy Policy explains how {BRAND.name} collects, uses, and protects your personal information when you use our e-signature, PDF tools, document management, and related services.
               </p>
             </div>
           </div>
@@ -982,7 +982,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <h3 className="text-lg font-semibold text-green-800 mb-2">Our Commitment to Data Security</h3>
                 <p className="text-green-700">
-                  Draft&Sign employs industry-standard security measures to protect your personal information, including 256-bit encryption, secure data centers, and strict access controls. We regularly review and update our security practices to maintain the highest standards of data protection.
+                  {BRAND.name} employs industry-standard security measures to protect your personal information, including 256-bit encryption, secure data centers, and strict access controls. We regularly review and update our security practices to maintain the highest standards of data protection.
                 </p>
               </div>
             </div>
@@ -1008,7 +1008,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <h3 className="text-lg font-semibold text-yellow-800 mb-2">Notice to International Users</h3>
                 <p className="text-yellow-700">
-                  Draft&Sign is based in the United States. If you are accessing our Services from outside the United States, please be aware that your information may be transferred to, stored, and processed in the United States and other countries. We implement appropriate safeguards for international data transfers as described in this Privacy Policy.
+                  {BRAND.name} is based in the United States. If you are accessing our Services from outside the United States, please be aware that your information may be transferred to, stored, and processed in the United States and other countries. We implement appropriate safeguards for international data transfers as described in this Privacy Policy.
                 </p>
               </div>
             </div>
@@ -1021,7 +1021,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <h3 className="text-lg font-semibold text-red-800 mb-2">Your Consent</h3>
                 <p className="text-red-700">
-                  By using Draft&Sign services, you consent to the collection, use, and sharing of your information as described in this Privacy Policy. If you do not agree with our policies and practices, please do not use our services.
+                  By using {BRAND.name} services, you consent to the collection, use, and sharing of your information as described in this Privacy Policy. If you do not agree with our policies and practices, please do not use our services.
                 </p>
               </div>
             </div>

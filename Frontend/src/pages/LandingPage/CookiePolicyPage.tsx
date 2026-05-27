@@ -25,7 +25,7 @@ const CookiePolicyPage = () => {
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">Overview</h2>
               <p>
                 This Cookie Policy explains what cookies are, how we use them on
-                Draft&Sign, and your choices regarding cookies. For details on how we
+                {BRAND.name}, and your choices regarding cookies. For details on how we
                 process personal data, see our{' '}
                 <Link to="/privacy-policy" className="text-primary-600 hover:text-primary-700 font-medium">
                   Privacy Policy

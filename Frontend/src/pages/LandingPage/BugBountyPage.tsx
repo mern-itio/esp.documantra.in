@@ -425,7 +425,7 @@ const BugBountyPage = () => {
               <div>
                 <h3 className="text-lg font-semibold text-[#260559]-800 mb-2">Safe Harbor Protection</h3>
                 <p className="text-[#260559]-700">
-                  Draft&Sign provides "Safe Harbor" for security researchers who:
+                  {BRAND.name} provides "Safe Harbor" for security researchers who:
                 </p>
                 <ul className="list-disc pl-6 mt-2 space-y-1 text-[#260559]-700">
                   <li>Make a good faith effort to avoid privacy violations, destruction of data, and interruption or degradation of our services</li>

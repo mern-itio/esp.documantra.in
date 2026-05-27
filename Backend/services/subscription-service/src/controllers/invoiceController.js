@@ -221,7 +221,7 @@ const generateInvoicePdfBuffer = (invoice, type = 'invoice') =>
       // Company (Cursor) block
       doc
         .font('Helvetica-Bold')
-        .text('Draft&Sign', rightX, topY);
+        .text(process.env.APP_NAME || 'Draft&Sign', rightX, topY);
       doc
         .font('Helvetica')
         .text('ITIO Innovex Pvt Ltd', rightX, topY + 12)

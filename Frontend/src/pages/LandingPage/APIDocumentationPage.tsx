@@ -159,7 +159,7 @@ app.post('/webhook', (req, res) => {
           <div className="max-w-4xl">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">API Documentation</h1>
             <p className="text-xl text-primary-100 mb-6">
-              Integrate Draft&Sign's powerful document and e-signature capabilities directly into your applications with our comprehensive API.
+              Integrate {BRAND.name}'s powerful document and e-signature capabilities directly into your applications with our comprehensive API.
             </p>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
@@ -337,9 +337,9 @@ app.post('/webhook', (req, res) => {
             {activeTab === 'overview' && (
               <div className="space-y-8">
                 <div className="bg-white rounded-xl shadow-md p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Getting Started with Draft&Sign API</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Getting Started with {BRAND.name} API</h2>
                   <p className="text-gray-600 mb-6">
-                    The Draft&Sign API allows you to integrate our document and e-signature capabilities directly into your applications. 
+                    The {BRAND.name} API allows you to integrate our document and e-signature capabilities directly into your applications. 
                     This guide will help you get started with the basics of our API.
                   </p>
 
@@ -526,7 +526,7 @@ app.post('/webhook', (req, res) => {
                 <div className="bg-white rounded-xl shadow-md p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">API Reference</h2>
                   <p className="text-gray-600 mb-8">
-                    Explore our comprehensive API endpoints and learn how to integrate Draft&Sign into your applications.
+                    Explore our comprehensive API endpoints and learn how to integrate {BRAND.name} into your applications.
                   </p>
 
                   <div className="space-y-6">
@@ -588,7 +588,7 @@ app.post('/webhook', (req, res) => {
                 <div className="bg-white rounded-xl shadow-md p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">API Guides</h2>
                   <p className="text-gray-600 mb-8">
-                    Step-by-step guides to help you implement common workflows with the Draft&Sign API.
+                    Step-by-step guides to help you implement common workflows with the {BRAND.name} API.
                   </p>
 
                   <div className="grid md:grid-cols-2 gap-6">
@@ -840,7 +840,7 @@ app.post('/webhook', (req, res) => {
             <div>
               <h2 className="text-2xl font-bold mb-4">Ready to Integrate?</h2>
               <p className="text-primary-100 mb-6">
-                Get started with the Draft&Sign API today. Sign up for a free account to receive your API key and start building.
+                Get started with the {BRAND.name} API today. Sign up for a free account to receive your API key and start building.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl">

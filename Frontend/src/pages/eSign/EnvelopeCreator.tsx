@@ -212,7 +212,7 @@ const EnvelopeCreator: React.FC = () => {
           setDocuments([newDocument]);
           setEnvelopeData(prev => ({
             ...prev,
-            subject: prev.subject || `Complete with Draft&Sign: ${file.name}`
+            subject: prev.subject || `Complete with {BRAND.name}: ${file.name}`
           }));
 
           navigate(location.pathname, { replace: true, state: null });
@@ -260,7 +260,7 @@ const EnvelopeCreator: React.FC = () => {
                 setDocuments([newDocument]);
                 setEnvelopeData(prev => ({
                   ...prev,
-                  subject: prev.subject || `Complete with Draft&Sign: ${file.name}`
+                  subject: prev.subject || `Complete with {BRAND.name}: ${file.name}`
                 }));
 
                 localStorage.removeItem('pendingDocumentId');
@@ -281,7 +281,7 @@ const EnvelopeCreator: React.FC = () => {
 
   useEffect(() => {
     if (documents?.length > 0 && !documentTitle) {
-      const defaultTitle = `Complete with Draft&Sign: ${documents[0]?.name || 'Document'}`;
+      const defaultTitle = `Complete with {BRAND.name}: ${documents[0]?.name || 'Document'}`;
       setDocumentTitle(defaultTitle);
       setTitleInput(defaultTitle);
       if (!envelopeData.subject) {
@@ -6201,7 +6201,7 @@ const EnvelopeCreator: React.FC = () => {
                       if (e.key === 'Enter') {
                         e.currentTarget.blur();
                       } else if (e.key === 'Escape') {
-                        setTitleInput(documentTitle || `Complete with Draft&Sign: ${documents?.[0]?.name || 'Document'}`);
+                        setTitleInput(documentTitle || `Complete with {BRAND.name}: ${documents?.[0]?.name || 'Document'}`);
                         setIsEditingTitle(false);
                       }
                     }}
@@ -6213,14 +6213,14 @@ const EnvelopeCreator: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <h1 className="text-base font-medium text-foreground">
                     {documents?.length > 0
-                      ? (documentTitle || `Complete with Draft&Sign: ${documents?.[0]?.name || 'Document'}`)
+                      ? (documentTitle || `Complete with {BRAND.name}: ${documents?.[0]?.name || 'Document'}`)
                       : 'Upload a Document and Add Envelope Recipients'}
                   </h1>
                   {documents?.length > 0 && (
                     <button
                       data-tour="ec-edit-title"
                       onClick={() => {
-                        const currentTitle = documentTitle || `Complete with Draft&Sign: ${documents?.[0]?.name || 'Document'}`;
+                        const currentTitle = documentTitle || `Complete with {BRAND.name}: ${documents?.[0]?.name || 'Document'}`;
                         setTitleInput(currentTitle);
                         setIsEditingTitle(true);
                         setTimeout(() => titleInputRef.current?.focus(), 0);

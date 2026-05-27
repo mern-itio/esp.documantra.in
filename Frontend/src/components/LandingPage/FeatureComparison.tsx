@@ -27,7 +27,7 @@ const FeatureComparison = () => {
             Why Choose DraftnSign?
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            See how Draft&Sign compares to other document management platforms
+            See how {BRAND.name} compares to other document management platforms
           </p>
         </div>
 

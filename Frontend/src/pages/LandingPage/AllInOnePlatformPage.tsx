@@ -206,7 +206,7 @@ const AllInOnePlatformPage = () => {
               Complete Document Lifecycle <span className="gradient-text">Management</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              From creation to signature, Draft&Sign handles every aspect of your document workflow in one integrated platform. No more juggling multiple tools or subscriptions.
+              From creation to signature, {BRAND.name} handles every aspect of your document workflow in one integrated platform. No more juggling multiple tools or subscriptions.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link
@@ -237,7 +237,7 @@ const AllInOnePlatformPage = () => {
               One Platform, Complete Solution
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Draft&Sign combines all the tools you need for document management in a single, intuitive platform.
+              {BRAND.name} combines all the tools you need for document management in a single, intuitive platform.
             </p>
           </div>
 
@@ -326,7 +326,7 @@ const AllInOnePlatformPage = () => {
               Real-World Use Cases
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how organizations use Draft&Sign to streamline their document processes
+              See how organizations use {BRAND.name} to streamline their document processes
             </p>
           </div>
 
@@ -359,7 +359,7 @@ const AllInOnePlatformPage = () => {
               Seamless Integrations
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Draft&Sign connects with your favorite tools to create a unified workflow
+              {BRAND.name} connects with your favorite tools to create a unified workflow
             </p>
           </div>
 
@@ -395,7 +395,7 @@ const AllInOnePlatformPage = () => {
                 Developer-Friendly API
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Integrate Draft&Sign's powerful features directly into your applications with our comprehensive API. Build custom document workflows that fit your exact needs.
+                Integrate {BRAND.name}'s powerful features directly into your applications with our comprehensive API. Build custom document workflows that fit your exact needs.
               </p>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
@@ -577,7 +577,7 @@ sendDocument();`}</code>
               Calculate Your Savings
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how much you can save by switching to Draft&Sign's all-in-one platform
+              See how much you can save by switching to {BRAND.name}'s all-in-one platform
             </p>
           </div>
 
@@ -610,7 +610,7 @@ sendDocument();`}</code>
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">Draft&Sign All-in-One Cost</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-6">{BRAND.name} All-in-One Cost</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-3 bg-primary-50 rounded-lg">
                     <span className="font-medium">Free Plan</span>
@@ -659,7 +659,7 @@ sendDocument();`}</code>
                 Global Accessibility & Compliance
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Draft&Sign's platform is designed to be accessible worldwide, with compliance features for 40+ countries and support for multiple languages.
+                {BRAND.name}'s platform is designed to be accessible worldwide, with compliance features for 40+ countries and support for multiple languages.
               </p>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
@@ -755,7 +755,7 @@ sendDocument();`}</code>
               Detailed Use Cases
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how Draft&Sign's all-in-one platform transforms document workflows
+              See how {BRAND.name}'s all-in-one platform transforms document workflows
             </p>
           </div>
 
@@ -793,7 +793,7 @@ sendDocument();`}</code>
               Ready to Streamline Your Document Workflow?
             </h2>
             <p className="text-xl text-primary-100 mb-8 leading-relaxed">
-              Join thousands of organizations who trust Draft&Sign's all-in-one platform for their document management,
+              Join thousands of organizations who trust {BRAND.name}'s all-in-one platform for their document management,
               e-signature, and legal template needs.
             </p>
 

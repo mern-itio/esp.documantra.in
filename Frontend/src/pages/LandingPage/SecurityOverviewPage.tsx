@@ -202,7 +202,7 @@ const SecurityOverviewPage = () => {
             <div className="md:w-2/3">
               <h1 className="text-3xl md:text-4xl font-bold mb-4">Enterprise-Grade Security</h1>
               <p className="text-xl text-primary-100 mb-6">
-                Draft&Sign implements industry-leading security measures to protect your documents, data, and signatures. Our comprehensive security program ensures the confidentiality, integrity, and availability of your information.
+                {BRAND.name} implements industry-leading security measures to protect your documents, data, and signatures. Our comprehensive security program ensures the confidentiality, integrity, and availability of your information.
               </p>
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
@@ -258,7 +258,7 @@ const SecurityOverviewPage = () => {
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Security Certifications & Compliance</h2>
           <p className="text-gray-600 mb-8 max-w-3xl">
-            Draft&Sign maintains compliance with industry-leading security standards and regulations to ensure your data is protected according to the highest standards.
+            {BRAND.name} maintains compliance with industry-leading security standards and regulations to ensure your data is protected according to the highest standards.
           </p>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -341,7 +341,7 @@ const SecurityOverviewPage = () => {
             <div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Privacy by Design</h3>
               <p className="text-gray-600 mb-4">
-                Draft&Sign implements privacy by design principles, ensuring that privacy considerations are built into our systems and processes from the ground up.
+                {BRAND.name} implements privacy by design principles, ensuring that privacy considerations are built into our systems and processes from the ground up.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -438,11 +438,11 @@ const SecurityOverviewPage = () => {
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">How does Draft&Sign protect my documents?</h3>
+                <h3 className="font-semibold text-gray-900">How does {BRAND.name} protect my documents?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Draft&Sign protects your documents using multiple layers of security. All documents are encrypted both in transit and at rest using 256-bit AES encryption. Access to documents is controlled through strict authentication and authorization mechanisms. Our infrastructure is hosted in secure, SOC 2 Type II certified data centers with comprehensive physical and network security measures.
+                  {BRAND.name} protects your documents using multiple layers of security. All documents are encrypted both in transit and at rest using 256-bit AES encryption. Access to documents is controlled through strict authentication and authorization mechanisms. Our infrastructure is hosted in secure, SOC 2 Type II certified data centers with comprehensive physical and network security measures.
                 </p>
               </div>
             </div>
@@ -453,18 +453,18 @@ const SecurityOverviewPage = () => {
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Yes, Draft&Sign's electronic signatures are both legally binding and secure. Our e-signature solution complies with major e-signature laws worldwide, including ESIGN Act, UETA, and eIDAS. Each signature is protected by tamper-evident technology that detects any changes made to the document after signing. We maintain comprehensive audit trails that record all actions taken on a document, providing court-admissible evidence of the signing process.
+                  Yes, {BRAND.name}'s electronic signatures are both legally binding and secure. Our e-signature solution complies with major e-signature laws worldwide, including ESIGN Act, UETA, and eIDAS. Each signature is protected by tamper-evident technology that detects any changes made to the document after signing. We maintain comprehensive audit trails that record all actions taken on a document, providing court-admissible evidence of the signing process.
                 </p>
               </div>
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">How does Draft&Sign handle user authentication?</h3>
+                <h3 className="font-semibold text-gray-900">How does {BRAND.name} handle user authentication?</h3>
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Draft&Sign implements robust authentication mechanisms to verify user identities. We support strong password policies, multi-factor authentication (MFA), and single sign-on (SSO) integration with major identity providers. For document signers, we offer multiple authentication methods including email verification, SMS verification, knowledge-based authentication (KBA), and ID verification options to ensure the right person is signing your documents.
+                  {BRAND.name} implements robust authentication mechanisms to verify user identities. We support strong password policies, multi-factor authentication (MFA), and single sign-on (SSO) integration with major identity providers. For document signers, we offer multiple authentication methods including email verification, SMS verification, knowledge-based authentication (KBA), and ID verification options to ensure the right person is signing your documents.
                 </p>
               </div>
             </div>
@@ -475,7 +475,7 @@ const SecurityOverviewPage = () => {
               </div>
               <div className="p-4">
                 <p className="text-gray-700">
-                  Draft&Sign maintains a comprehensive security incident response plan. Our security team monitors our systems 24/7 for potential security incidents. If an incident occurs, we follow a documented process for containment, eradication, recovery, and notification. We will promptly notify affected customers in accordance with our contractual obligations and applicable laws, providing transparent information about the incident and our response.
+                  {BRAND.name} maintains a comprehensive security incident response plan. Our security team monitors our systems 24/7 for potential security incidents. If an incident occurs, we follow a documented process for containment, eradication, recovery, and notification. We will promptly notify affected customers in accordance with our contractual obligations and applicable laws, providing transparent information about the incident and our response.
                 </p>
               </div>
             </div>
@@ -497,7 +497,7 @@ const SecurityOverviewPage = () => {
         <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 text-white text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Experience Enterprise-Grade Security?</h2>
           <p className="text-xl text-primary-100 max-w-3xl mx-auto mb-8">
-            Join thousands of organizations that trust Draft&Sign to protect their most sensitive documents and data.
+            Join thousands of organizations that trust {BRAND.name} to protect their most sensitive documents and data.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">

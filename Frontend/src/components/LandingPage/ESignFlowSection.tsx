@@ -257,7 +257,7 @@ const ESignFlowSection = () => {
             <div className="flex h-[72%] w-[82%] items-center justify-center">
               <img
                 src="./Logo.png"
-                alt="Draft&Sign logo"
+                alt="{BRAND.name} logo"
                 className="h-25 w-auto opacity-90"
               />
             </div>

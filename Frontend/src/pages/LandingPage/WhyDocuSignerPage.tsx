@@ -82,7 +82,7 @@ const WhyDocuSignerPage = () => {
   const competitiveAdvantages = [
     {
       title: "Free Forever Plan",
-      description: "Unlike competitors who only offer limited trials, Draft&Sign provides a genuinely useful free plan with 10 envelopes per month, full access to PDF tools, and legal templates.",
+      description: "Unlike competitors who only offer limited trials, {BRAND.name} provides a genuinely useful free plan with 10 envelopes per month, full access to PDF tools, and legal templates.",
       icon: Heart
     },
     {
@@ -114,19 +114,19 @@ const WhyDocuSignerPage = () => {
 
   const testimonials = [
     {
-      quote: "We switched from DocuSign to Draft&Sign and saved over 60% on our annual costs while gaining access to powerful PDF tools we were paying for separately.",
+      quote: "We switched from DocuSign to {BRAND.name} and saved over 60% on our annual costs while gaining access to powerful PDF tools we were paying for separately.",
       author: "Sarah Johnson",
       position: "Operations Director",
       company: "TechCorp Inc."
     },
     {
-      quote: "The legal templates alone make Draft&Sign worth it. The platform is intuitive, and the pricing is much more reasonable than what we were paying with our previous provider.",
+      quote: "The legal templates alone make {BRAND.name} worth it. The platform is intuitive, and the pricing is much more reasonable than what we were paying with our previous provider.",
       author: "Michael Chen",
       position: "Legal Counsel",
       company: "Horizon Financial"
     },
     {
-      quote: "The free PDF tools and AI-powered features have streamlined our entire document workflow. Draft&Sign has become an essential part of our business operations.",
+      quote: "The free PDF tools and AI-powered features have streamlined our entire document workflow. {BRAND.name} has become an essential part of our business operations.",
       author: "Emily Rodriguez",
       position: "HR Manager",
       company: "Global Solutions"
@@ -147,10 +147,10 @@ const WhyDocuSignerPage = () => {
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Choose <span className="gradient-text">Draft&Sign</span>?
+              Why Choose <span className="gradient-text">{BRAND.name}</span>?
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Draft&Sign is more than just e-signatures. It's a complete document ecosystem designed to streamline your workflow, reduce costs, and enhance productivity.
+              {BRAND.name} is more than just e-signatures. It's a complete document ecosystem designed to streamline your workflow, reduce costs, and enhance productivity.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link
@@ -181,7 +181,7 @@ const WhyDocuSignerPage = () => {
               Key Features That Set Us Apart
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Draft&Sign combines powerful features with intuitive design to deliver an unmatched document management experience.
+              {BRAND.name} combines powerful features with intuitive design to deliver an unmatched document management experience.
             </p>
           </div>
 
@@ -226,10 +226,10 @@ const WhyDocuSignerPage = () => {
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Why Draft&Sign Outperforms Competitors
+              Why {BRAND.name} Outperforms Competitors
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how Draft&Sign offers more value and better features than other document management platforms.
+              See how {BRAND.name} offers more value and better features than other document management platforms.
             </p>
           </div>
 
@@ -264,7 +264,7 @@ const WhyDocuSignerPage = () => {
               What Our Customers Say
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Thousands of businesses trust Draft&Sign for their document needs.
+              Thousands of businesses trust {BRAND.name} for their document needs.
             </p>
           </div>
 
@@ -297,7 +297,7 @@ const WhyDocuSignerPage = () => {
               Perfect for Every Industry
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Draft&Sign adapts to your specific needs, no matter your industry or use case.
+              {BRAND.name} adapts to your specific needs, no matter your industry or use case.
             </p>
           </div>
 
@@ -522,7 +522,7 @@ const WhyDocuSignerPage = () => {
               Ready to Transform Your Document Workflow?
             </h2>
             <p className="text-xl text-primary-100 mb-8 leading-relaxed">
-              Join thousands of organizations who trust Draft&Sign for their document management,
+              Join thousands of organizations who trust {BRAND.name} for their document management,
               e-signature, and legal template needs.
             </p>
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 const FeatureComparisonPage = () => {
   const competitors = [
-    { key: 'docusigner', name: 'Draft&Sign', color: 'text-primary-600' },
+    { key: 'docusigner', name: '{BRAND.name}', color: 'text-primary-600' },
     { key: 'docusign', name: 'DocuSign', color: 'text-gray-700' },
     { key: 'hellosign', name: 'HelloSign', color: 'text-gray-700' },
     { key: 'adobesign', name: 'Adobe Sign', color: 'text-gray-700' },
@@ -48,13 +48,13 @@ const FeatureComparisonPage = () => {
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Detailed Feature Comparison</h1>
             <p className="text-xl text-gray-600">
-              See how Draft&Sign compares to DocuSign, HelloSign, Adobe Sign, and PandaDoc across features and pricing.
+              See how {BRAND.name} compares to DocuSign, HelloSign, Adobe Sign, and PandaDoc across features and pricing.
             </p>
             <div className="flex gap-3 justify-center mt-8 flex-wrap">
-              <Link to="/draft-n-sign-vs-docusign" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>Draft&Sign vs DocuSign</Link>
-              <Link to="/draft-n-sign-vs-hellosign" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>Draft&Sign vs HelloSign</Link>
-              <Link to="/draft-n-sign-vs-adobesign" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>Draft&Sign vs Adobe Sign</Link>
-              <Link to="/draft-n-sign-vs-pandadoc" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>Draft&Sign vs PandaDoc</Link>
+              <Link to="/draft-n-sign-vs-docusign" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>{BRAND.name} vs DocuSign</Link>
+              <Link to="/draft-n-sign-vs-hellosign" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>{BRAND.name} vs HelloSign</Link>
+              <Link to="/draft-n-sign-vs-adobesign" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>{BRAND.name} vs Adobe Sign</Link>
+              <Link to="/draft-n-sign-vs-pandadoc" className="btn-secondary" style={{borderColor: '#260559', color: '#260559'}}>{BRAND.name} vs PandaDoc</Link>
             </div>
           </div>
         </div>
@@ -138,7 +138,7 @@ const FeatureComparisonPage = () => {
           <div className="bg-gradient-to-r from-[#260559]/90 to-[#260559]/80 rounded-2xl shadow-lg p-8 text-white text-center">
             <h2 className="text-2xl font-bold mb-4">Ready to get started?</h2>
             <p className="text-primary-100 max-w-3xl mx-auto mb-6">
-              Start free, explore all features, and see why teams switch to Draft&Sign.
+              Start free, explore all features, and see why teams switch to {BRAND.name}.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">

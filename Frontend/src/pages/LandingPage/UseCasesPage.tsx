@@ -80,7 +80,7 @@ const UseCasesPage = () => {
               Explore Use Cases
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Real-world ways teams use Draft&Sign to create, manage, and sign documents faster.
+              Real-world ways teams use {BRAND.name} to create, manage, and sign documents faster.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link to="/signup" className="btn-primary inline-flex items-center justify-center gap-2" style={{backgroundColor: '#260559'}}>
@@ -158,7 +158,7 @@ const UseCasesPage = () => {
           <div className="text-center max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to streamline your workflows?</h2>
             <p className="text-xl text-[#CBB9FF] mb-8 leading-relaxed">
-              Join thousands using Draft&Sign across industries to complete documents faster and more securely.
+              Join thousands using {BRAND.name} across industries to complete documents faster and more securely.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
