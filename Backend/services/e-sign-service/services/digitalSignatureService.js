@@ -171,9 +171,17 @@ async function prepareDocumentForFinalSigning(
 ) {
   const docRecord = await Document.findById(documentId);
   if (!docRecord) throw new Error('Document not found');
-  if (!fs.existsSync(docRecord.filePath)) {
+  const localPath = decodeURIComponent(docRecord.filePath.split('/uploads/')[1] || '');
+
+const actualPath = `/app/services/e-sign-service/uploads/${localPath}`;
+
+console.log('Checking actual path:', actualPath);
+
+if (!fs.existsSync(actualPath)) {
     throw new Error('Original document file missing');
-  }
+}
+
+docRecord.filePath = actualPath;
 
   const pdfBuffer = fs.readFileSync(docRecord.filePath);
   const pdfDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
