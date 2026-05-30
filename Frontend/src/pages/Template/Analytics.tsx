@@ -151,12 +151,12 @@ export const Analytics: React.FC = () => {
           const colorClasses = {
             blue: 'bg-blue-50 text-blue-600',
             green: 'bg-green-50 text-green-600',
-            purple: 'bg-purple-50 text-purple-600',
+            purple: 'bg-[#F0FDF4] text-[#155E4B]',
             orange: 'bg-orange-50 text-orange-600'
           };
 
           return (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div key={index} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClasses[metric.color as keyof typeof colorClasses]}`}>
                   <Icon className="w-5 h-5" />
@@ -180,7 +180,7 @@ export const Analytics: React.FC = () => {
       {/* Charts and Data */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Usage Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="lg:col-span-2 bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900">Template Usage Trends</h2>
             <div className="flex items-center space-x-2">
@@ -208,7 +208,7 @@ export const Analytics: React.FC = () => {
           </div>
           
           {/* Mock Chart */}
-          <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+          <div className="h-64 bg-[#F5F2EE] rounded-lg flex items-center justify-center">
             <div className="text-center text-gray-400">
               <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium">Chart Visualization</p>
@@ -218,7 +218,7 @@ export const Analytics: React.FC = () => {
         </div>
 
         {/* Quick Stats */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Quick Stats</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -253,7 +253,7 @@ export const Analytics: React.FC = () => {
       {/* Top Templates and Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Performing Templates */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Top Performing Templates</h2>
           <div className="space-y-4">
             {topTemplates.map((template, index) => (
@@ -276,7 +276,7 @@ export const Analytics: React.FC = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Recent Activity</h2>
           <div className="space-y-4">
             {recentActivity.map((activity, index) => (
@@ -285,7 +285,7 @@ export const Analytics: React.FC = () => {
                   activity.type === 'create' ? 'bg-green-100 text-green-700' :
                   activity.type === 'alert' ? 'bg-orange-100 text-orange-700' :
                   activity.type === 'update' ? 'bg-blue-100 text-blue-700' :
-                  'bg-purple-100 text-purple-700'
+                  'bg-[#DCFCE7] text-[#155E4B]'
                 }`}>
                   {activity.action.charAt(0)}
                 </div>

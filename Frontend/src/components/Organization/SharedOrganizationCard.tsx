@@ -25,14 +25,14 @@ export const SharedOrganizationCard: React.FC<SharedOrganizationCardProps> = ({
       className="group bg-card text-card-foreground rounded-2xl border border-border hover:border-blue-500/50 dark:hover:border-blue-400/40 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden flex flex-col"
     >
       {/* Top accent — blue for shared */}
-      <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+      <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-emerald-500" />
 
       <div className="p-5 flex flex-col flex-1">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Logo / Avatar */}
-            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-sm">
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-sm">
               {organization.logo ? (
                 <img
                   src={organization.logo}

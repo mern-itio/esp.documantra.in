@@ -63,11 +63,11 @@ function FieldRenameSidePanel({
   }, [field.id, field.label, defaultLabel]);
   return (
     <div
-      className="fixed right-0 top-0 z-50 flex h-full w-72 flex-col border-l border-slate-200 bg-white shadow-xl"
+      className="fixed right-0 top-0 z-50 flex h-full w-72 flex-col border-l border-[#E6D8C9] bg-[#F7F3EE] shadow-xl"
       role="dialog"
       aria-labelledby="field-rename-title"
     >
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3">
+      <div className="flex shrink-0 items-center justify-between border-b border-[#E6D8C9] px-4 py-3">
         <h2 id="field-rename-title" className="text-base font-semibold text-slate-800">
           Rename field
         </h2>
@@ -109,7 +109,7 @@ function FieldRenameSidePanel({
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="w-full rounded-lg border border-slate-300 bg-[#F7F3EE] px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#F5F2EE]"
           >
             Cancel
           </button>
@@ -624,7 +624,7 @@ const SignerPage: React.FC = () => {
   // screen while that happens.
   if (!loading && !pdfUrl && !state?.files?.length && !state.fromPlan) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">
+      <div className="flex h-screen items-center justify-center bg-[#F5F2EE] text-sm text-slate-600">
         Redirecting to upload…
       </div>
     );
@@ -695,7 +695,7 @@ const SignerPage: React.FC = () => {
               <div className="relative flex-1 min-h-0 min-w-0">
                 <div
                   ref={pdfContainerRef}
-                  className="absolute inset-0 flex items-center justify-center overflow-hidden bg-white"
+                  className="absolute inset-0 flex items-center justify-center overflow-hidden bg-[#F7F3EE]"
                 >
                   {loading && (
                     <div className="text-slate-500">Preparing document…</div>
@@ -885,13 +885,13 @@ const SignerPage: React.FC = () => {
               </div>
 
               {/* Fixed footer: page nav + signers + Next / Mark Mode */}
-              <footer className="flex h-[120px] shrink-0 items-center justify-between gap-4 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
+              <footer className="flex h-[120px] shrink-0 items-center justify-between gap-4 border-t border-[#E6D8C9] bg-[#F7F3EE] px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage <= 1}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-[#F7F3EE] text-slate-700 shadow-sm hover:bg-[#F5F2EE] disabled:opacity-50 disabled:pointer-events-none"
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="h-5 w-5" />
@@ -903,7 +903,7 @@ const SignerPage: React.FC = () => {
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage >= totalPages}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-[#F7F3EE] text-slate-700 shadow-sm hover:bg-[#F5F2EE] disabled:opacity-50 disabled:pointer-events-none"
                     aria-label="Next page"
                   >
                     <ChevronRight className="h-5 w-5" />
@@ -1010,7 +1010,7 @@ const SignerPage: React.FC = () => {
       {(signers.length === 0 || showRecipientModal) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
           <div
-            className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative"
+            className="bg-[#F7F3EE] rounded-xl shadow-2xl w-full max-w-md p-6 relative"
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-recipient-modal-title"

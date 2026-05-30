@@ -26,7 +26,7 @@ const VerificationSection = () => {
   ]
 
   return (
-    <section className="section-padding bg-white">
+    <section className="section-padding bg-[#F7F3EE]">
       <div className="container-max">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           {/* Left: copy */}
@@ -54,7 +54,7 @@ const VerificationSection = () => {
                 return (
                   <div
                     key={item.title}
-                    className="flex items-start gap-3 rounded-xl bg-white/80 border border-slate-200/80 p-4 shadow-sm"
+                    className="flex items-start gap-3 rounded-xl bg-[#F7F3EE]/80 border border-[#E6D8C9]/80 p-4 shadow-sm"
                   >
                     <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                       <Icon className="h-4 w-4" />
@@ -78,7 +78,7 @@ const VerificationSection = () => {
               </Link>
               <Link
                 to="/login"
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-[#F7F3EE] px-4 py-2 text-sm font-medium text-slate-700 hover:bg-[#F5F2EE]"
               >
                 <PhoneCall className="h-4 w-4 text-slate-500" />
                 Talk to compliance

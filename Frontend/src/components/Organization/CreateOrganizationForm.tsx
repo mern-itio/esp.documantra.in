@@ -150,12 +150,12 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
           <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full opacity-10"
             style={{ background: 'radial-gradient(circle, #a855f7, transparent)' }} />
           <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full opacity-10"
-            style={{ background: 'radial-gradient(circle, #7c3aed, transparent)' }} />
+            style={{ background: 'radial-gradient(circle, #1B6B57, transparent)' }} />
 
           <div className="relative z-10">
             {/* Brand mark */}
             <div className="flex items-center gap-3 mb-10">
-              <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center backdrop-blur-sm border border-white/20">
+              <div className="w-10 h-10 rounded-xl bg-[#F7F3EE]/15 flex items-center justify-center backdrop-blur-sm border border-white/20">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
               <span className="text-white font-bold text-lg tracking-tight">DraftAndSign</span>
@@ -174,7 +174,7 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
             <div className="space-y-5">
               {FEATURES.map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0 border border-white/15">
+                  <div className="w-8 h-8 rounded-lg bg-[#F7F3EE]/10 flex items-center justify-center flex-shrink-0 border border-white/15">
                     <Icon className="w-4 h-4 text-purple-300" />
                   </div>
                   <div>
@@ -189,9 +189,9 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
           {/* Bottom step indicator */}
           {/* <div className="relative z-10 mt-10">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-1.5 rounded-full bg-white" />
-              <div className="w-2 h-1.5 rounded-full bg-white/30" />
-              <div className="w-2 h-1.5 rounded-full bg-white/30" />
+              <div className="w-6 h-1.5 rounded-full bg-[#F7F3EE]" />
+              <div className="w-2 h-1.5 rounded-full bg-[#F7F3EE]/30" />
+              <div className="w-2 h-1.5 rounded-full bg-[#F7F3EE]/30" />
             </div>
             <p className="text-purple-300 text-xs mt-2">Step 1 of 3 — Organization Setup</p>
           </div> */}

@@ -48,7 +48,7 @@ export const BulkTemplateActions: React.FC<BulkTemplateActionsProps> = ({
     { value: 'delete', label: 'Delete Templates', icon: Trash2, color: 'red' },
     { value: 'export', label: 'Export Templates', icon: Download, color: 'blue' },
     { value: 'duplicate', label: 'Duplicate Templates', icon: Copy, color: 'purple' },
-    { value: 'tag', label: 'Add Tags', icon: Tag, color: 'indigo' }
+    { value: 'tag', label: 'Add Tags', icon: Tag, color: 'emerald' }
   ];
 
   const filteredTemplates = templates.filter(template => {
@@ -121,7 +121,7 @@ export const BulkTemplateActions: React.FC<BulkTemplateActionsProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">Bulk Template Management</h2>
         <div className="text-sm text-gray-500">
@@ -182,7 +182,7 @@ export const BulkTemplateActions: React.FC<BulkTemplateActionsProps> = ({
       {/* Template List */}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-[#F5F2EE]">
             <tr>
               <th className="px-6 py-3 text-left">
                 <button
@@ -205,9 +205,9 @@ export const BulkTemplateActions: React.FC<BulkTemplateActionsProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-[#F7F3EE] divide-y divide-gray-200">
             {filteredTemplates.map((template) => (
-              <tr key={template.id} className={`hover:bg-gray-50 ${
+              <tr key={template.id} className={`hover:bg-[#F5F2EE] ${
                 selectedTemplates.includes(template.id) ? 'bg-blue-50' : ''
               }`}>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -228,7 +228,7 @@ export const BulkTemplateActions: React.FC<BulkTemplateActionsProps> = ({
                       <div className="text-sm font-medium text-gray-900 flex items-center">
                         {template.name}
                         {template.aiGenerated && (
-                          <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">AI</span>
+                          <span className="ml-2 px-2 py-0.5 bg-[#DCFCE7] text-[#155E4B] text-xs rounded-full">AI</span>
                         )}
                       </div>
                       <div className="text-sm text-gray-500">ID: {template.id}</div>
@@ -270,7 +270,7 @@ export const BulkTemplateActions: React.FC<BulkTemplateActionsProps> = ({
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-xl p-6 w-full max-w-md">
             <div className="flex items-center mb-4">
               <AlertTriangle className="w-6 h-6 text-red-600 mr-3" />
               <h3 className="text-lg font-semibold text-gray-900">Confirm Bulk Action</h3>

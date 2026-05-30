@@ -288,7 +288,7 @@ const PdfBookmarksPage: React.FC = () => {
   const renderBookmarkTree = (bookmarks: BookmarkType[], level = 0) => {
     return bookmarks.map((bookmark) => (
       <div key={bookmark.id} className="ml-4">
-        <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md">
+        <div className="flex items-center justify-between p-2 hover:bg-[#F5F2EE] rounded-md">
           <div className="flex items-center space-x-2">
             {bookmark.children && bookmark.children.length > 0 && (
               <button

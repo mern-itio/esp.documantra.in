@@ -192,7 +192,7 @@ const DocumentTracking: React.FC = () => {
       case 'edit': return <Edit className="w-4 h-4 text-yellow-500" />;
       case 'delete': return <Trash2 className="w-4 h-4 text-red-500" />;
       case 'upload': return <FileUp className="w-4 h-4 text-purple-500" />;
-      case 'permission_set': return <FileText className="w-4 h-4 text-indigo-500" />;
+      case 'permission_set': return <FileText className="w-4 h-4 text-emerald-500" />;
       case 'metadata_removed': return <FileText className="w-4 h-4 text-orange-500" />;
       case 'compressed': return <FileText className="w-4 h-4 text-teal-500" />;
       case 'optimized': return <FileText className="w-4 h-4 text-pink-500" />;
@@ -204,7 +204,7 @@ const DocumentTracking: React.FC = () => {
     const colors = {
       automatic: 'bg-blue-100 text-blue-800',
       manual: 'bg-green-100 text-green-800',
-      shared_link: 'bg-purple-100 text-purple-800'
+      shared_link: 'bg-[#DCFCE7] text-purple-800'
     };
 
     return (
@@ -355,7 +355,7 @@ const DocumentTracking: React.FC = () => {
                     {dashboardStats.stats.recentActivity.map((activity, index) => {
                       const userInfo = getUserInfo(activity.userId);
                       return (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div key={index} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
                           <div className="flex items-center space-x-3">
                             {getActionIcon(activity.action)}
                             <div>
@@ -385,7 +385,7 @@ const DocumentTracking: React.FC = () => {
                 <CardContent>
                   <div className="space-y-4">
                     {dashboardStats.stats.topDocuments.map((doc, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={index} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
                         <div className="flex items-center space-x-3">
                           <FileText className="w-4 h-4 text-gray-500" />
                           <div>
@@ -619,7 +619,7 @@ const DocumentTracking: React.FC = () => {
                   {auditTrail.map((record) => {
                     const userInfo = getUserInfo(record.userId);
                     return (
-                      <div key={record._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={record._id} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
                         <div className="flex items-center space-x-3">
                           {getActionIcon(record.action)}
                           <div>

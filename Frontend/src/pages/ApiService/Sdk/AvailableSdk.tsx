@@ -239,7 +239,7 @@ func main() {
                 className={`w-full text-left p-4 rounded-lg border transition-colors ${
                   selectedSDK.language === sdk.language
                     ? 'border-primary-300 bg-primary-50'
-                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                    : 'border-gray-200 hover:border-gray-300 bg-[#F7F3EE]'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -272,7 +272,7 @@ func main() {
 
         {/* SDK Details */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
                 <span className="text-4xl">{getLanguageIcon(selectedSDK.language)}</span>
@@ -295,15 +295,15 @@ func main() {
 
             {/* Quick Stats */}
             <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-[#F5F2EE] rounded-lg">
                 <div className="text-2xl font-bold text-gray-900">{selectedSDK.downloads.toLocaleString()}</div>
                 <div className="text-sm text-gray-600">Downloads</div>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-[#F5F2EE] rounded-lg">
                 <div className="text-2xl font-bold text-gray-900">{selectedSDK.rating}</div>
                 <div className="text-sm text-gray-600">Rating</div>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-[#F5F2EE] rounded-lg">
                 <div className="text-2xl font-bold text-gray-900">v{selectedSDK.version}</div>
                 <div className="text-sm text-gray-600">Latest Version</div>
               </div>
@@ -429,7 +429,7 @@ func main() {
                       <p className="text-sm text-gray-700">Added support for bulk envelope operations and improved error handling</p>
                     </div>
                   </div>
-                  <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-start space-x-3 p-3 bg-[#F5F2EE] rounded-lg">
                     <div className="w-2 h-2 bg-gray-400 rounded-full mt-2"></div>
                     <div>
                       <div className="flex items-center space-x-2 mb-1">
@@ -449,10 +449,10 @@ func main() {
       {/* SDK Comparison */}
       <div className="mt-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">SDK Comparison</h2>
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-[#F5F2EE]">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Language</th>
                   <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">Version</th>
@@ -464,7 +464,7 @@ func main() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {sdks.map((sdk) => (
-                  <tr key={sdk.language} className="hover:bg-gray-50">
+                  <tr key={sdk.language} className="hover:bg-[#F5F2EE]">
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-3">
                         <span className="text-xl">{getLanguageIcon(sdk.language)}</span>

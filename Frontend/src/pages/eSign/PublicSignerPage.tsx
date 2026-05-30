@@ -813,7 +813,7 @@ const EnvelopeDetails: React.FC = () => {
 
           <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
             {/* Left: envelope + signers */}
-            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm ring-1 ring-gray-100">
+            <div className="flex flex-col rounded-2xl border border-gray-200 bg-[#F7F3EE] p-6 shadow-sm ring-1 ring-gray-100">
               <div className="flex items-start gap-3 border-b border-gray-100 pb-5">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#260559]/10 text-[#260559]">
                   <Layers className="h-5 w-5" />
@@ -851,7 +851,7 @@ const EnvelopeDetails: React.FC = () => {
                 Signing order
               </p>
               <div className="mt-4 space-y-4">
-                <div className="rounded-xl border border-gray-100 bg-slate-50/80 p-4">
+                <div className="rounded-xl border border-gray-100 bg-[#F5F2EE]/80 p-4">
                   <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <User className="h-3.5 w-3.5 text-[#260559]" />
                     Initial signer (you)
@@ -891,7 +891,7 @@ const EnvelopeDetails: React.FC = () => {
 
             {/* Right: CC + notifications + same link */}
             <div className="flex flex-col rounded-2xl border border-[#260559]/15 bg-[#260559] p-6 text-white shadow-lg">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F7F3EE]/15">
                 <CheckCircle className="h-7 w-7 text-white" />
               </div>
               <h2 className="mt-5 text-xl font-semibold leading-snug">
@@ -904,7 +904,7 @@ const EnvelopeDetails: React.FC = () => {
 
               <ul className="mt-6 space-y-4 text-sm text-white/90">
                 <li className="flex gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F7F3EE]/10">
                     <Bell className="h-4 w-4" />  
                   </span>
                   <span>
@@ -915,7 +915,7 @@ const EnvelopeDetails: React.FC = () => {
                   </span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F7F3EE]/10">
                     <Link2 className="h-4 w-4" />
                   </span>
                   <span>
@@ -947,7 +947,7 @@ const EnvelopeDetails: React.FC = () => {
                         /* ignore */
                       }
                     }}
-                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/25"
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#F7F3EE]/15 px-3 py-2 text-xs font-medium text-white transition hover:bg-[#F7F3EE]/25"
                   >
                     <Copy className="h-3.5 w-3.5" />
                     {reassignLinkCopied ? "Copied" : "Copy link"}
@@ -959,7 +959,7 @@ const EnvelopeDetails: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => window.location.assign("/")}
-                  className="inline-flex w-full items-center justify-center rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-[#260559] shadow-sm transition hover:bg-white/95 sm:w-auto"
+                  className="inline-flex w-full items-center justify-center rounded-lg bg-[#F7F3EE] px-5 py-2.5 text-sm font-semibold text-[#260559] shadow-sm transition hover:bg-[#F7F3EE]/95 sm:w-auto"
                 >
                   Back to Home
                 </button>
@@ -1217,14 +1217,14 @@ const EnvelopeDetails: React.FC = () => {
 
           {showOtherOptions && !showTermsModal && (
             <div ref={otherOptionsRef} className="fixed right-4 top-10 z-50">
-              <div className="w-56 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg max-h-64">
+              <div className="w-56 overflow-auto rounded-md border border-gray-200 bg-[#F7F3EE] shadow-lg max-h-64">
                 <button
                   type="button"
                   onClick={() => {
                     setShowOtherOptions(false);
                     setShowAssignModal(true);
                   }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
                 >
                   Reassign Document
                 </button>
@@ -1234,7 +1234,7 @@ const EnvelopeDetails: React.FC = () => {
                     setShowOtherOptions(false);
                     setShowDeclineModal(true);
                   }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
                 >
                   Reject Request
                 </button>
@@ -1244,7 +1244,7 @@ const EnvelopeDetails: React.FC = () => {
                     setShowOtherOptions(false);
                     setShowSessionInfoModal(true);
                   }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
                 >
                   Session Details
                 </button>
@@ -1261,7 +1261,7 @@ const EnvelopeDetails: React.FC = () => {
           onClick={() => setShowOtherOptions(false)}
         >
           <div
-            className="w-full max-w-[760px] rounded-lg bg-white shadow-2xl"
+            className="w-full max-w-[760px] rounded-lg bg-[#F7F3EE] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-8 pt-7">
@@ -1353,14 +1353,14 @@ const EnvelopeDetails: React.FC = () => {
                   </button>
 
                   {showOtherOptions && (
-                    <div className="absolute right-0 top-full mt-2 z-50 w-56 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg max-h-64">
+                    <div className="absolute right-0 top-full mt-2 z-50 w-56 overflow-auto rounded-md border border-gray-200 bg-[#F7F3EE] shadow-lg max-h-64">
                       <button
                         type="button"
                         onClick={() => {
                           setShowOtherOptions(false);
                           setShowAssignModal(true);
                         }}
-                        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
                       >
                         Reassign Document
                       </button>
@@ -1370,7 +1370,7 @@ const EnvelopeDetails: React.FC = () => {
                           setShowOtherOptions(false);
                           setShowDeclineModal(true);
                         }}
-                        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
                       >
                         Reject Request
                       </button>
@@ -1380,7 +1380,7 @@ const EnvelopeDetails: React.FC = () => {
                           setShowOtherOptions(false);
                           setShowSessionInfoModal(true);
                         }}
-                        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+                        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
                       >
                         Session Details
                       </button>
@@ -1406,7 +1406,7 @@ const EnvelopeDetails: React.FC = () => {
       {showAssignModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-[2px] px-4 py-10">
           <div
-            className="w-full max-w-2xl rounded-lg bg-white shadow-2xl"
+            className="w-full max-w-2xl rounded-lg bg-[#F7F3EE] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b px-8 py-5">
@@ -1478,7 +1478,7 @@ const EnvelopeDetails: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t bg-gray-50 px-8 py-4">
+            <div className="flex items-center justify-between border-t bg-[#F5F2EE] px-8 py-4">
               <button
                 type="button"
                 onClick={submitAssignToSomeoneElse}
@@ -1507,7 +1507,7 @@ const EnvelopeDetails: React.FC = () => {
       {/* ---------- DECLINE TO SIGN MODAL ---------- */}
       {showDeclineModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-[#2b164a]/55 backdrop-blur-[2px] px-4 py-10">
-          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
+          <div className="w-full max-w-3xl rounded-2xl bg-[#F7F3EE] shadow-2xl">
             <div className="flex items-center  border-b border-gray-200 pb-2 justify-between px-10 pt-8">
               <h2 className="thankyou-heading text-xl">
                 Decline to sign
@@ -1574,7 +1574,7 @@ const EnvelopeDetails: React.FC = () => {
                   }, 1400);
                 }}
                 disabled={isDeclineSubmitting || isFinishLaterSubmitting}
-                className="rounded-md border border-[#2b164a]/40 bg-white px-6 py-3 text-base font-medium text-[#2b164a] hover:bg-[#2b164a]/5 disabled:opacity-50"
+                className="rounded-md border border-[#2b164a]/40 bg-[#F7F3EE] px-6 py-3 text-base font-medium text-[#2b164a] hover:bg-[#2b164a]/5 disabled:opacity-50"
               >
                 {isFinishLaterSubmitting ? "Finishing..." : "Finish Later"}
               </button>
@@ -1594,7 +1594,7 @@ const EnvelopeDetails: React.FC = () => {
       {/* ---------- SESSION INFORMATION MODAL ---------- */}
       {showSessionInfoModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-[#2b164a]/55 backdrop-blur-[2px] px-4 py-10">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+          <div className="w-full max-w-2xl rounded-2xl bg-[#F7F3EE] shadow-2xl">
             <div className="flex items-center justify-between px-10 pt-10">
               <h2 className="text-2xl thankyou-heading">
                 Session Information
@@ -1654,7 +1654,7 @@ const EnvelopeDetails: React.FC = () => {
       {/* ---------- AUTH MODAL (Condition 1 UI) ---------- */}
       {!isPreviewMode && showAuthModal && !isAuthenticated && currentAuthMethod && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-[1px] z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-[0_24px_60px_rgba(0,0,0,0.22)] w-full max-w-lg overflow-hidden border border-gray-200">
+          <div className="bg-[#F7F3EE] rounded-lg shadow-[0_24px_60px_rgba(0,0,0,0.22)] w-full max-w-lg overflow-hidden border border-gray-200">
             {/* Header */}
             <div className="px-5 pt-5 pb-4 border-b border-gray-200 bg-emerald-50">
               <div className="flex items-start justify-between gap-4">
@@ -1716,7 +1716,7 @@ const EnvelopeDetails: React.FC = () => {
             {/* Content */}
             <div className="p-5">
               {/* Method Card */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="rounded-2xl border border-gray-200 bg-[#F7F3EE] p-4 shadow-sm">
                 <div className="flex items-start gap-3">
                   <div
                     className={
@@ -1793,7 +1793,7 @@ const EnvelopeDetails: React.FC = () => {
                           requestSkipAuthMethod("Authentication skipped.")
                         }
                         disabled={isVerifying}
-                        className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-[#F7F3EE] px-4 py-2 text-sm font-medium text-gray-700 hover:bg-[#F5F2EE] disabled:opacity-50"
                       >
                         Skip
                       </button>
@@ -1816,7 +1816,7 @@ const EnvelopeDetails: React.FC = () => {
                         Enter the {otpLength}-digit code below.
                       </div>
 
-                      <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                      <div className="rounded-2xl border border-gray-200 bg-[#F7F3EE] p-4">
                         <label className="block text-sm font-medium text-gray-700">
                           One-time passcode
                         </label>
@@ -1845,7 +1845,7 @@ const EnvelopeDetails: React.FC = () => {
                             )
                           }
                           disabled={isVerifying}
-                          className="inline-flex items-center justify-center rounded-xl border border-[#260559]/35 bg-white px-4 py-2 text-sm font-medium text-[#260559] hover:bg-[#260559]/5 disabled:opacity-50"
+                          className="inline-flex items-center justify-center rounded-xl border border-[#260559]/35 bg-[#F7F3EE] px-4 py-2 text-sm font-medium text-[#260559] hover:bg-[#260559]/5 disabled:opacity-50"
                         >
                           Skip
                         </button>
@@ -1869,7 +1869,7 @@ const EnvelopeDetails: React.FC = () => {
                       </div>
 
                       {verificationUrl && (
-                        <div className="rounded-xl border border-gray-200 bg-white p-4">
+                        <div className="rounded-xl border border-gray-200 bg-[#F7F3EE] p-4">
                           <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0">
                               <div className="text-sm font-medium text-gray-900">
@@ -1908,7 +1908,7 @@ const EnvelopeDetails: React.FC = () => {
                             setVerificationUrl("");
                             setRedirectCountdown(5);
                           }}
-                          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-[#F7F3EE] px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-[#F5F2EE]"
                         >
                           Back
                         </button>
@@ -1919,7 +1919,7 @@ const EnvelopeDetails: React.FC = () => {
                               "You chose to skip this verification method."
                             )
                           }
-                          className="inline-flex items-center justify-center rounded-lg border border-[#260559]/40 bg-white px-4 py-2.5 text-sm font-medium text-[#260559] hover:bg-[#260559]/5"
+                          className="inline-flex items-center justify-center rounded-lg border border-[#260559]/40 bg-[#F7F3EE] px-4 py-2.5 text-sm font-medium text-[#260559] hover:bg-[#260559]/5"
                         >
                           Skip
                         </button>
@@ -1930,7 +1930,7 @@ const EnvelopeDetails: React.FC = () => {
               )}
 
               {authStatus === "verifying" && (
-                <div className="mt-6 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-4">
+                <div className="mt-6 flex items-center gap-3 rounded-xl border border-gray-200 bg-[#F7F3EE] px-4 py-4">
                   <RefreshCw className="h-5 w-5 text-[#260559] animate-spin" />
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-900">
@@ -1950,7 +1950,7 @@ const EnvelopeDetails: React.FC = () => {
       {/* ---------- SKIP AUTH WARNING MODAL ---------- */}
       {showSkipWarningModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-[2px] px-4 py-10">
-          <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl border border-gray-200">
+          <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-[#F7F3EE] shadow-2xl border border-gray-200">
             <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-200">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
@@ -1987,14 +1987,14 @@ const EnvelopeDetails: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center justify-end gap-3 bg-[#F5F2EE] px-6 py-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => {
                   setShowSkipWarningModal(false);
                   setPendingSkipReason("");
                 }}
-                className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-[#F7F3EE] px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-[#F5F2EE]"
               >
                 Cancel
               </button>

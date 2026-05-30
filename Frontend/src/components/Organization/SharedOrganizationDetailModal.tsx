@@ -162,12 +162,12 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
         onClick={(e) => e.stopPropagation()}
       >
         {/* Blue accent top bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 to-indigo-500 flex-shrink-0" />
+        <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 to-emerald-500 flex-shrink-0" />
 
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-5 pb-4 flex-shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-sm">
+            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-sm">
               {organization.logo ? (
                 <img
                   src={organization.logo}
@@ -211,7 +211,7 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
                     Verified
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">
                   <Users className="w-3 h-3" />
                   {roleName}
                 </span>
@@ -305,20 +305,20 @@ export const SharedOrganizationDetailModal: React.FC<SharedOrganizationDetailMod
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
                   Your Access
                 </p>
-                <div className="bg-indigo-50 border border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900 rounded-xl p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                <div className="bg-emerald-50 border border-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-900 rounded-xl p-4 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600 dark:bg-emerald-500 flex items-center justify-center flex-shrink-0">
                     <Users className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-indigo-900 dark:text-indigo-100">{roleName}</p>
-                    <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-0.5">
+                    <p className="text-sm font-bold text-emerald-900 dark:text-emerald-100">{roleName}</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-300 mt-0.5">
                       {permissions
                         ? `${enabledCount} of ${PERMISSION_CONFIG.length} permissions enabled`
                         : 'Shared organization member'}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-card border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-card border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
                       <Share2 className="w-3 h-3" />
                       Shared
                     </span>

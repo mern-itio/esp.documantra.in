@@ -137,9 +137,9 @@ export const AITemplateStudio: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex bg-gray-50">
+    <div className="h-screen flex bg-[#F5F2EE]">
       {/* Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+      <div className="w-80 bg-[#F7F3EE] border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center mb-4">
             <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center mr-3">
@@ -164,8 +164,8 @@ export const AITemplateStudio: React.FC = () => {
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`w-full flex items-start p-3 text-left rounded-lg transition-colors ${
                       activeTab === tab.id
-                        ? 'bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border border-purple-200'
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        ? 'bg-gradient-to-r from-purple-100 to-blue-100 text-[#155E4B] border border-[#BBF7D0]'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-[#F5F2EE]'
                     }`}
                   >
                     <Icon className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
@@ -208,7 +208,7 @@ export const AITemplateStudio: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Toolbar */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="bg-[#F7F3EE] border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-semibold text-gray-900">
               {tabs.find(t => t.id === activeTab)?.label}
@@ -321,7 +321,7 @@ export const AITemplateStudio: React.FC = () => {
       </div>
 
       {/* AI Insights Panel */}
-      <div className="w-80 bg-white border-l border-gray-200 p-6">
+      <div className="w-80 bg-[#F7F3EE] border-l border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Insights</h2>
         
         {/* Quick Stats */}
@@ -365,7 +365,7 @@ export const AITemplateStudio: React.FC = () => {
             ].map((item, index) => (
               <div key={index} className="flex items-start space-x-3">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  item.type === 'generation' ? 'bg-purple-100' :
+                  item.type === 'generation' ? 'bg-[#DCFCE7]' :
                   item.type === 'detection' ? 'bg-blue-100' :
                   item.type === 'optimization' ? 'bg-green-100' :
                   item.type === 'security' ? 'bg-red-100' :
@@ -373,7 +373,7 @@ export const AITemplateStudio: React.FC = () => {
                   'bg-orange-100'
                 }`}>
                   <Zap className={`w-3 h-3 ${
-                    item.type === 'generation' ? 'text-purple-600' :
+                    item.type === 'generation' ? 'text-[#155E4B]' :
                     item.type === 'detection' ? 'text-blue-600' :
                     item.type === 'optimization' ? 'text-green-600' :
                     item.type === 'security' ? 'text-red-600' :

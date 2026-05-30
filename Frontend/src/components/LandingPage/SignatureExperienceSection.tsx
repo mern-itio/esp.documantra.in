@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 const SignatureExperienceSection = () => {
   return (
-    <section className="section-padding section-bg bg-slate-50">
+    <section className="section-padding section-bg bg-[#F5F2EE]">
       <div className="container-max">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>

@@ -80,9 +80,9 @@ const Main: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#F5F2EE]">
       {/* Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 h-full">
+      <div className="w-80 bg-[#F7F3EE] border-r border-gray-200 h-full">
         <div className="p-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -115,7 +115,7 @@ const Main: React.FC = () => {
                         className={`block px-3 py-2 text-sm rounded-md transition-colors ${
                           isActive(item.href)
                             ? "bg-primary-100 text-primary-700 font-medium"
-                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                            : "text-gray-600 hover:text-gray-900 hover:bg-[#F5F2EE]"
                         }`}
                       >
                         {item.name}
@@ -165,7 +165,7 @@ const DocsOverview: React.FC = () => (
     <div className="grid md:grid-cols-2 gap-6 mb-12">
       <Link
         to="/docs/quickstart"
-        className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
+        className="block p-6 bg-[#F7F3EE] rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           Quick Start Guide
@@ -180,7 +180,7 @@ const DocsOverview: React.FC = () => (
 
       <Link
         to="/docs/api/envelopes"
-        className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
+        className="block p-6 bg-[#F7F3EE] rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           API Reference
@@ -195,7 +195,7 @@ const DocsOverview: React.FC = () => (
 
       <Link
         to="/docs/webhooks/overview"
-        className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
+        className="block p-6 bg-[#F7F3EE] rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Webhooks</h3>
         <p className="text-gray-600 mb-4">
@@ -208,7 +208,7 @@ const DocsOverview: React.FC = () => (
 
       <Link
         to="/docs/sdks/python"
-        className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
+        className="block p-6 bg-[#F7F3EE] rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           SDKs & Libraries
@@ -476,7 +476,7 @@ for env in envelopes:
           <div className="grid md:grid-cols-2 gap-4">
             <Link
               to="/docs/webhooks/overview"
-              className="block p-4 bg-white border border-gray-200 rounded-lg hover:border-primary-300 transition-colors"
+              className="block p-4 bg-[#F7F3EE] border border-gray-200 rounded-lg hover:border-primary-300 transition-colors"
             >
               <h3 className="font-semibold text-gray-900 mb-2">
                 Set up Webhooks
@@ -488,7 +488,7 @@ for env in envelopes:
 
             <Link
               to="/docs/api/envelopes"
-              className="block p-4 bg-white border border-gray-200 rounded-lg hover:border-primary-300 transition-colors"
+              className="block p-4 bg-[#F7F3EE] border border-gray-200 rounded-lg hover:border-primary-300 transition-colors"
             >
               <h3 className="font-semibold text-gray-900 mb-2">
                 Explore API Reference

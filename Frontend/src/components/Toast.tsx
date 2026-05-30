@@ -32,7 +32,7 @@ const Toast: React.FC = () => {
       <div className={`${bg} text-white px-4 py-3 rounded-lg shadow-lg max-w-[90vw] sm:max-w-lg text-sm flex items-center justify-between gap-4`}>
         <span>{data.message}</span>
         {data.cta && (
-          <a href={data.cta.href} className="bg-white/15 hover:bg-white/25 text-white px-3 py-1 rounded-md text-xs font-medium transition-colors" style={{textDecoration:'none'}}>
+          <a href={data.cta.href} className="bg-[#F7F3EE]/15 hover:bg-[#F7F3EE]/25 text-white px-3 py-1 rounded-md text-xs font-medium transition-colors" style={{textDecoration:'none'}}>
             {data.cta.label}
           </a>
         )}

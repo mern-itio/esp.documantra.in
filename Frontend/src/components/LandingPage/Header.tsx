@@ -99,15 +99,15 @@ const Header = () => {
  
 
   return (
-    <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-lg' : 'bg-transparent'
+    <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-[#F7F3EE]/95 backdrop-blur-sm shadow-lg' : 'bg-transparent'
       }`}>
       <Toast />
       <div
         className={`
-         bg-white/80 backdrop-blur-xl mx-auto px-6 transition-all duration-300 ease-in-out
+         bg-[#F7F3EE]/80 backdrop-blur-xl mx-auto px-6 transition-all duration-300 ease-in-out
         ${isScrolled
             ? "w-full rounded-none border-none shadow-md bg-none mt-0"
-            : "w-[95%] max-w-7xl border border-dashed border-blue-400/60 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-white/80 mt-5"
+            : "w-[95%] max-w-7xl border border-dashed border-blue-400/60 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.04)] bg-[#F7F3EE]/80 mt-5"
           }
         `}
       >
@@ -138,7 +138,7 @@ const Header = () => {
                     ref={(el) => {
                       dropdownRefs.current['pdf-tools'] = el
                     }}
-                    className="fixed inset-x-0 mx-auto w-[95vw] max-w-[1200px] max-h-[80vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border border-sky-100 p-6 md:p-8 z-50"
+                    className="fixed inset-x-0 mx-auto w-[95vw] max-w-[1200px] max-h-[80vh] overflow-y-auto bg-[#F7F3EE] rounded-3xl shadow-2xl border border-sky-100 p-6 md:p-8 z-50"
                   >
                     <ProductSection />
                   </div>
@@ -162,7 +162,7 @@ const Header = () => {
                     ref={(el) => {
                       dropdownRefs.current['use-cases'] = el
                     }}
-                    className="mx-auto w-[95vw] max-w-[1200px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden z-50"
+                    className="mx-auto w-[95vw] max-w-[1200px] bg-[#F7F3EE] rounded-3xl shadow-2xl border border-[#E6D8C9]/80 overflow-hidden z-50"
                   >
                     <UseCases />
                   </div>
@@ -185,7 +185,7 @@ const Header = () => {
                 {activeDropdown === 'resources' && (
                   <div
                     ref={(el) => { dropdownRefs.current['resources'] = el }}
-                    className="mx-auto w-[95vw] max-w-[1100px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden"
+                    className="mx-auto w-[95vw] max-w-[1100px] bg-[#F7F3EE] rounded-3xl shadow-2xl border border-[#E6D8C9]/80 overflow-hidden"
                     style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', top: 88, zIndex: 9999, maxHeight: 'min(80vh, calc(100vh - 88px))' }}
                   >
                     <ResourceTab />
@@ -250,7 +250,7 @@ const Header = () => {
 
           {/* Mobile Navigation */}
           {isMenuOpen && (
-            <div className="lg:hidden bg-white border-t">
+            <div className="lg:hidden bg-[#F7F3EE] border-t">
               <div className="px-2 pt-2 pb-3 space-y-1">
                 <button onClick={() => scrollToSection('pdf-tools')} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600">PDF Tools</button>
                 <button className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600">Why DraftnSign</button>

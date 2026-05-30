@@ -53,7 +53,7 @@ export type PowerFormData = {
   fields: { _id: string; label: string; type: FieldType }[];
 };
 
-const RECIPIENT_COLORS = ["#2563eb", "#059669", "#d97706", "#db2777", "#7c3aed", "#f43f5e"];
+const RECIPIENT_COLORS = ["#2563eb", "#059669", "#d97706", "#db2777", "#1B6B57", "#f43f5e"];
 const RECIPIENT_BORDER_STYLES = ["dashed", "dotted", "solid", "double", "groove", "ridge"];
 
 function getRecipientColor(idx: number) {
@@ -346,7 +346,7 @@ export default function PowerFormEditorStep({
               {showTutorial && (
                 <div className="fixed inset-0 z-50">
                   <div className="absolute inset-0 backdrop-blur-[0px]"></div>
-                  <div className={`bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-500 ease-in-out min-h-[340px] flex flex-col justify-between ${
+                  <div className={`bg-[#F7F3EE]/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-500 ease-in-out min-h-[340px] flex flex-col justify-between ${
                     tutorialStep === 0 ? 'top-95 right-50 -translate-x-1/6 -translate-y-1/2' : 
                     tutorialStep === 1 ? 'top-125 right-60 -translate-x-1/6 -translate-y-1/2' :
                     tutorialStep === 2 ? 'top-105 right-20 -translate-x-1/6 -translate-y-1/2' :
@@ -443,7 +443,7 @@ export default function PowerFormEditorStep({
                 setCurrentPage(1);
               }}
               className={`px-3 py-2 rounded-xl border text-sm flex items-center gap-2 ${
-                isActive ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300"
+                isActive ? "bg-blue-600 text-white border-blue-600" : "bg-[#F7F3EE] text-gray-700 border-gray-300"
               } hover:shadow-sm`}
             >
               <FileText className="w-4 h-4" />
@@ -455,7 +455,7 @@ export default function PowerFormEditorStep({
 
       <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
         {/* PDF viewer */}
-        <div className="col-span-12 lg:col-span-9 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
+        <div className="col-span-12 lg:col-span-9 bg-[#F7F3EE] rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
             <div className="text-sm text-gray-600">
               Viewing: <span className="font-medium text-gray-900">{activeDoc?.name ?? "—"}</span>
@@ -464,7 +464,7 @@ export default function PowerFormEditorStep({
           </div>
 
           <div
-            className="flex-1 overflow-auto bg-gray-50 relative"
+            className="flex-1 overflow-auto bg-[#F5F2EE] relative"
             ref={pdfContainerRef}
             onDragOver={handlePdfDragOver}
             onDrop={handlePdfDrop}
@@ -606,7 +606,7 @@ export default function PowerFormEditorStep({
           </div>
 
           {numPages > 1 && (
-            <div className="flex justify-center gap-4 py-2 border-t border-gray-200 bg-gray-50">
+            <div className="flex justify-center gap-4 py-2 border-t border-gray-200 bg-[#F5F2EE]">
               <button disabled={currentPage <= 1} onClick={() => setCurrentPage(prev => prev - 1)} className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300">
                 Previous
               </button>
@@ -620,7 +620,7 @@ export default function PowerFormEditorStep({
 
         {/* Sidebar */}
         <div className="col-span-12 lg:col-span-3">
-          <div className="h-full rounded-2xl border border-gray-200 shadow-sm bg-white flex flex-col">
+          <div className="h-full rounded-2xl border border-gray-200 shadow-sm bg-[#F7F3EE] flex flex-col">
             {/* Normal recipients */}
             {mode === "normal" && (
               <>
@@ -633,7 +633,7 @@ export default function PowerFormEditorStep({
                       <button
                         key={r.id}
                         onClick={() => setActiveRecipientId(r.id)}
-                        className={`w-full text-left px-4 py-3 flex items-center gap-3 text-sm ${isActive ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-gray-50 text-gray-700"}`}
+                        className={`w-full text-left px-4 py-3 flex items-center gap-3 text-sm ${isActive ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-[#F5F2EE] text-gray-700"}`}
                         style={{ borderLeft: `6px solid ${color}` }}
                       >
                         <UserCircle className="w-5 h-5 shrink-0" color={color} />
@@ -663,7 +663,7 @@ export default function PowerFormEditorStep({
                       <button
                         key={s.slotId}
                         onClick={() => setActiveSlotId(s.slotId)}
-                        className={`w-full text-left px-4 py-3 flex items-center gap-3 text-sm ${isActive ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-gray-50 text-gray-700"}`}
+                        className={`w-full text-left px-4 py-3 flex items-center gap-3 text-sm ${isActive ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-[#F5F2EE] text-gray-700"}`}
                         style={{ borderLeft: `6px solid ${color}` }}
                       >
                         <UserCircle className="w-5 h-5 shrink-0" color={color} />
@@ -715,7 +715,7 @@ export default function PowerFormEditorStep({
                       draggable
                       onDragStart={e => handleDragStart(e, { type: field.type, label: field.label, id: field._id })}
                       onDragEnd={handleDragEnd}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gray-50 cursor-grab"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-[#F5F2EE] cursor-grab"
                     >
                       {field.label} ({field.type})
                     </div>

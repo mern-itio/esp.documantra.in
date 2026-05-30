@@ -279,7 +279,7 @@ const DBAddComments: React.FC = () => {
   const threads = dbCommentService.organizeCommentsIntoThreads(processedComments);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-[#F5F2EE] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
@@ -359,7 +359,7 @@ const DBAddComments: React.FC = () => {
             {/* Left Column - File Upload and Comment Management */}
             <div className="lg:col-span-2 space-y-6">
               {/* File Upload */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Upload PDF</h3>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                   <Upload className="mx-auto h-12 w-12 text-gray-400" />
@@ -384,7 +384,7 @@ const DBAddComments: React.FC = () => {
 
               {/* Comment Templates */}
               {commentLibrary && (
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Comment Templates</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {commentLibrary.templates?.map((template) => (
@@ -405,7 +405,7 @@ const DBAddComments: React.FC = () => {
               )}
 
               {/* Add New Comment */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Comment</h3>
                 <div className="space-y-4">
                   <div>
@@ -459,7 +459,7 @@ const DBAddComments: React.FC = () => {
             {/* Right Column - Comments List and Sharing Options */}
             <div className="space-y-6">
               {/* Comments List */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Comments ({comments.length})
                 </h3>
@@ -541,7 +541,7 @@ const DBAddComments: React.FC = () => {
               </div>
 
               {/* Sharing Options */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Sharing Options</h3>
                 <div className="space-y-4">
                   <div className="flex items-center">
@@ -576,7 +576,7 @@ const DBAddComments: React.FC = () => {
               </div>
 
               {/* User Info */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">User Info</h3>
                 <div className="space-y-3">
                   <div>
@@ -635,7 +635,7 @@ const DBAddComments: React.FC = () => {
             </div>
 
             {generatedLink && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Shareable Link</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
@@ -644,7 +644,7 @@ const DBAddComments: React.FC = () => {
                       type="text"
                       value={window.location.origin + generatedLink}
                       readOnly
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-[#F5F2EE]"
                     />
                     <button
                       onClick={handleCopyLink}
@@ -693,7 +693,7 @@ const DBAddComments: React.FC = () => {
         {/* Manage Documents Tab */}
         {activeTab === 'manage' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">My Commented Documents</h3>
               
               {userDocuments.length === 0 ? (
@@ -705,7 +705,7 @@ const DBAddComments: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {userDocuments.map((doc) => (
-                    <div key={doc._id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div key={doc._id} className="border rounded-lg p-4 hover:bg-[#F5F2EE]">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{doc.documentName}</h4>
@@ -767,7 +767,7 @@ const DBAddComments: React.FC = () => {
         {/* Reply Modal */}
         {selectedComment && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="bg-[#F7F3EE] rounded-lg p-6 w-full max-w-md">
                              <h3 className="text-lg font-medium text-gray-900 mb-4">
                  Reply to {selectedComment.authorName || selectedComment.author}
                </h3>

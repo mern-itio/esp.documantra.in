@@ -40,7 +40,7 @@ const CustomDashboardGraphs = () => {
   return (
     <div className="mt-2">
       {/* API Usage Trends (Line Chart) */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 mb-8 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">API Usage Trends</h2>
           <a href="/api-service/analytics" className="text-blue-600 hover:underline text-sm font-medium transition-colors">

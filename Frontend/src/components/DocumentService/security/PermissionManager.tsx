@@ -115,7 +115,7 @@ export function PermissionManager({
       case 'admin':
         return <Shield className="w-4 h-4 text-red-600" />;
       case 'owner':
-        return <Lock className="w-4 h-4 text-purple-600" />;
+        return <Lock className="w-4 h-4 text-[#155E4B]" />;
       default:
         return <Eye className="w-4 h-4 text-gray-600" />;
     }
@@ -132,7 +132,7 @@ export function PermissionManager({
       case 'admin':
         return 'bg-red-100 text-red-800';
       case 'owner':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-[#DCFCE7] text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -164,7 +164,7 @@ export function PermissionManager({
   });
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
+    <div className="bg-[#F7F3EE] rounded-lg border border-gray-200">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
@@ -223,7 +223,7 @@ export function PermissionManager({
       {/* Permissions List */}
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-[#F5F2EE]">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 User
@@ -248,11 +248,11 @@ export function PermissionManager({
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-[#F7F3EE] divide-y divide-gray-200">
             {filteredPermissions.map((permission) => (
               <tr
                 key={permission.id}
-                className={`hover:bg-gray-50 ${
+                className={`hover:bg-[#F5F2EE] ${
                   isExpired(permission.expiresAt) ? 'bg-red-50' : 
                   isExpiringSoon(permission.expiresAt) ? 'bg-yellow-50' : ''
                 }`}
@@ -372,7 +372,7 @@ export function PermissionManager({
       {/* Grant Permission Dialog */}
       {showGrantDialog && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="bg-[#F7F3EE] rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Grant Permission</h3>
             
             <div className="space-y-4">
@@ -436,7 +436,7 @@ export function PermissionManager({
       {/* Edit Permission Dialog */}
       {selectedPermission && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="bg-[#F7F3EE] rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Permission</h3>
             
             <div className="space-y-4">
@@ -444,7 +444,7 @@ export function PermissionManager({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   User
                 </label>
-                <div className="p-2 bg-gray-50 rounded text-sm">
+                <div className="p-2 bg-[#F5F2EE] rounded text-sm">
                   {selectedPermission.userName} ({selectedPermission.userEmail})
                 </div>
               </div>
@@ -453,7 +453,7 @@ export function PermissionManager({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Resource
                 </label>
-                <div className="p-2 bg-gray-50 rounded text-sm">
+                <div className="p-2 bg-[#F5F2EE] rounded text-sm">
                   {selectedPermission.resourceName}
                 </div>
               </div>

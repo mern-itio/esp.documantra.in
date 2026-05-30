@@ -41,7 +41,7 @@ const FeatureComparisonPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white pt-24">
+    <div className="min-h-screen bg-[#F7F3EE] pt-24">
       {/* Hero */}
       <section className="py-16 bg-gradient-to-br from-[#260559]/10 to-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
@@ -63,11 +63,11 @@ const FeatureComparisonPage = () => {
       {/* Feature Matrix */}
       <section className="py-12">
         <div className="container-max px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div className="bg-[#F7F3EE] rounded-2xl shadow-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-[#F5F2EE]">
                     <th className="text-left p-4 w-1/3 font-semibold text-gray-900">Feature</th>
                     {competitors.map((c) => (
                       <th key={c.key} className="text-center p-4 w-1/6">
@@ -78,7 +78,7 @@ const FeatureComparisonPage = () => {
                 </thead>
                 <tbody>
                   {featureMatrix.map((row, i) => (
-                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <tr key={i} className={i % 2 === 0 ? 'bg-[#F7F3EE]' : 'bg-[#F5F2EE]'}>
                       <td className="p-4 font-medium text-gray-900">{row.name}</td>
                       <td className="p-4 text-center">{renderCell(row.docusigner)}</td>
                       <td className="p-4 text-center">{renderCell(row.docusign)}</td>
@@ -97,7 +97,7 @@ const FeatureComparisonPage = () => {
       {/* Pricing Overview */}
       <section className="py-12">
         <div className="container-max px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div className="bg-[#F7F3EE] rounded-2xl shadow-lg overflow-hidden">
             <div className="p-6 border-b">
               <h2 className="text-2xl font-bold text-gray-900">Pricing Overview</h2>
               <p className="text-gray-600 mt-1">High-level comparison of entry pricing across platforms</p>
@@ -105,7 +105,7 @@ const FeatureComparisonPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-[#F5F2EE]">
                     <th className="text-left p-4">Plan</th>
                     {competitors.map((c) => (
                       <th key={c.key} className="text-center p-4">
@@ -116,7 +116,7 @@ const FeatureComparisonPage = () => {
                 </thead>
                 <tbody>
                   {pricingOverview.map((row, i) => (
-                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <tr key={i} className={i % 2 === 0 ? 'bg-[#F7F3EE]' : 'bg-[#F5F2EE]'}>
                       <td className="p-4 font-medium text-gray-900">{row.plan}</td>
                       <td className="p-4 text-center">{row.docusigner}</td>
                       <td className="p-4 text-center">{row.docusign}</td>
@@ -141,10 +141,10 @@ const FeatureComparisonPage = () => {
               Start free, explore all features, and see why teams switch to {BRAND.name}.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
+              <Link to="/signup" className="bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
                 Start Free <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
-              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
+              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
                 Talk to Sales
               </Link>
             </div>

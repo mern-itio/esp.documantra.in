@@ -114,7 +114,7 @@ const ESignFlowSection = () => {
               playsInline
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-slate-900/40 via-transparent to-sky-500/10" />
-            <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-800 shadow-sm">
+            <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-[#F7F3EE]/80 px-3 py-1 text-[11px] font-medium text-slate-800 shadow-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               Live e-sign experience
             </div>
@@ -340,11 +340,11 @@ const ESignFlowSection = () => {
     <section
       id="e-sign-flow"
       ref={sectionRef}
-      className="section-padding bg-slate-50/80 relative overflow-hidden"
+      className="section-padding bg-[#F5F2EE]/80 relative overflow-hidden"
     >
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 left-0 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl" />
-        <div className="absolute -bottom-40 right-10 h-80 w-80 rounded-full bg-indigo-200/30 blur-3xl" />
+        <div className="absolute -bottom-40 right-10 h-80 w-80 rounded-full bg-emerald-200/30 blur-3xl" />
       </div>
 
       <div className="container-max relative">

@@ -105,7 +105,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         {/* Element Type */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Element Type</label>
-          <div className="px-3 py-2 bg-gray-50 rounded-md text-sm text-gray-600 capitalize">
+          <div className="px-3 py-2 bg-[#F5F2EE] rounded-md text-sm text-gray-600 capitalize">
             {selectedElement.type}
           </div>
         </div>

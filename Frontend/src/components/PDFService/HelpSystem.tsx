@@ -237,7 +237,7 @@ export const HelpSystem: React.FC<HelpSystemProps> = ({ onBack }) => {
       {!selectedArticle ? (
         <>
           {/* Search */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
             <div className="relative max-w-2xl mx-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -253,7 +253,7 @@ export const HelpSystem: React.FC<HelpSystemProps> = ({ onBack }) => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Categories */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Categories</h3>
                 
                 <div className="space-y-2">
@@ -262,7 +262,7 @@ export const HelpSystem: React.FC<HelpSystemProps> = ({ onBack }) => {
                     className={`w-full flex items-center justify-between p-3 text-left rounded-lg transition-colors ${
                       selectedCategory === ''
                         ? 'bg-blue-50 text-blue-700'
-                        : 'hover:bg-gray-50'
+                        : 'hover:bg-[#F5F2EE]'
                     }`}
                   >
                     <span className="font-medium">All Articles</span>
@@ -278,7 +278,7 @@ export const HelpSystem: React.FC<HelpSystemProps> = ({ onBack }) => {
                         className={`w-full flex items-center justify-between p-3 text-left rounded-lg transition-colors ${
                           selectedCategory === category.id
                             ? 'bg-blue-50 text-blue-700'
-                            : 'hover:bg-gray-50'
+                            : 'hover:bg-[#F5F2EE]'
                         }`}
                       >
                         <div className="flex items-center space-x-3">
@@ -295,7 +295,7 @@ export const HelpSystem: React.FC<HelpSystemProps> = ({ onBack }) => {
 
             {/* Articles List */}
             <div className="lg:col-span-3">
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">
                     {selectedCategory 
@@ -361,7 +361,7 @@ export const HelpSystem: React.FC<HelpSystemProps> = ({ onBack }) => {
       ) : (
         /* Article View */
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-xl border border-gray-200 p-8">
+          <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-8">
             {/* Article Header */}
             <div className="mb-8">
               <button

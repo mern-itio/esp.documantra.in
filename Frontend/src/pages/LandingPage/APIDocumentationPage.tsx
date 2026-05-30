@@ -145,14 +145,14 @@ app.post('/webhook', (req, res) => {
   const sdkLanguages = [
     { name: "JavaScript", icon: "JS", color: "bg-yellow-500" },
     { name: "Python", icon: "PY", color: "bg-blue-500" },
-    { name: "PHP", icon: "PHP", color: "bg-purple-500" },
+    { name: "PHP", icon: "PHP", color: "bg-[#F0FDF4]0" },
     { name: "Ruby", icon: "RB", color: "bg-red-500" },
     { name: "Java", icon: "JV", color: "bg-orange-500" },
     { name: ".NET", icon: "NET", color: "bg-blue-600" }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 mt-8 pt-24 pb-16">
+    <div className="min-h-screen bg-[#F5F2EE] mt-8 pt-24 pb-16">
       <div className="container-max">
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-[#260559] to-[#3a0a7e] text-white rounded-2xl shadow-lg p-8 mb-8 text-white">
@@ -162,15 +162,15 @@ app.post('/webhook', (req, res) => {
               Integrate {BRAND.name}'s powerful document and e-signature capabilities directly into your applications with our comprehensive API.
             </p>
             <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+              <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                 <Code className="h-5 w-5" />
                 <span className="font-medium">RESTful API</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+              <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                 <Webhook className="h-5 w-5" />
                 <span className="font-medium">Webhook Support</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+              <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                 <Lock className="h-5 w-5" />
                 <span className="font-medium">OAuth 2.0</span>
               </div>
@@ -182,7 +182,7 @@ app.post('/webhook', (req, res) => {
         <div className="grid grid-cols-12 gap-8">
           {/* Sidebar */}
           <div className="col-span-12 md:col-span-3">
-            <div className="bg-white rounded-xl shadow-md p-4 sticky top-24">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-md p-4 sticky top-24">
               <div className="mb-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -296,7 +296,7 @@ app.post('/webhook', (req, res) => {
           {/* Main Content */}
           <div className="col-span-12 md:col-span-9">
             {/* Tabs */}
-            <div className="bg-white rounded-xl shadow-md mb-8">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-md mb-8">
               <div className="flex overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('overview')}
@@ -336,7 +336,7 @@ app.post('/webhook', (req, res) => {
             {/* Overview Tab Content */}
             {activeTab === 'overview' && (
               <div className="space-y-8">
-                <div className="bg-white rounded-xl shadow-md p-8">
+                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4">Getting Started with {BRAND.name} API</h2>
                   <p className="text-gray-600 mb-6">
                     The {BRAND.name} API allows you to integrate our document and e-signature capabilities directly into your applications. 
@@ -346,7 +346,7 @@ app.post('/webhook', (req, res) => {
                   <div className="space-y-6">
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900 mb-3">Base URL</h3>
-                      <div className="bg-gray-50 p-4 rounded-lg flex justify-between items-center">
+                      <div className="bg-[#F5F2EE] p-4 rounded-lg flex justify-between items-center">
                         <code className="text-sm font-mono text-gray-800">https://api.docusigner.com/v1</code>
                         <button 
                           onClick={() => copyToClipboard('https://api.docusigner.com/v1')}
@@ -398,7 +398,7 @@ app.post('/webhook', (req, res) => {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-md p-8">
+                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4">API Features</h2>
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-3">
@@ -444,7 +444,7 @@ app.post('/webhook', (req, res) => {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-md p-8">
+                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4">Available SDKs</h2>
                   <p className="text-gray-600 mb-6">
                     We provide official SDKs for popular programming languages to make integration easier:
@@ -468,7 +468,7 @@ app.post('/webhook', (req, res) => {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-md p-8">
+                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4">API Pricing</h2>
                   <p className="text-gray-600 mb-6">
                     Our API is available on all plans, with usage limits based on your subscription:
@@ -476,7 +476,7 @@ app.post('/webhook', (req, res) => {
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="bg-gray-50">
+                        <tr className="bg-[#F5F2EE]">
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API Calls</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate Limit</th>
@@ -523,7 +523,7 @@ app.post('/webhook', (req, res) => {
             {/* API Reference Tab Content */}
             {activeTab === 'reference' && (
               <div className="space-y-8">
-                <div className="bg-white rounded-xl shadow-md p-8">
+                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">API Reference</h2>
                   <p className="text-gray-600 mb-8">
                     Explore our comprehensive API endpoints and learn how to integrate {BRAND.name} into your applications.
@@ -532,7 +532,7 @@ app.post('/webhook', (req, res) => {
                   <div className="space-y-6">
                     {apiEndpoints.map((endpoint, index) => (
                       <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="flex items-center justify-between p-4 bg-gray-50">
+                        <div className="flex items-center justify-between p-4 bg-[#F5F2EE]">
                           <div className="flex items-center gap-3">
                             <span className="px-3 py-1 bg-primary-100 text-primary-800 rounded-lg text-xs font-medium">
                               {endpoint.endpoint.split(' ')[0]}
@@ -549,7 +549,7 @@ app.post('/webhook', (req, res) => {
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                               <thead>
-                                <tr className="bg-gray-50">
+                                <tr className="bg-[#F5F2EE]">
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Required</th>
@@ -585,7 +585,7 @@ app.post('/webhook', (req, res) => {
             {/* Guides Tab Content */}
             {activeTab === 'guides' && (
               <div className="space-y-8">
-                <div className="bg-white rounded-xl shadow-md p-8">
+                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">API Guides</h2>
                   <p className="text-gray-600 mb-8">
                     Step-by-step guides to help you implement common workflows with the {BRAND.name} API.
@@ -663,7 +663,7 @@ app.post('/webhook', (req, res) => {
             {/* Examples Tab Content */}
             {activeTab === 'examples' && (
               <div className="space-y-8">
-                <div className="bg-white rounded-xl shadow-md p-8">
+                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Code Examples</h2>
                   <p className="text-gray-600 mb-8">
                     Explore practical examples of common API operations in different programming languages.
@@ -812,12 +812,12 @@ app.post('/webhook', (req, res) => {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-md p-8">
+                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Interactive API Explorer</h2>
                   <p className="text-gray-600 mb-6">
                     Try out API calls directly in your browser with our interactive API explorer.
                   </p>
-                  <div className="bg-gray-50 rounded-lg p-8 text-center">
+                  <div className="bg-[#F5F2EE] rounded-lg p-8 text-center">
                     <Play className="h-12 w-12 text-primary-600 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">API Explorer</h3>
                     <p className="text-gray-600 mb-4">
@@ -843,33 +843,33 @@ app.post('/webhook', (req, res) => {
                 Get started with the {BRAND.name} API today. Sign up for a free account to receive your API key and start building.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl">
+                <Link to="/signup" className="bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl">
                   Get Your API Key
                 </Link>
-                <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-6 rounded-lg transition-colors">
+                <Link to="/contact" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-[#260559] font-semibold py-3 px-6 rounded-lg transition-colors">
                   Contact Developer Support
                 </Link>
               </div>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+            <div className="bg-[#F7F3EE]/10 backdrop-blur-sm rounded-xl p-6">
               <h3 className="text-xl font-semibold mb-4">API Support Resources</h3>
               <div className="space-y-4">
-                <a href="#" className="flex items-center gap-3 p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
+                <a href="#" className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg hover:bg-[#F7F3EE]/30 transition-colors">
                   <Database className="h-5 w-5" />
                   <div>
                     <div className="font-medium">Sample Applications</div>
                     <div className="text-sm text-primary-100">Complete example projects</div>
                   </div>
                 </a>
-                <a href="#" className="flex items-center gap-3 p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
+                <a href="#" className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg hover:bg-[#F7F3EE]/30 transition-colors">
                   <Settings className="h-5 w-5" />
                   <div>
                     <div className="font-medium">Developer Tools</div>
                     <div className="text-sm text-primary-100">Debugging and testing utilities</div>
                   </div>
                 </a>
-                <a href="#" className="flex items-center gap-3 p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
+                <a href="#" className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg hover:bg-[#F7F3EE]/30 transition-colors">
                   <Cloud className="h-5 w-5" />
                   <div>
                     <div className="font-medium">Sandbox Environment</div>

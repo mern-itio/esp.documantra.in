@@ -125,7 +125,7 @@ const bgItems = Array.from({ length: 24 }, (_, i) => ({
       </div>
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-[420px]">
-          <div className="rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="rounded-2xl border border-[#E6D8C9]/90 bg-[#F7F3EE] shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
             {/* Card header with brand */}
             <div className="px-6 pt-8 pb-2 text-center border-b border-slate-100">
               <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#260559] to-[#084bdc] text-white text-sm font-bold mb-4">
@@ -188,7 +188,7 @@ const bgItems = Array.from({ length: 24 }, (_, i) => ({
                           id="forgot-email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#084bdc] focus:outline-none focus:ring-2 focus:ring-[#084bdc]/20"
+                          className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#084bdc] focus:outline-none focus:ring-2 focus:ring-[#084bdc]/20"
                           placeholder="you@company.com"
                           required
                           autoComplete="email"

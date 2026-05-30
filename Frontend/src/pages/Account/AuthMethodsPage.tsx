@@ -712,7 +712,7 @@ const AuthMethodsPage: React.FC = () => {
                             <img
                               src={authenticatorSetup.qrCodeUrl}
                               alt="Authenticator QR code"
-                              className="h-52 w-52 rounded-lg border border-border/70 bg-white p-2"
+                              className="h-52 w-52 rounded-lg border border-border/70 bg-[#F7F3EE] p-2"
                             />
                           ) : (
                             <div className="flex flex-col items-center gap-2 text-muted-foreground">

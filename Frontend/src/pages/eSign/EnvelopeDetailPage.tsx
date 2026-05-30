@@ -338,7 +338,7 @@ const EnvelopeDetailPage: React.FC = () => {
         <div className="text-[10px]">
             <div className="flex items-start gap-8">
                 {/* Main content */}
-                <div className="bg-white p-4 flex-1">
+                <div className="bg-[#F7F3EE] p-4 flex-1">
                     <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mr-4"><ArrowLeft className="w-4 h-4" /> </button>
                     <div className="relative inline-flex items-center gap-2 mb-2">
                         <h1 className="text-[18px] leading-8 font-semibold text-gray-900">{envelope.subject || 'Untitled'}</h1>
@@ -355,7 +355,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                 <div
                                     className="
                     absolute z-50 
-                    bg-white rounded-lg shadow-xl 
+                    bg-[#F7F3EE] rounded-lg shadow-xl 
                     p-2 text-[12px]
                     w-45
                   "
@@ -364,7 +364,7 @@ const EnvelopeDetailPage: React.FC = () => {
 
                                     <div className="mb-3">
                                         <div className="font-semibold">Folders</div>
-                                        <a href="#" className="text-indigo-600 hover:underline">Sent Items</a>
+                                        <a href="#" className="text-emerald-600 hover:underline">Sent Items</a>
                                     </div>
 
                                     <div className="mb-3">
@@ -401,7 +401,7 @@ const EnvelopeDetailPage: React.FC = () => {
                         {showIdPopover && (
                             <div
                                 id="envelope-id-popover"
-                                className="absolute z-50 bg-white rounded-xl shadow-2xl p-4 w-[320px]"
+                                className="absolute z-50 bg-[#F7F3EE] rounded-xl shadow-2xl p-4 w-[320px]"
                                 style={{ top: '-20px', left: '10%' }}
                             >
                                 {/* Left Arrow */}
@@ -462,7 +462,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                                 setTimeout(() => setCopiedId(false), 1500);
                                             }
                                         }}
-                                        className="px-4 py-1.5 rounded-md border text-sm hover:bg-gray-50"
+                                        className="px-4 py-1.5 rounded-md border text-sm hover:bg-[#F5F2EE]"
                                     >
                                         {copiedId ? 'Copied' : 'Copy'}
                                     </button>
@@ -472,7 +472,7 @@ const EnvelopeDetailPage: React.FC = () => {
 
 
                         <div>
-                            From: <span className="text-indigo-700">{envelope.sender?.name || envelope.sender?.email || 'Unknown'}</span>
+                            From: <span className="text-emerald-700">{envelope.sender?.name || envelope.sender?.email || 'Unknown'}</span>
                         </div>
                         <div>Last change on {formatDateTime(envelope.updatedAt || envelope.sentAt || envelope.createdAt)}</div>
                         <div>Sent on {formatDateTime(envelope.sentAt || envelope.createdAt)}</div>
@@ -543,7 +543,7 @@ const EnvelopeDetailPage: React.FC = () => {
                             <div className="mt-1 text-sm text-rose-700">
                                 {declinedByName ? `${declinedByName} declined this envelope.` : 'A recipient declined this envelope.'}
                             </div>
-                            <div className="mt-2 rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap">
+                            <div className="mt-2 rounded-lg border border-rose-200 bg-[#F7F3EE] px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap">
                                 {declineMessage || 'No rejection message was provided.'}
                             </div>
                         </div>
@@ -562,7 +562,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                     <>
                                     <button
                                         onClick={handleCorrect}
-                                        className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-small font-bold"
+                                        className="px-3 py-2 border border-gray-300 rounded-md hover:bg-[#F5F2EE] text-small font-bold"
                                     >
                                         CORRECT
                                     </button>
@@ -570,7 +570,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                     <button
                                         ref={resendBtnRef}
                                         onClick={() => { if (!resendLoading) handleResendAll(); }}
-                                        className={`px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-small font-bold ${resendLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        className={`px-3 py-2 border border-gray-300 rounded-md hover:bg-[#F5F2EE] text-small font-bold ${resendLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
                                     >
                                         {resendLoading ? 'RESENDING…' : 'RESEND'}
                                     </button>
@@ -582,7 +582,7 @@ const EnvelopeDetailPage: React.FC = () => {
                             {/* <div className="relative">
                                 <button
                                     onClick={() => setShowMoveDialog(true)}
-                                    className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-small font-bold"
+                                    className="px-3 py-2 border border-gray-300 rounded-md hover:bg-[#F5F2EE] text-small font-bold"
                                 >
                                     MOVE
                                 </button>
@@ -593,12 +593,12 @@ const EnvelopeDetailPage: React.FC = () => {
                                 <button
                                     ref={moreBtnRef}
                                     onClick={() => setShowMoreMenu(prev => !prev)}
-                                    className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-small flex items-center gap-1 font-bold"
+                                    className="px-3 py-2 border border-gray-300 rounded-md hover:bg-[#F5F2EE] text-small flex items-center gap-1 font-bold"
                                 >
                                     MORE <span className="text-xs">▾</span>
                                 </button>
                                 {showMoreMenu && (
-                                    <div ref={moreMenuRef} className="absolute left-0 mt-2 w-52 bg-white rounded-md shadow-lg z-20">
+                                    <div ref={moreMenuRef} className="absolute left-0 mt-2 w-52 bg-[#F7F3EE] rounded-md shadow-lg z-20">
                                         <button
                                             onClick={() => {
                                                 setShowMoreMenu(false);
@@ -611,16 +611,16 @@ const EnvelopeDetailPage: React.FC = () => {
                                                     }, 0);
                                                 }
                                             }}
-                                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                                            className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE] text-sm"
                                         >
                                             Forward
                                         </button>
-                                        <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">Copy</button>
-                                        <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">Save as Template</button>
-                                        <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">History</button>
-                                        <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">Transfer Ownership</button>
-                                        <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">Export as CSV</button>
-                                        <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-red-600">Delete</button>
+                                        <button className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE] text-sm">Copy</button>
+                                        <button className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE] text-sm">Save as Template</button>
+                                        <button className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE] text-sm">History</button>
+                                        <button className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE] text-sm">Transfer Ownership</button>
+                                        <button className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE] text-sm">Export as CSV</button>
+                                        <button className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE] text-sm text-red-600">Delete</button>
                                     </div>
                                 )}
                             </div> */}
@@ -630,14 +630,14 @@ const EnvelopeDetailPage: React.FC = () => {
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={handleDownload}
-                                className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                                className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-[#F5F2EE]"
                             >
                                 <Download className="w-4 h-4 text-gray-600" />
                             </button>
 
                             <button
                                 onClick={handlePrint}
-                                className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                                className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-[#F5F2EE]"
                             >
                                 <Printer className="w-4 h-4 text-gray-600" />
                             </button>
@@ -661,7 +661,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-medium text-gray-700">Embed URL:</span>
                                         </div>
-                                        <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                        <div className="flex items-center gap-2 p-3 bg-[#F5F2EE] border border-gray-200 rounded-md">
                                             <code className="flex-1 text-sm text-gray-800 break-all">
                                                 {`${window.location.origin}/e-sign/power-form/${envelope.id}`}
                                             </code>
@@ -687,7 +687,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                                         console.error('Failed to copy:', e);
                                                     }
                                                 }}
-                                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-[#F7F3EE] border border-gray-300 rounded-md hover:bg-[#F5F2EE] transition-colors"
                                             >
                                                 {copiedEmbedUrl ? (
                                                     <>
@@ -727,7 +727,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                                             console.error('Failed to copy:', e);
                                                         }
                                                     }}
-                                                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-50 transition-colors"
+                                                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-[#F7F3EE] border border-blue-300 rounded hover:bg-blue-50 transition-colors"
                                                 >
                                                     {copiedEmbedCode ? (
                                                         <>
@@ -848,7 +848,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                                                 href={signerUrl}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1 mt-2 text-indigo-600 hover:underline text-sm"
+                                                                className="inline-flex items-center gap-1 mt-2 text-emerald-600 hover:underline text-sm"
                                                             >
                                                                 <ExternalLink className="w-3.5 h-3.5" />
                                                                 Start in-person signing
@@ -922,7 +922,7 @@ const EnvelopeDetailPage: React.FC = () => {
                     <div className="mt-2 flex items-center justify-between text-gray-700">
                         <span className="text-sm">1 of {pageCount ?? 1}</span>
                         {previewUrl && (
-                            <a href={previewUrl} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline flex items-center gap-1">
+                            <a href={previewUrl} target="_blank" rel="noreferrer" className="text-emerald-600 hover:underline flex items-center gap-1">
                                 <ExternalLink />
 
                             </a>
@@ -947,7 +947,7 @@ const EnvelopeDetailPage: React.FC = () => {
                             onClick={() => setShowSigningOrder(false)}
                         />
 
-                        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+                        <div className="relative bg-[#F7F3EE] rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
                             <button
                                 onClick={() => setShowSigningOrder(false)}
                                 className="absolute right-6 top-6 text-2xl text-[#3E2B66] hover:text-gray-800"
@@ -977,7 +977,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                     {/* Sender */}
                                     <div className="relative flex justify-center items-center z-10 mb-4" style={{ minHeight: `${rowHeight}px` }}>
                                         <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-gray-300 z-0" />
-                                        <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                        <div className="w-14 h-14 rounded-full bg-[#DCFCE7] flex items-center justify-center font-semibold text-[#3E2B66] z-20">
                                             {((envelope.sender?.name || envelope.sender?.email || "?")
                                                 .match(/\b\w/g) || [])
                                                 .slice(0, 2)
@@ -1004,7 +1004,7 @@ const EnvelopeDetailPage: React.FC = () => {
 
                                     {/* Completed */}
                                     <div className="relative flex justify-center items-center z-10 mt-4" style={{ minHeight: `${rowHeight}px` }}>
-                                        <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                        <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
                                             ✓
                                         </div>
                                     </div>
@@ -1028,7 +1028,7 @@ const EnvelopeDetailPage: React.FC = () => {
             {showMoveDialog && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div className="absolute inset-0 bg-black/50" onClick={() => setShowMoveDialog(false)} />
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6">
+                    <div className="relative bg-[#F7F3EE] rounded-2xl shadow-2xl w-full max-w-2xl p-6">
                         <button onClick={() => setShowMoveDialog(false)} className="absolute right-6 top-6 text-2xl text-[#3E2B66]">✕</button>
                         <h3 className="text-[22px] font-semibold text-[#3E2B66] mb-6">Move to Folder</h3>
                         <div className="space-y-2 mb-6">
@@ -1036,7 +1036,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                 <button
                                     key={f}
                                     onClick={() => setSelectedFolder(f)}
-                                    className={`w-full text-left px-4 py-3 rounded-md border ${selectedFolder === f ? 'bg-gray-100 border-gray-300' : 'border-transparent hover:bg-gray-50'}`}
+                                    className={`w-full text-left px-4 py-3 rounded-md border ${selectedFolder === f ? 'bg-gray-100 border-gray-300' : 'border-transparent hover:bg-[#F5F2EE]'}`}
                                 >
                                     {f}
                                 </button>

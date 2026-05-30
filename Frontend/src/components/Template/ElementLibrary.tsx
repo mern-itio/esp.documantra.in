@@ -86,7 +86,7 @@ export const ElementLibrary: React.FC<ElementLibraryProps> = ({ onElementSelect 
                 <button
                   key={element.id}
                   onClick={() => handleAdd(element)}
-                  className="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
+                  className="w-full flex items-center p-3 text-left hover:bg-[#F5F2EE] rounded-lg border border-gray-200 transition-colors"
                 >
                   <div className="w-8 h-8 bg-gray-100 rounded-md flex items-center justify-center mr-3">
                     <Icon className="w-4 h-4 text-gray-600" />

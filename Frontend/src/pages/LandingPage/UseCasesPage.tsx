@@ -71,7 +71,7 @@ const UseCasesPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white pt-24">
+    <div className="min-h-screen bg-[#F7F3EE] pt-24">
       {/* Hero Section */}
       <section className="py-16 bg-gradient-to-br from-primary-50 to-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
@@ -96,7 +96,7 @@ const UseCasesPage = () => {
       </section>
 
       {/* Industries Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Industries We Serve</h2>
@@ -107,7 +107,7 @@ const UseCasesPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {industries.map((group) => (
-              <div key={group.category} className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer">
+              <div key={group.category} className="bg-[#F7F3EE] rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer">
                 <h3 id={slugify(group.category)} className="text-xl font-semibold text-gray-900 mb-4">{group.category}</h3>
                 <div className="space-y-4">
                   {group.items.map((item, i) => (
@@ -129,7 +129,7 @@ const UseCasesPage = () => {
       </section>
 
       {/* Use Cases Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Popular Use Cases</h2>
@@ -140,7 +140,7 @@ const UseCasesPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {useCases.map((uc, index) => (
-              <div id={slugify(uc.title)} key={index} className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-white rounded-xl p-6 shadow-md">
+              <div id={slugify(uc.title)} key={index} className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-[#F7F3EE] rounded-xl p-6 shadow-md">
                 <div className="w-12 h-12 bg-[#E6E0F0] rounded-lg flex items-center justify-center mb-4">
                   <uc.icon className="h-6 w-6 text-[#260559]" />
                 </div>
@@ -161,10 +161,10 @@ const UseCasesPage = () => {
               Join thousands using {BRAND.name} across industries to complete documents faster and more securely.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
+              <Link to="/signup" className="bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
                 Start Free Forever <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
-              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
+              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-[#260559] font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
                 Schedule Demo
               </Link>
             </div>

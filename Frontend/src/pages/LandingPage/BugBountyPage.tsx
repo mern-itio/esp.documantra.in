@@ -129,7 +129,7 @@ const BugBountyPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-[#F5F2EE] pt-24 pb-16">
       <div className="container-max">
         {/* Hero Section */}
        <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 mb-8 text-white">
@@ -140,22 +140,22 @@ const BugBountyPage = () => {
                 Help us improve our security by finding and reporting vulnerabilities. We reward security researchers who help us keep {COMPANY_NAME} safe and secure.
               </p>
               <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Bug className="h-5 w-5" />
                   <span className="font-medium">Rewards up to $5,000</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Shield className="h-5 w-5" />
                   <span className="font-medium">Safe Harbor Protection</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Award className="h-5 w-5" />
                   <span className="font-medium">Public Recognition</span>
                 </div>
               </div>
             </div>
             <div className="md:w-1/3 flex justify-center">
-              <div className="w-48 h-48 bg-white/10 rounded-full flex items-center justify-center">
+              <div className="w-48 h-48 bg-[#F7F3EE]/10 rounded-full flex items-center justify-center">
                 <Bug className="h-24 w-24 text-white" />
               </div>
             </div>
@@ -163,7 +163,7 @@ const BugBountyPage = () => {
         </div>
 
         {/* Program Overview */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Program Overview</h2>
           
           <p className="text-gray-700 mb-6">
@@ -204,7 +204,7 @@ const BugBountyPage = () => {
         </div>
 
         {/* Scope */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Program Scope</h2>
           
           <div className="space-y-6">
@@ -247,7 +247,7 @@ const BugBountyPage = () => {
         </div>
 
         {/* Vulnerability Types and Rewards */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Vulnerability Types and Rewards</h2>
           
           <div className="space-y-8">
@@ -261,7 +261,7 @@ const BugBountyPage = () => {
                 </div>
                 <div className="grid md:grid-cols-2 gap-3">
                   {category.types.map((type, typeIndex) => (
-                    <div key={typeIndex} className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg">
+                    <div key={typeIndex} className="flex items-center gap-2 bg-[#F5F2EE] p-3 rounded-lg">
                       <CheckCircle className="h-4 w-4 text-green-500" />
                       <span className="text-gray-700">{type}</span>
                     </div>
@@ -273,7 +273,7 @@ const BugBountyPage = () => {
         </div>
 
         {/* Out of Scope Vulnerabilities */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Out of Scope Vulnerabilities</h2>
           
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
@@ -290,7 +290,7 @@ const BugBountyPage = () => {
           
           <div className="grid md:grid-cols-2 gap-4">
             {outOfScope.map((item, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div key={index} className="flex items-center gap-3 p-3 bg-[#F5F2EE] rounded-lg">
                 <AlertTriangle className="h-5 w-5 text-red-500" />
                 <span className="text-gray-700">{item}</span>
               </div>
@@ -299,7 +299,7 @@ const BugBountyPage = () => {
         </div>
 
         {/* Submission Guidelines */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Submission Guidelines</h2>
           
           <div className="space-y-6">
@@ -376,7 +376,7 @@ const BugBountyPage = () => {
         </div>
 
         {/* Hall of Fame */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Hall of Fame</h2>
           
           <p className="text-gray-700 mb-6">
@@ -386,7 +386,7 @@ const BugBountyPage = () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50">
+                <tr className="bg-[#F5F2EE]">
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Researcher</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finding</th>
@@ -395,7 +395,7 @@ const BugBountyPage = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {hallOfFame.map((researcher, index) => (
-                  <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <tr key={index} className={index % 2 === 0 ? 'bg-[#F7F3EE]' : 'bg-[#F5F2EE]'}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{researcher.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{researcher.date}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{researcher.finding}</td>
@@ -416,7 +416,7 @@ const BugBountyPage = () => {
         </div>
 
         {/* Legal Safe Harbor */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Legal Safe Harbor</h2>
           
           <div className="bg-[#260559]/10 border border-[#260559]/20 rounded-lg p-6 mb-6">
@@ -506,31 +506,31 @@ const BugBountyPage = () => {
               </div>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+            <div className="bg-[#F7F3EE]/10 backdrop-blur-sm rounded-xl p-6">
               <h3 className="text-xl font-semibold mb-4">Security Resources</h3>
               <div className="space-y-4">
-                <Link to="/security-overview" className="flex items-center gap-3 p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
+                <Link to="/security-overview" className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg hover:bg-[#F7F3EE]/30 transition-colors">
                   <Shield className="h-5 w-5" />
                   <div>
                     <div className="font-medium">Security Overview</div>
                     <div className="text-sm text-primary-100">Learn about our security practices</div>
                   </div>
                 </Link>
-                <Link to="/security-policy" className="flex items-center gap-3 p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
+                <Link to="/security-policy" className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg hover:bg-[#F7F3EE]/30 transition-colors">
                   <FileText className="h-5 w-5" />
                   <div>
                     <div className="font-medium">Security Policy</div>
                     <div className="text-sm text-primary-100">Review our full security policy</div>
                   </div>
                 </Link>
-                <Link to="/responsible-disclosure" className="flex items-center gap-3 p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
+                <Link to="/responsible-disclosure" className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg hover:bg-[#F7F3EE]/30 transition-colors">
                   <Users className="h-5 w-5" />
                   <div>
                     <div className="font-medium">Responsible Disclosure</div>
                     <div className="text-sm text-primary-100">Guidelines for responsible disclosure</div>
                   </div>
                 </Link>
-                <Link to="/security-advisories" className="flex items-center gap-3 p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
+                <Link to="/security-advisories" className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg hover:bg-[#F7F3EE]/30 transition-colors">
                   <AlertTriangle className="h-5 w-5" />
                   <div>
                     <div className="font-medium">Security Advisories</div>
@@ -543,12 +543,12 @@ const BugBountyPage = () => {
         </div>
 
         {/* FAQ Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mt-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mt-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
           
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How do I know if my finding is valid?</h3>
               </div>
               <div className="p-4">
@@ -559,7 +559,7 @@ const BugBountyPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How are reward amounts determined?</h3>
               </div>
               <div className="p-4">
@@ -570,7 +570,7 @@ const BugBountyPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">Can I test from automated scanning tools?</h3>
               </div>
               <div className="p-4">
@@ -581,7 +581,7 @@ const BugBountyPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How long does it take to receive a reward?</h3>
               </div>
               <div className="p-4">
@@ -592,7 +592,7 @@ const BugBountyPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">Can I disclose the vulnerability publicly?</h3>
               </div>
               <div className="p-4">
@@ -615,11 +615,11 @@ const BugBountyPage = () => {
               href={`https://hackerone.com/${COMPANY_NAME.toLowerCase().replace(/\s+/g, '')}`} 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg"
+              className="bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg"
             >
               Join Our Program <ArrowRight className="ml-2 h-5 w-5 inline" />
             </a>
-            <Link to="/security-policy" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
+            <Link to="/security-policy" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-primary-600 font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
               Review Security Policy
             </Link>
           </div>

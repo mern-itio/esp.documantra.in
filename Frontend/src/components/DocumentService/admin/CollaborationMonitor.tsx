@@ -123,8 +123,8 @@ export function CollaborationMonitor() {
       title: 'Document Versions',
       value: totalVersions.toString(),
       icon: GitBranch,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-[#155E4B]',
+      bgColor: 'bg-[#F0FDF4]',
       change: '+12%'
     },
     {
@@ -202,7 +202,7 @@ export function CollaborationMonitor() {
             {collaborationSessions.map((session) => (
               <div
                 key={session.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-4 bg-[#F5F2EE] rounded-lg"
               >
                 <div className="flex items-center space-x-4">
                   <div className={`w-3 h-3 rounded-full ${
@@ -307,7 +307,7 @@ export function CollaborationMonitor() {
                 <h4 className="text-sm font-medium text-gray-900 mb-2">Recent Comments</h4>
                 <div className="space-y-2">
                   {comments.slice(0, 3).map((comment) => (
-                    <div key={comment.id} className="p-2 bg-gray-50 rounded">
+                    <div key={comment.id} className="p-2 bg-[#F5F2EE] rounded">
                       <p className="text-xs text-gray-900 truncate">
                         {comment.content}
                       </p>

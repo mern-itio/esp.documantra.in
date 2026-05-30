@@ -36,7 +36,7 @@ const ProductSection = () => {
                 {/* API card */}
                 <Link
                     to="/api-documentation"
-                    className="group flex flex-col overflow-hidden rounded-2xl border border-indigo-500 bg-indigo-50/40 shadow-[0_10px_40px_rgba(15,23,42,0.08)] hover:border-indigo-300/80 hover:ring-3 hover:ring-indigo-300/80 hover:bg-indigo-100/80 transition-colors-150"
+                    className="group flex flex-col overflow-hidden rounded-2xl border border-emerald-500 bg-emerald-50/40 shadow-[0_10px_40px_rgba(15,23,42,0.08)] hover:border-emerald-300/80 hover:ring-3 hover:ring-emerald-300/80 hover:bg-emerald-100/80 transition-colors-150"
                 >
                     <div className="relative h-32 md:h-40 w-full overflow-hidden bg-slate-900">
                         <img
@@ -87,7 +87,7 @@ const ProductSection = () => {
                     to="/discover-e-signatures"
                     className="flex items-start gap-3 rounded-2xl bg-sky-50/80 px-4 py-3 hover:bg-sky-100 transition-colors"
                 >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F7F3EE] shadow-sm">
                         <FileCheck className="h-4 w-4 text-sky-600" />
                     </div>
                     <div>
@@ -104,7 +104,7 @@ const ProductSection = () => {
                     to="/customer-stories"
                     className="flex items-start gap-3 rounded-2xl bg-sky-50/40 px-4 py-3 hover:bg-sky-100 transition-colors"
                 >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F7F3EE] shadow-sm">
                         <Users className="h-4 w-4 text-sky-600" />
                     </div>
                     <div>
@@ -121,7 +121,7 @@ const ProductSection = () => {
                     to="/why-draft-sign"
                     className="flex items-start gap-3 rounded-2xl bg-sky-50/40 px-4 py-3 hover:bg-sky-100 transition-colors"
                 >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F7F3EE] shadow-sm">
                         <Shield className="h-4 w-4 text-sky-600" />
                     </div>
                     <div>
@@ -138,7 +138,7 @@ const ProductSection = () => {
                     to="/for-business"
                     className="flex items-start gap-3 rounded-2xl bg-sky-50/40 px-4 py-3 hover:bg-sky-100 transition-colors"
                 >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F7F3EE] shadow-sm">
                         <Building className="h-4 w-4 text-sky-600" />
                     </div>
                     <div>
@@ -154,7 +154,7 @@ const ProductSection = () => {
                     to="/for-business"
                     className="flex items-start gap-3 rounded-2xl bg-sky-50/40 px-4 py-3 hover:bg-sky-100 transition-colors"
                 >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F7F3EE] shadow-sm">
                         <Building className="h-4 w-4 text-sky-600" />
                     </div>
                     <div>
@@ -170,7 +170,7 @@ const ProductSection = () => {
                     to="/for-business"
                     className="flex items-start gap-3 rounded-2xl bg-sky-50/40 px-4 py-3 hover:bg-sky-100 transition-colors"
                 >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F7F3EE] shadow-sm">
                         <Building className="h-4 w-4 text-sky-600" />
                     </div>
                     <div>

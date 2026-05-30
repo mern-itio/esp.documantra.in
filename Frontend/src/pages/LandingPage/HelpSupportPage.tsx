@@ -48,7 +48,7 @@ const HelpSupportPage: React.FC = () => {
       icon: Video,
       title: 'Video Tutorials',
       description: 'Step-by-step video guides',
-      color: 'bg-purple-500',
+      color: 'bg-[#F0FDF4]0',
       href: '#'
     },
     {
@@ -178,7 +178,7 @@ const HelpSupportPage: React.FC = () => {
       description: 'Chat with our team',
       contact: 'Available in dashboard',
       responseTime: 'Real-time response',
-      color: 'text-purple-600'
+      color: 'text-[#155E4B]'
     }
   ];
 
@@ -272,7 +272,7 @@ const HelpSupportPage: React.FC = () => {
       <section className="py-16 bg-gradient-to-br from-[#260559] to-blue-700 text-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-[#F7F3EE]/20 rounded-full mb-6">
               <HelpCircle className="w-10 h-10" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">Help & Support Center</h1>
@@ -308,7 +308,7 @@ const HelpSupportPage: React.FC = () => {
                 <Link
                   key={index}
                   to={card.href}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200 hover:border-blue-300 group"
+                  className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200 hover:border-blue-300 group"
                 >
                   <div className={`w-12 h-12 ${card.color} rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <Icon className="w-6 h-6 text-white" />
@@ -327,7 +327,7 @@ const HelpSupportPage: React.FC = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* FAQ Section */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Frequently Asked Questions</h2>
                 {/* <div className="text-sm text-gray-500">
@@ -366,7 +366,7 @@ const HelpSupportPage: React.FC = () => {
                             >
                               <button
                                 onClick={() => setOpenFAQ(openFAQ === globalIndex ? null : globalIndex)}
-                                className="w-full text-left p-4 hover:bg-gray-50 transition-colors flex items-center justify-between"
+                                className="w-full text-left p-4 hover:bg-[#F5F2EE] transition-colors flex items-center justify-between"
                               >
                                 <span className="font-medium text-gray-900 pr-4">{item.question}</span>
                                 <ChevronDown
@@ -396,7 +396,7 @@ const HelpSupportPage: React.FC = () => {
                     >
                       <button
                         onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
-                        className="w-full text-left p-4 hover:bg-gray-50 transition-colors flex items-center justify-between"
+                        className="w-full text-left p-4 hover:bg-[#F5F2EE] transition-colors flex items-center justify-between"
                       >
                         <div className="flex-1">
                           <div className="text-xs text-blue-600 font-medium mb-1">{item.category}</div>
@@ -423,7 +423,7 @@ const HelpSupportPage: React.FC = () => {
           {/* Sidebar - Contact Form & Support Channels */}
           <div className="space-y-6">
             {/* Contact Form */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <Send className="w-5 h-5 text-blue-600" />
                 Contact Support
@@ -543,7 +543,7 @@ const HelpSupportPage: React.FC = () => {
             </div>
 
             {/* Support Channels */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <Headphones className="w-5 h-5 text-blue-600" />
                 Other Ways to Reach Us
@@ -552,7 +552,7 @@ const HelpSupportPage: React.FC = () => {
                 {supportChannels.map((channel, index) => {
                   const Icon = channel.icon;
                   return (
-                    <div key={index} className="flex items-start gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div key={index} className="flex items-start gap-4 p-3 rounded-lg hover:bg-[#F5F2EE] transition-colors">
                       <div className={`${channel.color} p-2 rounded-lg`}>
                         <Icon className="w-5 h-5 text-black" />
                       </div>
@@ -578,22 +578,22 @@ const HelpSupportPage: React.FC = () => {
                 Popular Resources
               </h3>
               <div className="space-y-3">
-                <Link to="/api-documentation" className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-blue-500 transition-shadow">
+                <Link to="/api-documentation" className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg border border-gray-200 cursor-pointer hover:border-blue-500 transition-shadow">
                   <Book className="w-5 h-5 text-blue-600" />
                   <div>
                     <div className="font-medium text-gray-900">API Documentation</div>
                     <div className="text-xs text-gray-600">Complete API reference</div>
                   </div>
                 </Link>
-                <Link to="/contact-sales" className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-blue-500 transition-shadow">
+                <Link to="/contact-sales" className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg border border-gray-200 cursor-pointer hover:border-blue-500 transition-shadow">
                   <Users className="w-5 h-5 text-green-600" />
                   <div>
                     <div className="font-medium text-gray-900">Enterprise Support</div>
                     <div className="text-xs text-gray-600">Priority support for teams</div>
                   </div>
                 </Link>
-                <Link to="/security-overview" className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-blue-500 transition-shadow">
-                  <Shield className="w-5 h-5 text-purple-600" />
+                <Link to="/security-overview" className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg border border-gray-200 cursor-pointer hover:border-blue-500 transition-shadow">
+                  <Shield className="w-5 h-5 text-[#155E4B]" />
                   <div>
                     <div className="font-medium text-gray-900">Security & Compliance</div>
                     <div className="text-xs text-gray-600">Learn about our security</div>

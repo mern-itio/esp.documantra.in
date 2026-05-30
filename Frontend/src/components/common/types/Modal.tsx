@@ -29,7 +29,7 @@ export default function Modal({
     />
     {/* Modal content box */}
     <div
-      className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl relative z-10"
+      className="bg-[#F7F3EE] rounded-xl p-6 w-full max-w-md shadow-xl relative z-10"
       onClick={e => e.stopPropagation()}
     >
       {title && <h2 className="text-xl font-bold mb-4">{title}</h2>}

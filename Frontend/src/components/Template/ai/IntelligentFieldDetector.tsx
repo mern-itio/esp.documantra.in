@@ -167,7 +167,7 @@ export const IntelligentFieldDetector: React.FC<IntelligentFieldDetectorProps> =
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mr-4">
           <Target className="w-5 h-5 text-white" />
@@ -214,7 +214,7 @@ export const IntelligentFieldDetector: React.FC<IntelligentFieldDetectorProps> =
       {detectionResult && (
         <div className="space-y-6">
           {/* Optimization Scores */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-[#F5F2EE] rounded-lg p-4">
             <h3 className="text-md font-medium text-gray-900 mb-3">Detection Analysis</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
@@ -253,7 +253,7 @@ export const IntelligentFieldDetector: React.FC<IntelligentFieldDetectorProps> =
               <div className="flex items-center space-x-2">
                 <button
                   onClick={applyOptimizations}
-                  className="flex items-center px-3 py-1 text-sm bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-md"
+                  className="flex items-center px-3 py-1 text-sm bg-[#DCFCE7] hover:bg-purple-200 text-[#155E4B] rounded-md"
                 >
                   <Zap className="w-3 h-3 mr-1" />
                   Optimize
@@ -341,7 +341,7 @@ export const IntelligentFieldDetector: React.FC<IntelligentFieldDetectorProps> =
                   <input
                     type="text"
                     value={selectedField.type}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-[#F5F2EE]"
                     readOnly
                   />
                 </div>

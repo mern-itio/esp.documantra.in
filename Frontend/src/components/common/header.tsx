@@ -355,7 +355,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
               onClick={() => navigate('/credits-usage')}
               className={`group hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 ${lowCredits
                 ? 'border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 hover:from-red-100 hover:to-red-200 hover:border-red-400'
-                : 'border-purple-300 bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 hover:from-purple-100 hover:to-indigo-100 hover:border-purple-400'
+                : 'border-purple-300 bg-gradient-to-r from-purple-50 to-emerald-50 text-[#155E4B] hover:from-purple-100 hover:to-emerald-100 hover:border-purple-400'
                 }`}
               title="View credits usage"
             >

@@ -189,7 +189,7 @@ const UseCases = () => {
                 </div>
 
                 {/* Right: Customer Stories (beige panel) */}
-                <div className="w-full md:w-[340px] lg:w-[380px] flex-shrink-0 bg-amber-50/80 border-l border-slate-200/80 p-6 md:p-8">
+                <div className="w-full md:w-[340px] lg:w-[380px] flex-shrink-0 bg-amber-50/80 border-l border-[#E6D8C9]/80 p-6 md:p-8">
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Customer Diary
                     </span>
@@ -220,7 +220,7 @@ const UseCases = () => {
                             to="/customer-stories"
                             className="flex items-start gap-3 group"
                         >
-                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white text-xs font-bold">
+                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white text-xs font-bold">
                                 <img src="./logos/hsbc.png" alt="TheKey logo" className="h-6 w-auto" />
                             </div>
                             <p className="text-sm font-semibold text-slate-900 group-hover:text-[#260559] transition-colors leading-snug">
@@ -239,7 +239,7 @@ const UseCases = () => {
             </div>
 
             {/* Bottom CTA row */}
-            <div className="border-t border-slate-200 px-6 md:px-8 py-4 flex flex-wrap items-center gap-6">
+            <div className="border-t border-[#E6D8C9] px-6 md:px-8 py-4 flex flex-wrap items-center gap-6">
                 <Button variant='new'>
                     <Link
                         to="/request-demo"

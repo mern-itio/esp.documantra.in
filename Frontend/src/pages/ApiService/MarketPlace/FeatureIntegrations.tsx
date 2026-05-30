@@ -129,7 +129,7 @@ export const FeatureInterations: React.FC = () => {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+      <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-6 mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
           {/* Search */}
           <div className="flex-1 max-w-md">
@@ -339,7 +339,7 @@ const IntegrationCard: React.FC<{ integration: any }> = ({ integration }) => {
   const CategoryIcon = getCategoryIcon(integration.category)
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 hover:border-gray-300 hover:shadow-md transition-all duration-200">
+    <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-6 hover:border-gray-300 hover:shadow-md transition-all duration-200">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">

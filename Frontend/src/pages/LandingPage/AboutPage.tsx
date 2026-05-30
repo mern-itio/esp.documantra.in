@@ -66,7 +66,7 @@ const AboutPage: React.FC = () => {
       icon: Lightbulb,
       title: 'Excellence',
       description: 'We strive for excellence in every aspect of our platform, from user experience to technical performance and customer support.',
-      color: 'from-indigo-500 to-indigo-600',
+      color: 'from-emerald-500 to-emerald-600',
     },
   ];
 
@@ -133,7 +133,7 @@ const AboutPage: React.FC = () => {
       <section className="bg-gradient-to-r from-[#260559] to-blue-700 text-white py-20">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-[#F7F3EE]/20 rounded-full mb-6">
               <Building className="w-10 h-10" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">About Draft and Sign</h1>
@@ -148,10 +148,10 @@ const AboutPage: React.FC = () => {
         <div className="max-w-7xl mx-auto space-y-16">
           {/* Mission & Vision */}
           <section className="grid md:grid-cols-2 gap-8">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-8">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-indigo-100 rounded-lg">
-                  <Target className="w-6 h-6 text-indigo-600" />
+                <div className="p-3 bg-emerald-100 rounded-lg">
+                  <Target className="w-6 h-6 text-emerald-600" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Our Mission</h2>
               </div>
@@ -160,7 +160,7 @@ const AboutPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-8">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <Eye className="w-6 h-6 text-blue-600" />
@@ -183,9 +183,9 @@ const AboutPage: React.FC = () => {
               {stats.map((stat, idx) => {
                 const Icon = stat.icon;
                 return (
-                  <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center cursor-pointer hover:border-blue-500">
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-lg mb-4">
-                      <Icon className="w-6 h-6 text-indigo-600" />
+                  <div key={idx} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 text-center cursor-pointer hover:border-blue-500">
+                    <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-100 rounded-lg mb-4">
+                      <Icon className="w-6 h-6 text-emerald-600" />
                     </div>
                     <div className="text-3xl font-bold text-gray-900 mb-2">{stat.number}</div>
                     <div className="text-sm text-gray-600">{stat.label}</div>
@@ -196,10 +196,10 @@ const AboutPage: React.FC = () => {
           </section>
 
           {/* Our Story */}
-          <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <section className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <FileText className="w-6 h-6 text-purple-600" />
+              <div className="p-3 bg-[#DCFCE7] rounded-lg">
+                <FileText className="w-6 h-6 text-[#155E4B]" />
               </div>
               <h2 className="text-3xl font-bold text-gray-900">Our Story</h2>
             </div>
@@ -229,7 +229,7 @@ const AboutPage: React.FC = () => {
               {values.map((value, idx) => {
                 const Icon = value.icon;
                 return (
-                  <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:border-blue-500">
+                  <div key={idx} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:border-blue-500">
                     <div className={`inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br ${value.color} rounded-lg mb-4`}>
                       <Icon className="w-6 h-6 text-white" />
                     </div>
@@ -242,7 +242,7 @@ const AboutPage: React.FC = () => {
           </section>
 
           {/* Timeline */}
-          <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <section className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-8">
             <div className="flex items-center gap-3 mb-8">
               <div className="p-3 bg-green-100 rounded-lg">
                 <Calendar className="w-6 h-6 text-green-600" />
@@ -255,15 +255,15 @@ const AboutPage: React.FC = () => {
                 return (
                   <div key={idx} className="flex gap-6">
                     <div className="flex-shrink-0">
-                      <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <Icon className="w-8 h-8 text-indigo-600" />
+                      <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <Icon className="w-8 h-8 text-emerald-600" />
                       </div>
                       {idx < milestones.length - 1 && (
                         <div className="w-0.5 h-full bg-gray-200 mx-auto mt-2" style={{ height: 'calc(100% + 2rem)' }}></div>
                       )}
                     </div>
                     <div className="flex-1 pb-8">
-                      <div className="text-sm font-semibold text-indigo-600 mb-1">{milestone.year}</div>
+                      <div className="text-sm font-semibold text-emerald-600 mb-1">{milestone.year}</div>
                       <h3 className="text-xl font-semibold text-gray-900 mb-2">{milestone.title}</h3>
                       <p className="text-gray-600 leading-relaxed">{milestone.description}</p>
                     </div>
@@ -283,7 +283,7 @@ const AboutPage: React.FC = () => {
               {technologies.map((tech, idx) => {
                 const Icon = tech.icon;
                 return (
-                  <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:border-blue-500">
+                  <div key={idx} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 cursor-pointer hover:border-blue-500">
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-gray-100 rounded-lg">
                         <Icon className="w-6 h-6 text-gray-700" />
@@ -300,12 +300,12 @@ const AboutPage: React.FC = () => {
           </section>
 
           {/* Why Choose Us */}
-          <section className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-8 border border-indigo-200">
+          <section className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-8 border border-emerald-200">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Draft and Sign?</h2>
             </div>
             <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg p-6">
+              <div className="bg-[#F7F3EE] rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Comprehensive Solution</h3>
                 <ul className="space-y-2 !list-none">
                   <li className="flex items-start gap-2 text-gray-700">
@@ -322,7 +322,7 @@ const AboutPage: React.FC = () => {
                   </li>
                 </ul>
               </div>
-              <div className="bg-white rounded-lg p-6">
+              <div className="bg-[#F7F3EE] rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Enterprise-Grade Security</h3>
                 <ul className="space-y-2 !list-none">
                   <li className="flex items-start gap-2 text-gray-700">
@@ -339,7 +339,7 @@ const AboutPage: React.FC = () => {
                   </li>
                 </ul>
               </div>
-              <div className="bg-white rounded-lg p-6">
+              <div className="bg-[#F7F3EE] rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Innovation & AI</h3>
                 <ul className="space-y-2 !list-none">
                   <li className="flex items-start gap-2 text-gray-700">
@@ -356,7 +356,7 @@ const AboutPage: React.FC = () => {
                   </li>
                 </ul>
               </div>
-              <div className="bg-white rounded-lg p-6">
+              <div className="bg-[#F7F3EE] rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Value & Affordability</h3>
                 <ul className="space-y-2 !list-none">
                   <li className="flex items-start gap-2 text-gray-700">
@@ -385,14 +385,14 @@ const AboutPage: React.FC = () => {
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 to="/signup"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#260559] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#F7F3EE] text-[#260559] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
                 <Rocket className="w-5 h-5" />
                 Get Started Free
               </Link>
               <Link
                 to="/contact-sales"
-                className="inline-flex items-center gap-2 px-6 py-3 border-2 border-white text-white rounded-lg font-semibold hover:bg-white/10 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 border-2 border-white text-white rounded-lg font-semibold hover:bg-[#F7F3EE]/10 transition-colors"
               >
                 <Mail className="w-5 h-5" />
                 Contact Sales

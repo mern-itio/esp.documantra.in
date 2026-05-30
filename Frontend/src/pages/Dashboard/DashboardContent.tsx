@@ -24,7 +24,7 @@ const DashboardContent = () => {
   const quickActions = [
     { name: 'Upload Document', icon: Upload, color: 'bg-blue-500', link: '/upload' },
     { name: 'Create Template', icon: Plus, color: 'bg-green-500', link: '/templates' },
-    { name: 'Send for Signature', icon: FileText, color: 'bg-purple-500', link: '/sign' },
+    { name: 'Send for Signature', icon: FileText, color: 'bg-[#F0FDF4]0', link: '/sign' },
     { name: 'View Reports', icon: Star, color: 'bg-orange-500', link: '/reports' },
   ];
 
@@ -38,7 +38,7 @@ const DashboardContent = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="bg-[#F7F3EE] rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.fullname}!</h1>
@@ -54,7 +54,7 @@ const DashboardContent = () => {
       {/* Compliance Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {complianceStats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-sm p-6">
+          <div key={index} className="bg-[#F7F3EE] rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{stat.title}</p>
@@ -71,14 +71,14 @@ const DashboardContent = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-[#F7F3EE] rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
             <div className="space-y-3">
               {quickActions.map((action, index) => (
                 <Link
                   key={index}
                   to={action.link}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#F5F2EE] transition-colors"
                 >
                   <div className={`p-2 rounded-lg ${action.color} text-white`}>
                     <action.icon className="h-5 w-5" />
@@ -92,7 +92,7 @@ const DashboardContent = () => {
 
         {/* Recent Documents */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-[#F7F3EE] rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Recent Documents</h2>
               <Link to="/documents" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
@@ -125,7 +125,7 @@ const DashboardContent = () => {
       </div>
 
       {/* Analytics Overview */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="bg-[#F7F3EE] rounded-lg shadow-sm p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Analytics Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">

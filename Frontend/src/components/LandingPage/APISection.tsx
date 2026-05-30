@@ -140,7 +140,7 @@ app.post('/webhook', (req, res) => {
                 <button className="bg-[#260559] text-white rounded-sm px-4 py-4">View API Docs</button>
               </Link>
               <Link to='/login'>
-                <button className="border border-[#260559] bg-white text-[#260559] font-semibold rounded-sm px-4 py-4">Get Your API Key</button>
+                <button className="border border-[#260559] bg-[#F7F3EE] text-[#260559] font-semibold rounded-sm px-4 py-4">Get Your API Key</button>
               </Link>
             </div>
           </div>

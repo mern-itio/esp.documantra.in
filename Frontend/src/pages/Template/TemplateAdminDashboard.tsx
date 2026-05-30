@@ -264,7 +264,7 @@ const adminStats: AdminStats = {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-white text-blue-600 shadow-sm'
+                  ? 'bg-[#F7F3EE] text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
@@ -280,7 +280,7 @@ const adminStats: AdminStats = {
         <div className="space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <FileText className="w-5 h-5 text-blue-600" />
@@ -291,7 +291,7 @@ const adminStats: AdminStats = {
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <Sparkles className="w-5 h-5 text-green-600" />
@@ -302,10 +302,10 @@ const adminStats: AdminStats = {
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <TrendingUp className="w-5 h-5 text-purple-600" />
+                <div className="p-2 bg-[#DCFCE7] rounded-lg">
+                  <TrendingUp className="w-5 h-5 text-[#155E4B]" />
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600">Daily Usage</p>
@@ -313,7 +313,7 @@ const adminStats: AdminStats = {
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-orange-100 rounded-lg">
                   <Shield className="w-5 h-5 text-orange-600" />
@@ -327,7 +327,7 @@ const adminStats: AdminStats = {
           </div>
 
           {/* Alerts */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">System Alerts</h2>
               <span className="text-sm text-gray-500">{adminStats.alerts.length} active alerts</span>
@@ -353,7 +353,7 @@ const adminStats: AdminStats = {
           {/* Recent Activity and Popular Templates */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Activity */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
               <div className="space-y-4">
                 {adminStats.recentActivity.map((activity) => (
@@ -374,7 +374,7 @@ const adminStats: AdminStats = {
             </div>
 
             {/* Popular Templates */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Popular Templates</h2>
               <div className="space-y-4">
                 {adminStats.popularTemplates.map((template) => (
@@ -383,7 +383,7 @@ const adminStats: AdminStats = {
                       <div className="flex items-center space-x-2">
                         <h3 className="font-medium text-gray-900">{template.name}</h3>
                         {template.aiGenerated && (
-                          <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">AI</span>
+                          <span className="px-2 py-0.5 bg-[#DCFCE7] text-[#155E4B] text-xs rounded-full">AI</span>
                         )}
                       </div>
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
@@ -410,15 +410,15 @@ const adminStats: AdminStats = {
         <div className="space-y-6">
           {/* AI Performance Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium text-gray-600">Generation Accuracy</h3>
-                <Sparkles className="w-4 h-4 text-purple-600" />
+                <Sparkles className="w-4 h-4 text-[#155E4B]" />
               </div>
               <p className="text-2xl font-bold text-gray-900">{aiMetrics.generationAccuracy}%</p>
               <p className="text-xs text-green-600 mt-1">+2.3% from last week</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium text-gray-600">Field Detection</h3>
                 <Eye className="w-4 h-4 text-blue-600" />
@@ -426,7 +426,7 @@ const adminStats: AdminStats = {
               <p className="text-2xl font-bold text-gray-900">{aiMetrics.fieldDetectionAccuracy}%</p>
               <p className="text-xs text-green-600 mt-1">+1.8% from last week</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium text-gray-600">Processing Speed</h3>
                 <Zap className="w-4 h-4 text-yellow-600" />
@@ -434,7 +434,7 @@ const adminStats: AdminStats = {
               <p className="text-2xl font-bold text-gray-900">{aiMetrics.aiProcessingSpeed}s</p>
               <p className="text-xs text-green-600 mt-1">-0.5s from last week</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium text-gray-600">System Uptime</h3>
                 <CheckCircle className="w-4 h-4 text-green-600" />
@@ -445,7 +445,7 @@ const adminStats: AdminStats = {
           </div>
 
           {/* AI Model Performance */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Model Performance</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -510,7 +510,7 @@ const adminStats: AdminStats = {
 
       {/* Other tabs placeholder */}
       {!['overview', 'ai', 'monitor', 'bulk'].includes(activeTab) && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <div className="text-gray-400 mb-4">
             <Settings className="w-16 h-16 mx-auto" />
           </div>

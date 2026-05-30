@@ -196,9 +196,9 @@ echo "AI confidence: " . $template['confidence'] . "%\\n";
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center mr-4">
+        <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-purple-500 rounded-lg flex items-center justify-center mr-4">
           <Code className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -237,7 +237,7 @@ echo "AI confidence: " . $template['confidence'] . "%\\n";
         <button
           onClick={generateAPIConfig}
           disabled={isGenerating}
-          className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium disabled:opacity-50"
+          className="flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-medium disabled:opacity-50"
         >
           {isGenerating ? (
             <>
@@ -329,7 +329,7 @@ echo "AI confidence: " . $template['confidence'] . "%\\n";
       <div className="border-t border-gray-200 pt-6">
         <h3 className="text-md font-medium text-gray-900 mb-4">SDK Installation</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="p-4 bg-[#F5F2EE] rounded-lg">
             <h4 className="font-medium text-gray-900 mb-2">Python SDK</h4>
             <code className="text-sm text-gray-700">pip install draftnSign-ai</code>
             <button
@@ -339,7 +339,7 @@ echo "AI confidence: " . $template['confidence'] . "%\\n";
               <Copy className="w-3 h-3" />
             </button>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="p-4 bg-[#F5F2EE] rounded-lg">
             <h4 className="font-medium text-gray-900 mb-2">Node.js SDK</h4>
             <code className="text-sm text-gray-700">npm install @draftnSign/ai-sdk</code>
             <button

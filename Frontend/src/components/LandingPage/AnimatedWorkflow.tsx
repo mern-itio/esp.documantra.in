@@ -59,7 +59,7 @@ const AnimatedWorkflow = () => {
         return (
           <MotionDiv
             key={index}
-            className="absolute z-10 bg-white rounded-xl bgColor"
+            className="absolute z-10 bg-[#F7F3EE] rounded-xl bgColor"
             initial={{ opacity: 0, scale: 0 }}
             animate={{ 
               opacity: 1, 

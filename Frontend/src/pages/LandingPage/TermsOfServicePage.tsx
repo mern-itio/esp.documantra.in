@@ -385,10 +385,10 @@ const TermsOfServicePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-[#F5F2EE] pt-24 pb-16">
       <div className="container-max">
         {/* Header Section */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-lg p-8 mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Terms of Service</h1>
@@ -410,7 +410,7 @@ const TermsOfServicePage = () => {
           </div>
 
           {/* Quick Navigation */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="bg-[#F5F2EE] rounded-lg p-4 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-3">Quick Navigation</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
               {sections.map((section) => (
@@ -441,7 +441,7 @@ const TermsOfServicePage = () => {
               <div key={section.id} id={section.id} className="border border-gray-200 rounded-lg overflow-hidden">
                 <button
                   onClick={() => toggleSection(section.id)}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                  className="w-full flex items-center justify-between p-4 bg-[#F5F2EE] hover:bg-gray-100 transition-colors text-left"
                 >
                   <h2 className="text-xl font-semibold text-gray-900">{section.title}</h2>
                   {expandedSections[section.id] ? (
@@ -451,7 +451,7 @@ const TermsOfServicePage = () => {
                   )}
                 </button>
                 {expandedSections[section.id] && (
-                  <div className="p-6 bg-white">
+                  <div className="p-6 bg-[#F7F3EE]">
                     {section.content}
                   </div>
                 )}
@@ -460,7 +460,7 @@ const TermsOfServicePage = () => {
           </div>
 
           {/* Contact Information */}
-          <div className="mt-8 bg-gray-50 rounded-lg p-6">
+          <div className="mt-8 bg-[#F5F2EE] rounded-lg p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Questions About These Terms?</h2>
             <p className="text-gray-700 mb-4">
               If you have any questions about these Terms of Service, please contact us at:

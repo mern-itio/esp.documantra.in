@@ -11,7 +11,7 @@ const CompanyLogos = () => {
   ]
 
   return (
-    <section className="py-12 bg-gray-50 border-t border-b border-gray-200">
+    <section className="py-12 bg-[#F5F2EE] border-t border-b border-gray-200">
       <div className="container-max">
         <div className="text-center mb-8">
           <p className="text-sm text-gray-500 font-medium">
@@ -23,7 +23,7 @@ const CompanyLogos = () => {
           {companies.map((company, index) => (
             <div
               key={index}
-              className="flex items-center justify-center w-24 h-12 bg-white rounded-lg shadow-sm border border-gray-100 opacity-60 hover:opacity-100 transition-opacity duration-200"
+              className="flex items-center justify-center w-24 h-12 bg-[#F7F3EE] rounded-lg shadow-sm border border-gray-100 opacity-60 hover:opacity-100 transition-opacity duration-200"
             >
               <div className="text-gray-400 font-bold text-sm">
                 {company.logo}

@@ -86,7 +86,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               className={`h-auto p-3 flex flex-col items-center space-y-1 ${
                 isSelected 
                   ? 'bg-blue-600 text-white border-blue-600' 
-                  : 'hover:bg-gray-50'
+                  : 'hover:bg-[#F5F2EE]'
               }`}
               title={tool.description}
             >
@@ -115,7 +115,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   className={`h-auto p-2 flex flex-col items-center space-y-1 ${
                     isSelected 
                       ? 'bg-green-600 text-white border-green-600' 
-                      : 'hover:bg-gray-50'
+                      : 'hover:bg-[#F5F2EE]'
                   }`}
                   title={shape.description}
                 >
@@ -148,7 +148,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   className={`h-auto p-2 flex flex-col items-center space-y-1 ${
                     isSelected 
                       ? 'bg-blue-600 text-white border-blue-600' 
-                      : 'hover:bg-gray-50'
+                      : 'hover:bg-[#F5F2EE]'
                   }`}
                   title={color.name}
                 >
@@ -181,7 +181,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   className={`h-auto p-2 flex flex-col items-center space-y-1 ${
                     isSelected 
                       ? 'bg-blue-600 text-white border-blue-600' 
-                      : 'hover:bg-gray-50'
+                      : 'hover:bg-[#F5F2EE]'
                   }`}
                   title={color.name}
                 >
@@ -198,7 +198,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       )}
       
       {/* Tool Description */}
-      <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-600">
+      <div className="mt-3 p-2 bg-[#F5F2EE] rounded text-xs text-gray-600">
         {selectedTool === 'shape' && selectedShape 
           ? shapes.find(shape => shape.id === selectedShape)?.description
           : tools.find(tool => tool.id === selectedTool)?.description

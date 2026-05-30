@@ -3,7 +3,7 @@
 const DigitaCertificate = () => {
   return (
     <div>
-      <section className="bg-white py-10 sm:py-12 border-t border-slate-100">
+      <section className="bg-[#F7F3EE] py-10 sm:py-12 border-t border-slate-100">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <p className="text-center text-xs font-semibold text-slate-500">
             Digital signature powered by

@@ -159,7 +159,7 @@ const PdfInfoPage: React.FC = () => {
     const colors = {
       text: 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-200',
       checkbox: 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-200',
-      radio: 'bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-200',
+      radio: 'bg-[#DCFCE7] text-purple-800 dark:bg-purple-950/50 dark:text-purple-200',
       dropdown: 'bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-200',
       signature: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200',
       unknown: 'bg-muted text-muted-foreground dark:bg-muted/80'

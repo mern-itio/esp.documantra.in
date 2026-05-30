@@ -54,14 +54,14 @@ const FirstSection = ({
       {stats.map((stat) => (
         <div
           key={stat.name}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between"
+          className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between"
         >
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-sm font-medium text-gray-600">{stat.name}</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
             </div>
-            <div className="bg-indigo-50 p-2 rounded-lg flex items-center justify-center">
+            <div className="bg-emerald-50 p-2 rounded-lg flex items-center justify-center">
               {stat.icon}
             </div>
           </div>

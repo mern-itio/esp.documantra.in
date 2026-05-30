@@ -29,7 +29,7 @@ export default function ActionButton({
   const variantClasses = {
     primary: 'bg-blue-600 hover:bg-blue-700 text-white',
     secondary:
-      'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50',
+      'bg-[#F7F3EE] border border-gray-300 text-gray-700 hover:bg-[#F5F2EE]',
   };
 
   return (

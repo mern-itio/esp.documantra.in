@@ -12,7 +12,7 @@ const quickActions = [
 ];
 const QuickActions = () => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
     <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
     <ul className="space-y-5">
       {quickActions.map((action, idx) => (

@@ -25,7 +25,7 @@ export const RecentActivity: React.FC = () => {
       description: 'Mike Chen joined the Legal Team',
       timestamp: '6 hours ago',
       icon: Users,
-      color: 'bg-purple-100 text-purple-600'
+      color: 'bg-[#DCFCE7] text-[#155E4B]'
     },
     {
       type: 'template_approved',
@@ -54,13 +54,13 @@ export const RecentActivity: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-6">Recent Activity</h2>
       <div className="space-y-4">
         {activities.map((activity, index) => {
           const Icon = activity.icon;
           return (
-            <div key={index} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+            <div key={index} className="flex items-start space-x-3 p-3 hover:bg-[#F5F2EE] rounded-lg transition-colors">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${activity.color}`}>
                 <Icon className="w-4 h-4" />
               </div>

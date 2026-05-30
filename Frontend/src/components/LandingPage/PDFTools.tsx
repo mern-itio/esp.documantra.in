@@ -29,7 +29,7 @@ const PDFTools = () => {
     convert: {
       title: 'Convert',
       icon: FileText,
-      accent: 'from-violet-500 to-purple-600',
+      accent: 'from-emerald-500 to-purple-600',
       tools: [
         'PDF to Word', 'PDF to Excel', 'PDF to PowerPoint', 'PDF to Image',
         'Word to PDF', 'Excel to PDF', 'PowerPoint to PDF', 'Image to PDF'
@@ -94,19 +94,19 @@ const PDFTools = () => {
     (!searchTerm && !showAllTools && !toolCategories[activeTab]?.tools?.length)
 
   return (
-    <section id="pdf-tools" className="section-padding bg-slate-50/80">
+    <section id="pdf-tools" className="section-padding bg-[#F5F2EE]/80">
       <div className="container-max">
         {/* Header */}
         <div className="mb-10 md:mb-12">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm mb-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#E6D8C9] bg-[#F7F3EE] px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm mb-4">
                 <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                 30+ tools · Free to use
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
                 PDF tools built for
-                <span className="block bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                <span className="block bg-gradient-to-r from-emerald-600 to-emerald-600 bg-clip-text text-transparent">
                   every workflow
                 </span>
               </h2>
@@ -123,7 +123,7 @@ const PDFTools = () => {
                 placeholder="Search tools..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400/20"
+                className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] py-2.5 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
               />
             </div>
           </div>
@@ -143,7 +143,7 @@ const PDFTools = () => {
                     inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all duration-200
                     ${isActive
                       ? 'bg-slate-900 text-white shadow-md'
-                      : 'bg-white text-slate-600 shadow-sm border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      : 'bg-[#F7F3EE] text-slate-600 shadow-sm border border-[#E6D8C9] hover:border-slate-300 hover:bg-[#F5F2EE]'
                     }
                   `}
                 >
@@ -164,21 +164,21 @@ const PDFTools = () => {
               <Link
                 to="/login"
                 key={`${key}-${index}`}
-                className="group flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-200 hover:border-violet-200 hover:shadow-md hover:shadow-violet-500/5"
+                className="group flex items-center gap-3 rounded-xl border border-[#E6D8C9]/80 bg-[#F7F3EE] p-4 shadow-sm transition-all duration-200 hover:border-emerald-200 hover:shadow-md hover:shadow-emerald-500/5"
               >
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${category.accent} text-white shadow-sm`}>
                   <IconComponent className="h-5 w-5" />
                 </div>
-                <span className="text-sm font-medium text-slate-800 group-hover:text-violet-700 transition-colors">
+                <span className="text-sm font-medium text-slate-800 group-hover:text-emerald-700 transition-colors">
                   {tool}
                 </span>
-                <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-slate-300 group-hover:text-violet-500 group-hover:translate-x-0.5 transition-all" />
+                <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
               </Link>
             ))
           })}
 
           {hasNoResults && (
-            <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/60 py-12 text-center">
+            <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#E6D8C9] bg-[#F7F3EE]/60 py-12 text-center">
               <Search className="mb-3 h-10 w-10 text-slate-300" />
               <p className="text-slate-500">
                 No tools found for &quot;{searchTerm}&quot;
@@ -191,7 +191,7 @@ const PDFTools = () => {
         </div>
 
         {/* Footer CTA */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 rounded-2xl border border-[#E6D8C9] bg-[#F7F3EE] px-6 py-5 shadow-sm">
           <p className="text-sm text-slate-600 text-center sm:text-left">
             Free to use; sign in to download your edited files.
           </p>

@@ -678,7 +678,7 @@ export default function SignerStatusPage() {
     return (
       <div className="min-h-screen mt-18 bg-gradient-to-b from-rose-50 via-white to-white px-4 py-12">
         <div className="mx-auto w-full max-w-3xl">
-          <div className="overflow-hidden rounded-3xl border border-rose-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-3xl border border-rose-200 bg-[#F7F3EE] shadow-sm">
             <div className="border-b border-rose-100 bg-rose-50/70 px-8 py-7">
               <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-700">
                 <ShieldCheck className="h-7 w-7" />
@@ -692,7 +692,7 @@ export default function SignerStatusPage() {
             </div>
 
             <div className="px-8 py-7">
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <div className="rounded-2xl border border-gray-200 bg-[#F5F2EE] px-4 py-3 text-sm text-gray-700">
                 <div>
                   <span className="font-medium text-gray-900">Document:</span>{" "}
                   {documentName || "—"}
@@ -729,7 +729,7 @@ export default function SignerStatusPage() {
    
       <div className="mx-auto w-full max-w-7xl">
         {loading && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 text-gray-600">
+          <div className="rounded-2xl border border-gray-200 bg-[#F7F3EE] p-8 text-gray-600">
             Loading…
           </div>
         )}
@@ -750,17 +750,17 @@ export default function SignerStatusPage() {
                   {!viewerDeclined && (
                     <div className="pointer-events-none absolute inset-0">
                       <Gift className="absolute left-5 top-4 h-5 w-5 text-emerald-300 animate-bounce" />
-                      <Gift className="absolute right-8 top-6 h-6 w-6 text-violet-300 animate-pulse" />
+                      <Gift className="absolute right-8 top-6 h-6 w-6 text-emerald-300 animate-pulse" />
                       <Gift className="absolute left-10 bottom-5 h-4 w-4 text-amber-300 animate-ping" />
                       <Gift className="absolute right-14 bottom-6 h-5 w-5 text-emerald-300 animate-bounce" />
                       <span className="absolute left-1/4 top-8 h-2 w-2 rounded-full bg-amber-300/70" />
-                      <span className="absolute right-1/3 top-11 h-2 w-2 rounded-full bg-violet-300/70" />
+                      <span className="absolute right-1/3 top-11 h-2 w-2 rounded-full bg-emerald-300/70" />
                       <span className="absolute left-1/3 bottom-8 h-2 w-2 rounded-full bg-emerald-300/70" />
                       <span className="absolute right-1/4 bottom-10 h-2 w-2 rounded-full bg-yellow-300/70" />
                     </div>
                   )}
                   <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
-                    <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-emerald-200">
+                    <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#F7F3EE] shadow-sm ring-1 ring-emerald-200">
                       {viewerDeclined ? (
                         <ShieldCheck className="h-8 w-8 text-rose-600" />
                       ) : (
@@ -773,7 +773,7 @@ export default function SignerStatusPage() {
                 </div>
 
                 {/* Progress strip (like screenshot) */}
-                <div className="rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-sm">
+                <div className="rounded-2xl border border-gray-200 bg-[#F7F3EE] px-6 py-5 shadow-sm">
                   <div className="flex items-center justify-center gap-4">
                     <div className="h-1.5 w-full max-w-[260px] rounded-full bg-gray-100 overflow-hidden">
                       <div
@@ -800,7 +800,7 @@ export default function SignerStatusPage() {
                 </div>
 
                 {/* Document card with separate buttons */}
-                <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
+                <div className="rounded-2xl border border-gray-200 bg-[#F7F3EE] p-7 shadow-sm">
                   <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-gray-900">Document Name:</div>
@@ -887,7 +887,7 @@ export default function SignerStatusPage() {
                 </div>
 
                 {/* Signees list */}
-                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="rounded-2xl border border-gray-200 bg-[#F7F3EE] p-6 shadow-sm">
                   <div className="flex items-center gap-2 text-xl font-semibold text-gray-900">
                     <Users className="h-5 w-5 text-[#260559]" />
                     Signees
@@ -980,7 +980,7 @@ export default function SignerStatusPage() {
                             </div>
                           </div>
 
-                          <div className="ml-10 rounded-2xl border border-gray-200 bg-white px-6 py-6 shadow-sm">
+                          <div className="ml-10 rounded-2xl border border-gray-200 bg-[#F7F3EE] px-6 py-6 shadow-sm">
                             <div className="flex items-center justify-center">
                               <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 ring-1 ring-emerald-200">
                                 <CheckCircle className="h-6 w-6 text-emerald-600" />
@@ -1044,7 +1044,7 @@ export default function SignerStatusPage() {
                               </div>
                             )}
 
-                            <div className="mt-4 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                            <div className="mt-4 rounded-xl bg-[#F5F2EE] px-4 py-3 text-sm text-gray-700">
                               <span className="font-semibold">Spoken:</span>{" "}
                               <span className="italic">{spokenText}</span>
                             </div>
@@ -1060,7 +1060,7 @@ export default function SignerStatusPage() {
                                 >
                                   <Download className="h-4 w-4" />
                                   Download Video
-                                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
+                                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#F7F3EE]/10">
                                     🎥
                                   </span>
                                 </button>
@@ -1073,7 +1073,7 @@ export default function SignerStatusPage() {
                       const standardCard = (
                         <div
                           key={`standard-${String(r?._id ?? r?.id ?? idx)}`}
-                          className="rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm"
+                          className="rounded-2xl border border-gray-200 bg-[#F7F3EE] px-5 py-4 shadow-sm"
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0">
@@ -1118,7 +1118,7 @@ export default function SignerStatusPage() {
                     <div className="rounded-3xl border border-[#260559]/15 bg-gradient-to-b from-[#260559]/10 to-white p-6 shadow-sm">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3">
-                          <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white ring-1 ring-[#260559]/15">
+                          <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#F7F3EE] ring-1 ring-[#260559]/15">
                             <LinkIcon className="h-5 w-5 text-[#260559]" />
                           </div>
                           <div>
@@ -1130,20 +1130,20 @@ export default function SignerStatusPage() {
                             </div>
                           </div>
                         </div>
-                        {/* <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#260559] ring-1 ring-[#260559]/15">
+                        {/* <span className="inline-flex items-center gap-1 rounded-full bg-[#F7F3EE] px-2.5 py-1 text-xs font-semibold text-[#260559] ring-1 ring-[#260559]/15">
                         Existing user
                       </span> */}
                       </div>
 
-                      <div className="mt-5 rounded-2xl bg-white p-4 ring-1 ring-gray-200">
+                      <div className="mt-5 rounded-2xl bg-[#F7F3EE] p-4 ring-1 ring-gray-200">
                         <div className="text-xs font-semibold text-gray-500">Your referral link</div>
                         {referralLinkLoading ? (
-                          <div className="mt-2 rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-500 ring-1 ring-gray-200">
+                          <div className="mt-2 rounded-xl bg-[#F5F2EE] px-3 py-2 text-sm text-gray-500 ring-1 ring-gray-200">
                             Loading your link…
                           </div>
                         ) : referralShareLink ? (
                           <div className="mt-2 flex items-center gap-2">
-                            <div className="min-w-0 flex-1 truncate rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-700 ring-1 ring-gray-200">
+                            <div className="min-w-0 flex-1 truncate rounded-xl bg-[#F5F2EE] px-3 py-2 text-sm text-gray-700 ring-1 ring-gray-200">
                               {referralShareLink}
                             </div>
                             <button
@@ -1175,7 +1175,7 @@ export default function SignerStatusPage() {
                         )}
                       </div>
 
-                      <div className="mt-5 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 ring-1 ring-gray-200">
+                      <div className="mt-5 flex items-center gap-2 rounded-2xl bg-[#F7F3EE] px-4 py-3 ring-1 ring-gray-200">
                         <Gift className="h-5 w-5 text-emerald-600" />
                         <div className="text-sm text-gray-700">
                           Referrer rewards unlock each time an invite sends their first document successfully.
@@ -1186,7 +1186,7 @@ export default function SignerStatusPage() {
                     <div className="rounded-3xl border border-amber-200 bg-gradient-to-b from-amber-50 to-white p-6 shadow-sm">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3">
-                          {/* <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white ring-1 ring-amber-200">
+                          {/* <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#F7F3EE] ring-1 ring-amber-200">
                             <Ticket className="h-5 w-5 text-amber-700" />
                           </div> */}
                           <div>
@@ -1196,7 +1196,7 @@ export default function SignerStatusPage() {
                             </div>
                           </div>
                         </div>
-                        {/* <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+                        {/* <span className="inline-flex items-center gap-1 rounded-full bg-[#F7F3EE] px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
                         New signer
                       </span> */}
                       </div>
@@ -1204,7 +1204,7 @@ export default function SignerStatusPage() {
                       <button
                         type="button"
                         onClick={openScratch}
-                        className="mt-5 w-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 text-left shadow-sm"
+                        className="mt-5 w-full overflow-hidden rounded-2xl border border-gray-200 bg-[#F7F3EE] p-2 text-left shadow-sm"
                       >
                         <div className="flex items-center justify-between gap-3">
                           {/* <div className="text-sm font-semibold text-gray-900">Your coupon</div>
@@ -1263,7 +1263,7 @@ export default function SignerStatusPage() {
 
                                   <div className="flex flex-1 items-center justify-center">
                                     <div className="relative">
-                                      <div className="absolute -inset-4 rounded-full bg-white/10 blur-md" />
+                                      <div className="absolute -inset-4 rounded-full bg-[#F7F3EE]/10 blur-md" />
                                       <Gift className="relative h-20 w-20 text-[#ffd84d]" />
                                     </div>
                                   </div>
@@ -1277,11 +1277,11 @@ export default function SignerStatusPage() {
                         </div>
                       </button>
 
-                      <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-gray-200">
+                      <div className="mt-4 rounded-2xl bg-[#F7F3EE] p-4 ring-1 ring-gray-200">
                         <div className="text-sm font-semibold text-gray-900">Your recent signed docs</div>
                         <div className="mt-3 space-y-2">
                           {lastThreeDocs.map((d: { name: string; signedOn: string; status: string }) => (
-                            <div key={d.name} className="rounded-xl bg-gray-50 px-3 py-3 ring-1 ring-gray-200">
+                            <div key={d.name} className="rounded-xl bg-[#F5F2EE] px-3 py-3 ring-1 ring-gray-200">
                               <div className="text-sm font-semibold text-gray-900">{d.name}</div>
                               <div className="mt-1 flex items-center justify-between text-xs text-gray-600">
                                 <span>Signed: {d.signedOn}</span>
@@ -1320,7 +1320,7 @@ export default function SignerStatusPage() {
             {/* Scratch coupon modal */}
             {showScratchModal && (
               <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/40 backdrop-blur-[1px] px-4 py-10">
-                <div className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.22)] ring-1 ring-gray-200">
+                <div className="w-full max-w-sm overflow-hidden rounded-3xl bg-[#F7F3EE] shadow-[0_24px_60px_rgba(0,0,0,0.22)] ring-1 ring-gray-200">
                   <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                     <div className="text-sm font-semibold text-gray-900">Scratch reward</div>
                     <button
@@ -1337,8 +1337,8 @@ export default function SignerStatusPage() {
                     <div
                       className={
                         !scratchDone
-                          ? "relative h-72 w-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
-                          : "relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+                          ? "relative h-72 w-full overflow-hidden rounded-2xl border border-gray-200 bg-[#F7F3EE] p-6 shadow-sm"
+                          : "relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-[#F7F3EE] p-6 shadow-sm"
                       }
                     >
                       <div className="flex items-start justify-between gap-3">

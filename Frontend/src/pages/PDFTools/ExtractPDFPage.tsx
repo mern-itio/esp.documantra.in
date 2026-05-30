@@ -14,7 +14,7 @@ const ExtractPDFPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">   
+    <div className="min-h-screen bg-[#F5F2EE]">   
 
       {/* Main Content */}
       <div className="">
@@ -24,7 +24,7 @@ const ExtractPDFPage: React.FC = () => {
       {/* Success/Error Modal */}
       {extractResult && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-2xl max-w-md w-full p-6">
             {extractResult.success ? (
               <>
                 <div className="text-center mb-6">
@@ -40,7 +40,7 @@ const ExtractPDFPage: React.FC = () => {
                 </div>
 
                 {extractResult.file && (
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <div className="bg-[#F5F2EE] rounded-lg p-4 mb-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium text-gray-900">

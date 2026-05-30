@@ -49,7 +49,7 @@ const Settings: React.FC = () => {
 
   const renderProfile = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Profile Information</h3>
           <button
@@ -94,7 +94,7 @@ const Settings: React.FC = () => {
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#F5F2EE]"
             />
           </div>
           
@@ -105,7 +105,7 @@ const Settings: React.FC = () => {
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#F5F2EE]"
             />
           </div>
           
@@ -116,7 +116,7 @@ const Settings: React.FC = () => {
               value={formData.organization}
               onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
               disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#F5F2EE]"
             />
           </div>
           
@@ -128,7 +128,7 @@ const Settings: React.FC = () => {
               onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
               disabled={!isEditing}
               placeholder="+1 (555) 123-4567"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#F5F2EE]"
             />
           </div>
           
@@ -138,7 +138,7 @@ const Settings: React.FC = () => {
               value={formData.timezone}
               onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
               disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#F5F2EE]"
             >
               <option value="UTC-8">Pacific Time (UTC-8)</option>
               <option value="UTC-5">Eastern Time (UTC-5)</option>
@@ -153,7 +153,7 @@ const Settings: React.FC = () => {
               value={formData.language}
               onChange={(e) => setFormData(prev => ({ ...prev, language: e.target.value }))}
               disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#F5F2EE]"
             >
               <option value="en">English</option>
               <option value="es">Spanish</option>
@@ -186,7 +186,7 @@ const Settings: React.FC = () => {
 
   const renderNotifications = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Email Notifications</h3>
         
         <div className="space-y-4">
@@ -198,21 +198,21 @@ const Settings: React.FC = () => {
             { id: 'envelope_declined', label: 'When a recipient declines', description: 'Get notified when someone declines to sign' },
             { id: 'envelope_expired', label: 'When an envelope expires', description: 'Get notified when an envelope reaches its expiration date' }
           ].map((notification) => (
-            <div key={notification.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={notification.id} className="flex items-center justify-between p-4 bg-[#F5F2EE] rounded-lg">
               <div>
                 <p className="font-medium text-gray-900">{notification.label}</p>
                 <p className="text-sm text-gray-600">{notification.description}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">SMS Notifications</h3>
         
         <div className="space-y-4">
@@ -220,14 +220,14 @@ const Settings: React.FC = () => {
             { id: 'sms_urgent', label: 'Urgent envelopes only', description: 'Only receive SMS for high priority envelopes' },
             { id: 'sms_completed', label: 'Envelope completions', description: 'Get SMS when envelopes are fully completed' }
           ].map((notification) => (
-            <div key={notification.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={notification.id} className="flex items-center justify-between p-4 bg-[#F5F2EE] rounded-lg">
               <div>
                 <p className="font-medium text-gray-900">{notification.label}</p>
                 <p className="text-sm text-gray-600">{notification.description}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
           ))}
@@ -238,7 +238,7 @@ const Settings: React.FC = () => {
 
   const renderSecurity = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Password & Authentication</h3>
         
         <div className="space-y-6">
@@ -284,10 +284,10 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Two-Factor Authentication</h3>
         
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-[#F5F2EE] rounded-lg">
           <div>
             <p className="font-medium text-gray-900">SMS Authentication</p>
             <p className="text-sm text-gray-600">Receive verification codes via SMS</p>
@@ -298,7 +298,7 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Active Sessions</h3>
         
         <div className="space-y-4">
@@ -307,7 +307,7 @@ const Settings: React.FC = () => {
             { device: 'iPhone 14', location: 'San Francisco, CA', lastActive: '1 hour ago', current: false },
             { device: 'Chrome Browser', location: 'New York, NY', lastActive: '2 days ago', current: false }
           ].map((session, index) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={index} className="flex items-center justify-between p-4 bg-[#F5F2EE] rounded-lg">
               <div>
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-gray-900">{session.device}</p>
@@ -331,7 +331,7 @@ const Settings: React.FC = () => {
 
   const renderBilling = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Current Plan</h3>
         
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
@@ -358,10 +358,10 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Payment Method</h3>
         
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-[#F5F2EE] rounded-lg">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-8 bg-blue-600 rounded flex items-center justify-center">
               <CreditCard className="w-6 h-6 text-white" />
@@ -377,7 +377,7 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Billing History</h3>
           <button className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
@@ -392,7 +392,7 @@ const Settings: React.FC = () => {
             { date: 'Nov 1, 2024', amount: '$29.00', status: 'Paid', invoice: 'INV-002' },
             { date: 'Oct 1, 2024', amount: '$29.00', status: 'Paid', invoice: 'INV-003' }
           ].map((bill, index) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={index} className="flex items-center justify-between p-4 bg-[#F5F2EE] rounded-lg">
               <div>
                 <p className="font-medium text-gray-900">{bill.invoice}</p>
                 <p className="text-sm text-gray-600">{bill.date}</p>
@@ -411,7 +411,7 @@ const Settings: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F2EE]">
       <div className="p-6">
         {/* Header */}
         <div className="mb-8">
@@ -421,7 +421,7 @@ const Settings: React.FC = () => {
 
         <div className="flex gap-8">
           {/* Sidebar */}
-          <div className="w-64 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="w-64 bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-4">
             <nav className="space-y-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
@@ -432,7 +432,7 @@ const Settings: React.FC = () => {
                     className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors ${
                       activeTab === tab.id
                         ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        : 'text-gray-600 hover:bg-[#F5F2EE] hover:text-gray-900'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -450,7 +450,7 @@ const Settings: React.FC = () => {
             {activeTab === 'security' && renderSecurity()}
             {activeTab === 'billing' && renderBilling()}
             {activeTab === 'team' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+              <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Team Management</h3>
                 <p className="text-gray-600 mb-6">Invite team members and manage permissions.</p>
@@ -461,7 +461,7 @@ const Settings: React.FC = () => {
               </div>
             )}
             {activeTab === 'preferences' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+              <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <SettingsIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Preferences</h3>
                 <p className="text-gray-600">Customize your DraftnSign experience.</p>

@@ -207,7 +207,7 @@ export const OrganizationOwnerDetailModal: React.FC<OrganizationOwnerDetailModal
           <div className="grid grid-cols-4 divide-x divide-border border-b border-border flex-shrink-0">
             {[
               { label: 'Members',  value: members.length,  sub: `${activeMembers} active`,   color: 'text-primary' },
-              { label: 'Roles',    value: roles.length,    sub: 'defined',                    color: 'text-violet-600 dark:text-violet-400' },
+              { label: 'Roles',    value: roles.length,    sub: 'defined',                    color: 'text-emerald-600 dark:text-emerald-400' },
               { label: 'Folders',  value: folders.length,  sub: 'created',                    color: 'text-amber-600 dark:text-amber-400' },
               { label: 'Documents',value: totalDocs,        sub: 'across folders',             color: 'text-emerald-600 dark:text-emerald-400' },
             ].map((s) => (

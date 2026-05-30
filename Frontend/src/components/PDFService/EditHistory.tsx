@@ -70,7 +70,7 @@ export const EditHistory: React.FC<EditHistoryProps> = ({ edits, onClear }) => {
           {edits.map((edit, index) => (
             <div
               key={index}
-              className="flex items-start space-x-2 p-2 bg-gray-50 rounded text-xs"
+              className="flex items-start space-x-2 p-2 bg-[#F5F2EE] rounded text-xs"
             >
               <div className="flex-shrink-0 mt-0.5 text-gray-500">
                 {getEditIcon(edit.type)}

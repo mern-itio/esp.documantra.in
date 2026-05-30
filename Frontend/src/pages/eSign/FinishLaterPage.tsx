@@ -16,7 +16,7 @@ export default function FinishLaterPage() {
   }, [envelopeId, recipientId]);
 
   return (
-    <div className="min-h-[calc(100vh-120px)] mt-18 bg-white">
+    <div className="min-h-[calc(100vh-120px)] mt-18 bg-[#F7F3EE]">
       <div className="mx-auto w-full max-w-6xl px-4 py-12 lg:py-16">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
           {/* Visual */}
@@ -25,12 +25,12 @@ export default function FinishLaterPage() {
               <div className="absolute -inset-8 rounded-[36px] bg-gradient-to-b from-[#260559]/10 via-white to-white blur-sm" />
               <div className="relative overflow-hidden rounded-md border border-gray-200 bg-gradient-to-b from-[#260559] to-[#3d0a7a] p-6 shadow-xl">
                 <div className="text-white/90 text-sm font-semibold">{APP_NAME}</div>
-                <div className="mt-4 rounded-2xl bg-white/10 p-5 ring-1 ring-white/15">
+                <div className="mt-4 rounded-2xl bg-[#F7F3EE]/10 p-5 ring-1 ring-white/15">
                 <span className="w-28 text-xs text-white">Recipient ID: </span><br />
                 <span className="break-all text-white">{String(recipientId ?? "—")}</span>
                 </div>
 
-                <div className="mt-6 rounded-2xl bg-white p-4 shadow-lg">
+                <div className="mt-6 rounded-2xl bg-[#F7F3EE] p-4 shadow-lg">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#260559]/10 text-[#260559]">
@@ -87,7 +87,7 @@ export default function FinishLaterPage() {
               <button
                 type="button"
                 onClick={() => window.location.assign("/pricing")}
-                className="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                className="inline-flex items-center justify-center rounded-full border border-gray-300 bg-[#F7F3EE] px-6 py-3 text-sm font-semibold text-gray-800 hover:bg-[#F5F2EE]"
               >
                 View plans
               </button>

@@ -37,7 +37,7 @@ export const SupportPage: React.FC = () => {
       description: 'Get direct help from our support team',
       action: 'Create Ticket',
       onClick: () => setShowNewTicketModal(true),
-      color: 'bg-purple-500'
+      color: 'bg-[#F0FDF4]0'
     },
     {
       icon: Phone,
@@ -106,7 +106,7 @@ export const SupportPage: React.FC = () => {
         {supportChannels.map((channel, index) => {
           const Icon = channel.icon
           return (
-            <div key={index} className="bg-white rounded-lg border border-gray-200 p-6 hover:border-gray-300 transition-colors">
+            <div key={index} className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-6 hover:border-gray-300 transition-colors">
               <div className={`w-12 h-12 ${channel.color} rounded-lg flex items-center justify-center mb-4`}>
                 <Icon className="h-6 w-6 text-white" />
               </div>
@@ -148,7 +148,7 @@ export const SupportPage: React.FC = () => {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* FAQ Section */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Frequently Asked Questions</h2>
               <div className="relative">
@@ -180,7 +180,7 @@ export const SupportPage: React.FC = () => {
 
         {/* Support Tickets */}
         <div>
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Your Support Tickets</h3>
               <button
@@ -224,7 +224,7 @@ export const SupportPage: React.FC = () => {
           </div>
 
           {/* Contact Info */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
@@ -268,7 +268,7 @@ const FAQItem: React.FC<{ question: string; answer: string }> = ({ question, ans
     <div className="border border-gray-200 rounded-lg">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full text-left p-4 hover:bg-gray-50 transition-colors"
+        className="w-full text-left p-4 hover:bg-[#F5F2EE] transition-colors"
       >
         <div className="flex items-center justify-between">
           <h3 className="font-medium text-gray-900">{question}</h3>
@@ -311,8 +311,8 @@ const NewTicketModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-sm">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F7F3EE]/10 backdrop-blur-sm">
+      <div className="bg-[#F7F3EE] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Support Ticket</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

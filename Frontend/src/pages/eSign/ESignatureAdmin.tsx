@@ -121,7 +121,7 @@ const ESignatureAdmin: React.FC = () => {
     <div className="space-y-6">
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
               <FileText className="w-6 h-6 text-white" />
@@ -137,7 +137,7 @@ const ESignatureAdmin: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
               <CheckCircle className="w-6 h-6 text-white" />
@@ -153,7 +153,7 @@ const ESignatureAdmin: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
               <Clock className="w-6 h-6 text-white" />
@@ -169,9 +169,9 @@ const ESignatureAdmin: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-[#F0FDF4]0 rounded-lg flex items-center justify-center">
               <Shield className="w-6 h-6 text-white" />
             </div>
             <div className="flex items-center gap-1 text-sm font-medium text-green-600">
@@ -188,7 +188,7 @@ const ESignatureAdmin: React.FC = () => {
 
       {/* System Health */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">System Health</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -219,7 +219,7 @@ const ESignatureAdmin: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">System Alerts</h3>
           <div className="space-y-3">
             {systemAlerts.slice(0, 4).map((alert) => (
@@ -263,7 +263,7 @@ const ESignatureAdmin: React.FC = () => {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
           <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
@@ -272,7 +272,7 @@ const ESignatureAdmin: React.FC = () => {
         </div>
         <div className="space-y-3">
           {recentActivity.map((activity) => (
-            <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div key={activity.id} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   activity.status === 'completed' ? 'bg-green-100 text-green-600' :
@@ -337,10 +337,10 @@ const ESignatureAdmin: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-[#F5F2EE]">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Envelope
@@ -362,9 +362,9 @@ const ESignatureAdmin: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-[#F7F3EE] divide-y divide-gray-200">
               {envelopes.slice(0, 10).map((envelope) => (
-                <tr key={envelope.id} className="hover:bg-gray-50">
+                <tr key={envelope.id} className="hover:bg-[#F5F2EE]">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">{envelope.subject}</div>
@@ -418,7 +418,7 @@ const ESignatureAdmin: React.FC = () => {
       <h3 className="text-lg font-semibold text-gray-900">Authentication Monitoring</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Authentication Methods</h4>
           <div className="space-y-3">
             {[
@@ -443,7 +443,7 @@ const ESignatureAdmin: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Security Metrics</h4>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -465,7 +465,7 @@ const ESignatureAdmin: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Recent Incidents</h4>
           <div className="space-y-3">
             {[
@@ -492,13 +492,13 @@ const ESignatureAdmin: React.FC = () => {
       <h3 className="text-lg font-semibold text-gray-900">Signature Type Management</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Signature Distribution</h4>
           <div className="space-y-4">
             {[
               { type: 'Standard', count: 1234, percentage: 65, color: 'bg-blue-500' },
               { type: 'Advanced', count: 567, percentage: 30, color: 'bg-green-500' },
-              { type: 'Qualified', count: 95, percentage: 5, color: 'bg-purple-500' }
+              { type: 'Qualified', count: 95, percentage: 5, color: 'bg-[#F0FDF4]0' }
             ].map((sig) => (
               <div key={sig.type} className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -516,7 +516,7 @@ const ESignatureAdmin: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Compliance Status</h4>
           <div className="space-y-3">
             {[
@@ -538,7 +538,7 @@ const ESignatureAdmin: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Certificate Status</h4>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
@@ -560,7 +560,7 @@ const ESignatureAdmin: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F2EE]">
       <div className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -614,7 +614,7 @@ const ESignatureAdmin: React.FC = () => {
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'envelopes' && renderEnvelopes()}
         {activeTab === 'recipients' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Recipient Management</h3>
             <p className="text-gray-600">Monitor recipient activity and engagement patterns.</p>
@@ -623,21 +623,21 @@ const ESignatureAdmin: React.FC = () => {
         {activeTab === 'authentication' && renderAuthentication()}
         {activeTab === 'signatures' && renderSignatures()}
         {activeTab === 'workflows' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <Zap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Workflow Administration</h3>
             <p className="text-gray-600">Monitor enterprise workflows and automation performance.</p>
           </div>
         )}
         {activeTab === 'compliance' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <Globe className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Compliance Monitoring</h3>
             <p className="text-gray-600">Track regulatory compliance and audit requirements.</p>
           </div>
         )}
         {activeTab === 'security' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Security Monitoring</h3>
             <p className="text-gray-600">Monitor security incidents and fraud detection.</p>

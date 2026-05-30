@@ -210,7 +210,7 @@ export const colorOptimizationHelpers = {
       case 'low':
         return 'text-green-600 bg-green-50';
       default:
-        return 'text-gray-600 bg-gray-50';
+        return 'text-gray-600 bg-[#F5F2EE]';
     }
   },
 

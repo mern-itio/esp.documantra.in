@@ -30,7 +30,7 @@ const AIPoweredFeaturesPage = () => {
         "Ensure legal compliance across jurisdictions",
         "Save thousands in legal consulting fees"
       ],
-      color: "bg-purple-500"
+      color: "bg-[#F0FDF4]0"
     },
     {
       icon: PenTool,
@@ -78,7 +78,7 @@ const AIPoweredFeaturesPage = () => {
         "Track changes across multiple document versions",
         "Generate comprehensive change reports"
       ],
-      color: "bg-indigo-500"
+      color: "bg-emerald-500"
     }
   ];
 
@@ -160,9 +160,9 @@ const AIPoweredFeaturesPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white pt-24">
+    <div className="min-h-screen bg-[#F7F3EE] pt-24">
       {/* Hero Section */}
-      <section className="py-16 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white">
+      <section className="py-16 bg-gradient-to-br from-emerald-900 via-purple-900 to-pink-900 text-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
@@ -177,10 +177,10 @@ const AIPoweredFeaturesPage = () => {
               reduce manual work, and gain valuable insights from your documents.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/signup" className="bg-white text-indigo-900 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
+              <Link to="/signup" className="bg-[#F7F3EE] text-emerald-900 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
                 Try AI Features Free <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
-              <Link to="/demo" className="border-2 border-white text-white hover:bg-white hover:text-indigo-900 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
+              <Link to="/demo" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-emerald-900 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
                 Watch Demo
               </Link>
             </div>
@@ -189,7 +189,7 @@ const AIPoweredFeaturesPage = () => {
       </section>
 
       {/* AI Features Grid */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -202,7 +202,7 @@ const AIPoweredFeaturesPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {aiFeatures.map((feature, index) => (
-              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all bg-white rounded-xl p-6 shadow-lg">
+              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all bg-[#F7F3EE] rounded-xl p-6 shadow-lg">
                 <div className={`${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-6`}>
                   <feature.icon className="h-6 w-6 text-white" />
                 </div>
@@ -223,7 +223,7 @@ const AIPoweredFeaturesPage = () => {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -235,9 +235,9 @@ const AIPoweredFeaturesPage = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center">
-              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Eye className="h-8 w-8 text-indigo-600" />
+            <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Eye className="h-8 w-8 text-emerald-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Document Analysis</h3>
               <p className="text-gray-600">
@@ -245,9 +245,9 @@ const AIPoweredFeaturesPage = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Brain className="h-8 w-8 text-purple-600" />
+            <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center">
+              <div className="w-16 h-16 bg-[#DCFCE7] rounded-full flex items-center justify-center mx-auto mb-6">
+                <Brain className="h-8 w-8 text-[#155E4B]" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Machine Learning</h3>
               <p className="text-gray-600">
@@ -255,7 +255,7 @@ const AIPoweredFeaturesPage = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center">
+            <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Zap className="h-8 w-8 text-blue-600" />
               </div>
@@ -269,7 +269,7 @@ const AIPoweredFeaturesPage = () => {
       </section>
 
       {/* AI Document Assistant Demo */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -360,9 +360,9 @@ const AIPoweredFeaturesPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <div className="w-1 h-1 bg-gray-500 rounded-full animate-pulse"></div>
-                    <div className="w-1 h-1 bg-gray-500 rounded-full animate-pulse"></div>
-                    <div className="w-1 h-1 bg-gray-500 rounded-full animate-pulse"></div>
+                    <div className="w-1 h-1 bg-[#F5F2EE]0 rounded-full animate-pulse"></div>
+                    <div className="w-1 h-1 bg-[#F5F2EE]0 rounded-full animate-pulse"></div>
+                    <div className="w-1 h-1 bg-[#F5F2EE]0 rounded-full animate-pulse"></div>
                     <span>AI is thinking...</span>
                   </div>
                 </div>
@@ -383,7 +383,7 @@ const AIPoweredFeaturesPage = () => {
       </section>
 
       {/* Use Cases */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -396,7 +396,7 @@ const AIPoweredFeaturesPage = () => {
 
           <div className="grid md:grid-cols-3 gap-8">
             {useCases.map((useCase, index) => (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-lg card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all">
+              <div key={index} className="bg-[#F7F3EE] rounded-xl p-8 shadow-lg card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all">
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">{useCase.title}</h3>
                 <p className="text-gray-600 mb-6">{useCase.description}</p>
                 <div className="space-y-4">
@@ -416,7 +416,7 @@ const AIPoweredFeaturesPage = () => {
       </section>
 
       {/* Technology Behind Our AI */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -428,12 +428,12 @@ const AIPoweredFeaturesPage = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-gray-50 rounded-xl p-8">
+            <div className="bg-[#F5F2EE] rounded-xl p-8">
               <h3 className="text-2xl font-semibold text-gray-900 mb-6">AI Models & Capabilities</h3>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Brain className="h-5 w-5 text-indigo-600" />
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Brain className="h-5 w-5 text-emerald-600" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">Natural Language Processing</h4>
@@ -443,8 +443,8 @@ const AIPoweredFeaturesPage = () => {
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Eye className="h-5 w-5 text-purple-600" />
+                  <div className="w-10 h-10 bg-[#DCFCE7] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Eye className="h-5 w-5 text-[#155E4B]" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">Computer Vision</h4>
@@ -467,7 +467,7 @@ const AIPoweredFeaturesPage = () => {
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-8">
+            <div className="bg-[#F5F2EE] rounded-xl p-8">
               <h3 className="text-2xl font-semibold text-gray-900 mb-6">Security & Ethics</h3>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
@@ -510,7 +510,7 @@ const AIPoweredFeaturesPage = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -523,7 +523,7 @@ const AIPoweredFeaturesPage = () => {
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-lg card-hover">
+              <div key={index} className="bg-[#F7F3EE] rounded-xl p-8 shadow-lg card-hover">
                 <div className="flex items-center gap-1 mb-6">
                   {[...Array(5)].map((_, i) => (
                     <svg key={i} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 24 24">
@@ -543,7 +543,7 @@ const AIPoweredFeaturesPage = () => {
       </section>
 
       {/* AI Roadmap */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -565,7 +565,7 @@ const AIPoweredFeaturesPage = () => {
                   <div className="absolute left-0 w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center border-4 border-white">
                     <div className="w-3 h-3 bg-primary-600 rounded-full"></div>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-6 shadow-md">
+                  <div className="bg-[#F5F2EE] rounded-xl p-6 shadow-md">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
                         Now Available
@@ -582,7 +582,7 @@ const AIPoweredFeaturesPage = () => {
                   <div className="absolute left-0 w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center border-4 border-white">
                     <div className="w-3 h-3 bg-primary-600 rounded-full"></div>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-6 shadow-md">
+                  <div className="bg-[#F5F2EE] rounded-xl p-6 shadow-md">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
                         Q2 2025
@@ -599,9 +599,9 @@ const AIPoweredFeaturesPage = () => {
                   <div className="absolute left-0 w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center border-4 border-white">
                     <div className="w-3 h-3 bg-primary-600 rounded-full"></div>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-6 shadow-md">
+                  <div className="bg-[#F5F2EE] rounded-xl p-6 shadow-md">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">
+                      <span className="text-xs bg-[#DCFCE7] text-purple-800 px-2 py-1 rounded-full font-medium">
                         Q3 2025
                       </span>
                     </div>
@@ -616,7 +616,7 @@ const AIPoweredFeaturesPage = () => {
                   <div className="absolute left-0 w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center border-4 border-white">
                     <div className="w-3 h-3 bg-primary-600 rounded-full"></div>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-6 shadow-md">
+                  <div className="bg-[#F5F2EE] rounded-xl p-6 shadow-md">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">
                         Q4 2025
@@ -635,7 +635,7 @@ const AIPoweredFeaturesPage = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -649,8 +649,8 @@ const AIPoweredFeaturesPage = () => {
           <div className="max-w-3xl mx-auto">
             <div className="space-y-4">
               {faqItems.map((faq, index) => (
-                <div key={index} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="p-4 bg-gray-50">
+                <div key={index} className="bg-[#F7F3EE] rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="p-4 bg-[#F5F2EE]">
                     <h3 className="font-semibold text-gray-900">{faq.question}</h3>
                   </div>
                   <div className="p-4">
@@ -664,21 +664,21 @@ const AIPoweredFeaturesPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-indigo-600 to-purple-700 text-white">
+      <section className="py-20 bg-gradient-to-br from-emerald-600 to-purple-700 text-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
               Experience the Power of AI in Document Management
             </h2>
-            <p className="text-xl text-indigo-100 mb-8 leading-relaxed">
+            <p className="text-xl text-emerald-100 mb-8 leading-relaxed">
               Join thousands of organizations that are transforming their document workflows with {BRAND.name}'s AI-powered features.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/signup" className="bg-white text-indigo-700 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
+              <Link to="/signup" className="bg-[#F7F3EE] text-emerald-700 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
                 Start Free Trial <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
-              <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-indigo-700 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
+              <Link to="/contact" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-emerald-700 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
                 Schedule Demo
               </Link>
             </div>
@@ -686,15 +686,15 @@ const AIPoweredFeaturesPage = () => {
             <div className="grid sm:grid-cols-3 gap-6 text-center">
               <div className="flex items-center justify-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-300" />
-                <span className="text-indigo-100">No credit card required</span>
+                <span className="text-emerald-100">No credit card required</span>
               </div>
               <div className="flex items-center justify-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-300" />
-                <span className="text-indigo-100">Free forever plan</span>
+                <span className="text-emerald-100">Free forever plan</span>
               </div>
               <div className="flex items-center justify-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-300" />
-                <span className="text-indigo-100">Setup in 2 minutes</span>
+                <span className="text-emerald-100">Setup in 2 minutes</span>
               </div>
             </div>
           </div>

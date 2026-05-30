@@ -35,7 +35,7 @@ const TopApiEndpointsChart = () => {
   }, []);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Top API Endpoints</h2>
       <ResponsiveContainer width="100%" height={340}>
         <BarChart data={endpointsData} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>

@@ -123,7 +123,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
     { name: 'Edit', icon: Edit, color: 'text-blue-600', action: () => navigate('/edit-pdf') },
     { name: 'Compress', icon: Minimize2, color: 'text-blue-600', action: () => navigate('/compress-pdf') },
     { name: 'Delete Pages', icon: Trash2, color: 'text-red-600', action: () => navigate('/delete-pages') },
-    { name: 'Crop', icon: Crop, color: 'text-purple-600', action: () => navigate('/crop-pdf') }
+    { name: 'Crop', icon: Crop, color: 'text-[#155E4B]', action: () => navigate('/crop-pdf') }
   ]
 
   // Mock processing simulation
@@ -204,7 +204,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24">
+    <div className="min-h-screen bg-[#F5F2EE] pt-24">
       <div className="container-max">
         {/* Breadcrumb */}
         <div className="mb-6">
@@ -220,7 +220,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
           <div className="mt-4">
             <Link 
               to="/pdf-tools" 
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-[#F7F3EE] border border-gray-300 rounded-lg hover:bg-[#F5F2EE] hover:border-gray-400 transition-colors"
             >
               <ChevronDown className="h-4 w-4 rotate-90" />
               Back to PDF Tools
@@ -229,7 +229,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
         </div>
 
         {/* Compact Header */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-lg p-6 mb-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
               <ToolIcon className="h-6 w-6 text-primary-600" />
@@ -250,9 +250,9 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
               <div className="text-lg font-bold text-green-600">{maxFileSize}</div>
               <div className="text-xs text-green-700">Max File Size</div>
             </div>
-            <div className="text-center p-3 bg-purple-50 rounded-lg">
-              <div className="text-lg font-bold text-purple-600">{processingTime}</div>
-              <div className="text-xs text-purple-700">Processing Time</div>
+            <div className="text-center p-3 bg-[#F0FDF4] rounded-lg">
+              <div className="text-lg font-bold text-[#155E4B]">{processingTime}</div>
+              <div className="text-xs text-[#155E4B]">Processing Time</div>
             </div>
             <div className="text-center p-3 bg-orange-50 rounded-lg">
               <div className="text-lg font-bold text-orange-600">4.9★</div>
@@ -265,13 +265,13 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Left Sidebar - Compact */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg p-4 sticky top-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-lg p-4 sticky top-6">
               <h3 className="font-semibold text-gray-900 mb-3 text-sm">Process Steps</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => setActiveTab('upload')}
                   className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm ${
-                    activeTab === 'upload' ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'hover:bg-gray-50'
+                    activeTab === 'upload' ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'hover:bg-[#F5F2EE]'
                   }`}
                 >
                   <Upload className="h-4 w-4" />
@@ -284,7 +284,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                   disabled={files.length === 0}
                   className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm ${
                     activeTab === 'settings' ? 'bg-primary-50 text-primary-700 border border-primary-200' : 
-                    files.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
+                    files.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#F5F2EE]'
                   }`}
                 >
                   <Settings className="h-4 w-4" />
@@ -296,7 +296,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                   disabled={files.length === 0}
                   className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm ${
                     activeTab === 'preview' ? 'bg-primary-50 text-primary-700 border border-primary-200' : 
-                    files.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
+                    files.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#F5F2EE]'
                   }`}
                 >
                   <Eye className="h-4 w-4" />
@@ -308,7 +308,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                   disabled={!isComplete}
                   className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm ${
                     activeTab === 'download' ? 'bg-primary-50 text-primary-700 border border-primary-200' : 
-                    !isComplete ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
+                    !isComplete ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#F5F2EE]'
                   }`}
                 >
                   <Download className="h-4 w-4" />
@@ -323,7 +323,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                   <h4 className="font-medium text-gray-900 mb-2 text-sm">Queue ({processingQueue.length})</h4>
                   <div className="space-y-1">
                     {processingQueue.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
+                      <div key={item.id} className="flex items-center justify-between p-2 bg-[#F5F2EE] rounded text-xs">
                         <span className="text-gray-600 truncate">{item.files[0]?.name}</span>
                         <button
                           onClick={() => removeFromQueue(item.id)}
@@ -341,7 +341,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
 
           {/* Main Content Area - Expanded */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-lg p-6">
               {/* Upload Tab */}
               {activeTab === 'upload' && (
                 <div className="space-y-6">
@@ -387,15 +387,15 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
 
                   {/* Cloud Import Options */}
                   <div className="grid md:grid-cols-3 gap-3">
-                    <button className="flex items-center justify-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
+                    <button className="flex items-center justify-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] text-sm">
                       <div className="w-4 h-4 bg-blue-500 rounded"></div>
                       <span>Google Drive</span>
                     </button>
-                    <button className="flex items-center justify-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
+                    <button className="flex items-center justify-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] text-sm">
                       <div className="w-4 h-4 bg-blue-600 rounded"></div>
                       <span>Dropbox</span>
                     </button>
-                    <button className="flex items-center justify-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
+                    <button className="flex items-center justify-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] text-sm">
                       <div className="w-4 h-4 bg-orange-500 rounded"></div>
                       <span>OneDrive</span>
                     </button>
@@ -406,7 +406,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                     <div className="space-y-3">
                       <h3 className="font-semibold text-gray-900">Uploaded Files ({files.length})</h3>
                       {files.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div key={index} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
                           <div className="flex items-center gap-3">
                             <FileText className="h-6 w-6 text-red-500" />
                             <div>
@@ -460,7 +460,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                         </label>
                         <div className="grid grid-cols-2 gap-3">
                           {outputFormats.map((format) => (
-                            <label key={format} className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <label key={format} className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] cursor-pointer">
                               <input type="radio" name="format" value={format} className="text-primary-600" />
                               <span className="font-medium">{format.toUpperCase()}</span>
                             </label>
@@ -493,7 +493,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                   <h2 className="text-xl font-bold text-gray-900">Preview & Process</h2>
                   
                   {/* Compact File Preview */}
-                  <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                  <div className="border border-gray-300 rounded-lg p-4 bg-[#F5F2EE]">
                     <div className="text-center">
                       <FileText className="h-16 w-16 text-gray-400 mx-auto mb-3" />
                       <h3 className="font-semibold text-gray-900 mb-1">{files[0]?.name}</h3>
@@ -558,8 +558,8 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                   </div>
                   
                   {/* Download Section */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
-                    <div className="flex items-center justify-between p-4 bg-white rounded-lg border mb-4">
+                  <div className="bg-[#F5F2EE] border border-gray-200 rounded-lg p-6 mb-6">
+                    <div className="flex items-center justify-between p-4 bg-[#F7F3EE] rounded-lg border mb-4">
                       <div className="flex items-center gap-3">
                         <FileText className="h-8 w-8 text-green-500" />
                         <div>
@@ -591,7 +591,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                         <button
                           key={index}
                           onClick={tool.action}
-                          className="flex flex-col items-center gap-1 p-3 hover:bg-gray-50 rounded-lg transition-colors min-w-[80px]"
+                          className="flex flex-col items-center gap-1 p-3 hover:bg-[#F5F2EE] rounded-lg transition-colors min-w-[80px]"
                         >
                           <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                             <tool.icon className={`h-5 w-5 ${tool.color}`} />
@@ -603,7 +603,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                       {/* More Tools Button */}
                       <button
                         onClick={() => setShowMoreTools(!showMoreTools)}
-                        className="flex flex-col items-center gap-1 p-3 hover:bg-gray-50 rounded-lg transition-colors min-w-[80px]"
+                        className="flex flex-col items-center gap-1 p-3 hover:bg-[#F5F2EE] rounded-lg transition-colors min-w-[80px]"
                       >
                         <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                           <MoreHorizontal className="h-5 w-5 text-gray-600" />
@@ -620,7 +620,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
 
                   {/* Expanded Tools Section */}
                   {showMoreTools && (
-                    <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+                    <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 mb-6">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-semibold text-gray-900">More tools to continue with</h3>
                         <button
@@ -640,7 +640,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                               <Link
                                 key={index}
                                 to={tool.path}
-                                className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                                className="flex items-center gap-2 p-2 hover:bg-[#F5F2EE] rounded-lg transition-colors"
                               >
                                 <span className="text-sm">{tool.icon}</span>
                                 <span className="text-sm text-gray-700 hover:text-gray-900">{tool.name}</span>
@@ -657,7 +657,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                               <Link
                                 key={index}
                                 to={tool.path}
-                                className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                                className="flex items-center gap-2 p-2 hover:bg-[#F5F2EE] rounded-lg transition-colors"
                               >
                                 <span className="text-sm">{tool.icon}</span>
                                 <span className="text-sm text-gray-700 hover:text-gray-900">{tool.name}</span>
@@ -674,7 +674,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                               <Link
                                 key={index}
                                 to={tool.path}
-                                className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                                className="flex items-center gap-2 p-2 hover:bg-[#F5F2EE] rounded-lg transition-colors"
                               >
                                 <span className="text-sm">{tool.icon}</span>
                                 <span className="text-sm text-gray-700 hover:text-gray-900">{tool.name}</span>
@@ -691,7 +691,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                               <Link
                                 key={index}
                                 to={tool.path}
-                                className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                                className="flex items-center gap-2 p-2 hover:bg-[#F5F2EE] rounded-lg transition-colors"
                               >
                                 <span className="text-sm">{tool.icon}</span>
                                 <span className="text-sm text-gray-700 hover:text-gray-900">{tool.name}</span>
@@ -708,7 +708,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                               <Link
                                 key={index}
                                 to={tool.path}
-                                className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                                className="flex items-center gap-2 p-2 hover:bg-[#F5F2EE] rounded-lg transition-colors"
                               >
                                 <span className="text-sm">{tool.icon}</span>
                                 <span className="text-sm text-gray-700 hover:text-gray-900">{tool.name}</span>
@@ -725,7 +725,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
                               <Link
                                 key={index}
                                 to={tool.path}
-                                className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                                className="flex items-center gap-2 p-2 hover:bg-[#F5F2EE] rounded-lg transition-colors"
                               >
                                 <span className="text-sm">{tool.icon}</span>
                                 <span className="text-sm text-gray-700 hover:text-gray-900">{tool.name}</span>
@@ -758,7 +758,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
         </div>
 
         {/* Compact How-to Guide */}
-        <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+        <div className="mt-8 bg-[#F7F3EE] rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">How to Use {toolName}</h2>
           <div className="grid md:grid-cols-4 gap-4">
             {howToSteps.map((step, index) => (
@@ -774,14 +774,14 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
         </div>
 
         {/* Enhanced FAQ Section */}
-        <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+        <div className="mt-8 bg-[#F7F3EE] rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
           <div className="grid md:grid-cols-2 gap-4">
             {enhancedFAQs.map((faq, index) => (
               <div key={index} className="border border-gray-200 rounded-lg">
                 <button
                   onClick={() => setExpandedFAQ(expandedFAQ === index ? null : index)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[#F5F2EE] transition-colors"
                 >
                   <span className="font-medium text-gray-900 text-sm pr-4">{faq.question}</span>
                   {expandedFAQ === index ? (
@@ -828,28 +828,28 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
           
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             <div className="text-center">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-[#F7F3EE]/20 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Shield className="h-6 w-6" />
               </div>
               <div className="font-semibold mb-1">SSL Encrypted</div>
               <div className="text-primary-200 text-sm">Bank-level security</div>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-[#F7F3EE]/20 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Globe className="h-6 w-6" />
               </div>
               <div className="font-semibold mb-1">GDPR Compliant</div>
               <div className="text-primary-200 text-sm">Privacy protected</div>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-[#F7F3EE]/20 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Award className="h-6 w-6" />
               </div>
               <div className="font-semibold mb-1">ISO Certified</div>
               <div className="text-primary-200 text-sm">Quality assured</div>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-[#F7F3EE]/20 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Users className="h-6 w-6" />
               </div>
               <div className="font-semibold mb-1">500K+ Users</div>
@@ -858,7 +858,7 @@ const PDFToolLayout: React.FC<PDFToolLayoutProps> = ({
           </div>
 
           {/* Security Features */}
-          <div className="bg-white/10 rounded-lg p-6">
+          <div className="bg-[#F7F3EE]/10 rounded-lg p-6">
             <h4 className="font-semibold mb-4">Your Security is Our Priority</h4>
             <div className="grid md:grid-cols-2 gap-4 text-sm">
               {securityFeatures.map((feature, index) => (

@@ -107,7 +107,7 @@ const AadhaarSignatureJourneySection: React.FC = () => {
   const activeFeature = features[activeIndex]
 
   return (
-    <section className="relative bg-slate-50 py-20 sm:py-24">
+    <section className="relative bg-[#F5F2EE] py-20 sm:py-24">
       <div
         className="pointer-events-none absolute inset-0 bg-[url('/images/1.jpg')] bg-cover bg-center opacity-100 md:opacity-10"
         aria-hidden="true"
@@ -121,7 +121,7 @@ const AadhaarSignatureJourneySection: React.FC = () => {
       <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 sm:px-6 lg:flex-row lg:items-start lg:px-8">
         {/* Left: Sticky image, slightly lower for visual centering */}
         <div className="lg:sticky lg:top-32 lg:w-1/2">
-          <div className="h-full rounded-xl bg-white/80 p-4 shadow-lg ring-1 ring-slate-200 backdrop-blur-sm">
+          <div className="h-full rounded-xl bg-[#F7F3EE]/80 p-4 shadow-lg ring-1 ring-slate-200 backdrop-blur-sm">
             <div className="relative flex h-full items-center justify-center overflow-hidden rounded-2xl bg-slate-900/5">
               <img
                 key={activeFeature.id}
@@ -144,15 +144,15 @@ const AadhaarSignatureJourneySection: React.FC = () => {
                 ref={(el) => {
                   itemRefs.current[index] = el
                 }}
-                className={`relative rounded-xl border bg-white/80 p-5 shadow-sm ring-1 transition-all duration-300 sm:p-6 lg:min-h-[380px] ${index === activeIndex
-                    ? 'border-indigo-500/60 ring-indigo-500/30 shadow-md'
-                    : 'border-slate-200 ring-slate-200/60 opacity-70'
+                className={`relative rounded-xl border bg-[#F7F3EE]/80 p-5 shadow-sm ring-1 transition-all duration-300 sm:p-6 lg:min-h-[380px] ${index === activeIndex
+                    ? 'border-emerald-500/60 ring-emerald-500/30 shadow-md'
+                    : 'border-[#E6D8C9] ring-slate-200/60 opacity-70'
                   }`}
               >
                 <div className="flex items-start gap-4">                  
                   <div>
                     <p
-                      className={`text-xs font-bold text-heading ${index === activeIndex ? 'text-indigo-500' : 'text-slate-500'
+                      className={`text-xs font-bold text-heading ${index === activeIndex ? 'text-emerald-500' : 'text-slate-500'
                         }`}
                     >
                       {feature.label}
@@ -181,7 +181,7 @@ const AadhaarSignatureJourneySection: React.FC = () => {
           <div className="mt-10">
             <a
               href="/sign_up/"
-              className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+              className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             >
               Start for free
             </a>

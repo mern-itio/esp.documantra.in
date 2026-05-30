@@ -50,7 +50,7 @@ const StatusCodesChart = () => {
   const total = statusData.reduce((sum, d) => sum + d.value, 0);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Status Codes</h2>
       <div className="flex flex-col items-center">
         <ResponsiveContainer width={160} height={160}>

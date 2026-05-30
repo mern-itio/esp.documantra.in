@@ -483,7 +483,7 @@ const MakeSearchable: React.FC = () => {
             {/* Process Button - Integrated with settings */}
             {!isProcessing && (
               <div className="mt-6 pt-6 border-t border-border">
-                <div className="bg-gradient-to-r from-primary/10 to-indigo-500/10 dark:from-primary/15 dark:to-indigo-500/15 rounded-lg p-4 mb-4">
+                <div className="bg-gradient-to-r from-primary/10 to-emerald-500/10 dark:from-primary/15 dark:to-emerald-500/15 rounded-lg p-4 mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-foreground">Ready to Process</h4>
                     <span className="text-sm text-primary font-medium">

@@ -577,7 +577,7 @@ const CalculateFieldsPage: React.FC = () => {
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
-                        <div className="bg-gray-50 rounded p-2 mb-3">
+                        <div className="bg-[#F5F2EE] rounded p-2 mb-3">
                           <code className="text-sm text-foreground">{template.formula}</code>
                         </div>
                         <div className="text-xs text-muted-foreground mb-3">
@@ -677,7 +677,7 @@ const CalculateFieldsPage: React.FC = () => {
                 Field relationships
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
-                <Zap className="w-4 h-4 mr-2 text-purple-600" />
+                <Zap className="w-4 h-4 mr-2 text-[#155E4B]" />
                 Dynamic calculations
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
@@ -685,7 +685,7 @@ const CalculateFieldsPage: React.FC = () => {
                 Mathematical operations
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
-                <CheckSquare className="w-4 h-4 mr-2 text-indigo-600" />
+                <CheckSquare className="w-4 h-4 mr-2 text-emerald-600" />
                 Conditional logic
               </div>
             </div>

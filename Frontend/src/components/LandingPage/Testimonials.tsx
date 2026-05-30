@@ -49,12 +49,12 @@ const Testimonials = () => {
   const trustBadges = [
     { name: "GDPR Compliant", color: "bg-green-100 text-green-800" },
     { name: "SOC2 Type II", color: "bg-blue-100 text-blue-800" },
-    { name: "ISO27001", color: "bg-purple-100 text-purple-800" },
+    { name: "ISO27001", color: "bg-[#DCFCE7] text-purple-800" },
     { name: "256-bit SSL", color: "bg-orange-100 text-orange-800" }
   ]
 
   return (
-    <section className="section-padding bg-gray-50">
+    <section className="section-padding bg-[#F5F2EE]">
       <div className="container-max">
         {/* Stats Section */}
         <div className="text-center mb-16">
@@ -78,7 +78,7 @@ const Testimonials = () => {
         {/* Testimonials */}
         <div className="grid lg:grid-cols-3 gap-8 mb-12">
           {testimonials.map((testimonial, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-lg p-8 card-hover">
+            <div key={index} className="bg-[#F7F3EE] rounded-xl shadow-lg p-8 card-hover">
               <div className="flex items-center gap-1 mb-4">
                 {[...Array(testimonial.rating)].map((_, i) => (
                   <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
@@ -106,7 +106,7 @@ const Testimonials = () => {
         </div>
 
         {/* Trust Badges */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8">
           <div className="text-center mb-8">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
               Enterprise-Grade Security & Compliance

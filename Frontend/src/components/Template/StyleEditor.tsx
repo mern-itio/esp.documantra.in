@@ -65,7 +65,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">Style Editor</h2>
         <button className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium">
@@ -84,7 +84,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-white text-blue-600 shadow-sm'
+                  ? 'bg-[#F7F3EE] text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >

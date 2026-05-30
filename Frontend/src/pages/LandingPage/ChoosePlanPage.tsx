@@ -65,7 +65,7 @@ const ChoosePlanPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-[#F5F2EE]">
       {/* Step banner */}
       <div className="flex items-center justify-center border-b border-amber-200 bg-amber-50 py-3">
         <span className="rounded-full bg-amber-100 px-4 py-1 text-sm font-semibold text-amber-800">
@@ -76,7 +76,7 @@ const ChoosePlanPage: React.FC = () => {
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         {/* Sign order + document type */}
         {signersOrder && signersOrder.length > 1 && (
-          <section className="space-y-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <section className="space-y-4 rounded-2xl border border-[#E6D8C9] bg-[#F7F3EE] px-4 py-3 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -120,7 +120,7 @@ const ChoosePlanPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setEditSignersOpen(true)}
-                className="mt-1 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                className="mt-1 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#F5F2EE]"
               >
                 <Pen className="h-3 w-3" />
               </button>
@@ -128,7 +128,7 @@ const ChoosePlanPage: React.FC = () => {
           </section>
         )}
 
-        <div className="bg-white rounded-xl border border-slate-200 p-3">
+        <div className="bg-[#F7F3EE] rounded-xl border border-[#E6D8C9] p-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Document Type
@@ -152,7 +152,7 @@ const ChoosePlanPage: React.FC = () => {
           </p>
         </div>
         {/* Safety level selector + plan detail using shared pricing component */}
-        <section className="rounded-2xl border border-slate-200 bg-white/50 p-4 sm:p-6">
+        <section className="rounded-2xl border border-[#E6D8C9] bg-[#F7F3EE]/50 p-4 sm:p-6">
           {/* <h2 className="text-sm font-semibold text-slate-900 mb-2">Choose Safety Level</h2> */}
 
           <PerDocPricingSection
@@ -177,12 +177,12 @@ const ChoosePlanPage: React.FC = () => {
         </section>
       </main>
       {/* Bottom pay bar */}
-      <footer className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-2px_10px_rgba(15,23,42,0.08)] sm:px-6 lg:px-8">
+      <footer className="sticky bottom-0 z-20 border-t border-[#E6D8C9] bg-[#F7F3EE]/95 px-4 py-3 shadow-[0_-2px_10px_rgba(15,23,42,0.08)] sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4">
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-[#F7F3EE] px-4 py-2 text-sm font-medium text-slate-700 hover:bg-[#F5F2EE]"
           >
             <ChevronLeft className="h-4 w-4" />
             Back
@@ -192,7 +192,7 @@ const ChoosePlanPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setFareOpen(true)}
-              className="inline-flex items-center gap-1 mt-1 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-1 mt-1 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#F5F2EE]"
             >
               <Info className="h-5 w-5" />
             </button>
@@ -209,7 +209,7 @@ const ChoosePlanPage: React.FC = () => {
       {/* Confirm signer details modal */}
       {confirmOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+          <div className="w-full max-w-lg rounded-2xl bg-[#F7F3EE] shadow-xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <h2 className="price-heading">
                 Confirm Signer Details
@@ -249,7 +249,7 @@ const ChoosePlanPage: React.FC = () => {
                         setDragIndex(index);
                       }}
                       onDragEnd={() => setDragIndex(null)}
-                      className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                      className="flex items-center gap-3 rounded-lg border border-[#E6D8C9] bg-[#F5F2EE] px-3 py-2"
                     >
                       <span className="cursor-grab active:cursor-grabbing text-slate-400">
                         ⋮⋮
@@ -273,7 +273,7 @@ const ChoosePlanPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="mt-5 flex justify-end gap-3 border-t border-slate-200 pt-4">
+              <div className="mt-5 flex justify-end gap-3 border-t border-[#E6D8C9] pt-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -282,7 +282,7 @@ const ChoosePlanPage: React.FC = () => {
                       state: { fromPlan: true },
                     });
                   }}
-                  className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#F5F2EE]"
                 >
                   Edit
                 </button>
@@ -306,7 +306,7 @@ const ChoosePlanPage: React.FC = () => {
       {/* Edit signers (reorder) modal */}
       {editSignersOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl">
+          <div className="w-full max-w-xl rounded-2xl bg-[#F7F3EE] shadow-xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <h2 className="text-base font-semibold text-slate-900">Edit Signers</h2>
               <button
@@ -345,7 +345,7 @@ const ChoosePlanPage: React.FC = () => {
                         setDragIndex(index);
                       }}
                       onDragEnd={() => setDragIndex(null)}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                      className="flex items-center justify-between gap-3 rounded-lg border border-[#E6D8C9] bg-[#F5F2EE] px-3 py-2"
                     >
                       <div className="flex items-center gap-3">
                         <span className="cursor-move text-slate-400">
@@ -376,11 +376,11 @@ const ChoosePlanPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="mt-5 flex justify-end gap-3 border-t border-slate-200 pt-4">
+              <div className="mt-5 flex justify-end gap-3 border-t border-[#E6D8C9] pt-4">
                 <button
                   type="button"
                   onClick={() => setEditSignersOpen(false)}
-                  className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#F5F2EE]"
                 >
                   Cancel
                 </button>
@@ -400,7 +400,7 @@ const ChoosePlanPage: React.FC = () => {
       {/* Fare breakdown modal */}
       {fareOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+          <div className="w-full max-w-lg rounded-2xl bg-[#F7F3EE] shadow-xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <h2 className="text-base font-semibold text-slate-900">Fare Breakdown</h2>
               <button
@@ -429,7 +429,7 @@ const ChoosePlanPage: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* <div className="mt-4 border-t border-slate-200 pt-4"> */}
+                  {/* <div className="mt-4 border-t border-[#E6D8C9] pt-4"> */}
                   <div>
                     {/* <p className="text-xs font-semibold text-slate-500">
                       Payable Amount Breakdown:
@@ -440,7 +440,7 @@ const ChoosePlanPage: React.FC = () => {
                         <span className="text-xs text-slate-600">Signing Fee</span>
                         <div className="flex items-center gap-2 text-xs text-slate-600">
                           <span className="relative inline-flex h-4 w-7 items-center rounded-full border border-slate-300 bg-slate-200">
-                            <span className="absolute h-3 w-3 translate-x-0.5 rounded-full bg-white shadow-sm" />
+                            <span className="absolute h-3 w-3 translate-x-0.5 rounded-full bg-[#F7F3EE] shadow-sm" />
                           </span>
                           <span>Use Sign Wallet</span>
                         </div>
@@ -455,7 +455,7 @@ const ChoosePlanPage: React.FC = () => {
                       <span className="text-sm font-medium">-₹{walletUsed.toFixed(2)}</span>
                     </div> */}
 
-                    <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3 text-sm">
+                    <div className="mt-4 flex items-center justify-between border-t border-[#E6D8C9] pt-3 text-sm">
                       <span className="font-medium text-slate-800">Subtotal</span>
                       <span className="font-semibold text-slate-900">
                         ₹{subtotal.toFixed(2)}
@@ -468,7 +468,7 @@ const ChoosePlanPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-3 text-sm">
+                    <div className="mt-4 flex items-center justify-between border-t border-[#E6D8C9] pt-3 text-sm">
                       <span className="font-semibold text-slate-900">Total Amount</span>
                       <span className="text-base font-semibold text-slate-900">
                         ₹{total.toFixed(2)}
@@ -476,11 +476,11 @@ const ChoosePlanPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-5 flex justify-end gap-3 border-t border-slate-200 pt-4">
+                  <div className="mt-5 flex justify-end gap-3 border-t border-[#E6D8C9] pt-4">
                     <button
                       type="button"
                       onClick={() => setFareOpen(false)}
-                      className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                      className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#F5F2EE]"
                     >
                       Close
                     </button>
@@ -505,7 +505,7 @@ const ChoosePlanPage: React.FC = () => {
       {/* Edit document type modal */}
       {docTypeOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl">
+          <div className="w-full max-w-xl rounded-2xl bg-[#F7F3EE] shadow-xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <h2 className="text-base font-semibold text-slate-900">Edit Document Type</h2>
               <button
@@ -556,7 +556,7 @@ const ChoosePlanPage: React.FC = () => {
                     className={`mt-2 flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left ${
                       isActive
                         ? 'border-slate-900 bg-slate-900/5'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        : 'border-[#E6D8C9] bg-[#F7F3EE] hover:border-slate-300'
                     }`}
                   >
                     <div>
@@ -582,11 +582,11 @@ const ChoosePlanPage: React.FC = () => {
                 );
               })}
 
-              <div className="mt-5 flex justify-end gap-3 border-t border-slate-200 pt-4">
+              <div className="mt-5 flex justify-end gap-3 border-t border-[#E6D8C9] pt-4">
                 <button
                   type="button"
                   onClick={() => setDocTypeOpen(false)}
-                  className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#F5F2EE]"
                 >
                   Cancel
                 </button>
@@ -606,7 +606,7 @@ const ChoosePlanPage: React.FC = () => {
       {/* Payment done / Thank you modal */}
       {paymentDoneOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-[#F7F3EE] shadow-2xl">
             <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-sky-700 px-6 py-5 text-white">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
@@ -636,7 +636,7 @@ const ChoosePlanPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs">
+              <div className="mt-4 grid gap-3 rounded-xl border border-[#E6D8C9] bg-[#F5F2EE] px-4 py-3 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-slate-600">Verification</span>
                   <span className="font-semibold text-slate-900">
@@ -662,7 +662,7 @@ const ChoosePlanPage: React.FC = () => {
                       {signersOrder?.map((s) => (
                         <span
                           key={s.id}
-                          className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 shadow-sm"
+                          className="inline-flex items-center gap-1 rounded-full bg-[#F7F3EE] px-2 py-1 shadow-sm"
                         >
                           <span className="flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-[9px] font-semibold text-white">
                             {s.fullName.charAt(0).toUpperCase()}
@@ -680,11 +680,11 @@ const ChoosePlanPage: React.FC = () => {
                 WhatsApp numbers. You can track the signing status from your dashboard.
               </p>
 
-              <div className="mt-5 flex justify-end gap-3 border-t border-slate-200 pt-4">
+              <div className="mt-5 flex justify-end gap-3 border-t border-[#E6D8C9] pt-4">
                 <button
                   type="button"
                   onClick={() => setPaymentDoneOpen(false)}
-                  className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-full border border-slate-300 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#F5F2EE]"
                 >
                   Close
                 </button>

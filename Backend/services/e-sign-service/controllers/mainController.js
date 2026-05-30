@@ -460,8 +460,12 @@ const envelopesDetail = async (req, res) => {
         .replace(/^.*\/uploads\//, '')
         .replace(/^uploads\//, '')
         .replace(/^\/+/, '');
-      const base = `${req.protocol}://${req.get('host')}`;
+
+      const base = process.env.PUBLIC_ESIGN_URL || `https://${req.get('host')}`;
       return `${base}/uploads/${uploadRelative}`;
+
+      //const base = `${req.protocol}://${req.get('host')}`;
+      //return `${base}/uploads/${uploadRelative}`;
     };
 
     // Step 4: Format the response (single envelope object)

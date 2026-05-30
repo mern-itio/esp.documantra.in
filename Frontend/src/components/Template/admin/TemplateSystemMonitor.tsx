@@ -143,7 +143,7 @@ export const TemplateSystemMonitor: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">System Performance Monitor</h2>
         <div className="flex items-center space-x-3">
@@ -267,11 +267,11 @@ export const TemplateSystemMonitor: React.FC = () => {
             <p className="text-sm text-blue-600">Healthy</p>
           </div>
           <div className="text-center">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Zap className="w-8 h-8 text-purple-600" />
+            <div className="w-16 h-16 bg-[#DCFCE7] rounded-full flex items-center justify-center mx-auto mb-3">
+              <Zap className="w-8 h-8 text-[#155E4B]" />
             </div>
             <h4 className="font-medium text-gray-900">AI Services</h4>
-            <p className="text-sm text-purple-600">Active</p>
+            <p className="text-sm text-[#155E4B]">Active</p>
           </div>
         </div>
       </div>

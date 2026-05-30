@@ -37,12 +37,12 @@ export const FormEmbed: React.FC = () => {
   const embedCode = `<iframe src="${window.location.origin}/template/form-view/${formId}" width="600" height="800" frameborder="0"></iframe>`;
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-8 bg-[#F5F2EE] min-h-screen">
       <h1 className="text-2xl font-bold mb-4">Embed Form: {formTitle}</h1>
 
       {/* <div className="mb-6">
         <p className="mb-2">Preview:</p>
-        <div className="border rounded-lg p-4 bg-white">
+        <div className="border rounded-lg p-4 bg-[#F7F3EE]">
           <FormPreview fields={fields} />
         </div>
       </div> */}

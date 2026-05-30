@@ -191,7 +191,7 @@ const EnvelopeDetails: React.FC = () => {
 
   if (!envelope) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <div className="text-center">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Envelope Not Found</h2>
@@ -391,7 +391,7 @@ const handleAddSignature = (signerId: any, cycleId: any) => {
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Envelope Summary */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Envelope Summary</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div>
@@ -458,7 +458,7 @@ const handleAddSignature = (signerId: any, cycleId: any) => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="flex flex-wrap gap-3">
             {envelope?.status === 'completed' && (
@@ -471,7 +471,7 @@ const handleAddSignature = (signerId: any, cycleId: any) => {
             )}
             {envelope?.status === 'in-progress' && (
               <button
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-[#F5F2EE] transition-colors"
                 onClick={() => envReminder()}
               >
                 <Send className="w-4 h-4" />
@@ -510,7 +510,7 @@ const handleAddSignature = (signerId: any, cycleId: any) => {
           )}
          {envelope?.status != 'completed' && (
         <button
-          className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-[#F5F2EE] transition-colors"
           onClick={() => navigate(`/e-sign/edit/${envelope?.id}`)}
         >
           <Edit className="w-4 h-4" />
@@ -526,7 +526,7 @@ const handleAddSignature = (signerId: any, cycleId: any) => {
   const renderRecipients = () => (
     <div className="space-y-4">
       {envelope.recipients.map((recipient:any, index:any) => (
-        <div key={recipient.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div key={recipient.id} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-4">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-lg font-semibold">
@@ -579,7 +579,7 @@ const handleAddSignature = (signerId: any, cycleId: any) => {
                   href={`${window.location.origin}/e-sign/signer/${id}/${recipient.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 text-[#3E2B66] hover:bg-purple-50 rounded-lg transition-colors border border-[#3E2B66]"
+                  className="flex items-center gap-2 px-3 py-2 text-[#3E2B66] hover:bg-[#F0FDF4] rounded-lg transition-colors border border-[#3E2B66]"
                 >
                   <User className="w-4 h-4" />
                   Start in-person signing
@@ -614,7 +614,7 @@ const renderCycles = (): JSX.Element => {
         const isOpen = openCycle === cycle._id;
 
         return (
-          <div key={cycle._id} className="border border-gray-200 rounded-xl shadow-sm bg-gray-50">
+          <div key={cycle._id} className="border border-gray-200 rounded-xl shadow-sm bg-[#F5F2EE]">
             {/* Cycle Header */}
             <button
               className="w-full flex justify-between items-center px-4 py-3 text-left focus:outline-none hover:bg-gray-100 rounded-t-xl"
@@ -641,7 +641,7 @@ const renderCycles = (): JSX.Element => {
                   const phone = getDisplayPhone(signer.data);
 
                   return (
-                    <div key={signerId} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div key={signerId} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-4">
                           <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-lg font-semibold">
@@ -686,7 +686,7 @@ const renderCycles = (): JSX.Element => {
   const renderDocuments = () => (
     <div className="space-y-4">
       {envelope.documents.map((document:any) => (
-        <div key={document.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div key={document.id} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
@@ -709,7 +709,7 @@ const renderCycles = (): JSX.Element => {
                 />
                 Preview
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-[#F5F2EE] transition-colors"
                 onClick={() => handleDownloadSignedPdf(document.id)}
               >
                 <Download className="w-4 h-4" />
@@ -726,7 +726,7 @@ const renderActivity = () => (
   <div className="space-y-4">
     {logs.length > 0 ? (
       logs.map((entry) => (
-        <div key={entry._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div key={entry._id} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-start space-x-4">
             <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
               <Activity className="w-5 h-5 text-gray-600" />
@@ -753,7 +753,7 @@ const renderActivity = () => (
         </div>
       ))
     ) : (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
         <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">No Activity Yet</h3>
         <p className="text-gray-500">
@@ -766,9 +766,9 @@ const renderActivity = () => (
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F2EE]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-[#F7F3EE] border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
@@ -786,7 +786,7 @@ const renderActivity = () => (
           </div>
           
           <div className="flex items-center space-x-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-[#F5F2EE] transition-colors"
              onClick={()=>envArchive()}>
               <Archive className="w-4 h-4" />
               Archive
@@ -804,7 +804,7 @@ const renderActivity = () => (
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6">
+      <div className="bg-[#F7F3EE] border-b border-gray-200 px-6">
         <nav className="flex space-x-8">
           {tabs.map((tab) => {
             const Icon = tab.icon;

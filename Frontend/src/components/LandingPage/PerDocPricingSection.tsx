@@ -114,7 +114,7 @@ const PerDocPricingSection: React.FC<PerDocPricingSectionProps> = ({
       {/* Description modals for each verification method */}
       {activeModal && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-[#F7F3EE] p-6 shadow-xl">
             {activeModal === 'Cryptographic Signature' && (
               <>
                 <h3 className="text-lg font-semibold text-slate-900">
@@ -267,7 +267,7 @@ const PerDocPricingSection: React.FC<PerDocPricingSectionProps> = ({
                   <div
                     ref={infoPopoverRef}
                     role="tooltip"
-                    className="absolute left-0 bottom-full z-30 mb-2 w-full max-w-md rounded-xl border border-slate-200 bg-[#dbdee7] text-white p-4 text-left shadow-lg"
+                    className="absolute left-0 bottom-full z-30 mb-2 w-full max-w-md rounded-xl border border-[#E6D8C9] bg-[#dbdee7] text-white p-4 text-left shadow-lg"
                   >
                     <p className="details-text">
                       Verification methods add layers of identity checks before a signer can complete the document. <strong>Cryptographic Signature</strong> is always included at no cost and ensures document integrity. You can add <strong>Aadhar</strong>, <strong>OTP</strong> (via Email, WhatsApp, or SMS), and <strong>Biometric</strong> verification for stronger authentication—each added method is charged as shown. Choose only what you need for your document.
@@ -283,7 +283,7 @@ const PerDocPricingSection: React.FC<PerDocPricingSectionProps> = ({
                 )}
               </div>
 
-              <div className="mt-3 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-slate-50/40">
+              <div className="mt-3 divide-y divide-slate-200 rounded-xl border border-[#E6D8C9] bg-[#F5F2EE]/40">
                 {VERIFICATION_METHODS.map((method) => {
                   const isSelected = selectedIds.has(method.id);
                   const isLocked = method.id === 'cryptographic';
@@ -303,7 +303,7 @@ const PerDocPricingSection: React.FC<PerDocPricingSectionProps> = ({
                               ? 'border-emerald-300 bg-emerald-100 cursor-default'
                               : isSelected
                                 ? 'border-[#084bdc] bg-[#084bdc] text-white'
-                                : 'border-slate-300 bg-white hover:border-slate-400'
+                                : 'border-slate-300 bg-[#F7F3EE] hover:border-slate-400'
                           }`}
                           aria-label={isSelected ? `Remove ${method.label}` : `Add ${method.label}`}
                         >
@@ -325,7 +325,7 @@ const PerDocPricingSection: React.FC<PerDocPricingSectionProps> = ({
                             onChange={(e) =>
                               setOtpMethod(e.target.value as OtpMethodOption)
                             }
-                            className="h-8 min-w-[100px] rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-800 shadow-sm focus:border-slate-900 focus:outline-none"
+                            className="h-8 min-w-[100px] rounded-lg border border-slate-300 bg-[#F7F3EE] px-2 text-xs font-medium text-slate-800 shadow-sm focus:border-slate-900 focus:outline-none"
                           >
                             <option value="email">Email OTP</option>
                             <option value="whatsapp">WhatsApp</option>

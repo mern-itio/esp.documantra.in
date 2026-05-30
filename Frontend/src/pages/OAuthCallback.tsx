@@ -122,8 +122,8 @@ const OAuthCallback: React.FC = () => {
   }, [searchParams]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+    <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
+      <div className="max-w-md w-full bg-[#F7F3EE] rounded-lg shadow-lg p-8 text-center">
         {status === 'loading' && (
           <>
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />

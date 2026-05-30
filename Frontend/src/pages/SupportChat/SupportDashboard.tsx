@@ -469,7 +469,7 @@ const SupportDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+      <div className="bg-[#F7F3EE] border-b border-gray-200 shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -544,13 +544,13 @@ const SupportDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {userRole === 'admin' && (
           <div className="mb-6">
-            <div className="flex gap-2 border-b border-gray-200 bg-white rounded-t-xl px-4 pt-4">
+            <div className="flex gap-2 border-b border-gray-200 bg-[#F7F3EE] rounded-t-xl px-4 pt-4">
               <button
                 onClick={() => setActiveTab('tickets')}
                 className={`px-5 py-3 font-medium transition-all duration-200 rounded-t-lg ${
                   activeTab === 'tickets'
-                    ? 'border-b-2 border-[#260559] text-[#260559] bg-gray-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'border-b-2 border-[#260559] text-[#260559] bg-[#F5F2EE]'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-[#F5F2EE]'
                 }`}
               >
                 <Ticket className="w-4 h-4 inline mr-2" />
@@ -560,8 +560,8 @@ const SupportDashboard: React.FC = () => {
                 onClick={() => setActiveTab('agents')}
                 className={`px-5 py-3 font-medium transition-all duration-200 rounded-t-lg ${
                   activeTab === 'agents'
-                    ? 'border-b-2 border-[#260559] text-[#260559] bg-gray-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'border-b-2 border-[#260559] text-[#260559] bg-[#F5F2EE]'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-[#F5F2EE]'
                 }`}
               >
                 <Users className="w-4 h-4 inline mr-2" />
@@ -571,8 +571,8 @@ const SupportDashboard: React.FC = () => {
                 onClick={() => setActiveTab('analytics')}
                 className={`px-5 py-3 font-medium transition-all duration-200 rounded-t-lg ${
                   activeTab === 'analytics'
-                    ? 'border-b-2 border-[#260559] text-[#260559] bg-gray-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'border-b-2 border-[#260559] text-[#260559] bg-[#F5F2EE]'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-[#F5F2EE]'
                 }`}
               >
                 <BarChart3 className="w-4 h-4 inline mr-2" />
@@ -585,7 +585,7 @@ const SupportDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Tickets List */}
           <div className={`${selectedTicket ? 'lg:col-span-1' : 'lg:col-span-3'}`}>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">Tickets</h2>
@@ -615,7 +615,7 @@ const SupportDashboard: React.FC = () => {
                   <select
                     value={ticketFilter}
                     onChange={(e) => setTicketFilter(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#260559] focus:border-transparent transition-all bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#260559] focus:border-transparent transition-all bg-[#F7F3EE]"
                   >
                     <option value="all">All Status</option>
                     <option value="open">Open</option>
@@ -640,9 +640,9 @@ const SupportDashboard: React.FC = () => {
                       <button
                         key={ticket._id}
                         onClick={() => handleSelectTicket(ticket)}
-                        className={`w-full text-left p-4 hover:bg-gray-50 transition-all duration-200 ${
+                        className={`w-full text-left p-4 hover:bg-[#F5F2EE] transition-all duration-200 ${
                           selectedTicket?._id === ticket._id 
-                            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-[#260559] shadow-sm' 
+                            ? 'bg-gradient-to-r from-blue-50 to-emerald-50 border-l-4 border-[#260559] shadow-sm' 
                             : ''
                         }`}
                       >
@@ -684,7 +684,7 @@ const SupportDashboard: React.FC = () => {
           {/* Chat Area */}
           {selectedTicket && (
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
+              <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
                 {/* Chat Header */}
                 <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white flex items-center justify-between">
                   <div className="flex-1 min-w-0">
@@ -697,7 +697,7 @@ const SupportDashboard: React.FC = () => {
                         {(userRole === 'agent' || userRole === 'admin') && (
                           <button
                             onClick={() => setShowTransferModal(true)}
-                            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium text-gray-700"
+                            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-[#F5F2EE] transition-colors duration-200 font-medium text-gray-700"
                             title="Transfer/Reassign ticket"
                           >
                             <FolderSync className="w-4 h-4 inline mr-1.5" />
@@ -733,7 +733,7 @@ const SupportDashboard: React.FC = () => {
                         className={`max-w-[70%] rounded-xl p-4 shadow-sm ${
                           msg.senderType === 'agent' || msg.senderType === 'system'
                             ? 'bg-gradient-to-br from-[#260559] to-[#3d1a7a] text-white'
-                            : 'bg-white border border-gray-200 text-gray-900'
+                            : 'bg-[#F7F3EE] border border-gray-200 text-gray-900'
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
@@ -746,7 +746,7 @@ const SupportDashboard: React.FC = () => {
                   
                   {typingUsers.size > 0 && (
                     <div className="flex justify-start">
-                      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                      <div className="bg-[#F7F3EE] border border-gray-200 rounded-xl p-4 shadow-sm">
                         <div className="flex gap-1.5">
                           <div className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce" />
                           <div className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -762,7 +762,7 @@ const SupportDashboard: React.FC = () => {
 
                 {/* Message Input */}
                 {selectedTicket.status !== 'closed' && (
-                  <div className="p-5 border-t border-gray-200 bg-white">
+                  <div className="p-5 border-t border-gray-200 bg-[#F7F3EE]">
                     <div className="flex gap-3">
                       <input
                         type="text"
@@ -794,7 +794,7 @@ const SupportDashboard: React.FC = () => {
 
         {/* Admin Views */}
         {userRole === 'admin' && activeTab === 'agents' && (
-          <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="mt-6 bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Agents</h2>
               <button
@@ -806,7 +806,7 @@ const SupportDashboard: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {agents.map((agent) => (
-                <div key={agent._id} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-all duration-200 bg-white">
+                <div key={agent._id} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-all duration-200 bg-[#F7F3EE]">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-gray-900">{agent.fullname}</h3>
                     <div className="flex items-center gap-2">
@@ -849,7 +849,7 @@ const SupportDashboard: React.FC = () => {
         {userRole === 'admin' && activeTab === 'analytics' && analytics && (
           <div className="mt-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 mb-1">Total Tickets</p>
@@ -860,7 +860,7 @@ const SupportDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 mb-1">Open Tickets</p>
@@ -871,7 +871,7 @@ const SupportDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 mb-1">Avg Response</p>
@@ -882,14 +882,14 @@ const SupportDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 mb-1">SLA Performance</p>
                     <p className="text-3xl font-bold text-gray-900">{analytics.performance?.slaPerformance?.toFixed(1) || 0}%</p>
                   </div>
-                  <div className="p-3 bg-purple-100 rounded-xl">
-                    <TrendingUp className="w-6 h-6 text-purple-600" />
+                  <div className="p-3 bg-[#DCFCE7] rounded-xl">
+                    <TrendingUp className="w-6 h-6 text-[#155E4B]" />
                   </div>
                 </div>
               </div>
@@ -901,7 +901,7 @@ const SupportDashboard: React.FC = () => {
       {/* Transfer/Reassign Modal */}
       {showTransferModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200">
             <h3 className="text-xl font-semibold mb-4 text-gray-900">
               {userRole === 'admin' ? 'Reassign Ticket' : 'Transfer Ticket'}
             </h3>
@@ -930,7 +930,7 @@ const SupportDashboard: React.FC = () => {
                   setShowTransferModal(false);
                   setSelectedAgentId('');
                 }}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium text-gray-700"
+                className="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] transition-colors duration-200 font-medium text-gray-700"
               >
                 Cancel
               </button>
@@ -976,7 +976,7 @@ const CreateAgentModal: React.FC<{ onClose: () => void; onSuccess: () => void }>
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200">
       <h3 className="text-xl font-semibold mb-5 text-gray-900">Create New Agent</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
@@ -1006,7 +1006,7 @@ const CreateAgentModal: React.FC<{ onClose: () => void; onSuccess: () => void }>
         <select
           value={formData.role}
           onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#260559] focus:border-transparent transition-all bg-white"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#260559] focus:border-transparent transition-all bg-[#F7F3EE]"
         >
           <option value="agent">Agent</option>
           <option value="admin">Admin</option>
@@ -1021,7 +1021,7 @@ const CreateAgentModal: React.FC<{ onClose: () => void; onSuccess: () => void }>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium text-gray-700"
+            className="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] transition-colors duration-200 font-medium text-gray-700"
           >
             Cancel
           </button>

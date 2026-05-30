@@ -456,13 +456,13 @@ const LoginPage = () => {
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <div className="min-h-screen bg-[#F5F2EE] pt-34 relative overflow-hidden">
+     <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center py-16 px-6 relative overflow-hidden">
        
         <div className="container-max relative px-4">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
             {/* Left: Brand / Story */}
             <div className="space-y-8 text-slate-900">
-              <div className="inline-flex items-center gap-2 rounded-full border border-sky-100 bg-white/80 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm backdrop-blur">
+             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm backdrop-blur">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 Secure, AI-powered document workflows
               </div>
@@ -474,22 +474,22 @@ const LoginPage = () => {
                     {APP_NAME}
                   </span>
                 </h1>
-                <p className="max-w-xl text-sm md:text-base text-slate-600">
-                  Pick up where you left off. Review contracts, send proposals, or finalize eSignatures – all from one
+                <p className="max-w-2xl text-sm md:text-base text-slate-600">
+                  Pick up where you left off. Review contracts, send proposals, or finalize eSignatures -  all from one
                   secure workspace designed for modern teams.
                 </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3 max-w-xl">
-                <div className="rounded-2xl border border-sky-100 bg-white/80 px-4 py-3 shadow-sm">
+                <div className="rounded-2xl border border-sky-100 bg-[#FFFFFF]/80 px-4 py-3 shadow-sm">
                   <p className="text-xs text-slate-500">Average time to sign</p>
                   <p className="mt-1 text-lg font-semibold text-emerald-600">6 min</p>
                 </div>
-                <div className="rounded-2xl border border-sky-100 bg-white/80 px-4 py-3 shadow-sm">
+                <div className="rounded-2xl border border-sky-100 bg-[#FFFFFF]/80 px-4 py-3 shadow-sm">
                   <p className="text-xs text-slate-500">Documents processed</p>
                   <p className="mt-1 text-lg font-semibold text-sky-700">2M+</p>
                 </div>
-                <div className="rounded-2xl border border-sky-100 bg-white/80 px-4 py-3 shadow-sm">
+                <div className="rounded-2xl border border-sky-100 bg-[#FFFFFF]/80 px-4 py-3 shadow-sm">
                   <p className="text-xs text-slate-500">Global teams</p>
                   <p className="mt-1 text-lg font-semibold text-[#155E4B]">120+</p>
                 </div>
@@ -498,13 +498,13 @@ const LoginPage = () => {
               <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
                 <span className="font-medium text-slate-700">Trusted by teams in</span>
                 <div className="flex flex-wrap gap-3 opacity-90">
-                  <span className="rounded-full border border-sky-100 bg-white/80 px-3 py-1">
+                  <span className="rounded-full border border-sky-100 bg-[#F7F3EE]/80 px-3 py-1">
                     Fintech
                   </span>
-                  <span className="rounded-full border border-sky-100 bg-white/80 px-3 py-1">
+                  <span className="rounded-full border border-sky-100 bg-[#F7F3EE]/80 px-3 py-1">
                     Legal
                   </span>
-                  <span className="rounded-full border border-sky-100 bg-white/80 px-3 py-1">
+                  <span className="rounded-full border border-sky-100 bg-[#F7F3EE]/80 px-3 py-1">
                     Sales Ops
                   </span>
                 </div>
@@ -513,7 +513,7 @@ const LoginPage = () => {
 
             {/* Right: Login Card */}
             <div className="flex justify-center lg:justify-end">
-              <div className="w-full max-w-md rounded-3xl border border-sky-100 bg-white/90 p-6 sm:p-8 shadow-[0_18px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+             <div className="w-full max-w-md rounded-[32px] border border-[#E5DED3] bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
                     <h2 className="text-xl font-semibold text-slate-900">Sign in to your workspace</h2>
@@ -521,9 +521,11 @@ const LoginPage = () => {
                       Use your {APP_NAME} account to access documents, templates, and teams.
                     </p>
                   </div>
-                  <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#155E4B] to-sky-500 text-white text-xs font-semibold">
-                    D&S
-                  </div>
+                <img
+  src="https://documantra.in/logo.png"
+  alt="Documantra"
+  className="h-14 w-auto object-contain"
+/>
                 </div>
 
                 {error && (
@@ -553,7 +555,7 @@ const LoginPage = () => {
                                 onChange={(e) => setRecoveryOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                 inputMode="numeric"
                                 maxLength={6}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
+                                className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
                                 placeholder="000000"
                                 autoComplete="one-time-code"
                                 required
@@ -598,7 +600,7 @@ const LoginPage = () => {
                                   type="button"
                                   onClick={() => sendRecoveryOtpTo('recovery')}
                                   disabled={isLoading}
-                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-[#F5F2EE] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   {isLoading ? 'Sending OTP...' : `Send OTP to recovery email (${recoveryChoices.find((item) => item.key === 'recovery')?.masked})`}
                                 </button>
@@ -649,7 +651,7 @@ const LoginPage = () => {
                                                 ? 'border-red-400 bg-red-50 text-red-700'
                                                 : active
                                                   ? 'border-[#155E4B] bg-[#155E4B]/10 text-[#155E4B]'
-                                                  : 'border-slate-300 bg-white text-slate-500'
+                                                  : 'border-slate-300 bg-[#F7F3EE] text-slate-500'
                                             }`}
                                         >
                                           {idx + 1}
@@ -689,7 +691,7 @@ const LoginPage = () => {
                                         void handleNextRecoveryQuestion()
                                       }
                                     }}
-                                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
+                                    className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-3 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
                                     placeholder="Your answer"
                                     required
                                     autoFocus
@@ -750,7 +752,7 @@ const LoginPage = () => {
                               }
                               inputMode="numeric"
                               maxLength={twoFaMethod === 'authenticator' ? 8 : 6}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
+                              className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
                               placeholder={twoFaMethod === 'authenticator' ? '000000 or 00000000' : '000000'}
                               autoComplete="one-time-code"
                               required
@@ -817,7 +819,7 @@ const LoginPage = () => {
                                 onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                 inputMode="numeric"
                                 maxLength={6}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
+                                className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
                                 placeholder="000000"
                                 autoComplete="one-time-code"
                                 required
@@ -849,7 +851,7 @@ const LoginPage = () => {
                             onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                             inputMode="numeric"
                             maxLength={6}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
+                            className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
                             placeholder="000000"
                             autoComplete="one-time-code"
                             disabled={!emailVerified}
@@ -863,7 +865,7 @@ const LoginPage = () => {
                           type="button"
                           onClick={handleSendPhoneOtp}
                           disabled={isLoading || !canSendPhoneOtp}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-[#F5F2EE] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {phoneOtpSent ? 'Resend phone OTP' : 'Send phone OTP'}
                         </button>
@@ -906,9 +908,9 @@ const LoginPage = () => {
                     </div>
 
                     <div className="relative flex items-center py-2">
-                      <div className="flex-grow border-t border-slate-200"></div>
+                      <div className="flex-grow border-t border-[#E6D8C9]"></div>
                       <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">Or continue with email</span>
-                      <div className="flex-grow border-t border-slate-200"></div>
+                      <div className="flex-grow border-t border-[#E6D8C9]"></div>
                     </div>
 
                     <div className="space-y-1.5">
@@ -922,7 +924,7 @@ const LoginPage = () => {
                           id="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
+                          className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
                           placeholder="you@company.com"
                           required
                         />
@@ -940,7 +942,7 @@ const LoginPage = () => {
                           id="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-9 pr-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
+                          className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 pr-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
                           placeholder="Enter your password"
                           required
                         />
@@ -969,7 +971,7 @@ const LoginPage = () => {
                               // ignore localStorage errors
                             }
                           }}
-                          className="h-3.5 w-3.5 rounded border-slate-300 bg-white text-[#155E4B] focus:ring-[#155E4B]/40"
+                          className="h-3.5 w-3.5 rounded border-slate-300 bg-[#F7F3EE] text-[#155E4B] focus:ring-[#155E4B]/40"
                         />
                         <span>Remember this device</span>
                       </label>

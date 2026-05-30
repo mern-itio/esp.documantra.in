@@ -128,7 +128,7 @@ export const FormAICoPilot: React.FC<FormAICoPilotProps> = ({
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 group"
+        className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-emerald-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 group"
         title="AI Co-Pilot"
       >
         <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
@@ -138,9 +138,9 @@ export const FormAICoPilot: React.FC<FormAICoPilotProps> = ({
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col max-h-[80vh]">
+    <div className="fixed bottom-6 right-6 z-50 w-96 bg-[#F7F3EE] rounded-xl shadow-2xl border border-gray-200 flex flex-col max-h-[80vh]">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-xl">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-emerald-600 text-white rounded-t-xl">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5" />
           <h3 className="font-semibold">AI Co-Pilot</h3>
@@ -150,7 +150,7 @@ export const FormAICoPilot: React.FC<FormAICoPilotProps> = ({
             setIsOpen(false);
             setShowConstraints(false);
           }}
-          className="hover:bg-white/20 rounded p-1 transition-colors"
+          className="hover:bg-[#F7F3EE]/20 rounded p-1 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -211,7 +211,7 @@ export const FormAICoPilot: React.FC<FormAICoPilotProps> = ({
 
         {/* Constraints/Warnings */}
         {showConstraints && constraints && (
-          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+          <div className="bg-[#F5F2EE] rounded-lg p-3 space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-sm text-gray-900">Issues Found</h4>
               <button

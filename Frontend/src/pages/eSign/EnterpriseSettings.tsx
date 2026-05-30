@@ -52,7 +52,7 @@ const EnterpriseSettings: React.FC = () => {
         <p className="text-gray-600">Configure default authentication methods and security policies.</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h4 className="text-lg font-semibold text-gray-900 mb-4">Default Authentication Methods</h4>
         
         <div className="space-y-4">
@@ -64,7 +64,7 @@ const EnterpriseSettings: React.FC = () => {
             { id: 'biometric', name: 'Biometric Authentication', description: 'Fingerprint, face, or voice recognition' },
             { id: 'digital_certificate', name: 'Digital Certificate', description: 'PKI-based authentication' }
           ].map((method) => (
-            <div key={method.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={method.id} className="flex items-center justify-between p-4 bg-[#F5F2EE] rounded-lg">
               <div>
                 <h5 className="font-medium text-gray-900">{method.name}</h5>
                 <p className="text-sm text-gray-600">{method.description}</p>
@@ -81,7 +81,7 @@ const EnterpriseSettings: React.FC = () => {
                     updateSettings('authentication', { defaultMethods: methods });
                   }}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
           ))}
@@ -89,7 +89,7 @@ const EnterpriseSettings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Security Policies</h4>
           
           <div className="space-y-4">
@@ -129,13 +129,13 @@ const EnterpriseSettings: React.FC = () => {
                   checked={settings.authentication.riskBasedAuth}
                   onChange={(e) => updateSettings('authentication', { riskBasedAuth: e.target.checked })}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Authentication Status</h4>
           
           <div className="space-y-4">
@@ -175,7 +175,7 @@ const EnterpriseSettings: React.FC = () => {
         <p className="text-gray-600">Configure signature types and validation requirements.</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h4 className="text-lg font-semibold text-gray-900 mb-4">Default Signature Type</h4>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -201,7 +201,7 @@ const EnterpriseSettings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Allowed Signature Types</h4>
           
           <div className="space-y-3">
@@ -220,14 +220,14 @@ const EnterpriseSettings: React.FC = () => {
                       updateSettings('signatures', { allowedTypes: types });
                     }}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Validation Settings</h4>
           
           <div className="space-y-4">
@@ -243,7 +243,7 @@ const EnterpriseSettings: React.FC = () => {
                   checked={settings.signatures.certificateValidation}
                   onChange={(e) => updateSettings('signatures', { certificateValidation: e.target.checked })}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
             
@@ -259,7 +259,7 @@ const EnterpriseSettings: React.FC = () => {
                   checked={settings.signatures.timestamping}
                   onChange={(e) => updateSettings('signatures', { timestamping: e.target.checked })}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
           </div>
@@ -275,7 +275,7 @@ const EnterpriseSettings: React.FC = () => {
         <p className="text-gray-600">Configure compliance standards and audit requirements.</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h4 className="text-lg font-semibold text-gray-900 mb-4">Enabled Compliance Standards</h4>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -287,7 +287,7 @@ const EnterpriseSettings: React.FC = () => {
             { id: 'gdpr', name: 'GDPR', description: 'General Data Protection Regulation' },
             { id: 'iso27001', name: 'ISO 27001', description: 'Information security management' }
           ].map((standard) => (
-            <div key={standard.id} className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={standard.id} className="flex items-start justify-between p-4 bg-[#F5F2EE] rounded-lg">
               <div className="flex-1">
                 <h5 className="font-medium text-gray-900">{standard.name}</h5>
                 <p className="text-sm text-gray-600 mt-1">{standard.description}</p>
@@ -304,7 +304,7 @@ const EnterpriseSettings: React.FC = () => {
                     updateSettings('compliance', { enabledStandards: standards });
                   }}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
           ))}
@@ -312,7 +312,7 @@ const EnterpriseSettings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Audit Settings</h4>
           
           <div className="space-y-4">
@@ -353,13 +353,13 @@ const EnterpriseSettings: React.FC = () => {
                   checked={settings.compliance.blockchainAudit}
                   onChange={(e) => updateSettings('compliance', { blockchainAudit: e.target.checked })}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Compliance Status</h4>
           
           <div className="space-y-3">
@@ -385,7 +385,7 @@ const EnterpriseSettings: React.FC = () => {
         <p className="text-gray-600">Configure API access and external system integrations.</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h4 className="text-lg font-semibold text-gray-900 mb-4">API Configuration</h4>
         
         <div className="space-y-6">
@@ -401,12 +401,12 @@ const EnterpriseSettings: React.FC = () => {
                 checked={settings.integration.apiAccess}
                 onChange={(e) => updateSettings('integration', { apiAccess: e.target.checked })}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
           {settings.integration.apiAccess && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="bg-[#F5F2EE] border border-gray-200 rounded-lg p-4">
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">API Key</label>
@@ -467,7 +467,7 @@ const EnterpriseSettings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Single Sign-On</h4>
           
           <div className="space-y-4">
@@ -483,7 +483,7 @@ const EnterpriseSettings: React.FC = () => {
                   checked={settings.integration.ssoEnabled}
                   onChange={(e) => updateSettings('integration', { ssoEnabled: e.target.checked })}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
             
@@ -499,13 +499,13 @@ const EnterpriseSettings: React.FC = () => {
                   checked={settings.integration.ldapIntegration}
                   onChange={(e) => updateSettings('integration', { ldapIntegration: e.target.checked })}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#F7F3EE] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Integration Status</h4>
           
           <div className="space-y-3">
@@ -539,7 +539,7 @@ const EnterpriseSettings: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F2EE]">
       <div className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -561,7 +561,7 @@ const EnterpriseSettings: React.FC = () => {
 
         <div className="flex gap-8">
           {/* Sidebar */}
-          <div className="w-64 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="w-64 bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-4">
             <nav className="space-y-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
@@ -572,7 +572,7 @@ const EnterpriseSettings: React.FC = () => {
                     className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors ${
                       activeTab === tab.id
                         ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        : 'text-gray-600 hover:bg-[#F5F2EE] hover:text-gray-900'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -589,7 +589,7 @@ const EnterpriseSettings: React.FC = () => {
             {activeTab === 'signatures' && renderSignatures()}
             {activeTab === 'compliance' && renderCompliance()}
             {activeTab === 'workflows' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+              <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <Zap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Workflow Settings</h3>
                 <p className="text-gray-600">Configure workflow automation and business rules.</p>
@@ -597,7 +597,7 @@ const EnterpriseSettings: React.FC = () => {
             )}
             {activeTab === 'integration' && renderIntegration()}
             {activeTab === 'notifications' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+              <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <Bell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Notification Settings</h3>
                 <p className="text-gray-600">Configure enterprise notification preferences.</p>

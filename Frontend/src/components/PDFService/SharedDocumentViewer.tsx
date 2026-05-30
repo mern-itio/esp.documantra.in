@@ -258,7 +258,7 @@ const SharedDocumentViewer: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
           <p className="text-gray-600">Loading document...</p>
@@ -269,7 +269,7 @@ const SharedDocumentViewer: React.FC = () => {
 
   if (error || !document) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Document Not Found</h2>
@@ -288,9 +288,9 @@ const SharedDocumentViewer: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F2EE]">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-[#F7F3EE] shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -332,7 +332,7 @@ const SharedDocumentViewer: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - PDF Preview */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Document Preview</h3>
               {document.previewUrl ? (
                 <div className="border border-gray-300 rounded-lg overflow-hidden">
@@ -359,7 +359,7 @@ const SharedDocumentViewer: React.FC = () => {
           {/* Right Column - Comments and Forms */}
           <div className="space-y-6">
             {/* User Info */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Your Information</h3>
               <div className="space-y-3">
                 <div>
@@ -369,7 +369,7 @@ const SharedDocumentViewer: React.FC = () => {
                     value={userInfo.name}
                     onChange={(e) => setUserInfo(prev => ({ ...prev, name: e.target.value }))}
                     className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      userInfo.id !== 'anonymous' ? 'bg-gray-50' : ''
+                      userInfo.id !== 'anonymous' ? 'bg-[#F5F2EE]' : ''
                     }`}
                     readOnly={userInfo.id !== 'anonymous'}
                     placeholder={userInfo.id === 'anonymous' ? 'Enter your name' : 'Logged in user'}
@@ -385,7 +385,7 @@ const SharedDocumentViewer: React.FC = () => {
                     value={userInfo.email}
                     onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
                     className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      userInfo.id !== 'anonymous' ? 'bg-gray-50' : ''
+                      userInfo.id !== 'anonymous' ? 'bg-[#F5F2EE]' : ''
                     }`}
                     readOnly={userInfo.id !== 'anonymous'}
                     placeholder={userInfo.id === 'anonymous' ? 'Enter your email' : 'Logged in user email'}
@@ -396,7 +396,7 @@ const SharedDocumentViewer: React.FC = () => {
 
             {/* Add Comment Form */}
             {document.allowComments && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Add Comment</h3>
                 <div className="space-y-4">
                   <div>
@@ -459,7 +459,7 @@ const SharedDocumentViewer: React.FC = () => {
             )}
 
             {/* Comments List */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-[#F7F3EE] rounded-lg shadow p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Comments ({document.totalComments})
               </h3>
@@ -534,7 +534,7 @@ const SharedDocumentViewer: React.FC = () => {
       {/* Reply Modal */}
       {replyingTo && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-[#F7F3EE] rounded-lg p-6 w-full max-w-md">
                          <h3 className="text-lg font-medium text-gray-900 mb-4">
                Reply to {replyingTo.authorName || replyingTo.author}
              </h3>

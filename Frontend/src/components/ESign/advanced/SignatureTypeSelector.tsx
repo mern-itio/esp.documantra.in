@@ -109,7 +109,7 @@ const SignatureTypeSelector: React.FC<SignatureTypeSelectorProps> = ({
     switch (cost) {
       case 'included': return 'text-green-600 bg-green-100';
       case 'premium': return 'text-blue-600 bg-blue-100';
-      case 'enterprise': return 'text-purple-600 bg-purple-100';
+      case 'enterprise': return 'text-[#155E4B] bg-[#DCFCE7]';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
@@ -168,7 +168,7 @@ const SignatureTypeSelector: React.FC<SignatureTypeSelectorProps> = ({
               className={`relative p-6 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
                 isSelected
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300 bg-white'
+                  : 'border-gray-200 hover:border-gray-300 bg-[#F7F3EE]'
               }`}
               onClick={() => onTypeChange(type.id)}
             >

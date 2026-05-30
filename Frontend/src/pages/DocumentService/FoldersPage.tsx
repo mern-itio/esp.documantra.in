@@ -442,10 +442,10 @@ const FoldersPage: React.FC = () => {
   }
 
   return (
-    <div key={refreshKey} className="min-h-screen bg-gray-50">
+    <div key={refreshKey} className="min-h-screen bg-[#F5F2EE]">
       {/* Filter Bar */}
       {/* Static Breadcrumb Navigation */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3">
+      <div className="bg-[#F7F3EE] border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3">
         <div className="max-w-7xl mx-auto">
           <nav className="flex items-center space-x-1 text-sm">
             {/* Root/Home */}
@@ -482,7 +482,7 @@ const FoldersPage: React.FC = () => {
           </nav>
         </div>
       </div>
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
+      <div className="bg-[#F7F3EE] border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between space-x-4">
             {/* Search and Quick Filters */}
@@ -583,9 +583,9 @@ const FoldersPage: React.FC = () => {
                     })}
                   </div>
                 ) : (
-                  <div className="bg-white rounded-lg border">
+                  <div className="bg-[#F7F3EE] rounded-lg border">
                     <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-[#F5F2EE]">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <input
@@ -609,9 +609,9 @@ const FoldersPage: React.FC = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-[#F7F3EE] divide-y divide-gray-200">
                         {getFilteredAndSortedDocuments().map((document) => (
-                          <tr key={document.id} className="hover:bg-gray-50">
+                          <tr key={document.id} className="hover:bg-[#F5F2EE]">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <input
                                 type="checkbox"

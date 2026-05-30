@@ -198,7 +198,7 @@ const SmartConversion: React.FC = () => {
       case 'presentation':
         return <Presentation className="w-8 h-8 text-orange-600" />;
       case 'image':
-        return <FileImage className="w-8 h-8 text-purple-600" />;
+        return <FileImage className="w-8 h-8 text-[#155E4B]" />;
       default:
         return <File className="w-8 h-8 text-gray-600" />;
     }

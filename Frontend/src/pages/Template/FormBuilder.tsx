@@ -161,7 +161,7 @@ const saveFormFields = async () => {
   };
 
   return (
-    <div className="h-screen flex bg-gray-50 overflow-hidden">
+    <div className="h-screen flex bg-[#F5F2EE] overflow-hidden">
       <FormAICoPilot
         formFields={formFields}
         onFieldsAdded={(fields) => {
@@ -172,9 +172,9 @@ const saveFormFields = async () => {
         }}
       />
       {/* Sidebar - Field Types */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col fixed left-0 top-0 h-screen">
+      <div className="w-80 bg-[#F7F3EE] border-r border-gray-200 flex flex-col fixed left-0 top-0 h-screen">
        
-        <div className="p-6 border-b border-gray-200 flex-shrink-0 bg-white">
+        <div className="p-6 border-b border-gray-200 flex-shrink-0 bg-[#F7F3EE]">
         <div className="flex items-center space-x-2">
           <div>
           <Link to="/e-sign/form-list">
@@ -196,7 +196,7 @@ const saveFormFields = async () => {
                 <button
                   key={fieldType.type}
                   onClick={() => addField(fieldType.type)}
-                  className="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
+                  className="w-full flex items-center p-3 text-left hover:bg-[#F5F2EE] rounded-lg border border-gray-200 transition-colors"
                 >
                   <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center mr-3">
                     <Icon className="w-4 h-4 text-blue-600" />
@@ -212,7 +212,7 @@ const saveFormFields = async () => {
       {/* Main Content */}
       <div className={`flex-1 flex flex-col ml-80 ${!showPreview ? 'mr-80' : ''}`}>
         {/* Top Toolbar */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+        <div className="bg-[#F7F3EE] border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-semibold text-gray-900">{formTitle}</h1>
             <span className="text-sm text-gray-500">{formFields.length} fields</span>
@@ -222,8 +222,8 @@ const saveFormFields = async () => {
               onClick={() => setShowPreview(!showPreview)}
               className={`flex items-center px-4 py-2 rounded-md font-medium ${
                 showPreview
-                  ? 'bg-purple-100 text-gray-700'
-                  : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                  ? 'bg-[#DCFCE7] text-gray-700'
+                  : 'bg-[#DCFCE7] text-[#155E4B] hover:bg-purple-200'
               }`}
             >
               <Eye className="w-4 h-4 mr-2" />
@@ -258,7 +258,7 @@ const saveFormFields = async () => {
                     className={`border-2 rounded-sm p-4 transition-all ${
                       selectedField?._id === field._id
                         ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                        : 'border-gray-200 hover:border-gray-300 bg-[#F7F3EE]'
                     }`}
                     onClick={() => setSelectedField(field)}
                   >
@@ -361,10 +361,10 @@ const saveFormFields = async () => {
 
           {/* Properties Panel */}
           {!showPreview && (
-            <div className="w-80 bg-white border-l border-gray-200 flex flex-col fixed right-0 top-0 h-screen">
+            <div className="w-80 bg-[#F7F3EE] border-l border-gray-200 flex flex-col fixed right-0 top-0 h-screen">
               {selectedField ? (
                 <div className="flex flex-col h-full">
-                  <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0 bg-white">
+                  <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0 bg-[#F7F3EE]">
                     <h3 className="text-lg font-semibold text-gray-900">Field Properties</h3>
                     {/* <Settings className="w-5 h-5 text-gray-400" /> */}
                   </div>

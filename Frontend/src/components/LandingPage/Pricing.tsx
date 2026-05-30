@@ -470,7 +470,7 @@ const Pricing = () => {
                     }`}
                 >
                   <span
-                    className={`pointer-events-none inline-block h-5 w-5 mt-1 transform rounded-full bg-white shadow ring-0 transition ${billing === 'annually' ? 'translate-x-6' : 'translate-x-1'}`}
+                    className={`pointer-events-none inline-block h-5 w-5 mt-1 transform rounded-full bg-[#F7F3EE] shadow ring-0 transition ${billing === 'annually' ? 'translate-x-6' : 'translate-x-1'}`}
                   />
                 </button>
                 <span className={`text-sm font-medium ${billing === 'annually' ? 'text-slate-900' : 'text-slate-500'}`}>
@@ -498,7 +498,7 @@ const Pricing = () => {
                 return (
                   <div
                     key={plan.id}
-                    className={`relative flex flex-col rounded-2xl border bg-white p-6 shadow-sm transition hover:shadow-md ${plan.highlight ? 'border-[#084bdc] ring-2 ring-[#084bdc]/20' : 'border-slate-200'
+                    className={`relative flex flex-col rounded-2xl border bg-[#F7F3EE] p-6 shadow-sm transition hover:shadow-md ${plan.highlight ? 'border-[#084bdc] ring-2 ring-[#084bdc]/20' : 'border-[#E6D8C9]'
                       }`}
                   >
                     {plan.highlight && (
@@ -572,7 +572,7 @@ const Pricing = () => {
       {/* Add-on feature modals */}
       {activeAddOnModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="max-w-lg w-full rounded-2xl bg-white p-6 sm:p-8 shadow-2xl">
+          <div className="max-w-lg w-full rounded-2xl bg-[#F7F3EE] p-6 sm:p-8 shadow-2xl">
             {/* Close button */}
             <button
               type="button"
@@ -713,7 +713,7 @@ const Pricing = () => {
                       onClick={() => setPerDocTab(id)}
                       className={`relative rounded-xl border-2 px-6 py-4 text-left transition  ${isActive
                         ? 'border-[#084bdc] bg-sky-50/80 text-slate-900'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                        : 'border-[#E6D8C9] bg-[#F7F3EE] text-slate-700 hover:border-slate-300'
                         }`}
                     >
                       {isRecommended && (
@@ -729,7 +729,7 @@ const Pricing = () => {
               </div>
 
               {/* Detail card for selected tab */}
-              <div className="mt-6 rounded-2xl border-2 border-[#084bdc] bg-white p-6 shadow-sm md:p-8">
+              <div className="mt-6 rounded-2xl border-2 border-[#084bdc] bg-[#F7F3EE] p-6 shadow-sm md:p-8">
                 {(() => {
                   const plan = PER_DOC_PLANS[perDocTab]
                   return (
@@ -751,7 +751,7 @@ const Pricing = () => {
                               type="button"
                               key={f.label}
                               onClick={() => setActiveAddOnModal(f.label)}
-                              className={`flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2 text-left ${!f.included ? 'opacity-75' : ''}`}
+                              className={`flex items-center gap-2 rounded-lg border border-slate-100 bg-[#F5F2EE]/50 px-3 py-2 text-left ${!f.included ? 'opacity-75' : ''}`}
                             >
                               {f.included ? (
                                 <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
@@ -840,7 +840,7 @@ const Pricing = () => {
                 loop
                 muted
                 playsInline
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 object-contain shadow-md"
+                className="w-full rounded-2xl border border-[#E6D8C9] bg-[#F5F2EE] object-contain shadow-md"
               />
               {/* <p className="mt-3 text-center text-xs font-medium text-slate-500">
                 Capture all key Aadhaar‑linked details in one guided signing experience.
@@ -851,13 +851,13 @@ const Pricing = () => {
       </section>
 
       {/* Compare plans table */}
-      <section id='compare' className="border-t border-slate-200 bg-slate-50/50 py-16">
+      <section id='compare' className="border-t border-[#E6D8C9] bg-[#F5F2EE]/50 py-16">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <h2 className="text-center text-3xl heading font-bold text-slate-900 md:text-4xl">Compare the plans</h2>
           <div className="mt-8 overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table className="w-full min-w-[720px] border-collapse rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] shadow-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className="border-b border-[#E6D8C9] bg-[#F5F2EE]">
                   <th className="p-4 text-left text-sm font-semibold text-slate-700 align-bottom">
 
                   </th>
@@ -882,7 +882,7 @@ const Pricing = () => {
                       <span className="text-sm font-semibold text-slate-900">Business</span>
                       <span className="text-xs text-slate-600">$6 user/mo billed annually</span>
                       <Link to="/signup"
-                        className="mt-2 inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-1.5 text-xs font-semibold text-slate-900 text-white bg-[#084bdc] hover:bg-white hover:text-black "
+                        className="mt-2 inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-1.5 text-xs font-semibold text-slate-900 text-white bg-[#084bdc] hover:bg-[#F7F3EE] hover:text-black "
                       >
                         Request a demo
                       </Link>
@@ -895,7 +895,7 @@ const Pricing = () => {
                       <span className="text-xs text-slate-500">Per-seat or per-document pricing</span>
                       <button
                         type="button"
-                        className="mt-2 inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-50"
+                        className="mt-2 inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-1.5 text-xs font-semibold text-slate-900 hover:bg-[#F5F2EE]"
                       >
                         Contact us
                       </button>
@@ -907,7 +907,7 @@ const Pricing = () => {
                 {COMPARISON_GROUPS.map((group, groupIndex) => (
                   <Fragment key={`group-${groupIndex}`}>
                     {/* Category breakpoint heading */}
-                    <tr className="border-b border-slate-200 bg-slate-50/70">
+                    <tr className="border-b border-[#E6D8C9] bg-[#F5F2EE]/70">
                       <td className="p-3 pl-4 text-sm font-bold text-slate-900">
                         {group.heading}
                       </td>
@@ -941,7 +941,7 @@ const Pricing = () => {
                               <button
                                 type="button"
                                 data-feature-help="true"
-                                className="relative flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-400 hover:text-slate-600"
+                                className="relative flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 bg-[#F7F3EE] text-slate-400 hover:text-slate-600"
                                 onClick={(event) => {
                                   event.stopPropagation()
                                   const buttonEl = event.currentTarget as HTMLElement
@@ -1005,7 +1005,7 @@ const Pricing = () => {
 
       {/* FAQ — category tabs + filtered list */}
       <section className="relative overflow-hidden py-16">
-        <div className="absolute inset-0 bg-slate-50/50" />
+        <div className="absolute inset-0 bg-[#F5F2EE]/50" />
         <div className="container-max relative px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl text-center">
             <h2 className="heading">
@@ -1029,7 +1029,7 @@ const Pricing = () => {
                 className={`flex gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
                   faqCategory === cat.id
                     ? 'bg-[#084bdc] text-white shadow'
-                    : 'bg-white text-slate-700 shadow-sm hover:bg-slate-100 border border-slate-200'
+                    : 'bg-[#F7F3EE] text-slate-700 shadow-sm hover:bg-slate-100 border border-[#E6D8C9]'
                 }`}
               >
                 {cat.label} <span className='mt-0.5'><Plus className='h-4 w-4' /></span>
@@ -1044,7 +1044,7 @@ const Pricing = () => {
               return (
                 <div
                   key={`${item.category}-${index}`}
-                  className="rounded-xl border border-slate-200 bg-white shadow-sm"
+                  className="rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] shadow-sm"
                 >
                   <button
                     type="button"
@@ -1096,14 +1096,14 @@ const Pricing = () => {
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 to="/book-demo"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 font-semibold text-[#260559] shadow-lg hover:bg-slate-100"
+                className="inline-flex items-center gap-2 rounded-full bg-[#F7F3EE] px-8 py-4 font-semibold text-[#260559] shadow-lg hover:bg-slate-100"
               >
                 Schedule your free live demo
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
                 to="/contact-sales"
-                className="inline-flex items-center rounded-full border-2 border-white px-8 py-4 font-semibold hover:bg-white hover:text-[#260559]"
+                className="inline-flex items-center rounded-full border-2 border-white px-8 py-4 font-semibold hover:bg-[#F7F3EE] hover:text-[#260559]"
               >
                 Contact sales
               </Link>

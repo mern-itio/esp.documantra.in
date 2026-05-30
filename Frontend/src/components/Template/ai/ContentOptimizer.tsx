@@ -169,7 +169,7 @@ export const ContentOptimizer: React.FC<ContentOptimizerProps> = ({
       case 'clarity':
         return <Target className="w-4 h-4 text-green-600" />;
       case 'tone':
-        return <TrendingUp className="w-4 h-4 text-purple-600" />;
+        return <TrendingUp className="w-4 h-4 text-[#155E4B]" />;
       case 'compliance':
         return <AlertTriangle className="w-4 h-4 text-red-600" />;
       case 'accessibility':
@@ -180,7 +180,7 @@ export const ContentOptimizer: React.FC<ContentOptimizerProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg flex items-center justify-center mr-4">
           <Sparkles className="w-5 h-5 text-white" />
@@ -224,7 +224,7 @@ export const ContentOptimizer: React.FC<ContentOptimizerProps> = ({
 
       {/* Content Analysis Scores */}
       {analysis && (
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+        <div className="bg-[#F5F2EE] rounded-lg p-4 mb-6">
           <h3 className="text-md font-medium text-gray-900 mb-4">Content Quality Analysis</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="text-center">

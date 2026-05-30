@@ -71,7 +71,7 @@ export const CollaborationTools: React.FC<CollaborationToolsProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">Collaboration</h2>
         <button className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium">
@@ -90,7 +90,7 @@ export const CollaborationTools: React.FC<CollaborationToolsProps> = ({
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-white text-blue-600 shadow-sm'
+                  ? 'bg-[#F7F3EE] text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
@@ -244,11 +244,11 @@ export const CollaborationTools: React.FC<CollaborationToolsProps> = ({
             { action: 'Template shared', user: 'John Doe', time: '1 day ago', type: 'share' },
             { action: 'Version created', user: 'Sarah Johnson', time: '2 days ago', type: 'version' }
           ].map((activity, index) => (
-            <div key={index} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg">
+            <div key={index} className="flex items-center space-x-3 p-3 hover:bg-[#F5F2EE] rounded-lg">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 activity.type === 'update' ? 'bg-blue-100 text-blue-600' :
                 activity.type === 'comment' ? 'bg-green-100 text-green-600' :
-                activity.type === 'invite' ? 'bg-purple-100 text-purple-600' :
+                activity.type === 'invite' ? 'bg-[#DCFCE7] text-[#155E4B]' :
                 activity.type === 'share' ? 'bg-orange-100 text-orange-600' :
                 'bg-gray-100 text-gray-600'
               }`}>

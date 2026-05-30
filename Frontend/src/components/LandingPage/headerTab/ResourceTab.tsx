@@ -11,7 +11,7 @@ const ResourceTab = () => {
     return (
         <div className="flex flex-col md:flex-row min-h-[380px]">
             {/* Left sidebar – tabs + static links */}
-            <div className="w-full md:w-[240px] flex-shrink-0 border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50/50 p-5">
+            <div className="w-full md:w-[240px] flex-shrink-0 border-b md:border-b-0 md:border-r border-[#E6D8C9] bg-[#F5F2EE]/50 p-5">
                 <div className="space-y-2 mb-2">
                     {(['blogs', 'support', 'learn-more'] as const).map((tab) => (
                         <button
@@ -53,7 +53,7 @@ const ResourceTab = () => {
                     <>
                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Featured</p>
                         <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                            <Link to="/blog/qes-digidentity"  className="group block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                            <Link to="/blog/qes-digidentity"  className="group block rounded-2xl border border-[#E6D8C9] bg-[#F7F3EE] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                                 <div
                                     className="aspect-[16/12] flex items-end p-4 bg-cover bg-center"
                                     style={{ backgroundImage: "url('/images/contract-mang.jpg')" }}
@@ -64,7 +64,7 @@ const ResourceTab = () => {
                                     <p className="text-xs text-slate-600 mt-1">Upgrade your signing with QES and PAdES for the highest standard of eSignature.</p>
                                 </div>
                             </Link>
-                            <Link to="/blog/accidental-contract"  className="group block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                            <Link to="/blog/accidental-contract"  className="group block rounded-2xl border border-[#E6D8C9] bg-[#F7F3EE] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                                 <div
                                     className="aspect-[16/12] flex items-end p-4 bg-cover bg-center"
                                     style={{ backgroundImage: "url('/images/contract2.jpg')" }}
@@ -87,11 +87,11 @@ const ResourceTab = () => {
                     <>
                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Contact support</p>
                         <div className="space-y-4 max-w-xl">
-                            <input type="text" placeholder="Name" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#2563eb]" />
-                            <input type="email" placeholder="Email" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#2563eb]" />
-                            <textarea placeholder="What can we help you with..." rows={4} maxLength={500} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#2563eb] resize-y" />
+                            <input type="text" placeholder="Name" className="w-full px-4 py-2.5 rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#2563eb]" />
+                            <input type="email" placeholder="Email" className="w-full px-4 py-2.5 rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#2563eb]" />
+                            <textarea placeholder="What can we help you with..." rows={4} maxLength={500} className="w-full px-4 py-2.5 rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#2563eb] resize-y" />
                             <p className="text-xs text-slate-500">0/500</p>
-                            <button type="button" className="inline-flex justify-between items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors w-full">
+                            <button type="button" className="inline-flex justify-between items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] text-sm font-medium text-slate-700 hover:bg-[#F5F2EE] transition-colors w-full">
                                 Send Message to Support
                                 <HelpCircle className="h-4 w-4 text-amber-500" />
                             </button>
@@ -110,43 +110,43 @@ const ResourceTab = () => {
                     <>
                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Explore</p>
                         <div className="space-y-3">
-                            <Link to="/blog"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100"><FileText className="h-5 w-5 text-indigo-600" /></div>
+                            <Link to="/blog"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F2EE] transition-colors">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100"><FileText className="h-5 w-5 text-emerald-600" /></div>
                                 <div>
                                     <div className="font-semibold text-slate-900 text-sm">View All</div>
                                     <div className="text-xs text-slate-600">View more articles about eSignature and what it can do for your business</div>
                                 </div>
                             </Link>
-                            <Link to="/blog/what-is-esignature"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100"><FileCheck className="h-5 w-5 text-indigo-600" /></div>
+                            <Link to="/blog/what-is-esignature"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F2EE] transition-colors">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100"><FileCheck className="h-5 w-5 text-emerald-600" /></div>
                                 <div>
                                     <div className="font-semibold text-slate-900 text-sm">What is eSignature?</div>
                                     <div className="text-xs text-slate-600">Learn what electronic signature is and how DraftnSign eSignature works.</div>
                                 </div>
                             </Link>
-                            <Link to="/blog/pdf-certification"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100"><Shield className="h-5 w-5 text-indigo-600" /></div>
+                            <Link to="/blog/pdf-certification"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F2EE] transition-colors">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100"><Shield className="h-5 w-5 text-emerald-600" /></div>
                                 <div>
                                     <div className="font-semibold text-slate-900 text-sm">PDF Certification with Long-Term Validation</div>
                                     <div className="text-xs text-slate-600">Why certified PDF with long-term validation matters for eSignatures and contracts.</div>
                                 </div>
                             </Link>
-                            <Link to="/blog/sign-document-online"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100"><Globe className="h-5 w-5 text-indigo-600" /></div>
+                            <Link to="/blog/sign-document-online"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F2EE] transition-colors">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100"><Globe className="h-5 w-5 text-emerald-600" /></div>
                                 <div>
                                     <div className="font-semibold text-slate-900 text-sm">How to get a document signed online</div>
                                     <div className="text-xs text-slate-600">Use DraftnSign eSignature to get documents signed online quickly.</div>
                                 </div>
                             </Link>
-                            <Link to="/blog/faster-signing"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100"><Zap className="h-5 w-5 text-indigo-600" /></div>
+                            <Link to="/blog/faster-signing"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F2EE] transition-colors">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100"><Zap className="h-5 w-5 text-emerald-600" /></div>
                                 <div>
                                     <div className="font-semibold text-slate-900 text-sm">Faster document signing</div>
                                     <div className="text-xs text-slate-600">Simplify and accelerate signing and give customers the flexibility they need.</div>
                                 </div>
                             </Link>
-                            <Link to="/blog/reduce-costs"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100"><DollarSign className="h-5 w-5 text-indigo-600" /></div>
+                            <Link to="/blog/reduce-costs"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F2EE] transition-colors">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100"><DollarSign className="h-5 w-5 text-emerald-600" /></div>
                                 <div>
                                     <div className="font-semibold text-slate-900 text-sm">Reduce costs</div>
                                     <div className="text-xs text-slate-600">Integrate eSignatures into workflows to save time and money vs. postal contracts.</div>
@@ -158,7 +158,7 @@ const ResourceTab = () => {
             </div>
 
             {/* Right sidebar – About us */}
-            <div className="w-full md:w-[200px] flex-shrink-0 border-t md:border-t-0 md:border-l border-slate-200 bg-slate-50/30 p-5 md:p-6">
+            <div className="w-full md:w-[200px] flex-shrink-0 border-t md:border-t-0 md:border-l border-[#E6D8C9] bg-[#F5F2EE]/30 p-5 md:p-6">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">About us</p>
                 <ul className="space-y-8">
                     <li><Link to="/contact"  className="text-sm text-slate-700 hover:text-[#260559] transition-colors">Contact us</Link></li>

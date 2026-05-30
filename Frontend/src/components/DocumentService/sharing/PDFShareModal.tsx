@@ -605,7 +605,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full overflow-hidden">
+      <div className="bg-[#F7F3EE] rounded-lg shadow-xl max-w-5xl w-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold">Share PDF Document</h2>
@@ -618,7 +618,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-center p-4 border-b bg-gray-50">
+        <div className="flex items-center justify-center p-4 border-b bg-[#F5F2EE]">
           {(existingDocument ? ['recipients', 'preview', 'confirm'] : ['upload', 'recipients', 'preview', 'confirm']).map((stepName, index) => (
             <div key={stepName} className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === stepName ? 'bg-blue-600 text-white' :
@@ -734,7 +734,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
                   <label className="text-sm font-medium text-gray-700 w-12">To</label>
-                  <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white relative">
+                  <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-[#F7F3EE] relative">
                     {/* Email chips */}
                     {toRecipients.map((recipient, index) => (
                       <div
@@ -788,7 +788,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <label className="text-sm font-medium text-gray-700 w-12">Cc</label>
-                    <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white relative">
+                    <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-[#F7F3EE] relative">
                       {ccRecipients.map((recipient, index) => (
                         <div
                           key={`cc-chip-${index}`}
@@ -834,7 +834,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <label className="text-sm font-medium text-gray-700 w-12">Bcc</label>
-                    <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-white relative">
+                    <div className="flex-1 min-h-[40px] border rounded-lg p-2 flex flex-wrap items-center gap-2 bg-[#F7F3EE] relative">
                       {bccRecipients.map((recipient, index) => (
                         <div
                           key={`bcc-chip-${index}`}
@@ -958,7 +958,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                         className="w-full h-64 object-contain border rounded"
                       />
                     ) : (
-                      <div className="w-full h-64 flex items-center justify-center border rounded bg-gray-50">
+                      <div className="w-full h-64 flex items-center justify-center border rounded bg-[#F5F2EE]">
                         <div className="text-center">
                           <Eye size={48} className="mx-auto text-gray-400 mb-2" />
                           <p className="text-gray-600">PDF Preview</p>
@@ -1048,7 +1048,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                       <h5 className="text-sm font-medium text-gray-700 mb-2">CC ({ccRecipients.length})</h5>
                       <div className="space-y-2">
                         {ccRecipients.map((recipient, index) => (
-                          <div key={`cc-preview-${index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div key={`cc-preview-${index}`} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
                             <div>
                               <p className="font-medium">{recipient.email}</p>
                               {recipient.name && <p className="text-sm text-gray-600">{recipient.name}</p>}
@@ -1066,7 +1066,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
                       <h5 className="text-sm font-medium text-gray-700 mb-2">BCC ({bccRecipients.length})</h5>
                       <div className="space-y-2">
                         {bccRecipients.map((recipient, index) => (
-                          <div key={`bcc-preview-${index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div key={`bcc-preview-${index}`} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
                             <div>
                               <p className="font-medium">{recipient.email}</p>
                               {recipient.name && <p className="text-sm text-gray-600">{recipient.name}</p>}
@@ -1154,7 +1154,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
               <div className="space-y-2">
                 <h4 className="font-medium">Email Status</h4>
                 {shareData.recipients.map((recipient: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={index} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">{recipient.email}</span>
                       {recipient.type && (
@@ -1178,7 +1178,7 @@ const PDFShareModal: React.FC<PDFShareModalProps> = ({ isOpen, onClose, onSucces
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t bg-gray-50">
+        <div className="flex items-center justify-between p-6 border-t bg-[#F5F2EE]">
           <Button
             onClick={handleClose}
             variant="outline"

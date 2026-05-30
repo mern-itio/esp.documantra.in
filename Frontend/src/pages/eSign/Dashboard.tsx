@@ -130,7 +130,7 @@ const Dashboard: React.FC = () => {
         return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
       }).length,
       icon: Calendar,
-      color: 'bg-purple-500'
+      color: 'bg-[#F0FDF4]0'
     }
   ];
 
@@ -141,7 +141,7 @@ const Dashboard: React.FC = () => {
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 backdrop-blur-[2px]"></div>
           {/* Tutorial box position will be dynamically set based on step */}
-          <div className={`bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-300 ease-in-out min-h-[340px] flex flex-col justify-between ${
+          <div className={`bg-[#F7F3EE]/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-300 ease-in-out min-h-[340px] flex flex-col justify-between ${
             tutorialStep === 1 ? 'top-24 right-8' :  // Create Envelope button position
             tutorialStep === 2 ? 'top-1/3 left-8' :  // Recipients section position
             tutorialStep === 3 ? 'bottom-1/3 right-8' : // Send button position
@@ -273,7 +273,7 @@ const Dashboard: React.FC = () => {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div key={stat.name} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">{stat.name}</p>
@@ -289,7 +289,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Filters and Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -324,7 +324,7 @@ const Dashboard: React.FC = () => {
                 <option value="status">Status</option>
               </select>
             </div>
-            {/* <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+            {/* <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-[#F5F2EE] rounded-lg transition-colors">
               <Download className="w-4 h-4" />
               Export
             </button> */}
@@ -333,13 +333,13 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* AI Audit, Logs & Insights Section */}
-      <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+      <div className="bg-[#F5F2EE] rounded-xl p-6 border border-gray-200">
         <AIAuditInsights />
       </div>
 
 
       {/* Envelopes List */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Recent Envelopes</h2>
@@ -390,7 +390,7 @@ const Dashboard: React.FC = () => {
               const completedRecipients = envelope.recipients.filter((r: any) => r.status === 'completed' || r.status === 'signed').length;
               
               return (
-                <div key={envelope.id} className="p-6 hover:bg-gray-50 transition-colors">
+                <div key={envelope.id} className="p-6 hover:bg-[#F5F2EE] transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-start space-x-4 flex-1">
                       <div className="flex-shrink-0">

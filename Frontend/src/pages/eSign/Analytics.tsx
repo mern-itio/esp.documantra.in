@@ -84,7 +84,7 @@ const Analytics: React.FC = () => {
       change: '+18%',
       trend: 'up',
       icon: Users,
-      color: 'bg-purple-500'
+      color: 'bg-[#F0FDF4]0'
     },
     {
       name: 'Auth Success Rate',
@@ -92,7 +92,7 @@ const Analytics: React.FC = () => {
       change: '+2.1%',
       trend: 'up',
       icon: Shield,
-      color: 'bg-indigo-500'
+      color: 'bg-emerald-500'
     },
     {
       name: 'Workflow Efficiency',
@@ -125,7 +125,7 @@ const Analytics: React.FC = () => {
     { name: 'Completed', value: completedEnvelopes, color: 'bg-green-500' },
     { name: 'Pending', value: pendingEnvelopes, color: 'bg-yellow-500' },
     { name: 'Expired', value: expiredEnvelopes, color: 'bg-red-500' },
-    { name: 'Draft', value: filteredEnvelopes.filter(env => env.status === 'draft').length, color: 'bg-gray-500' }
+    { name: 'Draft', value: filteredEnvelopes.filter(env => env.status === 'draft').length, color: 'bg-[#F5F2EE]0' }
   ];
 
   // if (viewMode === 'advanced') {
@@ -142,7 +142,7 @@ const Analytics: React.FC = () => {
         </div>
         
         {/* <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg p-1">
+          <div className="flex items-center gap-2 bg-[#F7F3EE] border border-gray-300 rounded-lg p-1">
             <button
               onClick={() => setViewMode('basic')}
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -193,7 +193,7 @@ const Analytics: React.FC = () => {
           const TrendIcon = metric.trend === 'up' ? TrendingUp : TrendingDown;
           
           return (
-            <div key={metric.name} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div key={metric.name} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-4">
                 <div className={`w-12 h-12 rounded-lg ${metric.color} flex items-center justify-center`}>
                   <Icon className="w-6 h-6 text-white" />
@@ -240,7 +240,7 @@ const Analytics: React.FC = () => {
           </div>
           <button
             onClick={() => setViewMode('advanced')}
-            className="px-6 py-3 bg-white text-purple-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors"
+            className="px-6 py-3 bg-[#F7F3EE] text-[#155E4B] font-semibold rounded-lg hover:bg-gray-100 transition-colors"
           >
             View Advanced Analytics
           </button>
@@ -250,11 +250,11 @@ const Analytics: React.FC = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Envelope Activity Chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
                   <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-            {/* <button className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+            {/* <button className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-[#F5F2EE] rounded-lg transition-colors">
               <Filter className="w-4 h-4" />
               Filter
             </button> */}
@@ -263,7 +263,7 @@ const Analytics: React.FC = () => {
         
         <div className="divide-y divide-gray-200">
           {envelopes.slice(0, 3).map((envelope) => (
-            <div key={envelope.id} className="p-6 hover:bg-gray-50 transition-colors">
+            <div key={envelope.id} className="p-6 hover:bg-[#F5F2EE] transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -302,7 +302,7 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* Status Distribution */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Status Distribution</h3>
           
           <div className="space-y-4">

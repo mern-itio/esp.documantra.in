@@ -19,7 +19,7 @@ const AllInOnePlatformPage = () => {
       title: "AI-Powered Generation",
       description: "Generate legal documents instantly using natural language prompts",
       features: ["Natural language input", "Legal compliance", "Custom fields", "Instant generation"],
-      color: "bg-purple-500"
+      color: "bg-[#F0FDF4]0"
     },
     {
       icon: Edit,
@@ -40,7 +40,7 @@ const AllInOnePlatformPage = () => {
       title: "E-Signature Workflows",
       description: "Secure electronic signatures with custom signing orders and notifications",
       features: ["Multi-signer support", "Custom workflows", "Auto-reminders", "Legal compliance"],
-      color: "bg-indigo-500"
+      color: "bg-emerald-500"
     },
     {
       icon: Send,
@@ -197,7 +197,7 @@ const AllInOnePlatformPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white pt-24">
+    <div className="min-h-screen bg-[#F7F3EE] pt-24">
       {/* Hero Section */}
       <section className="py-16 bg-gradient-to-br from-primary-50 to-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
@@ -230,7 +230,7 @@ const AllInOnePlatformPage = () => {
       </section>
 
       {/* Platform Features Grid */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -243,7 +243,7 @@ const AllInOnePlatformPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {platformFeatures.map((feature, index) => (
-              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all bg-white rounded-xl p-6 shadow-lg ">
+              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all bg-[#F7F3EE] rounded-xl p-6 shadow-lg ">
                 <div className={`${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-6`}>
                   <feature.icon className="h-6 w-6 text-white" />
                 </div>
@@ -264,7 +264,7 @@ const AllInOnePlatformPage = () => {
       </section>
 
       {/* Workflow Process */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -277,7 +277,7 @@ const AllInOnePlatformPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {workflowSteps.map((step, index) => (
-              <div key={index} className="bg-white rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all relative">
+              <div key={index} className="bg-[#F7F3EE] rounded-xl p-6 shadow-md card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all relative">
                 <div className="absolute -top-4 -right-4 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                   {step.step}
                 </div>
@@ -293,7 +293,7 @@ const AllInOnePlatformPage = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -306,7 +306,7 @@ const AllInOnePlatformPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {benefits.map((benefit, index) => (
-              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center p-6 bg-gray-50 rounded-xl hover:shadow-lg transition-all duration-200">
+              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all text-center p-6 bg-[#F5F2EE] rounded-xl hover:shadow-lg transition-all duration-200">
                 <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <benefit.icon className="h-8 w-8 text-primary-600" />
                 </div>
@@ -319,7 +319,7 @@ const AllInOnePlatformPage = () => {
       </section>
 
       {/* Use Cases */}
-      <section id="real-world-use-cases" className="py-16 bg-gray-50">
+      <section id="real-world-use-cases" className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -332,7 +332,7 @@ const AllInOnePlatformPage = () => {
 
           <div className="grid md:grid-cols-3 gap-8">
             {useCases.map((useCase, index) => (
-              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all bg-white rounded-xl p-8 shadow-lg">
+              <div key={index} className="card-hover border border-gray-100 hover:border-primary-500 hover:shadow-xl cursor-pointer transition-all bg-[#F7F3EE] rounded-xl p-8 shadow-lg">
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">{useCase.title}</h3>
                 <p className="text-gray-600 mb-6">{useCase.description}</p>
                 <div className="space-y-4">
@@ -352,7 +352,7 @@ const AllInOnePlatformPage = () => {
       </section>
 
       {/* Integrations */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -365,7 +365,7 @@ const AllInOnePlatformPage = () => {
 
           <div className="grid md:grid-cols-3 gap-6">
             {integrations.map((integration, index) => (
-              <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:shadow-md transition-shadow">
+              <div key={index} className="flex items-center gap-4 p-4 bg-[#F5F2EE] rounded-lg hover:shadow-md transition-shadow">
                 <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
                   {integration.icon}
                 </div>
@@ -387,7 +387,7 @@ const AllInOnePlatformPage = () => {
       </section>
 
       {/* API Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -479,10 +479,10 @@ sendDocument();`}</code>
       </section>
 
       {/* Team Collaboration */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="bg-gray-50 rounded-xl p-8 shadow-lg">
+            <div className="bg-[#F5F2EE] rounded-xl p-8 shadow-lg">
               <div className="space-y-6">
                 <div className="flex items-center justify-between pb-4 border-b border-gray-200">
                   <h4 className="font-semibold text-gray-900">Acme Corp Organization</h4>
@@ -490,7 +490,7 @@ sendDocument();`}</code>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
+                  <div className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg shadow-sm">
                     <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">JD</div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-gray-900">John Doe</div>
@@ -499,7 +499,7 @@ sendDocument();`}</code>
                     <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Online</div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
+                  <div className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg shadow-sm">
                     <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">SM</div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-gray-900">Sarah Miller</div>
@@ -507,8 +507,8 @@ sendDocument();`}</code>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
-                    <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">MJ</div>
+                  <div className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg shadow-sm">
+                    <div className="w-10 h-10 bg-[#F0FDF4]0 rounded-full flex items-center justify-center text-white text-sm font-bold">MJ</div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-gray-900">Mike Johnson</div>
                       <div className="text-xs text-gray-500">Viewer • Read Only</div>
@@ -570,7 +570,7 @@ sendDocument();`}</code>
       </section>
 
       {/* Cost Savings Calculator */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -581,24 +581,24 @@ sendDocument();`}</code>
             </p>
           </div>
 
-          <div className="bg-white rounded-xl p-8 shadow-lg max-w-4xl mx-auto">
+          <div className="bg-[#F7F3EE] rounded-xl p-8 shadow-lg max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-8">
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-6">Typical Costs with Multiple Tools</h3>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center p-3 bg-[#F5F2EE] rounded-lg">
                     <span className="font-medium">E-Signature Solution</span>
                     <span className="font-bold">$25-50/month</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center p-3 bg-[#F5F2EE] rounded-lg">
                     <span className="font-medium">PDF Editor</span>
                     <span className="font-bold">$15-30/month</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center p-3 bg-[#F5F2EE] rounded-lg">
                     <span className="font-medium">Document Management</span>
                     <span className="font-bold">$10-25/month</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center p-3 bg-[#F5F2EE] rounded-lg">
                     <span className="font-medium">Legal Template Services</span>
                     <span className="font-bold">$15-40/month</span>
                   </div>
@@ -651,7 +651,7 @@ sendDocument();`}</code>
       </section>
 
       {/* Global Accessibility */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -696,45 +696,45 @@ sendDocument();`}</code>
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </div>
-            <div className="bg-gray-50 rounded-xl p-8 shadow-lg">
+            <div className="bg-[#F5F2EE] rounded-xl p-8 shadow-lg">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Supported Regions</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
+                <div className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg shadow-sm">
                   <span className="text-2xl">🇺🇸</span>
                   <div>
                     <div className="font-medium text-gray-900">United States</div>
                     <div className="text-xs text-gray-500">ESIGN Act, UETA</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
+                <div className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg shadow-sm">
                   <span className="text-2xl">🇪🇺</span>
                   <div>
                     <div className="font-medium text-gray-900">European Union</div>
                     <div className="text-xs text-gray-500">eIDAS Regulation</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
+                <div className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg shadow-sm">
                   <span className="text-2xl">🇬🇧</span>
                   <div>
                     <div className="font-medium text-gray-900">United Kingdom</div>
                     <div className="text-xs text-gray-500">Electronic Communications Act</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
+                <div className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg shadow-sm">
                   <span className="text-2xl">🇨🇦</span>
                   <div>
                     <div className="font-medium text-gray-900">Canada</div>
                     <div className="text-xs text-gray-500">PIPEDA, Provincial Acts</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
+                <div className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg shadow-sm">
                   <span className="text-2xl">🇦🇺</span>
                   <div>
                     <div className="font-medium text-gray-900">Australia</div>
                     <div className="text-xs text-gray-500">Electronic Transactions Act</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
+                <div className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg shadow-sm">
                   <span className="text-2xl">🌏</span>
                   <div>
                     <div className="font-medium text-gray-900">35+ More Countries</div>
@@ -748,7 +748,7 @@ sendDocument();`}</code>
       </section>
 
       {/* Detailed Use Cases */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -761,7 +761,7 @@ sendDocument();`}</code>
 
           <div className="space-y-12">
             {useCases.map((useCase, index) => (
-              <div key={index} className="bg-white rounded-xl p-8 shadow-lg">
+              <div key={index} className="bg-[#F7F3EE] rounded-xl p-8 shadow-lg">
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">{useCase.title}</h3>
                 <p className="text-lg text-gray-600 mb-6">{useCase.description}</p>
                 <div className="grid md:grid-cols-5 gap-4">
@@ -798,10 +798,10 @@ sendDocument();`}</code>
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
+              <Link to="/signup" className="bg-[#F7F3EE] text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
                 Start Free Forever <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
-              <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
+              <Link to="/contact" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-primary-600 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
                 Schedule Demo
               </Link>
             </div>

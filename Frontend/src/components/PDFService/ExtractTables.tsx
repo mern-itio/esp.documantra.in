@@ -273,7 +273,7 @@ const ExtractTables: React.FC = () => {
       {/* Processing Animation - Full Width */}
       {isProcessing && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-primary/10 to-indigo-500/10 dark:from-primary/15 dark:to-indigo-500/15 border border-primary/30 dark:border-primary/40 rounded-lg p-8">
+          <div className="bg-gradient-to-r from-primary/10 to-emerald-500/10 dark:from-primary/15 dark:to-emerald-500/15 border border-primary/30 dark:border-primary/40 rounded-lg p-8">
             <div className="text-center">
               <div className="flex items-center justify-center mb-6">
                 <div className="relative">
@@ -290,7 +290,7 @@ const ExtractTables: React.FC = () => {
                 Our AI is working hard to extract tables from your PDF files...
               </p>
               <div className="w-full bg-muted rounded-full h-3 mb-4">
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+                <div className="bg-gradient-to-r from-blue-500 to-emerald-500 h-3 rounded-full animate-pulse" style={{ width: '70%' }}></div>
               </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center justify-center space-x-2">
@@ -445,11 +445,11 @@ const ExtractTables: React.FC = () => {
               {results.map((result, index) => (
                 <div key={index} className="bg-background rounded-2xl shadow-lg border border-border overflow-hidden hover:shadow-xl transition-all duration-300 group">
                   {/* File Header */}
-                  <div className="bg-gradient-to-r from-primary/10 to-indigo-500/10 dark:from-primary/15 dark:to-indigo-500/15 px-6 py-4 border-b border-border">
+                  <div className="bg-gradient-to-r from-primary/10 to-emerald-500/10 dark:from-primary/15 dark:to-emerald-500/15 px-6 py-4 border-b border-border">
                     <div className="flex items-center justify-between">
                       {/* Left side: File info */}
                       <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
                           <FileText className="h-6 w-6 text-primary-foreground" />
                         </div>
                         <div>
@@ -473,7 +473,7 @@ const ExtractTables: React.FC = () => {
                       <div className="flex items-center space-x-4">
                         <button
                           onClick={clearAll}
-                          className="bg-gradient-to-r from-primary to-indigo-600 text-primary-foreground px-6 py-3 rounded-xl font-medium hover:from-primary/90 hover:to-indigo-700 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                          className="bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground px-6 py-3 rounded-xl font-medium hover:from-primary/90 hover:to-emerald-700 transition-all duration-300 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                         >
                           <Upload className="h-5 w-5 mr-2" />
                           Extract Another File
@@ -503,7 +503,7 @@ const ExtractTables: React.FC = () => {
                         <div className="text-sm text-muted-foreground">Total Rows</div>
                       </div>
                       <div className="text-center p-4 bg-muted rounded-xl">
-                        <div className="text-2xl font-bold text-purple-600">{result.totalColumns}</div>
+                        <div className="text-2xl font-bold text-[#155E4B]">{result.totalColumns}</div>
                         <div className="text-sm text-muted-foreground">Columns</div>
                       </div>
                       <div className="text-center p-4 bg-muted rounded-xl">

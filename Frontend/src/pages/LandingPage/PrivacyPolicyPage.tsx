@@ -584,12 +584,12 @@ const PrivacyPolicyPage = () => {
             We will respond to your request within the timeframe required by applicable law (typically 30 days for GDPR, 45 days for CCPA). We may need to verify your identity before processing your request.
           </p>
           
-          <div className="bg-purple-50 p-4 rounded-lg mb-4">
+          <div className="bg-[#F0FDF4] p-4 rounded-lg mb-4">
             <div className="flex items-start">
-              <Shield className="h-5 w-5 text-purple-600 mt-1 mr-3 flex-shrink-0" />
+              <Shield className="h-5 w-5 text-[#155E4B] mt-1 mr-3 flex-shrink-0" />
               <div>
                 <p className="text-purple-800 font-medium">Limitations on Rights Requests</p>
-                <p className="text-purple-700 text-sm mt-1">
+                <p className="text-[#155E4B] text-sm mt-1">
                   In some cases, we may be unable to fulfill certain requests due to legal obligations, security requirements, or technical limitations. If we cannot fully comply with your request, we will explain the reasons and provide alternative options where possible.
                 </p>
               </div>
@@ -798,7 +798,7 @@ const PrivacyPolicyPage = () => {
             If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:
           </p>
           
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+          <div className="bg-[#F5F2EE] p-4 rounded-lg mb-6">
             <h4 className="font-semibold mb-2">Privacy Team</h4>
             <p className="mb-1"><strong>Email:</strong> privacy@draftandsign.com</p>
             <p className="mb-1"><strong>Address:</strong> 123 Legal Avenue, Suite 400, San Francisco, CA 94103</p>
@@ -809,7 +809,7 @@ const PrivacyPolicyPage = () => {
           <p className="mb-4">
             For users in the European Economic Area, United Kingdom, or Switzerland, you may also contact our Data Protection Officer:
           </p>
-          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+          <div className="bg-[#F5F2EE] p-4 rounded-lg mb-4">
             <p className="mb-1"><strong>Email:</strong> dpo@draftandsign.com</p>
             <p><strong>Address:</strong> 123 Legal Avenue, Suite 400, San Francisco, CA 94103</p>
           </div>
@@ -818,7 +818,7 @@ const PrivacyPolicyPage = () => {
           <p className="mb-4">
             For users in the European Union, our EU representative pursuant to Article 27 of the GDPR is:
           </p>
-          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+          <div className="bg-[#F5F2EE] p-4 rounded-lg mb-4">
             <p className="mb-1"><strong>Name:</strong> {BRAND.name} EU Representative</p>
             <p className="mb-1"><strong>Email:</strong> eu-representative@draftandsign.com</p>
             <p><strong>Address:</strong> 1 Dublin Square, Dublin, Ireland</p>
@@ -828,7 +828,7 @@ const PrivacyPolicyPage = () => {
           <p className="mb-4">
             For users in the United Kingdom, our UK representative pursuant to the UK GDPR is:
           </p>
-          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+          <div className="bg-[#F5F2EE] p-4 rounded-lg mb-4">
             <p className="mb-1"><strong>Name:</strong> {BRAND.name} UK Representative</p>
             <p className="mb-1"><strong>Email:</strong> uk-representative@draftandsign.com</p>
             <p><strong>Address:</strong> 1 London Bridge, London, UK</p>
@@ -856,10 +856,10 @@ const PrivacyPolicyPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 mt-8 pt-24 pb-16">
+    <div className="min-h-screen bg-[#F5F2EE] mt-8 pt-24 pb-16">
       <div className="container-max">
         {/* Header Section */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-lg p-8 mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
@@ -926,7 +926,7 @@ const PrivacyPolicyPage = () => {
           {/* Language selector removed */}
 
           {/* Quick Navigation */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="bg-[#F5F2EE] rounded-lg p-4 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-3">Quick Navigation</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
               {sections.map((section) => (
@@ -957,7 +957,7 @@ const PrivacyPolicyPage = () => {
               <div key={section.id} id={section.id} className="border border-gray-200 rounded-lg overflow-hidden">
                 <button
                   onClick={() => toggleSection(section.id)}
-                  className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                  className="w-full flex items-center justify-between p-4 bg-[#F5F2EE] hover:bg-gray-100 transition-colors text-left"
                 >
                   <h2 className="text-xl font-semibold text-gray-900">{section.title}</h2>
                   {expandedSections[section.id] ? (
@@ -967,7 +967,7 @@ const PrivacyPolicyPage = () => {
                   )}
                 </button>
                 {expandedSections[section.id] && (
-                  <div className="p-6 bg-white">
+                  <div className="p-6 bg-[#F7F3EE]">
                     {section.content}
                   </div>
                 )}
@@ -989,12 +989,12 @@ const PrivacyPolicyPage = () => {
           </div>
 
           {/* Data Processing Notice */}
-          <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-6">
+          <div className="mt-6 bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg p-6">
             <div className="flex items-start gap-3">
-              <Database className="h-6 w-6 text-purple-600 mt-1 flex-shrink-0" />
+              <Database className="h-6 w-6 text-[#155E4B] mt-1 flex-shrink-0" />
               <div>
                 <h3 className="text-lg font-semibold text-purple-800 mb-2">Data Processing Information</h3>
-                <p className="text-purple-700">
+                <p className="text-[#155E4B]">
                   For free users, files uploaded for processing are automatically deleted after 1 hour. Paid accounts may have different retention periods as specified in their service tier. You can manually delete your files at any time through your account settings.
                 </p>
               </div>
@@ -1031,14 +1031,14 @@ const PrivacyPolicyPage = () => {
           <div className="mt-8 p-6 border border-gray-200 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Related Policies</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              <Link to="/terms-of-service" className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <Link to="/terms-of-service" className="flex items-center gap-3 p-4 bg-[#F5F2EE] rounded-lg hover:bg-gray-100 transition-colors">
                 <FileText className="h-5 w-5 text-primary-600" />
                 <div>
                   <h4 className="font-medium text-gray-900">Terms of Service</h4>
                   <p className="text-sm text-gray-600">Legal terms governing use of our services</p>
                 </div>
               </Link>
-              <Link to="/cookie-policy" className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <Link to="/cookie-policy" className="flex items-center gap-3 p-4 bg-[#F5F2EE] rounded-lg hover:bg-gray-100 transition-colors">
                 <FileText className="h-5 w-5 text-primary-600" />
                 <div>
                   <h4 className="font-medium text-gray-900">Cookie Policy</h4>

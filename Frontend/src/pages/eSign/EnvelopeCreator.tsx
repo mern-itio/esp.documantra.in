@@ -3552,8 +3552,8 @@ const EnvelopeCreator: React.FC = () => {
                           const scale = absPosition === 0 ? 1 : Math.max(0.98 - absPosition * 0.01, 0.95);
                           const cardColors = [
                             { border: '#260559', shadow: 'rgba(38, 5, 89, 0.2)', accent: '#6366f1' },
-                            { border: '#6366f1', shadow: 'rgba(99, 102, 241, 0.15)', accent: '#8b5cf6' },
-                            { border: '#8b5cf6', shadow: 'rgba(139, 92, 246, 0.12)', accent: '#a78bfa' },
+                            { border: '#6366f1', shadow: 'rgba(99, 102, 241, 0.15)', accent: '#155E4B' },
+                            { border: '#155E4B', shadow: 'rgba(139, 92, 246, 0.12)', accent: '#a78bfa' },
                             { border: '#a78bfa', shadow: 'rgba(167, 139, 250, 0.1)', accent: '#c4b5fd' }
                           ];
                           const cardColor = cardColors[Math.min(absPosition, 3)];
@@ -4038,7 +4038,7 @@ const EnvelopeCreator: React.FC = () => {
                           checked={setSigningOrder}
                           onChange={(e) => setSetSigningOrder(e.target.checked)}
                           disabled={(((recipients?.length || 0) + (bulkList ? 1 : 0) + (csvRecipientList ? ((csvRecipientList.items?.length || 0)) : 0)) < 2)}
-                          className="w-4 h-4 text-purple-600 bg-background border-border rounded focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-4 h-4 text-[#155E4B] bg-background border-border rounded focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           title={(((recipients?.length || 0) + (bulkList ? 1 : 0) + (csvRecipientList ? ((csvRecipientList.items?.length || 0)) : 0)) < 2) ? 'Add at least two recipients to set signing order' : ''}
                         />
                         <span className={`text-sm ${((((recipients?.length || 0) + (bulkList ? 1 : 0) + (csvRecipientList ? ((csvRecipientList.items?.length || 0)) : 0)) < 2)) ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>Set signing order</span>
@@ -4157,7 +4157,7 @@ const EnvelopeCreator: React.FC = () => {
                               <div>
                                 <div className='container mx-auto px-4 sm:px-8 lg:px-50 '>
                                   <h3 className="text-[32px] leading-tight text-foreground mb-1">Recipients</h3>
-                                  <p className="text-muted-foreground mb-6">Enter information for up to 10 recipients. If you need to add more recipients, <span className="text-purple-700 underline cursor-pointer" onClick={() => setBulkMethod('csv')}>upload a CSV instead</span></p>
+                                  <p className="text-muted-foreground mb-6">Enter information for up to 10 recipients. If you need to add more recipients, <span className="text-[#155E4B] underline cursor-pointer" onClick={() => setBulkMethod('csv')}>upload a CSV instead</span></p>
 
                                   <div className="mb-6">
                                     <label className="block text-sm font-medium text-foreground mb-2">Role *</label>
@@ -4578,7 +4578,7 @@ const EnvelopeCreator: React.FC = () => {
                                         {/* Sender */}
                                         <div className="relative h-20 flex justify-center items-center z-10">
                                           <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-border z-0" />
-                                          <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                          <div className="w-14 h-14 rounded-full bg-[#DCFCE7] flex items-center justify-center font-semibold text-[#3E2B66] z-20">
                                             {(((user?.fullname || user?.email || '?') as string).match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase()}
                                           </div>
                                         </div>
@@ -4600,7 +4600,7 @@ const EnvelopeCreator: React.FC = () => {
                                         </div>
                                         {/* Completed */}
                                         <div className="relative h-20 flex justify-center items-center z-10">
-                                          <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">✓</div>
+                                          <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">✓</div>
                                         </div>
                                       </div>
                                     </div>
@@ -4630,7 +4630,7 @@ const EnvelopeCreator: React.FC = () => {
                                       {/* Sender */}
                                       <div className="relative h-20 flex justify-center items-center z-10">
                                         <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-border z-0" />
-                                        <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                        <div className="w-14 h-14 rounded-full bg-[#DCFCE7] flex items-center justify-center font-semibold text-[#3E2B66] z-20">
                                           {(((user?.fullname || user?.email || '?') as string).match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase()}
                                         </div>
                                       </div>
@@ -4644,7 +4644,7 @@ const EnvelopeCreator: React.FC = () => {
                                       ))}
                                       {/* Completed */}
                                       <div className="relative h-20 flex justify-center items-center z-10">
-                                        <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">✓</div>
+                                        <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">✓</div>
                                       </div>
                                     </div>
                                   </div>
@@ -4675,7 +4675,7 @@ const EnvelopeCreator: React.FC = () => {
                                     <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gray-300 z-0" />
                                     <div className="relative h-20 flex justify-center items-center z-10">
                                       <div className="absolute left-6 right-6 bottom-0 border-t border-dashed border-border z-0" />
-                                      <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">
+                                      <div className="w-14 h-14 rounded-full bg-[#DCFCE7] flex items-center justify-center font-semibold text-[#3E2B66] z-20">
                                         {(((user?.fullname || user?.email || '?') as string).match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase()}
                                       </div>
                                     </div>
@@ -4688,7 +4688,7 @@ const EnvelopeCreator: React.FC = () => {
                                       </div>
                                     ))}
                                     <div className="relative h-20 flex justify-center items-center z-10">
-                                      <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">✓</div>
+                                      <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center font-semibold text-[#3E2B66] z-20">✓</div>
                                     </div>
                                   </div>
                                 </div>
@@ -4991,11 +4991,11 @@ const EnvelopeCreator: React.FC = () => {
                                           setDraggedRecipientId(null);
                                           setDragOverRecipientId(null);
                                         }}
-                                        className={`flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-full hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-300 shadow-sm cursor-grab active:cursor-grabbing ${isDraggingPill
-                                          ? 'opacity-60 scale-110 rotate-2 shadow-xl z-50 border-purple-500 bg-purple-100'
+                                        className={`flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-full hover:border-purple-500 hover:bg-[#F0FDF4] dark:hover:bg-purple-900/20 transition-all duration-300 shadow-sm cursor-grab active:cursor-grabbing ${isDraggingPill
+                                          ? 'opacity-60 scale-110 rotate-2 shadow-xl z-50 border-purple-500 bg-[#DCFCE7]'
                                           : ''
                                           } ${isDragOverPill
-                                            ? 'border-purple-600 scale-110 shadow-lg ring-2 ring-purple-300 ring-opacity-50 bg-purple-50'
+                                            ? 'border-purple-600 scale-110 shadow-lg ring-2 ring-purple-300 ring-opacity-50 bg-[#F0FDF4]'
                                             : ''
                                           } ${isReorderedPill
                                             ? 'animate-reorder-pill'
@@ -5344,7 +5344,7 @@ const EnvelopeCreator: React.FC = () => {
                                                     {/* ✔ placeholder box */}
                                                     <span className="w-4 flex justify-center">
                                                       {recipient.role === "signer" && (
-                                                        <Check className="w-4 h-4 text-purple-600" />
+                                                        <Check className="w-4 h-4 text-[#155E4B]" />
                                                       )}
                                                     </span>
 
@@ -5365,7 +5365,7 @@ const EnvelopeCreator: React.FC = () => {
                                                   >
                                                     <span className="w-4 flex justify-center">
                                                       {recipient.role === "in_person_signer" && (
-                                                        <Check className="w-4 h-4 text-purple-600" />
+                                                        <Check className="w-4 h-4 text-[#155E4B]" />
                                                       )}
                                                     </span>
 
@@ -5383,7 +5383,7 @@ const EnvelopeCreator: React.FC = () => {
                                                   >
                                                     <span className="w-4 flex justify-center">
                                                       {recipient.role === "carbon_copy" && (
-                                                        <Check className="w-4 h-4 text-purple-600" />
+                                                        <Check className="w-4 h-4 text-[#155E4B]" />
                                                       )}
                                                     </span>
 
@@ -5403,7 +5403,7 @@ const EnvelopeCreator: React.FC = () => {
                                                   >
                                                     <span className="w-4 flex justify-center">
                                                       {recipient.role === "needs_to_view" && (
-                                                        <Check className="w-4 h-4 text-purple-600" />
+                                                        <Check className="w-4 h-4 text-[#155E4B]" />
                                                       )}
                                                     </span>
 
@@ -5802,7 +5802,7 @@ const EnvelopeCreator: React.FC = () => {
                     onMouseEnter={() => setShowEnvelopeTooltip(true)}
                     onMouseLeave={() => setShowEnvelopeTooltip(false)}
                   >
-                    <Info className="w-6 h-6 text-indigo-900" />
+                    <Info className="w-6 h-6 text-emerald-900" />
 
                     {showEnvelopeTooltip && (
                       <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 bg-[#1A1333] text-white text-sm rounded-md p-3 shadow-lg z-50">
@@ -6062,7 +6062,7 @@ const EnvelopeCreator: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Signature Type</p>
                     <div className="flex items-center gap-2">
-                      {envelopeData.signatureType === 'qualified' && <Award className="w-4 h-4 text-purple-600" />}
+                      {envelopeData.signatureType === 'qualified' && <Award className="w-4 h-4 text-[#155E4B]" />}
                       {envelopeData.signatureType === 'advanced' && <Shield className="w-4 h-4 text-blue-600" />}
                       <p className="text-foreground capitalize">{envelopeData.signatureType}</p>
                     </div>
@@ -6509,7 +6509,7 @@ const EnvelopeCreator: React.FC = () => {
                     <div className="text-xs text-white-900">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
                     <div className="flex items-center gap-2">
                       <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-muted-foreground/50 hover:text-white">Skip</button>
-                      <button onClick={prevCreatorStep} disabled={creatorTourIndex === 0} className={`px-3 py-1.5 border border-white/40 rounded-sm text-sm ${creatorTourIndex === 0 ? 'cursor-not-allowed text-white/60' : 'hover:bg-white/10 text-white'}`}>Back</button>
+                      <button onClick={prevCreatorStep} disabled={creatorTourIndex === 0} className={`px-3 py-1.5 border border-white/40 rounded-sm text-sm ${creatorTourIndex === 0 ? 'cursor-not-allowed text-white/60' : 'hover:bg-[#F7F3EE]/10 text-white'}`}>Back</button>
                       {creatorTourIndex < creatorTourSteps.length - 1 ? (
                         <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-card text-foreground rounded-sm text-sm font-medium hover:bg-muted">Next</button>
                       ) : (
@@ -6772,7 +6772,7 @@ const EnvelopeCreator: React.FC = () => {
                         <div className="relative flex items-center py-4 mb-2">
                           <div className="relative z-10 flex items-center gap-4 w-full">
                             <div className="flex-shrink-0 w-12 flex justify-center">
-                              <div className="w-10 h-10 rounded-full bg-purple-100 border-2 border-purple-300 flex items-center justify-center font-semibold text-[#3E2B66] text-sm">
+                              <div className="w-10 h-10 rounded-full bg-[#DCFCE7] border-2 border-purple-300 flex items-center justify-center font-semibold text-[#3E2B66] text-sm">
                                 {(((user?.fullname || user?.email || '?') as string).match(/\b\w/g) || []).slice(0, 2).join('').toUpperCase()}
                               </div>
                             </div>

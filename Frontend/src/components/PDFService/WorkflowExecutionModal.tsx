@@ -226,7 +226,7 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#F7F3EE] rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -326,7 +326,7 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
 
               <div className="mb-6">
                 {selectedFile ? (
-                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <div className="bg-[#F5F2EE] rounded-lg p-4 mb-4">
                     <div className="flex items-center space-x-3">
                       <FileText className="w-8 h-8 text-blue-600" />
                       <div className="flex-1 text-left">
@@ -430,7 +430,7 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
                 <p className="text-gray-600">Please wait...</p>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-[#F5F2EE] rounded-lg p-4">
                 <p className="text-sm text-gray-600">
                   Processing: {selectedFile?.name}
                 </p>
@@ -472,7 +472,7 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
                 </p>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="bg-[#F5F2EE] rounded-lg p-4 mb-6">
                 <div className="flex items-center space-x-3">
                   <FileText className="w-8 h-8 text-blue-600" />
                   <div className="flex-1 text-left">
@@ -482,7 +482,7 @@ export const WorkflowExecutionModal: React.FC<WorkflowExecutionModalProps> = ({
                           type="text"
                           value={customFilename}
                           onChange={(e) => setCustomFilename(e.target.value)}
-                          className="font-medium text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="font-medium text-gray-900 bg-[#F7F3EE] border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Enter filename"
                           autoFocus
                         />

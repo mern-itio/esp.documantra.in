@@ -279,7 +279,7 @@ export function WorkflowStepModal({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="bg-[#F7F3EE] rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="px-6 py-4 border-b border-border flex items-center justify-between">
             <div>
@@ -330,7 +330,7 @@ export function WorkflowStepModal({
 
                 {/* Workflow Creator */}
                 <div className="flex items-center space-x-2 text-muted-foreground">
-                  <User className="w-4 h-4 text-purple-600" />
+                  <User className="w-4 h-4 text-[#155E4B]" />
                   <span>
                     Created by: <strong>{workflowCreatedBy}</strong>
                   </span>
@@ -526,7 +526,7 @@ export function WorkflowStepModal({
                   {step.comments.map((comment, idx) => (
                     <div
                       key={idx}
-                      className="bg-white p-4 rounded-lg shadow-sm border border-border hover:shadow-md transition-shadow"
+                      className="bg-[#F7F3EE] p-4 rounded-lg shadow-sm border border-border hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-primary to-primary-foreground rounded-full flex items-center justify-center shadow-sm">
@@ -545,7 +545,7 @@ export function WorkflowStepModal({
                 </div>
               ) : (
                 <div className="bg-gradient-to-br from-muted to-muted-foreground rounded-lg p-6 text-center border border-border">
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
+                  <div className="w-12 h-12 bg-[#F7F3EE] rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
                     <MessageSquare className="w-6 h-6 text-muted-foreground" />
                   </div>
                   <p className="text-sm font-medium text-muted-foreground">
@@ -593,7 +593,7 @@ export function WorkflowStepModal({
                   disabled={isAnyActionInProgress}
                   size="sm"
                   variant="outline"
-                  className="bg-white text-destructive border-destructive hover:bg-destructive/10"
+                  className="bg-[#F7F3EE] text-destructive border-destructive hover:bg-destructive/10"
                 >
                   <XCircle className="w-4 h-4 mr-2" />
                   Reject Step
@@ -607,7 +607,7 @@ export function WorkflowStepModal({
       {/* Rejection Reason Modal */}
       {showRejectionModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md">
+          <div className="bg-[#F7F3EE] rounded-lg shadow-2xl w-full max-w-md">
             <div className="px-6 py-4 border-b border-border">
               <h3 className="text-lg font-semibold text-foreground">
                 Reason for Rejection

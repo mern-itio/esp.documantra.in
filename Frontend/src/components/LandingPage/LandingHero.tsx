@@ -22,7 +22,7 @@ const LandingHero = () => {
          
           <h1 className="mt-2 text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight mb-5">
           Sign Documents Faster with 
-            <span className="block text-indigo-600">
+            <span className="block text-emerald-600">
               {APP_NAME}
             </span>
           </h1>
@@ -40,7 +40,7 @@ const LandingHero = () => {
             </Link>
             <Link
               to="/book-demo"
-              className="inline-flex items-center justify-center rounded-full border border-sky-200 bg-white/80 px-7 py-3 text-sm md:text-base font-semibold text-sky-700 shadow-sm hover:bg-white transition-colors"
+              className="inline-flex items-center justify-center rounded-full border border-sky-200 bg-[#F7F3EE]/80 px-7 py-3 text-sm md:text-base font-semibold text-sky-700 shadow-sm hover:bg-[#F7F3EE] transition-colors"
             >
               Get a demo
             </Link>
@@ -65,9 +65,9 @@ const LandingHero = () => {
 
         {/* Bottom card with video preview (instead of table) */}
         <div className="mt-10 md:mt-14 flex justify-center">
-          <div className="relative w-full max-w-7xl rounded-2xl bg-white/95 shadow-[0_24px_70px_rgba(15,23,42,0.18)] border border-sky-50 overflow-hidden">
+          <div className="relative w-full max-w-7xl rounded-2xl bg-[#F7F3EE]/95 shadow-[0_24px_70px_rgba(15,23,42,0.18)] border border-sky-50 overflow-hidden">
             {/* Card header */}
-            {/* <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 bg-slate-50/80">
+            {/* <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 bg-[#F5F2EE]/80">
               <div className="flex items-center gap-3 text-xs md:text-sm font-medium text-slate-700">
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sky-700 text-xs font-semibold">
                   DS
@@ -81,7 +81,7 @@ const LandingHero = () => {
             </div> */}
 
             {/* Video body */}
-              <div className="border border-slate-200/80 bg-slate-900 overflow-hidden shadow-sm">
+              <div className="border border-[#E6D8C9]/80 bg-slate-900 overflow-hidden shadow-sm">
                 <div >
                   {/* <video
                     className="h-full w-full object-cover"

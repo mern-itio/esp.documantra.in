@@ -103,9 +103,9 @@ export const AdvancedTemplateDesigner: React.FC = () => {
   ];
 
   return (
-    <div className="h-screen flex bg-gray-50">
+    <div className="h-screen flex bg-[#F5F2EE]">
       {/* Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+      <div className="w-80 bg-[#F7F3EE] border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Advanced Template Designer</h2>
           <p className="text-sm text-gray-600 mt-1">Create professional templates with advanced features</p>
@@ -124,7 +124,7 @@ export const AdvancedTemplateDesigner: React.FC = () => {
                     className={`w-full flex items-center px-3 py-2 text-left rounded-md transition-colors ${
                       activeTab === tab.id
                         ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-[#F5F2EE]'
                     }`}
                   >
                     <Icon className="w-4 h-4 mr-3" />
@@ -206,7 +206,7 @@ export const AdvancedTemplateDesigner: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Toolbar */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="bg-[#F7F3EE] border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-semibold text-gray-900">Advanced Employment Contract</h1>
             <span className="text-sm text-gray-500">Last saved 2 minutes ago</span>
@@ -235,7 +235,7 @@ export const AdvancedTemplateDesigner: React.FC = () => {
       </div>
 
       {/* Properties Panel */}
-      <div className="w-80 bg-white border-l border-gray-200">
+      <div className="w-80 bg-[#F7F3EE] border-l border-gray-200">
         <PropertiesPanel 
           selectedElement={selectedElement}
           onElementUpdate={(updatedElement) => {

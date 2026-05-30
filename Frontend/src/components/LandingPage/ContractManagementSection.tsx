@@ -88,7 +88,7 @@ const ContractManagementSection: React.FC = () => {
   const activeStep = lifecycleSteps.find((step) => step.id === activeStepId) ?? lifecycleSteps[0]
 
   return (
-    <section className="relative bg-slate-50 py-20 sm:py-24">
+    <section className="relative bg-[#F5F2EE] py-20 sm:py-24">
        <div
         className="pointer-events-none absolute inset-0 bg-[url('/images/contract-section.jpg')] bg-cover bg-center opacity-20 md:opacity-30"
         aria-hidden="true"
@@ -115,14 +115,14 @@ const ContractManagementSection: React.FC = () => {
                   type="button"
                   onClick={() => setActiveStepId(step.id)}
                   className={`group flex items-center gap-2 rounded-md border px-4 py-2 text-left text-sm shadow-sm ring-1 transition ${activeStepId === step.id
-                    ? 'border-indigo-500/70 ring-indigo-500/30 shadow-md bg-white text-black'
-                    : 'border-slate-200 ring-slate-100 hover:border-indigo-300 hover:ring-indigo-100 bg-[#084bdc] text-white hover:bg-blue-600'
+                    ? 'border-emerald-500/70 ring-emerald-500/30 shadow-md bg-[#F7F3EE] text-black'
+                    : 'border-[#E6D8C9] ring-slate-100 hover:border-emerald-300 hover:ring-emerald-100 bg-[#084bdc] text-white hover:bg-blue-600'
                     }`}
                 >
                   <div
                     className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold ${activeStepId === step.id
                       ? 'bg-[#2563eb] text-white'
-                      : 'bg-white text-black'
+                      : 'bg-[#F7F3EE] text-black'
                       }`}
                   >
                     {step.id}
@@ -166,12 +166,12 @@ const ContractManagementSection: React.FC = () => {
                 <ul className="mt-4 space-y-2 text-sm text-black-800 sm:text-[14px]">
                   {activeStep.bullets.map((item, index) => (
                     <li key={index} className="flex gap-2">
-                      <span className="mt-[6px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-500" />
+                      <span className="mt-[6px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
                       <span>{item}</span>
                     </li>
                   ))}
                   <li className="flex gap-2">
-                    <span className="mt-[6px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-500" />
+                    <span className="mt-[6px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
                     <span>Reduce manual follow‑ups with clear next steps at every stage.</span>
                   </li>
                 </ul>

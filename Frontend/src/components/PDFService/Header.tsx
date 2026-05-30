@@ -70,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 py-4">
+    <header className="bg-[#F7F3EE] border-b border-gray-200 py-4">
       <div className="flex items-center justify-between">
         {/* Logo and Brand */}
         <div className="flex items-center space-x-4">
@@ -126,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => navigate('/pdf-tools/pdf-editor')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'editor'
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-[#F7F3EE] text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
@@ -136,7 +136,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => onViewChange('batch')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'batch'
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-[#F7F3EE] text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
@@ -146,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => onViewChange('workflows')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'workflows'
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-[#F7F3EE] text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
@@ -156,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => onViewChange('quality')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'quality'
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-[#F7F3EE] text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
@@ -166,7 +166,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => onViewChange('cloud')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'cloud'
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-[#F7F3EE] text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
@@ -176,7 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => onViewChange('analytics')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentView === 'analytics'
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-[#F7F3EE] text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                   }`}
               >

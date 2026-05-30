@@ -161,7 +161,7 @@ $document = json_decode($response, true);
       </div>
 
       {/* API Keys Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">API Keys</h2>
           <button className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium">
@@ -199,7 +199,7 @@ $document = json_decode($response, true);
               </div>
               
               <div className="flex items-center space-x-2">
-                <div className="flex-1 font-mono text-sm bg-gray-50 p-3 rounded border">
+                <div className="flex-1 font-mono text-sm bg-[#F5F2EE] p-3 rounded border">
                   {showApiKey ? apiKey.key : apiKey.key.replace(/./g, '•')}
                 </div>
                 <button
@@ -223,7 +223,7 @@ $document = json_decode($response, true);
       {/* API Documentation */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Endpoints */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900">API Endpoints</h2>
             <button className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium">
@@ -255,7 +255,7 @@ $document = json_decode($response, true);
         </div>
 
         {/* Usage Statistics */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">API Usage</h2>
           
           <div className="space-y-6">
@@ -296,7 +296,7 @@ $document = json_decode($response, true);
       </div>
 
       {/* Code Examples */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">Code Examples</h2>
           <div className="flex items-center space-x-2">

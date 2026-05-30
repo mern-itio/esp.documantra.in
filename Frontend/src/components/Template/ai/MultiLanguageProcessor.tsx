@@ -96,7 +96,7 @@ export const MultiLanguageProcessor: React.FC<MultiLanguageProcessorProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg flex items-center justify-center mr-4">
           <Globe className="w-5 h-5 text-white" />
@@ -112,7 +112,7 @@ export const MultiLanguageProcessor: React.FC<MultiLanguageProcessorProps> = ({
         <h3 className="text-md font-medium text-gray-900 mb-3">Source Language Detection</h3>
         <div className="flex items-center space-x-4">
           <div className="flex-1">
-            <div className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+            <div className="p-3 border border-gray-200 rounded-lg bg-[#F5F2EE]">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Detected Language:</span>
                 <span className="font-medium text-gray-900">
@@ -236,7 +236,7 @@ export const MultiLanguageProcessor: React.FC<MultiLanguageProcessorProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Original Text</h4>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded text-sm">
+                  <div className="p-3 bg-[#F5F2EE] border border-gray-200 rounded text-sm">
                     {result.originalText}
                   </div>
                 </div>

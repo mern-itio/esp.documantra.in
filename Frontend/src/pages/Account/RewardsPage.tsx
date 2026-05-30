@@ -122,7 +122,7 @@ const RewardsPage: React.FC = () => {
         <Gift className="absolute bottom-48 right-16 h-9 w-9 text-rose-500/15 dark:text-rose-400/15 animate-bounce" style={{ animationDelay: '2.5s' }} />
         <Gift className="absolute top-1/2 left-1/2 h-7 w-7 text-primary/12 animate-pulse" style={{ animationDelay: '3s' }} />
         <Gift className="absolute top-96 right-1/4 h-11 w-11 text-cyan-500/12 dark:text-cyan-400/15 animate-bounce" style={{ animationDelay: '3.5s' }} />
-        <Gift className="absolute bottom-16 left-1/3 h-8 w-8 text-violet-500/12 dark:text-violet-400/15 animate-pulse" style={{ animationDelay: '4s' }} />
+        <Gift className="absolute bottom-16 left-1/3 h-8 w-8 text-emerald-500/12 dark:text-emerald-400/15 animate-pulse" style={{ animationDelay: '4s' }} />
         <Gift className="absolute top-24 left-3/4 h-10 w-10 text-sky-500/12 dark:text-sky-400/15 animate-bounce" style={{ animationDelay: '4.5s' }} />
       </div>
       <div className="relative z-10px-4 py-10 sm:px-6 lg:px-8">

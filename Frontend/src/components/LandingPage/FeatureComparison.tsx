@@ -20,7 +20,7 @@ const FeatureComparison = () => {
   ]
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-16 bg-[#F5F2EE]">
       <div className="container-max">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -31,7 +31,7 @@ const FeatureComparison = () => {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -48,7 +48,7 @@ const FeatureComparison = () => {
               </thead>
               <tbody>
                 {features.map((feature, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                  <tr key={index} className="border-b border-gray-100 hover:bg-[#F5F2EE]">
                     <td className="p-6 font-medium text-gray-900">{feature.name}</td>
                     <td className="p-6 text-center">
                       {feature.docusigner ? (

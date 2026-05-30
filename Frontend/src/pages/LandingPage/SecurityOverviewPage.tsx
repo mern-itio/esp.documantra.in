@@ -81,20 +81,20 @@ const SecurityOverviewPage = () => {
       name: "SOC 2 Type II",
       description: "Certified for security, availability, processing integrity, confidentiality, and privacy controls",
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-xs font-bold text-purple-800">AICPA</div>
             <div className="text-xs font-bold text-purple-800">SOC 2</div>
           </div>
         </div>
       ),
-      color: "bg-purple-100 text-purple-800"
+      color: "bg-[#DCFCE7] text-purple-800"
     },
     {
       name: "ISO 27001",
       description: "Certified for information security management systems",
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-xs font-bold text-blue-800">ISO</div>
             <div className="text-xs font-bold text-blue-800">27001</div>
@@ -107,7 +107,7 @@ const SecurityOverviewPage = () => {
       name: "GDPR Compliant",
       description: "Fully compliant with EU General Data Protection Regulation",
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-xs font-bold text-blue-800">GDPR</div>
             <div className="text-lg">🇪🇺</div>
@@ -120,7 +120,7 @@ const SecurityOverviewPage = () => {
       name: "HIPAA Compliant",
       description: "Compliant with Health Insurance Portability and Accountability Act",
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-xs font-bold text-red-800">HIPAA</div>
             <div className="text-lg">⚕️</div>
@@ -133,7 +133,7 @@ const SecurityOverviewPage = () => {
       name: "PCI DSS",
       description: "Compliant with Payment Card Industry Data Security Standard",
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-lg font-bold text-blue-800">PCI</div>
             <div className="text-xs text-blue-600">DSS</div>
@@ -146,7 +146,7 @@ const SecurityOverviewPage = () => {
       name: "CCPA Compliant",
       description: "Compliant with California Consumer Privacy Act",
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-xs font-bold text-yellow-800">CCPA</div>
             <div className="text-lg">🔒</div>
@@ -194,7 +194,7 @@ const SecurityOverviewPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 mt-8 pt-24 pb-16">
+    <div className="min-h-screen bg-[#F5F2EE] mt-8 pt-24 pb-16">
       <div className="container-max">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 mb-8 text-white">
@@ -205,22 +205,22 @@ const SecurityOverviewPage = () => {
                 {BRAND.name} implements industry-leading security measures to protect your documents, data, and signatures. Our comprehensive security program ensures the confidentiality, integrity, and availability of your information.
               </p>
               <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Lock className="h-5 w-5" />
                   <span className="font-medium">256-bit Encryption</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Shield className="h-5 w-5" />
                   <span className="font-medium">SOC 2 Type II Certified</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Globe className="h-5 w-5" />
                   <span className="font-medium">GDPR Compliant</span>
                 </div>
               </div>
             </div>
             <div className="md:w-1/3 flex justify-center">
-              <div className="w-48 h-48 bg-white/10 rounded-full flex items-center justify-center">
+              <div className="w-48 h-48 bg-[#F7F3EE]/10 rounded-full flex items-center justify-center">
                 <Shield className="h-24 w-24 text-white" />
               </div>
             </div>
@@ -228,7 +228,7 @@ const SecurityOverviewPage = () => {
         </div>
 
         {/* Security Features */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Our Security Infrastructure</h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -255,7 +255,7 @@ const SecurityOverviewPage = () => {
         </div>
 
         {/* Certifications */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Security Certifications & Compliance</h2>
           <p className="text-gray-600 mb-8 max-w-3xl">
             {BRAND.name} maintains compliance with industry-leading security standards and regulations to ensure your data is protected according to the highest standards.
@@ -263,7 +263,7 @@ const SecurityOverviewPage = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {certifications.map((cert, index) => (
-              <div key={index} className="text-center p-6 bg-gray-50 rounded-xl hover:shadow-lg transition-all duration-200">
+              <div key={index} className="text-center p-6 bg-[#F5F2EE] rounded-xl hover:shadow-lg transition-all duration-200">
                 <div className="flex justify-center mb-4">
                   <cert.icon />
                 </div>
@@ -312,7 +312,7 @@ const SecurityOverviewPage = () => {
         </div>
 
         {/* Security Practices */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Security Practices & Policies</h2>
           
           <div className="space-y-8">
@@ -322,7 +322,7 @@ const SecurityOverviewPage = () => {
                 <p className="text-gray-600 mb-4">{practice.description}</p>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {practice.items.map((item, itemIndex) => (
-                    <div key={itemIndex} className="flex items-start gap-2 bg-gray-50 p-3 rounded-lg">
+                    <div key={itemIndex} className="flex items-start gap-2 bg-[#F5F2EE] p-3 rounded-lg">
                       <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700">{item}</span>
                     </div>
@@ -334,7 +334,7 @@ const SecurityOverviewPage = () => {
         </div>
 
         {/* Data Privacy */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Data Privacy & Protection</h2>
           
           <div className="grid md:grid-cols-2 gap-8">
@@ -432,12 +432,12 @@ const SecurityOverviewPage = () => {
         </div>
 
         {/* Security FAQ */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Security FAQ</h2>
           
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How does {BRAND.name} protect my documents?</h3>
               </div>
               <div className="p-4">
@@ -448,7 +448,7 @@ const SecurityOverviewPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">Are my electronic signatures legally binding and secure?</h3>
               </div>
               <div className="p-4">
@@ -459,7 +459,7 @@ const SecurityOverviewPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How does {BRAND.name} handle user authentication?</h3>
               </div>
               <div className="p-4">
@@ -470,7 +470,7 @@ const SecurityOverviewPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">What happens if there's a security incident?</h3>
               </div>
               <div className="p-4">
@@ -481,7 +481,7 @@ const SecurityOverviewPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How can I report a security vulnerability?</h3>
               </div>
               <div className="p-4">
@@ -500,10 +500,10 @@ const SecurityOverviewPage = () => {
             Join thousands of organizations that trust {BRAND.name} to protect their most sensitive documents and data.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
+            <Link to="/signup" className="bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
               Start Free Trial
             </Link>
-            <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
+            <Link to="/contact" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
               Contact Security Team
             </Link>
           </div>

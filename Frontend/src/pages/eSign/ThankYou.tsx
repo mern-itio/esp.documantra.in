@@ -59,7 +59,7 @@ export default function ThankYouPage() {
         </div>
       )}
 
-      <div className="relative z-50 w-full max-w-xl mx-4 p-10 rounded-2xl shadow-2xl bg-white/10 backdrop-blur-md border border-white/10 text-center text-white">
+      <div className="relative z-50 w-full max-w-xl mx-4 p-10 rounded-2xl shadow-2xl bg-[#F7F3EE]/10 backdrop-blur-md border border-white/10 text-center text-white">
         <div className="flex items-center justify-center mb-6">
           <div className="w-16 h-16 flex items-center justify-center animate-color-cycle">
             <span className="text-4xl font-bold">✔️</span>
@@ -69,7 +69,7 @@ export default function ThankYouPage() {
         <h1 className="text-3xl font-extrabold tracking-tight mb-3">Thank you for signing!</h1>
         <p className="text-lg max-w-[28rem] mx-auto opacity-90 mb-6">Once all recipients have signed, you will receive the final signed document and the certificate at your email.</p>
 
-        <a href="/login" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white text-[#260559] font-semibold shadow-lg hover:scale-[1.02] transition-transform">
+        <a href="/login" className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#F7F3EE] text-[#260559] font-semibold shadow-lg hover:scale-[1.02] transition-transform">
           Explore
         </a>
       </div>

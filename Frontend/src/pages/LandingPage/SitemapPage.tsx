@@ -108,7 +108,7 @@ const ALL_TABS = SITEMAP_SECTIONS.flatMap((s) => s.items);
 
 const SitemapPage = () => {
   return (
-    <div className="min-h-screen bg-white pt-24 pb-16">
+    <div className="min-h-screen bg-[#F7F3EE] pt-24 pb-16">
       <div className="p-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
           {ALL_TABS.map((item, i) =>

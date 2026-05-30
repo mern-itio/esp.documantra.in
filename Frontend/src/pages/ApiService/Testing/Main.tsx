@@ -126,7 +126,7 @@ const Main: React.FC = () => {
                 className={`p-4 rounded-lg border cursor-pointer transition-colors ${
                   selectedTest?.id === testCase.id
                     ? 'border-primary-300 bg-primary-50'
-                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                    : 'border-gray-200 hover:border-gray-300 bg-[#F7F3EE]'
                 }`}
                 onClick={() => setSelectedTest(testCase)}
               >
@@ -183,7 +183,7 @@ const Main: React.FC = () => {
         {/* Test Details */}
         <div className="lg:col-span-2">
           {selectedTest ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">{selectedTest.name}</h2>
@@ -278,7 +278,7 @@ const Main: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Assertions</h3>
                   <div className="space-y-2">
                     {selectedTest.assertions.map((assertion: any, index: number) => (
-                      <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <div key={index} className="flex items-center space-x-3 p-3 bg-[#F5F2EE] rounded-lg">
                         <div className="flex-1">
                           <span className="text-sm font-medium text-gray-900">
                             {assertion.type === 'status' ? 'Status Code' :
@@ -309,7 +309,7 @@ const Main: React.FC = () => {
                 {testResults[selectedTest.id] && (
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">Last Test Result</h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="bg-[#F5F2EE] rounded-lg p-4">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
                           {testResults[selectedTest.id].status === 'passed' ? (
@@ -372,7 +372,7 @@ const Main: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+            <div className="text-center py-12 bg-[#F7F3EE] rounded-lg border border-gray-200">
               <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Select a test case</h3>
               <p className="text-gray-600">
@@ -460,7 +460,7 @@ const CreateTestModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#F7F3EE] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Test Case</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

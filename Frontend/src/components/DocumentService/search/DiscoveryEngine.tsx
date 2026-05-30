@@ -166,11 +166,11 @@ export function DiscoveryEngine({
   ];
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
+    <div className="bg-[#F7F3EE] rounded-lg border border-gray-200">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center space-x-2 mb-4">
-          <Brain className="w-5 h-5 text-purple-600" />
+          <Brain className="w-5 h-5 text-[#155E4B]" />
           <h3 className="text-lg font-semibold text-gray-900">Intelligent Discovery</h3>
         </div>
         
@@ -184,7 +184,7 @@ export function DiscoveryEngine({
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   activeTab === tab.id
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-[#F7F3EE] text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >

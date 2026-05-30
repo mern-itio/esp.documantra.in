@@ -79,7 +79,7 @@ const Compliance = () => {
       flag: '🇮🇳',
       laws: ['IT Act 2000', 'Digital India Act'],
       status: 'Digital Signatures',
-      statusColor: 'text-purple-600',
+      statusColor: 'text-[#155E4B]',
       description: 'Electronic signatures are legally recognized under the Information Technology Act.',
       lastUpdated: '2024-01-12',
       legalValidity: 'Legally Binding',
@@ -185,7 +185,7 @@ const Compliance = () => {
       description: 'Payment Card Industry Data Security Standard',
       status: 'Certified',
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-lg font-bold text-blue-800">PCI</div>
             <div className="text-xs text-blue-600">DSS</div>
@@ -200,7 +200,7 @@ const Compliance = () => {
       description: 'Guarantees full compliance with 21 CFR Part 11',
       status: 'Compliant',
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-sm font-bold text-gray-800">FDA</div>
             <div className="text-xs text-gray-600">21 CFR</div>
@@ -215,7 +215,7 @@ const Compliance = () => {
       description: 'General Data Protection Regulation',
       status: 'Compliant',
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-xs font-bold text-blue-800">GDPR</div>
             <div className="text-lg">🇪🇺</div>
@@ -230,7 +230,7 @@ const Compliance = () => {
       description: 'Health Insurance Portability and Accountability Act',
       status: 'Compliant',
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-xs font-bold text-red-800">HIPAA</div>
             <div className="text-lg">⚕️</div>
@@ -245,14 +245,14 @@ const Compliance = () => {
       description: 'System and Organization Controls (Type II)',
       status: 'Certified',
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-xs font-bold text-purple-800">AICPA</div>
             <div className="text-xs font-bold text-purple-800">SOC 2</div>
           </div>
         </div>
       ),
-      color: 'bg-purple-100 text-purple-800'
+      color: 'bg-[#DCFCE7] text-purple-800'
     },
     {
       name: 'ISO 27001',
@@ -260,7 +260,7 @@ const Compliance = () => {
       description: 'ISO 27001 Certified',
       status: 'Certified',
       icon: () => (
-        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
+        <div className="w-16 h-16 bg-[#F7F3EE] rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
           <div className="text-center">
             <div className="text-xs font-bold text-blue-800">ISO</div>
             <div className="text-xs font-bold text-blue-800">27001</div>
@@ -321,8 +321,8 @@ const Compliance = () => {
       description: "Collaborate with team members to review, edit, and finalize document content",
       icon: Edit,
       color: "from-purple-500 to-purple-600",
-      bgColor: "bg-purple-50",
-      textColor: "text-purple-700",
+      bgColor: "bg-[#F0FDF4]",
+      textColor: "text-[#155E4B]",
       docusignerFeatures: [
         "Real-time collaborative editing",
         "Version control & history",
@@ -404,9 +404,9 @@ const Compliance = () => {
       title: "Audit Trail Generation",
       description: "Create comprehensive audit trails documenting the entire signing process",
       icon: FileCheck,
-      color: "from-indigo-500 to-indigo-600",
-      bgColor: "bg-indigo-50",
-      textColor: "text-indigo-700",
+      color: "from-emerald-500 to-emerald-600",
+      bgColor: "bg-emerald-50",
+      textColor: "text-emerald-700",
       docusignerFeatures: [
         "Detailed activity logs",
         "Timestamped events",
@@ -468,7 +468,7 @@ const Compliance = () => {
       description: "Maintain documents according to legal retention requirements and regulations",
       icon: Archive,
       color: "from-gray-500 to-gray-600",
-      bgColor: "bg-gray-50",
+      bgColor: "bg-[#F5F2EE]",
       textColor: "text-gray-700",
       docusignerFeatures: [
         "Automated retention policies",
@@ -495,7 +495,7 @@ const Compliance = () => {
   // }
 
   return (
-    <section id="compliance" className="section-padding bg-gradient-to-br from-blue-50 to-indigo-100">
+    <section id="compliance" className="section-padding bg-gradient-to-br from-blue-50 to-emerald-100">
       <div className="container-max">
         {/* Header Section */}
         <div className="text-center mb-16">
@@ -523,16 +523,16 @@ const Compliance = () => {
 
           {/* Trust Badges */}
           <div className="flex flex-wrap justify-center gap-6 mb-8">
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+            <div className="flex items-center gap-2 bg-[#F7F3EE] px-4 py-2 rounded-full shadow-sm">
               <Globe className="h-5 w-5 text-[#260559]" />
               <span className="text-sm font-medium text-gray-700">15+ Countries Covered</span>
             </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+            <div className="flex items-center gap-2 bg-[#F7F3EE] px-4 py-2 rounded-full shadow-sm">
               <Shield className="h-5 w-5 text-green-600" />
               <span className="text-sm font-medium text-gray-700">Legally Binding</span>
             </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
-              <Award className="h-5 w-5 text-purple-600" />
+            <div className="flex items-center gap-2 bg-[#F7F3EE] px-4 py-2 rounded-full shadow-sm">
+              <Award className="h-5 w-5 text-[#155E4B]" />
               <span className="text-sm font-medium text-gray-700">Court Accepted</span>
             </div>
           </div>
@@ -545,7 +545,7 @@ const Compliance = () => {
               placeholder="Search countries or laws..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-[#F7F3EE]"
             />
           </div>
         </div>
@@ -562,7 +562,7 @@ const Compliance = () => {
             </p>
             
             {/* Lifecycle Overview */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 mb-12">
+            <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-12">
               <h4 className="text-2xl font-bold text-gray-900 mb-6">Complete Document Lifecycle with {BRAND.name}</h4>
               
               {/* Progress Indicator */}
@@ -605,7 +605,7 @@ const Compliance = () => {
 
                   <div className="grid md:grid-cols-2 gap-8">
                     {/* {BRAND.name} Features */}
-                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-sm">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                           <Zap className="h-5 w-5 text-white" />
@@ -623,7 +623,7 @@ const Compliance = () => {
                     </div>
 
                     {/* Legal Requirements */}
-                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-sm">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
                           <Scale className="h-5 w-5 text-white" />
@@ -696,21 +696,21 @@ const Compliance = () => {
               </h4>
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-[#F7F3EE]/20 rounded-lg flex items-center justify-center mx-auto mb-4">
                     <Shield className="h-6 w-6 text-white" />
                   </div>
                   <h5 className="font-semibold mb-2">End-to-End Compliance</h5>
                   <p className="text-primary-100 text-sm">Complete legal compliance from document creation to long-term retention</p>
                 </div>
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-[#F7F3EE]/20 rounded-lg flex items-center justify-center mx-auto mb-4">
                     <Zap className="h-6 w-6 text-white" />
                   </div>
                   <h5 className="font-semibold mb-2">Automated Workflows</h5>
                   <p className="text-primary-100 text-sm">Streamlined processes that ensure no compliance step is missed</p>
                 </div>
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-[#F7F3EE]/20 rounded-lg flex items-center justify-center mx-auto mb-4">
                     <Globe className="h-6 w-6 text-white" />
                   </div>
                   <h5 className="font-semibold mb-2">Global Standards</h5>
@@ -730,7 +730,7 @@ const Compliance = () => {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                 activeTab === tab.id
                   ? 'bg-[#260559]/90 text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  : 'bg-[#F7F3EE] text-gray-700 hover:bg-[#F5F2EE]'
               }`}
             >
               <span>{tab.flag}</span>
@@ -740,7 +740,7 @@ const Compliance = () => {
         </div>
 
         {/* Enhanced Certifications Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-12">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-12">
           <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
             Enterprise-Grade Security & Compliance
           </h3>
@@ -751,7 +751,7 @@ const Compliance = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {certifications.map((cert, index) => (
-              <div key={index} className="text-center p-6 bg-gray-50 rounded-xl hover:shadow-lg transition-all duration-200">
+              <div key={index} className="text-center p-6 bg-[#F5F2EE] rounded-xl hover:shadow-lg transition-all duration-200">
                 <div className="flex justify-center mb-4">
                   <cert.icon />
                 </div>
@@ -779,7 +779,7 @@ const Compliance = () => {
             {filteredCountries.map((country, index) => (
               <div
                 key={index}
-                className={`bg-white rounded-lg shadow-lg overflow-hidden card-hover ${
+                className={`bg-[#F7F3EE] rounded-lg shadow-lg overflow-hidden card-hover ${
                   country.name === userCountry ? 'ring-2 ring-primary-500 ring-opacity-50' : ''
                 }`}
               >
@@ -806,7 +806,7 @@ const Compliance = () => {
                   <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-4 ${
                     country.status === 'Fully Compliant' ? 'bg-green-100 text-green-800' :
                     country.status === 'Qualified Signatures' ? 'bg-blue-100 text-blue-800' :
-                    country.status === 'Digital Signatures' ? 'bg-purple-100 text-purple-800' :
+                    country.status === 'Digital Signatures' ? 'bg-[#DCFCE7] text-purple-800' :
                     'bg-orange-100 text-orange-800'
                   }`}>
                     {country.status}
@@ -848,7 +848,7 @@ const Compliance = () => {
                   </div>
                 </div>
                 
-                <div className="px-6 py-4 bg-gray-50 border-t">
+                <div className="px-6 py-4 bg-[#F5F2EE] border-t">
                   <button
                     onClick={() => setExpandedCountry(expandedCountry === index ? null : index)}
                     className="flex items-center justify-between w-full text-sm font-medium text-gray-700 hover:text-gray-900"

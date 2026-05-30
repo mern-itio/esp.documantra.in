@@ -147,7 +147,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                 <li>How to review and send your envelope</li>
               </ul>
 
-              <div className="mt-8 p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+              <div className="mt-8 p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-[#BBF7D0]">
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">Ready to Get Started?</h3>
                 <p className="text-gray-700 mb-4">
                   Follow the steps in this guide to send your first envelope. Each section provides detailed instructions with helpful tips.
@@ -187,7 +187,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   <p className="text-gray-700 mb-4">
                     Navigate to the <strong>eSignature</strong> section and click <strong>Start</strong> → <strong>Send an Envelope</strong>.
                   </p>
-                  <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                  <div className="bg-[#F7F3EE] p-4 rounded-lg border border-gray-200 shadow-sm">
                     <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                       <FileText className="w-4 h-4" />
                       <span>Navigation Path</span>
@@ -210,7 +210,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   <p className="text-gray-700 mb-4">
                     Go to <strong>Agreements</strong> and click the <strong>New Envelope</strong> button, or use the <strong>Start</strong> menu.
                   </p>
-                  <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                  <div className="bg-[#F7F3EE] p-4 rounded-lg border border-gray-200 shadow-sm">
                     <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                       <FileText className="w-4 h-4" />
                       <span>Navigation Path</span>
@@ -247,14 +247,14 @@ const EnvelopeGuideSupport: React.FC = () => {
               </p>
 
               <div className="space-y-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Upload className="w-6 h-6 text-blue-600" />
                     <span>Upload Methods</span>
                   </h2>
                   
                   <div className="space-y-4">
-                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start gap-4 p-4 bg-[#F5F2EE] rounded-lg">
                       <div className="bg-blue-100 rounded-full p-2">
                         <Upload className="w-5 h-5 text-blue-600" />
                       </div>
@@ -266,7 +266,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start gap-4 p-4 bg-[#F5F2EE] rounded-lg">
                       <div className="bg-green-100 rounded-full p-2">
                         <FileText className="w-5 h-5 text-green-600" />
                       </div>
@@ -290,18 +290,18 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </ul>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Document Management</h3>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded">
                       <span className="text-gray-700">Reorder Documents</span>
                       <span className="text-sm text-gray-500">Drag and drop to change order</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded">
                       <span className="text-gray-700">Remove Documents</span>
                       <span className="text-sm text-gray-500">Click the X button on any document</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded">
                       <span className="text-gray-700">Preview Documents</span>
                       <span className="text-sm text-gray-500">Click on document name to preview</span>
                     </div>
@@ -322,7 +322,7 @@ const EnvelopeGuideSupport: React.FC = () => {
               </p>
 
               <div className="space-y-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <User className="w-6 h-6 text-blue-600" />
                     <span>Adding Individual Recipients</span>
@@ -346,7 +346,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </ol>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <User className="w-6 h-6 text-green-600" />
                     <span>Bulk Add Recipients</span>
@@ -357,7 +357,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </p>
                   
                   <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start gap-3 p-4 bg-[#F5F2EE] rounded-lg">
                       <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-1">Manual Entry</h3>
@@ -367,7 +367,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start gap-3 p-4 bg-[#F5F2EE] rounded-lg">
                       <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-1">CSV Upload</h3>
@@ -379,7 +379,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Set Signing Order</h3>
                   <div className="space-y-3">
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -411,9 +411,9 @@ const EnvelopeGuideSupport: React.FC = () => {
               </p>
 
               <div className="space-y-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Key className="w-6 h-6 text-purple-600" />
+                    <Key className="w-6 h-6 text-[#155E4B]" />
                     <span>How to Add Authentication</span>
                   </h2>
                   
@@ -491,7 +491,7 @@ const EnvelopeGuideSupport: React.FC = () => {
               </p>
 
               <div className="space-y-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <MessageSquare className="w-6 h-6 text-blue-600" />
                     <span>Email Subject</span>
@@ -501,7 +501,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                     The subject line appears in the email notification sent to recipients. Make it clear and descriptive.
                   </p>
                   
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div className="bg-[#F5F2EE] p-4 rounded-lg border border-gray-200">
                     <p className="text-sm text-gray-600 mb-2">Example subjects:</p>
                     <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
                       <li>"Please sign: Employment Agreement - [Your Name]"</li>
@@ -511,7 +511,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4">Email Message</h2>
                   
                   <p className="text-gray-700 mb-4">
@@ -529,12 +529,12 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Private Messages</h3>
                   <p className="text-gray-700 mb-4">
                     You can also add private messages for specific recipients. These messages are only visible to that recipient.
                   </p>
-                  <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-start gap-3 p-4 bg-[#F5F2EE] rounded-lg">
                     <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <p className="text-gray-700 text-sm">
                       To add a private message, click the "Customize" button next to a recipient and select "Add private message".
@@ -556,7 +556,7 @@ const EnvelopeGuideSupport: React.FC = () => {
               </p>
 
               <div className="space-y-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <FileSignature className="w-6 h-6 text-blue-600" />
                     <span>Understanding the Signing Editor</span>
@@ -567,7 +567,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </p>
                   
                   <div className="grid md:grid-cols-2 gap-4 mt-4">
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-[#F5F2EE] p-4 rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Left Sidebar</h3>
                       <p className="text-gray-700 text-sm mb-3">Contains field types you can add:</p>
                       <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
@@ -578,14 +578,14 @@ const EnvelopeGuideSupport: React.FC = () => {
                         <li>Text, Number, Checkbox</li>
                       </ul>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="bg-[#F5F2EE] p-4 rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Center Area</h3>
                       <p className="text-gray-700 text-sm mb-3">Your PDF document where you place fields</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4">Adding Fields</h2>
                   
                   <ol className="list-decimal list-inside space-y-4 text-gray-700">
@@ -604,7 +604,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </ol>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Field Types</h3>
                   
                   <div className="grid md:grid-cols-2 gap-4">
@@ -617,7 +617,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                         <h4 className="font-semibold text-green-900 mb-1">Initial</h4>
                         <p className="text-green-800 text-sm">For initialing specific sections</p>
                       </div>
-                      <div className="p-3 bg-purple-50 rounded border border-purple-200">
+                      <div className="p-3 bg-[#F0FDF4] rounded border border-[#BBF7D0]">
                         <h4 className="font-semibold text-purple-900 mb-1">Date Signed</h4>
                         <p className="text-purple-800 text-sm">Automatically fills with signing date</p>
                       </div>
@@ -660,35 +660,35 @@ const EnvelopeGuideSupport: React.FC = () => {
               </p>
 
               <div className="space-y-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Eye className="w-6 h-6 text-blue-600" />
                     <span>Review Checklist</span>
                   </h2>
                   
                   <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded">
+                    <div className="flex items-start gap-3 p-3 bg-[#F5F2EE] rounded">
                       <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
                         <h3 className="font-semibold text-gray-900">Documents</h3>
                         <p className="text-gray-700 text-sm">All required documents are uploaded and in the correct order</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded">
+                    <div className="flex items-start gap-3 p-3 bg-[#F5F2EE] rounded">
                       <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
                         <h3 className="font-semibold text-gray-900">Recipients</h3>
                         <p className="text-gray-700 text-sm">All recipients are added with correct email addresses</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded">
+                    <div className="flex items-start gap-3 p-3 bg-[#F5F2EE] rounded">
                       <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
                         <h3 className="font-semibold text-gray-900">Signature Fields</h3>
                         <p className="text-gray-700 text-sm">All required signature fields are placed on the documents</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded">
+                    <div className="flex items-start gap-3 p-3 bg-[#F5F2EE] rounded">
                       <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
                         <h3 className="font-semibold text-gray-900">Messages</h3>
@@ -698,7 +698,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Send className="w-6 h-6 text-green-600" />
                     <span>Sending Your Envelope</span>
@@ -750,7 +750,7 @@ const EnvelopeGuideSupport: React.FC = () => {
               </p>
 
               <div className="space-y-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <MessageSquare className="w-6 h-6 text-blue-600" />
                     <span>Email Notification</span>
@@ -774,9 +774,9 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Key className="w-6 h-6 text-purple-600" />
+                    <Key className="w-6 h-6 text-[#155E4B]" />
                     <span>Authentication</span>
                   </h2>
                   
@@ -785,21 +785,21 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </p>
                   
                   <div className="space-y-3">
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Email Verification</h3>
                       <p className="text-gray-700 text-sm">
                         Simply click the link in your email. Your email address serves as verification.
                       </p>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Access Code</h3>
                       <p className="text-gray-700 text-sm">
                         Enter a code provided by the sender (usually shared separately via phone or another email).
                       </p>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">SMS Verification</h3>
                       <p className="text-gray-700 text-sm">
                         Enter your phone number to receive a verification code via text message.
@@ -808,7 +808,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4">Accessing the Document</h2>
                   
                   <ol className="list-decimal list-inside space-y-3 text-gray-700">
@@ -847,7 +847,7 @@ const EnvelopeGuideSupport: React.FC = () => {
               </p>
 
               <div className="space-y-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <FileSignature className="w-6 h-6 text-blue-600" />
                     <span>Understanding the Signing Interface</span>
@@ -870,7 +870,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                         Fields for name, email, date, or other information you need to fill
                       </p>
                     </div>
-                    <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="p-4 bg-[#F0FDF4] rounded-lg border border-[#BBF7D0]">
                       <h3 className="font-semibold text-purple-900 mb-2">Initial Fields</h3>
                       <p className="text-purple-800 text-sm">
                         Short text fields for initialing specific sections
@@ -885,7 +885,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4">Step-by-Step Signing Process</h2>
                   
                   <ol className="list-decimal list-inside space-y-4 text-gray-700">
@@ -926,11 +926,11 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </ol>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4">Navigation Tips</h2>
                   
                   <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start gap-3 p-4 bg-[#F5F2EE] rounded-lg">
                       <div className="bg-yellow-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">N</div>
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-1">Next Button</h3>
@@ -940,7 +940,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start gap-3 p-4 bg-[#F5F2EE] rounded-lg">
                       <FileText className="w-6 h-6 text-blue-600 flex-shrink-0" />
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-1">Multiple Documents</h3>
@@ -950,7 +950,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start gap-3 p-4 bg-[#F5F2EE] rounded-lg">
                       <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-1">Completion Indicator</h3>
@@ -962,7 +962,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4">Field Types Explained</h2>
                   
                   <div className="space-y-4">
@@ -983,7 +983,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </p>
                     </div>
                     
-                    <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="p-4 bg-[#F0FDF4] rounded-lg border border-[#BBF7D0]">
                       <h3 className="font-semibold text-purple-900 mb-2">Date Fields</h3>
                       <p className="text-purple-800 text-sm">
                         Click to open a date picker. Select the date or it may auto-fill with today's date.
@@ -1030,11 +1030,11 @@ const EnvelopeGuideSupport: React.FC = () => {
               </p>
 
               <div className="space-y-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4">Sending Issues</h2>
                   
                   <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Can't upload documents</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Possible causes:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1045,7 +1045,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Recipients not receiving emails</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Solutions:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1056,7 +1056,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Can't place signature fields</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Solutions:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1069,11 +1069,11 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4">Signing Issues</h2>
                   
                   <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Can't access the signing link</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Solutions:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1085,7 +1085,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Authentication code not working</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Solutions:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1096,7 +1096,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Can't see signature fields</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Solutions:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1108,7 +1108,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Can't sign - "Fill all other fields first" message</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Explanation:</strong></p>
                       <p className="text-gray-700 text-sm mb-2">
@@ -1123,7 +1123,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Signature pad not opening</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Solutions:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1135,7 +1135,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Can't draw signature</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Solutions:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1147,7 +1147,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">"Next" button not working</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Solutions:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1159,7 +1159,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Document not loading</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Solutions:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1174,11 +1174,11 @@ const EnvelopeGuideSupport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4">General Issues</h2>
                   
                   <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Browser compatibility</h3>
                       <p className="text-gray-700 text-sm mb-2">
                         {BRAND.name} works best with modern browsers. Recommended browsers:
@@ -1191,7 +1191,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Mobile device issues</h3>
                       <p className="text-gray-700 text-sm mb-2"><strong>Tips for mobile signing:</strong></p>
                       <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm ml-4">
@@ -1203,7 +1203,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       </ul>
                     </div>
                     
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 bg-[#F5F2EE] rounded-lg border border-gray-200">
                       <h3 className="font-semibold text-gray-900 mb-2">Still need help?</h3>
                       <p className="text-gray-700 text-sm mb-2">
                         If you're still experiencing issues:
@@ -1250,9 +1250,9 @@ const EnvelopeGuideSupport: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F2EE]">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-[#F7F3EE] border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
@@ -1290,7 +1290,7 @@ const EnvelopeGuideSupport: React.FC = () => {
         <div className="flex gap-8">
           {/* Sidebar */}
           <aside className="w-64 flex-shrink-0 hidden lg:block">
-            <div className="bg-white rounded-lg border border-gray-200 pl-2 sticky top-24 max-h-[calc(100vh-8rem)] flex flex-col">
+            <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 pl-2 sticky top-24 max-h-[calc(100vh-8rem)] flex flex-col">
               <div className="mb-4 flex-shrink-0">
                 <h2 className="text-sm font-semibold text-gray-900 mb-2">Contents</h2>
                 <div className="flex items-center gap-2 text-xs text-gray-600">
@@ -1327,7 +1327,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                       className={`w-full flex items-center justify-between p-2 rounded text-sm transition-colors ${
                         activeSection === section.id
                           ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-gray-700 hover:bg-gray-50'
+                          : 'text-gray-700 hover:bg-[#F5F2EE]'
                       }`}
                     >
                       <span>{section.title}</span>
@@ -1348,7 +1348,7 @@ const EnvelopeGuideSupport: React.FC = () => {
                             className={`w-full text-left p-2 rounded text-sm transition-colors ${
                               activeSection === subsection.id
                                 ? 'bg-blue-50 text-blue-700 font-medium'
-                                : 'text-gray-600 hover:bg-gray-50'
+                                : 'text-gray-600 hover:bg-[#F5F2EE]'
                             }`}
                           >
                             {subsection.title}
@@ -1364,12 +1364,12 @@ const EnvelopeGuideSupport: React.FC = () => {
 
           {/* Main Content */}
           <main className="flex-1 min-w-0">
-            <div ref={contentRef} className="bg-white rounded-lg border border-gray-200 p-8 shadow-sm">
+            <div ref={contentRef} className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-8 shadow-sm">
               {renderContent()}
             </div>
 
             {/* Next Steps */}
-            <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div className="mt-8 bg-[#F7F3EE] rounded-lg border border-gray-200 p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Next Steps</h2>
               <div className="space-y-2">
                 {activeSection === 'getting-started' && (
@@ -1470,7 +1470,7 @@ const EnvelopeGuideSupport: React.FC = () => {
 
           {/* Right Sidebar - On This Page */}
           <aside className="w-48 flex-shrink-0 hidden xl:block">
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-24">
+            <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-4 sticky top-24">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">On this page:</h3>
               <nav className="space-y-1">
                 {guideSections
@@ -1504,7 +1504,7 @@ const EnvelopeGuideSupport: React.FC = () => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
-          <div className="bg-white w-80 h-full overflow-y-auto">
+          <div className="bg-[#F7F3EE] w-80 h-full overflow-y-auto">
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Contents</h2>
               <button

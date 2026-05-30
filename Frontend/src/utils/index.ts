@@ -30,7 +30,7 @@ export const getComplexityColor = (complexity: string): string => {
     case 'advanced':
       return 'text-red-600 bg-red-50';
     default:
-      return 'text-gray-600 bg-gray-50';
+      return 'text-gray-600 bg-[#F5F2EE]';
   }
 };
 

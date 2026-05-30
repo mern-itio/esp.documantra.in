@@ -75,7 +75,7 @@ const SharedDocumentPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Accessing shared document...</p>
@@ -86,7 +86,7 @@ const SharedDocumentPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
@@ -103,9 +103,9 @@ const SharedDocumentPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24">
+    <div className="min-h-screen bg-[#F5F2EE] pt-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-[#F7F3EE] rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
             <FileText className="h-16 w-16 text-blue-600 mx-auto mb-4" />
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -117,7 +117,7 @@ const SharedDocumentPage: React.FC = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-[#F5F2EE] p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <User className="h-5 w-5 text-gray-500" />
                 <span className="text-sm font-medium text-gray-700">Accessed by</span>
@@ -127,7 +127,7 @@ const SharedDocumentPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-[#F5F2EE] p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="h-5 w-5 text-gray-500" />
                 <span className="text-sm font-medium text-gray-700">Access Time</span>

@@ -1593,6 +1593,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         return fieldDoc ? String(fieldDoc) === String(docId) : true; // fallback if backend omitted doc id
       };
 
+console.log("DOC OBJECT =", doc);
+console.log("DOC FILEPATH =", doc?.filePath);
+
       return (
         <Document
           file={doc.filePath || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${doc.name}`}
@@ -1848,7 +1851,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     {isCurrentUser && !isViewOnly && (
                                       <button
                                         type="button"
-                                        className="absolute -top-2 -right-2 flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg border-2 border-white p-1.5 hover:scale-105 focus:scale-105 transition-transform focus:outline-none"
+                                        className="absolute -top-2 -right-2 flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 via-purple-500 to-pink-500 text-white shadow-lg border-2 border-white p-1.5 hover:scale-105 focus:scale-105 transition-transform focus:outline-none"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           onFieldClick(field, { isEdit: true });
@@ -1869,7 +1872,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               </div>
                               {assignee && (
                                 <div
-                                  className="absolute left-0 right-0 text-[10px] leading-tight text-gray-700 px-1.5 py-0.5 bg-white/90 border border-gray-200 rounded mt-0.5"
+                                  className="absolute left-0 right-0 text-[10px] leading-tight text-gray-700 px-1.5 py-0.5 bg-[#F7F3EE]/90 border border-gray-200 rounded mt-0.5"
                                   style={{ top: scaledHeight + 2 }}
                                 >
                                   <div className="truncate font-medium">{assignee.name}</div>
@@ -2356,7 +2359,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           }
                           {assignee && (
                             <div
-                              className="absolute left-0 right-0 text-[10px] leading-tight text-gray-700 px-1.5 py-0.5 bg-white/90 border border-gray-200 rounded mt-0.5"
+                              className="absolute left-0 right-0 text-[10px] leading-tight text-gray-700 px-1.5 py-0.5 bg-[#F7F3EE]/90 border border-gray-200 rounded mt-0.5"
                               style={{ top: scaledHeight + 2 }}
                             >
                               <div className="truncate font-medium">{assignee.name}</div>
@@ -2396,7 +2399,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       }}
       style={{ display: 'contents' }}
     >
-      <div className="relative flex flex-col items-stretch min-h-screen bg-gray-50">
+      <div className="relative flex flex-col items-stretch min-h-screen bg-[#F5F2EE]">
         {/* Header (sticky full-width) */}
         <div className="pointer-events-auto fixed top-0 left-0 right-0 z-[60] flex h-12 items-center bg-[#1b0c3e] px-4 text-white">
           <div className="w-full flex items-center justify-between">
@@ -2410,7 +2413,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                   type="button"
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={() => onRequestActions?.()}
-                  className="inline-flex items-center justify-center gap-2 rounded-sm bg-white px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-white/90"
+                  className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#F7F3EE] px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-[#F7F3EE]/90"
                 >
                   Actions
                   <ChevronDown className="h-4 w-4" />
@@ -2437,7 +2440,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                         ? "inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white"
                         : shouldHighlightCompleteCta
                           ? "inline-flex items-center justify-center rounded-lg bg-amber-300 px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] shadow-[0_0_0_3px_rgba(251,191,36,0.65)] animate-pulse"
-                          : "inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-white/90"
+                          : "inline-flex items-center justify-center rounded-lg bg-[#F7F3EE] px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-[#F7F3EE]/90"
                     }
                   >
                     {completeCtaState === "done" ? (
@@ -2466,7 +2469,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       {/* PDF(s) container */}
       <div
         ref={pdfContainerRef}
-        className={`relative flex-1 w-full max-w-full sm:max-w-3xl lg:max-w-4xl border border-gray-200 rounded-lg shadow-sm bg-white overflow-auto self-center mt-14 sm:mt-16 lg:mt-20 mb-20 px-3 sm:px-4 py-4 ${
+        className={`relative flex-1 w-full max-w-full sm:max-w-3xl lg:max-w-4xl border border-gray-200 rounded-lg shadow-sm bg-[#F7F3EE] overflow-auto self-center mt-14 sm:mt-16 lg:mt-20 mb-20 px-3 sm:px-4 py-4 ${
           shouldHighlightCompleteCta ? "pointer-events-none" : ""
         }`}
         style={{ maxHeight: "calc(100vh - 160px)" }}
@@ -2528,7 +2531,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 <div className="my-6 relative">
                   <div className="h-px bg-gray-200" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="px-2 py-0.5 text-xs text-gray-600 bg-white border border-gray-200 rounded">
+                    <span className="px-2 py-0.5 text-xs text-gray-600 bg-[#F7F3EE] border border-gray-200 rounded">
                       {docs[dIdx + 1]?.name}
                     </span>
                   </div>
@@ -2823,7 +2826,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             aria-hidden="true"
           />
           <div
-            className="relative w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-2xl ring-1 ring-gray-200"
+            className="relative w-full max-w-2xl overflow-hidden rounded-lg bg-[#F7F3EE] shadow-2xl ring-1 ring-gray-200"
           >
             <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
               <div>
@@ -2832,7 +2835,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               </div>
               <button
                 type="button"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-[#F5F2EE]"
                 onClick={() => setAuditTrailOpen(false)}
                 aria-label="Close audit trail"
               >
@@ -2846,7 +2849,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               ) : auditTrailError ? (
                 <div className="text-sm text-red-600">{auditTrailError}</div>
               ) : auditTrail.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-600">
+                <div className="rounded-xl border border-dashed border-gray-200 bg-[#F5F2EE] px-4 py-6 text-sm text-gray-600">
                   No audit trail entries are available for this recipient.
                 </div>
               ) : (
@@ -2860,20 +2863,20 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                       return (
                         <div
                           key={`${action}-${idx}-${String(entry?._id || '')}`}
-                          className="rounded-lg border border-gray-200 bg-white px-4 py-4"
+                          className="rounded-lg border border-gray-200 bg-[#F7F3EE] px-4 py-4"
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div>
                               <div className="text-sm font-semibold text-gray-900">Recipient reassigned</div>
                               <div className="mt-1 text-xs text-gray-500">{timestamp}</div>
                             </div>
-                            {/* <div className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-100">
+                            {/* <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
                               CC event
                             </div> */}
                           </div>
 
                           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                            <div className="rounded-lg border border-gray-200 bg-[#F5F2EE] px-3 py-3">
                               <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                                 Initial Signer
                               </div>
@@ -2884,7 +2887,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 {details?.previousRecipientEmail || ''}
                               </div>
                             </div>
-                            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                            <div className="rounded-lg border border-gray-200 bg-[#F5F2EE] px-3 py-3">
                               <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                                 Re-assigned Signer
                               </div>
@@ -2898,7 +2901,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           </div>
 
                           {details?.reason ? (
-                            <div className="mt-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                            <div className="mt-3 rounded-lg border border-gray-200 bg-[#F7F3EE] px-3 py-3">
                               <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                                 Reason
                               </div>
@@ -2912,7 +2915,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                     return (
                       <div
                         key={`${action}-${idx}-${String(entry?._id || '')}`}
-                        className="rounded-2xl border border-gray-200 bg-white px-4 py-4"
+                        className="rounded-2xl border border-gray-200 bg-[#F7F3EE] px-4 py-4"
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div>
@@ -2923,7 +2926,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           </div>
                         </div>
                         {details && Object.keys(details).length > 0 ? (
-                          <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
+                          <div className="mt-3 rounded-xl border border-gray-200 bg-[#F5F2EE] px-3 py-3">
                             <pre className="overflow-auto whitespace-pre-wrap text-[11px] text-gray-700">
                               {JSON.stringify(details, null, 2)}
                             </pre>
@@ -2952,7 +2955,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             aria-hidden="true"
           />
           <div
-            className="relative w-full max-w-md overflow-hidden rounded-lg bg-white shadow-2xl ring-1 ring-gray-200"
+            className="relative w-full max-w-md overflow-hidden rounded-lg bg-[#F7F3EE] shadow-2xl ring-1 ring-gray-200"
           >
             <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-4">
               <div>
@@ -2961,7 +2964,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               </div>
               <button
                 type="button"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-[#F5F2EE]"
                 onClick={() => setShowAadhaarModal(false)}
                 aria-label="Close modal"
               >
@@ -2980,7 +2983,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                     id="aadhaar"
                     value={aadhaarNumber}
                     onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500"
                     placeholder="Enter 12-digit Aadhaar number"
                     maxLength={12}
                   />
@@ -2995,7 +2998,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                   <button
                     type="button"
                     onClick={() => setShowAadhaarModal(false)}
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    className="rounded-md border border-gray-300 bg-[#F7F3EE] px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-[#F5F2EE] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                   >
                     Cancel
                   </button>
@@ -3003,7 +3006,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                     type="button"
                     onClick={handleAadhaarSubmit}
                     disabled={aadhaarSaving}
-                    className={`rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${aadhaarSaving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'}`}
+                    className={`rounded-md border border-transparent bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${aadhaarSaving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-emerald-700'}`}
                   >
                     {aadhaarSaving ? (
                       <span className="inline-flex items-center gap-2">
@@ -3022,7 +3025,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       )}
 
       {/* Footer (sticky full-width) */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-white text-xs text-gray-600 flex items-center justify-between px-4 py-3 z-50">
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-[#F7F3EE] text-xs text-gray-600 flex items-center justify-between px-4 py-3 z-50">
         <div>Powered by {BRAND.name}</div>
         <div className="flex items-center gap-4">
           <Link to="/terms-of-service"><span>Terms of Use</span></Link>

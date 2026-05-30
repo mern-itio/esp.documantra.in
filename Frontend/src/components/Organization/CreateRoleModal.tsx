@@ -72,7 +72,7 @@ const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked,
     }`}
   >
     <span
-      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-[#F7F3EE] shadow ring-0 transition duration-200 ${
         checked ? 'translate-x-4' : 'translate-x-0'
       }`}
     />

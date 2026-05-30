@@ -175,7 +175,7 @@ export function ShareModal({ isOpen, onClose, selectedDocuments }: ShareModalPro
       case 'edit':
         return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
       case 'comment':
-        return 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300';
+        return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
       default:
         return 'border-border bg-muted text-muted-foreground';
     }

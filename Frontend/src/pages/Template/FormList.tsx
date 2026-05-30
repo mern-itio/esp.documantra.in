@@ -564,7 +564,7 @@ export const FormsList: React.FC = () => {
     col.label.toLowerCase().includes(columnSearchTerm.toLowerCase())
   );
   return (
-    <div className="p-8 bg-white min-h-screen" style={{ backgroundColor: '#FFFFFF' }}>
+    <div className="p-8 bg-[#F7F3EE] min-h-screen" style={{ backgroundColor: '#FFFFFF' }}>
      <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl" style={{ color: '#28004D' }}>My Templates</h1>
         <div className="flex items-center gap-3">
@@ -637,7 +637,7 @@ export const FormsList: React.FC = () => {
           {/* Date Dropdown */}
           {showDateDropdown && (
             <div
-              className="absolute top-full mt-2 left-0 bg-white border rounded-lg shadow-lg z-50 min-w-[200px]"
+              className="absolute top-full mt-2 left-0 bg-[#F7F3EE] border rounded-lg shadow-lg z-50 min-w-[200px]"
               style={{
                 borderColor: '#D0D0D0',
                 borderRadius: '8px'
@@ -656,7 +656,7 @@ export const FormsList: React.FC = () => {
                 ].map((option) => (
                   <label
                     key={option.value}
-                    className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
+                    className="flex items-center gap-2 px-3 py-2 hover:bg-[#F5F2EE] cursor-pointer rounded"
                     style={{ color: '#28004D' }}
                   >
                     <input
@@ -822,7 +822,7 @@ export const FormsList: React.FC = () => {
                 return (
                   <tr
                     key={form._id}
-                    className="border-b hover:bg-gray-50"
+                    className="border-b hover:bg-[#F5F2EE]"
                     style={{ borderColor: '#D0D0D0' }}
                   >
                     {visibleColumns.map((col) => {
@@ -981,7 +981,7 @@ export const FormsList: React.FC = () => {
                                           }, 0);
                                         }
                                       }}
-                                      className="fixed w-48 bg-white border rounded shadow-lg z-[9999]"
+                                      className="fixed w-48 bg-[#F7F3EE] border rounded shadow-lg z-[9999]"
                                       style={{
                                         borderColor: '#D0D0D0',
                                         borderRadius: '6px',
@@ -994,14 +994,14 @@ export const FormsList: React.FC = () => {
                                     >
                                       <button
                                         onClick={() => handleMenuAction(form, 'edit')}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                                        className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE]"
                                         style={{ color: '#28004D' }}
                                       >
                                         {form.isAIGenerated ? 'Use Template' : 'Add / Edit'}
                                       </button>
                                       <button
                                         onClick={() => handleMenuAction(form, 'view')}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                                        className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE]"
                                         style={{ color: '#28004D' }}
                                       >
                                         View
@@ -1010,14 +1010,14 @@ export const FormsList: React.FC = () => {
                                         <>
                                           <button
                                             onClick={() => handleMenuAction(form, 'embed')}
-                                            className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                                            className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE]"
                                             style={{ color: '#28004D' }}
                                           >
                                             Embed
                                           </button>
                                           <button
                                             onClick={() => handleMenuAction(form, 'submissions')}
-                                            className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                                            className="w-full text-left px-4 py-2 hover:bg-[#F5F2EE]"
                                             style={{ color: '#28004D' }}
                                           >
                                             Submissions
@@ -1075,7 +1075,7 @@ export const FormsList: React.FC = () => {
           {/* Items Per Page Dropdown */}
           {showItemsPerPageDropdown && (
             <div
-              className="absolute bottom-full mb-2 left-0 bg-white border rounded-lg shadow-lg z-50 min-w-[120px]"
+              className="absolute bottom-full mb-2 left-0 bg-[#F7F3EE] border rounded-lg shadow-lg z-50 min-w-[120px]"
               style={{
                 borderColor: '#D0D0D0',
                 borderRadius: '8px'
@@ -1091,7 +1091,7 @@ export const FormsList: React.FC = () => {
                       setShowItemsPerPageDropdown(false);
                       setCurrentPage(1);
                     }}
-                    className={`w-full text-left px-3 py-2 hover:bg-gray-50 rounded ${
+                    className={`w-full text-left px-3 py-2 hover:bg-[#F5F2EE] rounded ${
                       itemsPerPage === num ? 'font-semibold' : ''
                     }`}
                     style={{
@@ -1136,7 +1136,7 @@ export const FormsList: React.FC = () => {
           }}
         >
           <div
-            className="bg-white rounded-sm shadow-xl w-full max-w-xl"
+            className="bg-[#F7F3EE] rounded-sm shadow-xl w-full max-w-xl"
             style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
           >
             {/* Modal Header */}
@@ -1201,7 +1201,7 @@ export const FormsList: React.FC = () => {
                           e.stopPropagation();
                           handleDrop(e, originalIndex);
                         }}
-                        className={`flex items-center justify-between py-3 px-2 border-b cursor-move ${isDragOver ? 'bg-purple-50' : ''
+                        className={`flex items-center justify-between py-3 px-2 border-b cursor-move ${isDragOver ? 'bg-[#F0FDF4]' : ''
                           }`}
                         style={{
                           borderColor: '#D0D0D0',
@@ -1222,7 +1222,7 @@ export const FormsList: React.FC = () => {
                             }}
                           >
                             <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${col.visible ? 'translate-x-6' : 'translate-x-1'
+                              className={`inline-block h-4 w-4 transform rounded-full bg-[#F7F3EE] transition-transform ${col.visible ? 'translate-x-6' : 'translate-x-1'
                                 }`}
                             />
                           </button>
@@ -1305,7 +1305,7 @@ export const FormsList: React.FC = () => {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-sm shadow-lg w-full max-w-md p-6 relative">
+          <div className="bg-[#F7F3EE] rounded-sm shadow-lg w-full max-w-md p-6 relative">
             <h2 className="text-xl font-semibold mb-4"  style={{ 
             color: '#4D0080',
           }}>Create New Template</h2>

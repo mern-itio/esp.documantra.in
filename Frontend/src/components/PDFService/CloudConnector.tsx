@@ -452,7 +452,7 @@ export const CloudConnector: React.FC<CloudConnectorProps> = ({ onBack }) => {
         {/* Connected Services */}
         <div className="lg:col-span-2 space-y-6">
           {/* Service Status */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Connected Services ({connectedServices.length})
             </h3>
@@ -528,7 +528,7 @@ export const CloudConnector: React.FC<CloudConnectorProps> = ({ onBack }) => {
 
           {/* File Browser */}
           {connectedServices.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -583,7 +583,7 @@ export const CloudConnector: React.FC<CloudConnectorProps> = ({ onBack }) => {
                   .map((file) => (
                     <div 
                       key={file.id} 
-                      className={`flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors ${
+                      className={`flex items-center justify-between p-3 hover:bg-[#F5F2EE] rounded-lg transition-colors ${
                         file.type === 'folder' ? `cursor-pointer hover:bg-blue-50 ${navigating ? 'opacity-50 pointer-events-none' : ''}` : ''
                       }`}
                       onClick={() => file.type === 'folder' && !navigating && navigateToFolder(file)}
@@ -640,7 +640,7 @@ export const CloudConnector: React.FC<CloudConnectorProps> = ({ onBack }) => {
 
         {/* Available Services */}
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Services</h3>
             
             <div className="space-y-3">
@@ -668,7 +668,7 @@ export const CloudConnector: React.FC<CloudConnectorProps> = ({ onBack }) => {
           </div>
 
           {/* Sync Status */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Sync Status</h3>
             
             <div className="space-y-4">
@@ -706,20 +706,20 @@ export const CloudConnector: React.FC<CloudConnectorProps> = ({ onBack }) => {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             
             <div className="space-y-2">
-              <button className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
+              <button className="w-full flex items-center space-x-3 p-3 text-left hover:bg-[#F5F2EE] rounded-lg transition-colors">
                 <Upload className="w-4 h-4 text-blue-600" />
                 <span className="text-sm font-medium text-gray-900">Upload to Cloud</span>
               </button>
-              <button className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
+              <button className="w-full flex items-center space-x-3 p-3 text-left hover:bg-[#F5F2EE] rounded-lg transition-colors">
                 <Download className="w-4 h-4 text-green-600" />
                 <span className="text-sm font-medium text-gray-900">Download All</span>
               </button>
-              <button className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-                <Sync className="w-4 h-4 text-purple-600" />
+              <button className="w-full flex items-center space-x-3 p-3 text-left hover:bg-[#F5F2EE] rounded-lg transition-colors">
+                <Sync className="w-4 h-4 text-[#155E4B]" />
                 <span className="text-sm font-medium text-gray-900">Auto-Sync Settings</span>
               </button>
             </div>

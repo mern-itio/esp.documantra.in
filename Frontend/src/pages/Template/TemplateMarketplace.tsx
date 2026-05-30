@@ -144,7 +144,7 @@ export const TemplateMarketplace: React.FC = () => {
 
       {/* Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-[#F7F3EE] rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
               <Crown className="w-5 h-5 text-blue-600" />
@@ -155,7 +155,7 @@ export const TemplateMarketplace: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-[#F7F3EE] rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <Download className="w-5 h-5 text-green-600" />
@@ -166,10 +166,10 @@ export const TemplateMarketplace: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-[#F7F3EE] rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Users className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-[#DCFCE7] rounded-lg">
+              <Users className="w-5 h-5 text-[#155E4B]" />
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-600">Creators</p>
@@ -177,7 +177,7 @@ export const TemplateMarketplace: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-[#F7F3EE] rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center">
             <div className="p-2 bg-orange-100 rounded-lg">
               <Award className="w-5 h-5 text-orange-600" />
@@ -231,7 +231,7 @@ export const TemplateMarketplace: React.FC = () => {
             className={`p-2 rounded-md ${
               viewMode === 'grid' 
                 ? 'bg-gray-100 text-gray-900' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-[#F5F2EE]'
             }`}
           >
             <Grid className="w-4 h-4" />
@@ -241,7 +241,7 @@ export const TemplateMarketplace: React.FC = () => {
             className={`p-2 rounded-md ${
               viewMode === 'list' 
                 ? 'bg-gray-100 text-gray-900' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-[#F5F2EE]'
             }`}
           >
             <List className="w-4 h-4" />
@@ -252,7 +252,7 @@ export const TemplateMarketplace: React.FC = () => {
       {/* Templates Grid */}
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
         {filteredTemplates.map((template) => (
-          <div key={template.id} className={`bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow ${
+          <div key={template.id} className={`bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow ${
             viewMode === 'list' ? 'flex p-4' : 'p-0 overflow-hidden'
           }`}>
             {viewMode === 'grid' ? (
@@ -278,7 +278,7 @@ export const TemplateMarketplace: React.FC = () => {
                     </div>
                   )}
                   <div className="absolute bottom-3 right-3">
-                    <button className="p-2 bg-white/90 hover:bg-white rounded-full shadow-sm">
+                    <button className="p-2 bg-[#F7F3EE]/90 hover:bg-[#F7F3EE] rounded-full shadow-sm">
                       <Heart className="w-4 h-4 text-gray-600" />
                     </button>
                   </div>

@@ -9,7 +9,7 @@ const CompliancePage: React.FC = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-[#F7F3EE] p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <span className="text-2xl">✅</span>
@@ -21,7 +21,7 @@ const CompliancePage: React.FC = () => {
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-[#F7F3EE] p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="p-2 bg-yellow-100 rounded-lg">
               <span className="text-2xl">⚠️</span>
@@ -33,7 +33,7 @@ const CompliancePage: React.FC = () => {
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-[#F7F3EE] p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="p-2 bg-red-100 rounded-lg">
               <span className="text-2xl">❌</span>
@@ -46,7 +46,7 @@ const CompliancePage: React.FC = () => {
         </div>
       </div>
       
-      <div className="bg-white shadow rounded-lg">
+      <div className="bg-[#F7F3EE] shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Compliance Checklist</h2>
         </div>

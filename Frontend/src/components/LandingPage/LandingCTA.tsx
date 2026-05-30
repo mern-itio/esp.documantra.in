@@ -14,7 +14,7 @@ const LandingCTA = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             to="/signup"
-            className="inline-flex items-center justify-center gap-2 bg-white text-slate-900 font-semibold px-6 py-3.5 rounded-xl hover:bg-slate-100 transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-[#F7F3EE] text-slate-900 font-semibold px-6 py-3.5 rounded-xl hover:bg-slate-100 transition-colors"
           >
             Start free
             <ArrowRight className="h-4 w-4" />

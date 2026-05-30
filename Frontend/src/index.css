@@ -293,95 +293,102 @@
 
 /* index.css or global.css */
 :root {
-  --card: #ffffff;
-  --ring: #6e56cf;
-  --input: #e0e0f0;
-  --muted: #f0f0fa;
-  --accent: #d8e6ff;
-  --border: #e0e0f0;
-  --radius: 0.5rem;
-  --chart-1: #6e56cf;
-  --chart-2: #9e8cfc;
-  --chart-3: #5d5fef;
-  --chart-4: #7c75fa;
-  --chart-5: #4740b3;
-  --popover: #ffffff;
-  --primary: #392a76;
-  --sidebar: #f0f0fa;
-  --font-mono: JetBrains Mono, monospace;
-  --font-sans: Inter, sans-serif;
-  --secondary: #e4dfff;
-  --background: #f5f5ff;
-  --font-serif: Georgia, serif;
-  --foreground: #2a2a4a;
-  --destructive: #ff5470;
-  --shadow-blur: 10px;
-  --shadow-color: hsl(240 30% 25%);
-  --sidebar-ring: #6e56cf;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.12;
-  --sidebar-accent: #d8e6ff;
-  --sidebar-border: #e0e0f0;
-  --card-foreground: #2a2a4a;
-  --shadow-offset-x: 0px;
-  --shadow-offset-y: 4px;
-  --sidebar-primary: #6e56cf;
-  --muted-foreground: #6c6c8a;
-  --accent-foreground: #2a2a4a;
-  --popover-foreground: #2a2a4a;
-  --primary-foreground: #ffffff;
-  --sidebar-foreground: #2a2a4a;
-  --secondary-foreground: #4a4080;
-  --destructive-foreground: #ffffff;
-  --sidebar-accent-foreground: #2a2a4a;
-  --sidebar-primary-foreground: #ffffff;
-  /* Optional Tailwind aliases (see tailwind.config.js) */
-  --success: #10b981;
-  --success-foreground: #ffffff;
-  --paper: #ffffff;
-  --signature: #111827;
-  --highlight: #fef08a;
+  --background: #F6F2EC;
+  --foreground: #0F172A;
+
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+
+  --primary: #155E4B;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #EFE7DC;
+  --secondary-foreground: #1E293B;
+
+  --muted: #F4EEE7;
+  --muted-foreground: #64748B;
+
+  --accent: #E8DDD0;
+  --accent-foreground: #14532D;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #E6DCCF;
+  --input: #E7DED2;
+  --ring: #166534;
+
+  --radius: 0.75rem;
+
+  --chart-1: #166534;
+  --chart-2: #22C55E;
+  --chart-3: #15803D;
+  --chart-4: #86EFAC;
+  --chart-5: #14532D;
+
+  --sidebar: #F8F5F0;
+  --sidebar-foreground: #334155;
+
+  --sidebar-primary: #155E4B;
+  --sidebar-primary-foreground: #FFFFFF;
+
+  --sidebar-accent: #E9F5EE;
+  --sidebar-accent-foreground: #166534;
+
+  --sidebar-border: #E5DACE;
+  --sidebar-ring: #166534;
+
+  --success: #16A34A;
+  --success-foreground: #FFFFFF;
+
+  --paper: #FFFDF9;
+  --signature: #166534;
+  --highlight: #F3E8D8;
 }
 
 .dark {
-  --card: #1a1a2e;
-  --ring: #a48fff;
-  --input: #303052;
-  --muted: #222244;
-  --accent: #303060;
-  --border: #303052;
-  --radius: 0.5rem;
-  --chart-1: #a48fff;
-  --chart-2: #7986cb;
-  --chart-3: #64b5f6;
-  --chart-4: #4db6ac;
-  --chart-5: #ff79c6;
-  --popover: #1a1a2e;
-  --primary: #a48fff;
-  --sidebar: #1a1a2e;
-  --secondary: #2d2b55;
-  --background: #0f0f1a;
-  --foreground: #e2e2f5;
-  --destructive: #ff5470;
-  --sidebar-ring: #a48fff;
-  --sidebar-accent: #303060;
-  --sidebar-border: #303052;
-  --card-foreground: #e2e2f5;
-  --sidebar-primary: #a48fff;
-  --muted-foreground: #a0a0c0;
-  --accent-foreground: #e2e2f5;
-  --popover-foreground: #e2e2f5;
-  --primary-foreground: #0f0f1a;
-  --sidebar-foreground: #e2e2f5;
-  --secondary-foreground: #c4c2ff;
-  --destructive-foreground: #ffffff;
-  --sidebar-accent-foreground: #e2e2f5;
-  --sidebar-primary-foreground: #0f0f1a;
-  --success: #34d399;
-  --success-foreground: #0f0f1a;
-  --paper: #1a1a2e;
-  --signature: #e2e2f5;
-  --highlight: #854d0e;
+  --background: #0F172A;
+  --foreground: #F8FAFC;
+
+  --card: #111827;
+  --card-foreground: #F8FAFC;
+
+  --popover: #111827;
+  --popover-foreground: #F8FAFC;
+
+  --primary: #22C55E;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #1E293B;
+  --secondary-foreground: #E2E8F0;
+
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+
+  --accent: #14532D;
+  --accent-foreground: #F8FAFC;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #1E293B;
+  --input: #1E293B;
+ --ring: #155E4B;
+
+  --sidebar: #111827;
+  --sidebar-foreground: #F8FAFC;
+
+  --sidebar-primary: #22C55E;
+  --sidebar-primary-foreground: #FFFFFF;
+
+  --sidebar-accent: #14532D;
+  --sidebar-accent-foreground: #F8FAFC;
+
+  --sidebar-border: #1E293B;
+  --sidebar-ring: #22C55E;
 }
 
 @theme inline {
@@ -2437,4 +2444,14 @@ canvas {
 .swal2-popup .swal2-close:focus,
 .swal2-popup .swal2-close:hover {
   color: var(--foreground) !important;
+}
+
+/* DOCUMANTRA PREMIUM UI */
+
+.dashboard-card {
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(14px);
+  border: 1px solid #E6DCCF;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(15,23,42,0.06);
 }

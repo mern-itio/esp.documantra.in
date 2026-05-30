@@ -141,7 +141,7 @@ const WhyDocuSignerPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white pt-24">
+    <div className="min-h-screen bg-[#F7F3EE] pt-24">
       {/* Hero Section */}
       <section className="py-16 bg-gradient-to-br from-primary-50 to-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
@@ -174,7 +174,7 @@ const WhyDocuSignerPage = () => {
       </section>
 
       {/* Key Features Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -187,7 +187,7 @@ const WhyDocuSignerPage = () => {
 
           <div className="grid md:grid-cols-2 gap-8">
             {keyFeatures.map((feature, index) => (
-              <Link to={feature.path} id={slugify(feature.title)} key={index} className="bg-white rounded-xl p-8 shadow-lg border border-gray-100 hover:border-[#260559] hover:shadow-xl cursor-pointer transition-all block">
+              <Link to={feature.path} id={slugify(feature.title)} key={index} className="bg-[#F7F3EE] rounded-xl p-8 shadow-lg border border-gray-100 hover:border-[#260559] hover:shadow-xl cursor-pointer transition-all block">
                 <div className={`w-16 h-16 rounded-lg flex items-center justify-center mb-6 bg-[#E6E0F0]`}>
                   <feature.icon className="h-8 w-8 text-[#260559]" />
                 </div>
@@ -222,7 +222,7 @@ const WhyDocuSignerPage = () => {
       </section>
 
       {/* Competitive Advantages */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -235,7 +235,7 @@ const WhyDocuSignerPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {competitiveAdvantages.map((advantage, index) => (
-              <div id={slugify(advantage.title)} key={index} className="bg-white hover:border-primary-500 hover:shadow-xl cursor-pointer rounded-xl p-6 shadow-md border border-gray-100 card-hover">
+              <div id={slugify(advantage.title)} key={index} className="bg-[#F7F3EE] hover:border-primary-500 hover:shadow-xl cursor-pointer rounded-xl p-6 shadow-md border border-gray-100 card-hover">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-12 h-12 bg-[#E6E0F0] rounded-full flex items-center justify-center">
                     <advantage.icon className="h-6 w-6 text-[#260559]" />
@@ -257,7 +257,7 @@ const WhyDocuSignerPage = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -270,7 +270,7 @@ const WhyDocuSignerPage = () => {
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-gray-50 rounded-xl p-8 card-hover">
+              <div key={index} className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-[#F5F2EE] rounded-xl p-8 card-hover">
                 <div className="flex items-center gap-1 mb-6">
                   {[...Array(5)].map((_, i) => (
                     <svg key={i} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 24 24">
@@ -290,7 +290,7 @@ const WhyDocuSignerPage = () => {
       </section>
 
       {/* Use Cases */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-[#F5F2EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -302,7 +302,7 @@ const WhyDocuSignerPage = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-white rounded-xl p-6 shadow-md">
+            <div className="border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer bg-[#F7F3EE] rounded-xl p-6 shadow-md">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Legal Firms</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -320,7 +320,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
+            <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Real Estate</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -338,7 +338,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
+            <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Healthcare</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -356,7 +356,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
+            <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Financial Services</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -374,7 +374,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
+            <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Human Resources</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -392,7 +392,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
+            <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-md border border-gray-100 card-hover hover:border-primary-500 hover:shadow-xl cursor-pointer ">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Technology</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -414,7 +414,7 @@ const WhyDocuSignerPage = () => {
       </section>
 
       {/* Security & Compliance */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -426,7 +426,7 @@ const WhyDocuSignerPage = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-gray-50 rounded-xl p-8">
+            <div className="bg-[#F5F2EE] rounded-xl p-8">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 bg-[#E6E0F0] rounded-full flex items-center justify-center">
                   <Lock className="h-6 w-6 text-[#260559]" />
@@ -465,7 +465,7 @@ const WhyDocuSignerPage = () => {
               </ul>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-8">
+            <div className="bg-[#F5F2EE] rounded-xl p-8">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 bg-[#E6E0F0] rounded-full flex items-center justify-center">
                   <Globe className="h-6 w-6 text-[#260559]" />
@@ -527,10 +527,10 @@ const WhyDocuSignerPage = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
+              <Link to="/signup" className="bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl text-lg">
                 Start Free Forever <ArrowRight className="ml-2 h-5 w-5 inline" />
               </Link>
-              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
+              <Link to="/contact-sales" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-primary-600 font-semibold py-4 px-8 rounded-lg transition-all duration-200 text-lg">
                 Schedule Demo
               </Link>
             </div>

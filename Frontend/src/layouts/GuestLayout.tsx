@@ -23,7 +23,7 @@ const HIDE_HEADER_FOOTER_ROUTES: string[] = [
   const shouldHideHeaderFooter = HIDE_HEADER_FOOTER_ROUTES.some((path) => location.pathname === path);
   
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F7F3EE]">
       <ScrollToTop />
       {!shouldHideHeaderFooter && <Header />}
       <main>

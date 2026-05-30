@@ -31,7 +31,7 @@ export const QuickActions: React.FC = () => {
       description: 'Explore template marketplace',
       icon: Store,
       path: '/template/marketplace',
-      color: 'bg-purple-500 hover:bg-purple-600'
+      color: 'bg-[#F0FDF4]0 hover:bg-purple-600'
     },
     {
       title: 'Setup Automation',
@@ -50,7 +50,7 @@ export const QuickActions: React.FC = () => {
           <Link
             key={index}
             to={action.path}
-            className="group bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200 hover:-translate-y-1 relative"
+            className="group bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200 hover:-translate-y-1 relative"
           >
             {action.isNew && (
               <div className="absolute -top-2 -right-2 px-2 py-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs font-bold rounded-full">

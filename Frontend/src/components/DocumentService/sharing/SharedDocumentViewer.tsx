@@ -362,7 +362,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
           <p className="text-gray-600">Loading document...</p>
@@ -373,7 +373,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
   if (error && !passwordRequired) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <Card className="p-8 max-w-md w-full mx-4">
           <div className="text-center">
             <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
@@ -390,7 +390,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
   if (passwordRequired) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <Card className="p-8 max-w-md w-full mx-4">
           <div className="text-center">
             <Lock size={48} className="mx-auto text-blue-500 mb-4" />
@@ -427,7 +427,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
   if (!documentData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <Card className="p-8 max-w-md w-full mx-4">
           <div className="text-center">
             <FileText size={48} className="mx-auto text-gray-400 mb-4" />
@@ -440,9 +440,9 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F2EE]">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-[#F7F3EE] border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -580,7 +580,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
               </div>
             </div>
 
-            <div className="w-full border rounded-lg overflow-hidden bg-white flex justify-center">
+            <div className="w-full border rounded-lg overflow-hidden bg-[#F7F3EE] flex justify-center">
               <canvas
                 ref={canvasRef}
                 className="h-auto pdf-canvas"
@@ -590,7 +590,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
           {/* Comments Sidebar - Always show if there are comments or if comments are allowed */}
           {(comments.length > 0 || documentData?.share.allowComments || documentData?.share.isOwner) && (
-      <div className="w-[380px] self-start sticky top-6 bg-white shadow-lg rounded-md p-4 max-h-[calc(100vh-3rem)] overflow-y-auto">
+      <div className="w-[380px] self-start sticky top-6 bg-[#F7F3EE] shadow-lg rounded-md p-4 max-h-[calc(100vh-3rem)] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium">Comments</h3>
                 <span className="text-sm text-gray-500">{comments.length} comments</span>

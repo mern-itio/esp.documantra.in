@@ -48,7 +48,7 @@ const RecentErrorsCard = () => {
 }, []);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Errors</h2>
       {/* Overflow container with max height and scroll */}
        {loading ? (

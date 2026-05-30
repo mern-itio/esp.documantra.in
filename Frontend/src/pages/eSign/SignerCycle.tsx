@@ -149,10 +149,10 @@ const SignerCycle: React.FC = () => {
       return {
         label: status.charAt(0).toUpperCase() + status.slice(1),
         icon: Clock,
-        bgColor: "bg-gray-50",
+        bgColor: "bg-[#F5F2EE]",
         textColor: "text-gray-700",
         borderColor: "border-gray-200",
-        dotColor: "bg-gray-500",
+        dotColor: "bg-[#F5F2EE]0",
         badgeClass: "bg-gray-100 text-gray-800 border-gray-200"
       };
     }
@@ -226,13 +226,13 @@ const SignerCycle: React.FC = () => {
       <div className="p-6 bg-gradient-to-br from-gray-50 to-white min-h-screen">
         <button
           onClick={() => navigate("/e-sign/aggrement")}
-          className="flex items-center gap-2 text-gray-600 hover:text-[#3E2B66] mb-6 transition-all duration-300 group px-4 py-2 rounded-lg hover:bg-purple-50"
+          className="flex items-center gap-2 text-gray-600 hover:text-[#3E2B66] mb-6 transition-all duration-300 group px-4 py-2 rounded-lg hover:bg-[#F0FDF4]"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
        
         </button>
         <div className="flex flex-col items-center justify-center min-h-[400px] animate-fade-in">
-          <div className="p-6 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full mb-6 animate-pulse">
+          <div className="p-6 bg-gradient-to-br from-purple-100 to-emerald-100 rounded-full mb-6 animate-pulse">
             <Users className="w-16 h-16 text-[#3E2B66]" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-[#260559] to-[#3E2B66] bg-clip-text text-transparent">No Signer Cycles</h3>
@@ -252,7 +252,7 @@ const SignerCycle: React.FC = () => {
           <div className="flex items-center gap-3 flex-1">
             <button
               onClick={() => navigate("/e-sign/aggrement")}
-              className="flex items-center gap-2 text-gray-600 hover:text-[#3E2B66] transition-all duration-300 group px-4 py-2 rounded-lg hover:bg-purple-50 hover:shadow-md"
+              className="flex items-center gap-2 text-gray-600 hover:text-[#3E2B66] transition-all duration-300 group px-4 py-2 rounded-lg hover:bg-[#F0FDF4] hover:shadow-md"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
          
@@ -287,8 +287,8 @@ const SignerCycle: React.FC = () => {
               {/* Cycle Header - Interactive */}
               <button
                 className={`w-full flex justify-between items-center px-6 py-5 text-left transition-all duration-300 rounded-xl shadow-md ${isOpen
-                    ? "bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border-l-4 border-[#3E2B66] shadow-lg scale-[1.01]"
-                    : "bg-white hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-indigo-50/50 border-l-4 border-transparent hover:border-purple-300 hover:shadow-lg hover:scale-[1.01]"
+                    ? "bg-gradient-to-r from-purple-50 via-emerald-50 to-blue-50 border-l-4 border-[#3E2B66] shadow-lg scale-[1.01]"
+                    : "bg-[#F7F3EE] hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-emerald-50/50 border-l-4 border-transparent hover:border-purple-300 hover:shadow-lg hover:scale-[1.01]"
                   }`}
                 onClick={() => setOpenCycle(isOpen ? null : cycle._id)}
                 onMouseEnter={() => { }}
@@ -308,7 +308,7 @@ const SignerCycle: React.FC = () => {
                         }`}>
                         Cycle {cycleIndex + 1}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-purple-100 to-indigo-100 text-[#3E2B66] border border-purple-200 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-purple-100 to-emerald-100 text-[#3E2B66] border border-[#BBF7D0] shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                         <Users className="w-3.5 h-3.5" />
                         {signers.length} {signers.length === 1 ? "Signer" : "Signers"}
                       </span>
@@ -368,11 +368,11 @@ const SignerCycle: React.FC = () => {
               {/* Signers Content - Smooth Expand/Collapse */}
               <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? "max-h-[5000px] opacity-100" : "max-h-0 opacity-0"
                 }`}>
-                <div className="px-6 py-4 bg-gradient-to-br from-purple-50/30 via-indigo-50/20 to-blue-50/30 border-l-4 border-purple-300 rounded-b-xl">
+                <div className="px-6 py-4 bg-gradient-to-br from-purple-50/30 via-emerald-50/20 to-blue-50/30 border-l-4 border-purple-300 rounded-b-xl">
                   <div className="space-y-2">
                     {signers.length === 0 ? (
                       <div className="text-center py-12 text-gray-500 animate-fade-in">
-                        <div className="p-4 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full w-fit mx-auto mb-4">
+                        <div className="p-4 bg-gradient-to-br from-purple-100 to-emerald-100 rounded-full w-fit mx-auto mb-4">
                           <User className="w-16 h-16 text-[#3E2B66]" />
                         </div>
                         <p className="text-lg font-semibold text-gray-700">No signers in this cycle</p>
@@ -394,7 +394,7 @@ const SignerCycle: React.FC = () => {
                             key={signerId}
                             className={`px-5 py-4 rounded-xl transition-all duration-300 ${isHovered
                                 ? "bg-gradient-to-br from-white to-purple-50/50 shadow-xl border-2 border-[#3E2B66] transform scale-[1.02]"
-                                : "bg-white shadow-md border border-gray-200 hover:shadow-lg hover:border-purple-300 hover:bg-gradient-to-br hover:from-white hover:to-purple-50/30"
+                                : "bg-[#F7F3EE] shadow-md border border-gray-200 hover:shadow-lg hover:border-purple-300 hover:bg-gradient-to-br hover:from-white hover:to-purple-50/30"
                               }`}
                             onMouseEnter={() => setHoveredSigner(signerId)}
                             onMouseLeave={() => setHoveredSigner(null)}

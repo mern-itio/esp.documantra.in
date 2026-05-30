@@ -187,7 +187,7 @@ const StatusPage = () => {
       case 'maintenance':
         return 'bg-blue-100 text-blue-800';
       case 'scheduled':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-[#DCFCE7] text-purple-800';
       case 'resolved':
         return 'bg-gray-100 text-gray-800';
       default:
@@ -196,10 +196,10 @@ const StatusPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 mt-8 pb-16">
+    <div className="min-h-screen bg-[#F5F2EE] pt-24 mt-8 pb-16">
       <div className="container-max">
         {/* Current Status Overview */}
-        <div className={`bg-white rounded-2xl shadow-lg p-8 mb-8 border-l-4 ${
+        <div className={`bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8 border-l-4 ${
           systemStatus.status === 'operational' ? 'border-green-500' :
           systemStatus.status === 'degraded' ? 'border-yellow-500' :
           'border-red-500'
@@ -230,23 +230,23 @@ const StatusPage = () => {
           </div>
 
           <div className="grid md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <div className="bg-[#F5F2EE] rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-gray-900 mb-1">{systemStatus.uptime}</div>
               <div className="text-sm text-gray-600">30-Day Uptime</div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <div className="bg-[#F5F2EE] rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-gray-900 mb-1">
                 {services.filter(s => s.status === 'operational').length}/{services.length}
               </div>
               <div className="text-sm text-gray-600">Operational Services</div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <div className="bg-[#F5F2EE] rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-gray-900 mb-1">
                 {dataCenters.filter(d => d.status === 'operational').length}/{dataCenters.length}
               </div>
               <div className="text-sm text-gray-600">Operational Regions</div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <div className="bg-[#F5F2EE] rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-gray-900 mb-1">
                 {incidents.length}
               </div>
@@ -264,7 +264,7 @@ const StatusPage = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-4 mb-8">
           <div className="flex overflow-x-auto">
             <button
               onClick={() => setActiveTab('current')}
@@ -305,12 +305,12 @@ const StatusPage = () => {
         {activeTab === 'current' && (
           <>
             {/* Services Status */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+            <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Services Status</h2>
               
               <div className="space-y-4">
                 {services.map((service, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-[#F5F2EE] transition-colors">
                     <div className="flex items-center gap-3">
                       {getStatusIcon(service.status)}
                       <span className="font-medium text-gray-900">{service.name}</span>
@@ -328,12 +328,12 @@ const StatusPage = () => {
             </div>
 
             {/* Data Center Status */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+            <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Data Center Status</h2>
               
               <div className="grid md:grid-cols-2 gap-4">
                 {dataCenters.map((center, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-[#F5F2EE] transition-colors">
                     <div className="flex items-center gap-3">
                       {getStatusIcon(center.status)}
                       <span className="font-medium text-gray-900">{center.region}</span>
@@ -351,7 +351,7 @@ const StatusPage = () => {
             </div>
 
             {/* Active Incidents */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+            <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Active Incidents</h2>
               
               <div className="p-8 text-center border border-dashed border-gray-300 rounded-lg">
@@ -367,13 +367,13 @@ const StatusPage = () => {
 
         {/* Incident History Tab */}
         {activeTab === 'incidents' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+          <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Incident History</h2>
             
             <div className="space-y-8">
               {incidents.map((incident, index) => (
                 <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-[#F5F2EE]">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-500">{incident.date}</span>
@@ -422,13 +422,13 @@ const StatusPage = () => {
 
         {/* Scheduled Maintenance Tab */}
         {activeTab === 'maintenance' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+          <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Scheduled Maintenance</h2>
             
             <div className="space-y-6">
               {maintenanceSchedule.map((maintenance, index) => (
                 <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-[#F5F2EE]">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-500">{maintenance.date}</span>
@@ -480,7 +480,7 @@ const StatusPage = () => {
 
         {/* Uptime Reports Tab */}
         {activeTab === 'uptime' && (
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+          <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Uptime Reports</h2>
             
             <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -539,15 +539,15 @@ const StatusPage = () => {
                 {COMPANY_NAME} is committed to maintaining a high level of service availability. Our Service Level Agreement (SLA) guarantees 99.9% uptime for all customers, with higher guarantees available for enterprise customers.
               </p>
               <div className="grid md:grid-cols-3 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-[#F5F2EE] rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-gray-900 mb-1">99.9%</div>
                   <div className="text-sm text-gray-600">Standard SLA</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-[#F5F2EE] rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-gray-900 mb-1">99.95%</div>
                   <div className="text-sm text-gray-600">Business SLA</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-[#F5F2EE] rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-gray-900 mb-1">99.99%</div>
                   <div className="text-sm text-gray-600">Enterprise SLA</div>
                 </div>
@@ -590,7 +590,7 @@ const StatusPage = () => {
               </div>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+            <div className="bg-[#F7F3EE]/10 backdrop-blur-sm rounded-xl p-6">
               <h3 className="text-xl font-semibold mb-4">Subscribe to Status Updates</h3>
               <form className="space-y-4">
                 <div>
@@ -598,7 +598,7 @@ const StatusPage = () => {
                   <input
                     type="email"
                     placeholder="Enter your email"
-                    className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
+                    className="w-full px-4 py-3 bg-[#F7F3EE]/20 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
                   />
                 </div>
                 <div>
@@ -620,7 +620,7 @@ const StatusPage = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-white text-[#260559] hover:bg-primary-50 font-semibold py-3 px-4 rounded-lg transition-colors"
+                  className="w-full bg-[#F7F3EE] text-[#260559] hover:bg-primary-50 font-semibold py-3 px-4 rounded-lg transition-colors"
                 >
                   Subscribe
                 </button>
@@ -630,7 +630,7 @@ const StatusPage = () => {
         </div>
 
         {/* Additional Resources */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Additional Resources</h2>
           
           <div className="grid md:grid-cols-3 gap-6">

@@ -170,7 +170,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
       case 'content':
         return 'bg-green-100 text-green-700';
       case 'workflow':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-[#DCFCE7] text-[#155E4B]';
       case 'ui':
         return 'bg-orange-100 text-orange-700';
       default:
@@ -185,9 +185,9 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
-        <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center mr-4">
+        <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-purple-500 rounded-lg flex items-center justify-center mr-4">
           <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -206,7 +206,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-white text-indigo-600 shadow-sm'
+                  ? 'bg-[#F7F3EE] text-emerald-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
@@ -231,7 +231,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
                     ...userProfile,
                     preferences: { ...userProfile.preferences, templateStyle: e.target.value as any }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 >
                   <option value="modern_minimal">Modern Minimal</option>
                   <option value="classic_formal">Classic Formal</option>
@@ -246,7 +246,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
                     ...userProfile,
                     preferences: { ...userProfile.preferences, fieldComplexity: e.target.value as any }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 >
                   <option value="simple">Simple</option>
                   <option value="intermediate">Intermediate</option>
@@ -262,7 +262,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
                     ...userProfile,
                     preferences: { ...userProfile.preferences, industryFocus: e.target.value }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -273,7 +273,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
                     ...userProfile,
                     preferences: { ...userProfile.preferences, languagePreference: e.target.value }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 >
                   <option value="english_us">English (US)</option>
                   <option value="english_uk">English (UK)</option>
@@ -287,7 +287,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
 
           <div>
             <h3 className="text-md font-medium text-gray-900 mb-4">Behavior Patterns</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-[#F5F2EE] rounded-lg p-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm font-medium text-gray-700">Preferred Field Types</div>
@@ -328,10 +328,10 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
               <button
                 onClick={generatePersonalizationSuggestions}
                 disabled={isAnalyzing}
-                className="flex items-center px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md"
+                className="flex items-center px-3 py-1 text-sm bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md"
               >
                 {isAnalyzing ? (
-                  <div className="w-3 h-3 mr-1 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-3 h-3 mr-1 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <Sparkles className="w-3 h-3 mr-1" />
                 )}
@@ -340,7 +340,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
               {selectedSuggestions.length > 0 && (
                 <button
                   onClick={applySelectedSuggestions}
-                  className="flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium"
+                  className="flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-medium"
                 >
                   Apply Selected ({selectedSuggestions.length})
                 </button>
@@ -354,7 +354,7 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
                 key={suggestion.id}
                 className={`border rounded-lg p-4 cursor-pointer transition-colors ${
                   selectedSuggestions.includes(suggestion.id)
-                    ? 'border-indigo-500 bg-indigo-50'
+                    ? 'border-emerald-500 bg-emerald-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
                 onClick={() => toggleSuggestion(suggestion.id)}
@@ -402,8 +402,8 @@ export const PersonalizationEngine: React.FC<PersonalizationEngineProps> = ({
           <div className="space-y-3">
             {userProfile.adaptationHistory.map((adaptation, index) => (
               <div key={index} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg">
-                <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-4 h-4 text-indigo-600" />
+                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div className="flex-1">
                   <div className="font-medium text-gray-900">{adaptation.adaptation}</div>

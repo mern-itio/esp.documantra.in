@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 const CookiePolicyPage = () => {
   return (
-    <div className="min-h-screen bg-white pt-24">
+    <div className="min-h-screen bg-[#F7F3EE] pt-24">
       {/* Hero Section */}
       <section className="py-16 bg-gradient-to-br from-primary-50 to-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
@@ -18,7 +18,7 @@ const CookiePolicyPage = () => {
       </section>
 
       {/* Content Section */}
-      <section className="py-12 bg-white">
+      <section className="py-12 bg-[#F7F3EE]">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto space-y-10 text-gray-700">
             <div>
@@ -58,19 +58,19 @@ const CookiePolicyPage = () => {
             <div>
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">Types of cookies we use</h2>
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="border border-gray-100 rounded-lg p-5 bg-white shadow-sm">
+                <div className="border border-gray-100 rounded-lg p-5 bg-[#F7F3EE] shadow-sm">
                   <h3 className="font-semibold text-gray-900 mb-2">Strictly Necessary</h3>
                   <p>Required for core functionality such as login, security, and load balancing.</p>
                 </div>
-                <div className="border border-gray-100 rounded-lg p-5 bg-white shadow-sm">
+                <div className="border border-gray-100 rounded-lg p-5 bg-[#F7F3EE] shadow-sm">
                   <h3 className="font-semibold text-gray-900 mb-2">Preferences</h3>
                   <p>Remember your choices like language, theme, and dashboard settings.</p>
                 </div>
-                <div className="border border-gray-100 rounded-lg p-5 bg-white shadow-sm">
+                <div className="border border-gray-100 rounded-lg p-5 bg-[#F7F3EE] shadow-sm">
                   <h3 className="font-semibold text-gray-900 mb-2">Analytics</h3>
                   <p>Help us understand how the site is used to improve features and performance.</p>
                 </div>
-                <div className="border border-gray-100 rounded-lg p-5 bg-white shadow-sm">
+                <div className="border border-gray-100 rounded-lg p-5 bg-[#F7F3EE] shadow-sm">
                   <h3 className="font-semibold text-gray-900 mb-2">Marketing</h3>
                   <p>Used to deliver and measure the effectiveness of campaigns (where applicable).</p>
                 </div>

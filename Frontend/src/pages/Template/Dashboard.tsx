@@ -53,7 +53,7 @@ export const Dashboard: React.FC = () => {
       change: '+5%',
       trend: 'up' as const,
       icon: Users,
-      color: 'indigo'
+      color: 'emerald'
     },
     {
       title: 'Automations',
@@ -86,7 +86,7 @@ export const Dashboard: React.FC = () => {
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Recent Templates */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="lg:col-span-2 bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900">Recent Templates</h2>
             <Link 
@@ -128,7 +128,7 @@ export const Dashboard: React.FC = () => {
                 status: 'draft'
               }
             ].map((template, index) => (
-              <div key={index} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+              <div key={index} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-[#F5F2EE] transition-colors">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                     <FileText className="w-5 h-5 text-blue-600" />
@@ -156,7 +156,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Performance Overview */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Performance Overview</h2>
           <div className="space-y-6">
             <div>
@@ -183,7 +183,7 @@ export const Dashboard: React.FC = () => {
                 <span className="text-sm font-semibold text-gray-900">4.6/5</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-500 h-2 rounded-full" style={{ width: '92%' }}></div>
+                <div className="bg-[#F0FDF4]0 h-2 rounded-full" style={{ width: '92%' }}></div>
               </div>
             </div>
             <div className="pt-4 border-t border-gray-100">

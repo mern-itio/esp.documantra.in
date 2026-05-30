@@ -21,14 +21,14 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
-    purple: 'bg-purple-50 text-purple-600',
+    purple: 'bg-[#F0FDF4] text-[#155E4B]',
     orange: 'bg-orange-50 text-orange-600',
-    indigo: 'bg-indigo-50 text-indigo-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
     teal: 'bg-teal-50 text-teal-600'
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <div className={colorClasses[color as keyof typeof colorClasses] || color}>
           <Icon className="w-5 h-5" />

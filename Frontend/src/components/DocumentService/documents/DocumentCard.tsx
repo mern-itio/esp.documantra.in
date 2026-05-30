@@ -54,7 +54,7 @@ const getFileTypeColor = (type: string) => {
   if (['ppt', 'pptx'].includes(lowerType))
     return 'text-orange-600 dark:text-orange-400 bg-orange-500/10 dark:bg-orange-500/15';
   if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].includes(lowerType))
-    return 'text-violet-600 dark:text-violet-400 bg-violet-500/10 dark:bg-violet-500/15';
+    return 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15';
 
   return 'text-muted-foreground bg-muted';
 };

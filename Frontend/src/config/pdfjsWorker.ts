@@ -7,10 +7,10 @@
 // Configure PDF.js worker globally to use the public folder worker
 if (typeof window !== 'undefined') {
   // Use worker from public folder
-  const workerSrc = '/pdf.worker.min.mjs';
+const workerSrc = '/pdf.worker.min.mjs';
   
-  // Store globally for all components
-  (window as any).__PDFJS_WORKER_SRC__ = workerSrc;
+  // Store globally 
+(window as any).__PDFJS_WORKER_SRC__ = workerSrc;
   
   // Set for any existing window.pdfjsLib (used by other components)
   if (window.pdfjsLib?.GlobalWorkerOptions) {
@@ -51,7 +51,7 @@ if (typeof window !== 'undefined') {
 
 // Export a function to configure worker for components that load pdfjs-dist dynamically
 export const configurePDFWorker = async (pdfjsLib: any) => {
-  const workerSrc = (window as any).__PDFJS_WORKER_SRC__ || '/pdf.worker.min.mjs';
+  const workerSrc = '/pdf.worker.min.mjs';
   if (pdfjsLib?.GlobalWorkerOptions) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
   }

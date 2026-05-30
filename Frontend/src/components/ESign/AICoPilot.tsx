@@ -173,7 +173,7 @@ export const AICoPilot: React.FC<AICoPilotProps> = ({
   return (
     <>
       {hasErrors && (
-        <div className="fixed top-4 right-4 z-50 w-96 bg-white rounded-lg shadow-2xl border-2 border-red-300 transition-all duration-300">
+        <div className="fixed top-4 right-4 z-50 w-96 bg-[#F7F3EE] rounded-lg shadow-2xl border-2 border-red-300 transition-all duration-300">
           <div className="p-4">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">

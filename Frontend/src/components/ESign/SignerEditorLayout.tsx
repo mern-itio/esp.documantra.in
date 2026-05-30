@@ -94,7 +94,7 @@ export function SignerEditorLayout({
       {/* Main three panels */}
       <div className="flex-1 flex overflow-hidden bg-gray-100">
         {/* Left panel - Standard fields (static) */}
-        <div className="w-[300px] bg-white border-r border-gray-200 flex flex-shrink-0 h-full flex flex-col">
+        <div className="w-[300px] bg-[#F7F3EE] border-r border-gray-200 flex flex-shrink-0 h-full flex flex-col">
           <div className="border-b border-gray-200 flex-shrink-0">
             <div className="relative px-1.5 py-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -103,7 +103,7 @@ export function SignerEditorLayout({
                 placeholder="Search Fields"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-8 py-2 text-sm bg-gray-50 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full pl-8 pr-8 py-2 text-sm bg-[#F5F2EE] border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                 style={{ fontSize: "14px", color: "#6b7280" }}
               />
               {searchQuery && (
@@ -196,7 +196,7 @@ export function SignerEditorLayout({
 
         {/* Right panel - Preview (thumbnails) */}
         {showRightPanel && (
-          <div className="w-[220px] bg-white border-l border-gray-200 flex flex-col flex-shrink-0 h-full min-h-0">
+          <div className="w-[220px] bg-[#F7F3EE] border-l border-gray-200 flex flex-col flex-shrink-0 h-full min-h-0">
             <div className="px-3 pt-3 pb-2 border-b border-gray-200 flex-shrink-0">
               <p
                 className="text-sm font-medium text-gray-800 truncate"
@@ -241,12 +241,12 @@ export function SignerEditorLayout({
                         <img
                           src={thumbUrl}
                           alt={`Page ${pageNum} thumbnail`}
-                          className="block w-full bg-white"
+                          className="block w-full bg-[#F7F3EE]"
                           style={{ border: "1px solid #e5e7eb" }}
                         />
                       ) : (
                         <div
-                          className="w-full h-24 bg-white border border-gray-200 flex items-center justify-center rounded"
+                          className="w-full h-24 bg-[#F7F3EE] border border-gray-200 flex items-center justify-center rounded"
                           style={{ minHeight: "96px" }}
                         >
                           <span className="text-[11px] text-gray-400">

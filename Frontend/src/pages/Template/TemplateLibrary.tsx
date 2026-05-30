@@ -588,7 +588,7 @@ export const TemplateLibrary: React.FC = () => {
                     <div className="absolute inset-0 opacity-10 p-3">
                       {getCategoryIcon(inferTemplateCategory(t), 'h-full w-full text-primary')}
                     </div>
-                    {/* <div className="relative mt-16 px-2 py-0.5 rounded-md bg-white/85 backdrop-blur-sm border border-white/60 text-[11px] font-semibold tracking-wide text-[#3E2B66]">
+                    {/* <div className="relative mt-16 px-2 py-0.5 rounded-md bg-[#F7F3EE]/85 backdrop-blur-sm border border-white/60 text-[11px] font-semibold tracking-wide text-[#3E2B66]">
                       {getCoverLabel(t.title)}
                     </div> */}
                   </div>
@@ -681,7 +681,7 @@ export const TemplateLibrary: React.FC = () => {
                 <div className="absolute inset-0 opacity-10 p-3">
                   {getCategoryIcon(t.categoryId, 'h-full w-full text-primary')}
                 </div>
-                {/* <div className="relative mt-16 px-2 py-0.5 rounded-md bg-white/85 backdrop-blur-sm border border-white/60 text-[11px] font-semibold tracking-wide text-[#3E2B66]">
+                {/* <div className="relative mt-16 px-2 py-0.5 rounded-md bg-[#F7F3EE]/85 backdrop-blur-sm border border-white/60 text-[11px] font-semibold tracking-wide text-[#3E2B66]">
                   {getCoverLabel(t.name)}
                 </div> */}
               </div>

@@ -746,7 +746,7 @@ const renderPage = useCallback(async (pageNumber: number) => {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs " onClick={() => setShowPDFViewer(false)} />
 
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-[1400px] h-full max-h-[92vh] flex flex-col overflow-hidden">
+            <div className="bg-[#F7F3EE] rounded-lg shadow-xl w-full max-w-[1400px] h-full max-h-[92vh] flex flex-col overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
@@ -769,7 +769,7 @@ const renderPage = useCallback(async (pageNumber: number) => {
               </div>
 
               {/* Controls */}
-              <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-[#F5F2EE]">
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
@@ -831,14 +831,14 @@ const renderPage = useCallback(async (pageNumber: number) => {
                 <div className="flex-1 flex justify-center">
                   <canvas
                     ref={canvasRef}
-                    className="shadow-lg bg-white"
+                    className="shadow-lg bg-[#F7F3EE]"
                     style={{ maxWidth: 'none', height: 'auto' }}
                   />
                 </div>
 
                 {/* Comments Panel */}
                 {showComments && (selectedDocument?.allowComments || selectedDocument?.isOwner) && (
-                  <div className="w-[360px] ml-4 bg-white rounded-lg shadow-lg flex flex-col">
+                  <div className="w-[360px] ml-4 bg-[#F7F3EE] rounded-lg shadow-lg flex flex-col">
                     <div className="p-4 border-b border-gray-200">
                       <h3 className="font-semibold text-gray-900">Comments</h3>
                     </div>

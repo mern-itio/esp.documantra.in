@@ -47,7 +47,7 @@ const ResetPasswordPage = () => {
   if (!token) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-sky-50 pt-34 relative overflow-hidden flex items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-3xl border border-sky-100 bg-white/90 p-6 sm:p-8 shadow-[0_18px_80px_rgba(15,23,42,0.08)]">
+        <div className="w-full max-w-md rounded-3xl border border-sky-100 bg-[#F7F3EE]/90 p-6 sm:p-8 shadow-[0_18px_80px_rgba(15,23,42,0.08)]">
           <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </div>
@@ -72,7 +72,7 @@ const ResetPasswordPage = () => {
 
       <div className="container-max relative px-4 flex items-center justify-center min-h-[calc(100vh-8rem)]">
         <div className="w-full max-w-md">
-          <div className="rounded-3xl border border-sky-100 bg-white/90 p-6 sm:p-8 shadow-[0_18px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+          <div className="rounded-3xl border border-sky-100 bg-[#F7F3EE]/90 p-6 sm:p-8 shadow-[0_18px_80px_rgba(15,23,42,0.08)] backdrop-blur">
             <div className="mb-6">
               <h1 className="text-xl font-semibold text-slate-900">Set new password</h1>
               <p className="mt-1 text-xs text-slate-500">
@@ -113,7 +113,7 @@ const ResetPasswordPage = () => {
                         id="newPassword"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-9 pr-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#260559] focus:outline-none focus:ring-2 focus:ring-[#260559]/20"
+                        className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 pr-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#260559] focus:outline-none focus:ring-2 focus:ring-[#260559]/20"
                         placeholder="At least 6 characters"
                         required
                         minLength={6}
@@ -139,7 +139,7 @@ const ResetPasswordPage = () => {
                         id="confirmPassword"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#260559] focus:outline-none focus:ring-2 focus:ring-[#260559]/20"
+                        className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#260559] focus:outline-none focus:ring-2 focus:ring-[#260559]/20"
                         placeholder="Confirm new password"
                         required
                         minLength={6}

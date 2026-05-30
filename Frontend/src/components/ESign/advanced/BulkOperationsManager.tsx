@@ -58,7 +58,7 @@ const BulkOperationsManager: React.FC = () =>{
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Bulk Envelope Creation */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div className="bg-[#F7F3EE] border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
           <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4">
             <FileText className="w-6 h-6" />
           </div>
@@ -76,7 +76,7 @@ const BulkOperationsManager: React.FC = () =>{
         </div>
 
         {/* Bulk Sending */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div className="bg-[#F7F3EE] border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
           <div className="w-12 h-12 bg-green-100 text-green-600 rounded-lg flex items-center justify-center mb-4">
             <Users className="w-6 h-6" />
           </div>
@@ -94,8 +94,8 @@ const BulkOperationsManager: React.FC = () =>{
         </div>
 
         {/* Bulk Status Update */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
-          <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4">
+        <div className="bg-[#F7F3EE] border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
+          <div className="w-12 h-12 bg-[#DCFCE7] text-[#155E4B] rounded-lg flex items-center justify-center mb-4">
             <RefreshCw className="w-6 h-6" />
           </div>
           <h4 className="text-lg font-semibold text-gray-900 mb-2">Bulk Status Update</h4>
@@ -112,7 +112,7 @@ const BulkOperationsManager: React.FC = () =>{
         </div>
 
         {/* Bulk Reminders */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div className="bg-[#F7F3EE] border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
           <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center mb-4">
             <Clock className="w-6 h-6" />
           </div>
@@ -130,8 +130,8 @@ const BulkOperationsManager: React.FC = () =>{
         </div>
 
         {/* Bulk Export */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
-          <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4">
+        <div className="bg-[#F7F3EE] border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
+          <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center mb-4">
             <Download className="w-6 h-6" />
           </div>
           <h4 className="text-lg font-semibold text-gray-900 mb-2">Bulk Export</h4>
@@ -142,13 +142,13 @@ const BulkOperationsManager: React.FC = () =>{
             <div>• Include audit trails</div>
             <div>• Compressed delivery</div>
           </div>
-          <button className="w-full mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          <button className="w-full mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
             Start Bulk Export
           </button>
         </div>
 
         {/* Template Operations */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div className="bg-[#F7F3EE] border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer">
           <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-lg flex items-center justify-center mb-4">
             <Upload className="w-6 h-6" />
           </div>
@@ -202,14 +202,14 @@ const BulkOperationsManager: React.FC = () =>{
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="divide-y divide-gray-200">
           {filteredOperations.map((operation) => {
             const StatusIcon = statusIcons[operation.status];
             const progress = getProgressPercentage(operation);
             
             return (
-              <div key={operation.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={operation.id} className="p-6 hover:bg-[#F5F2EE] transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-start space-x-4 flex-1">
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -336,9 +336,9 @@ const BulkOperationsManager: React.FC = () =>{
       {selectedOperation && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setSelectedOperation(null)} />
+            <div className="fixed inset-0 transition-opacity bg-[#F5F2EE]0 bg-opacity-75" onClick={() => setSelectedOperation(null)} />
             
-            <div className="inline-block w-full max-w-4xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-xl">
+            <div className="inline-block w-full max-w-4xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-[#F7F3EE] shadow-xl rounded-xl">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Operation Details: {selectedOperation.type.replace('_', ' ')}
@@ -354,7 +354,7 @@ const BulkOperationsManager: React.FC = () =>{
               <div className="space-y-6">
                 {/* Operation Summary */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-[#F5F2EE] p-4 rounded-lg">
                     <div className="text-2xl font-bold text-gray-900">{selectedOperation.totalItems}</div>
                     <div className="text-sm text-gray-600">Total Items</div>
                   </div>
@@ -376,7 +376,7 @@ const BulkOperationsManager: React.FC = () =>{
                 {selectedOperation.results && (
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900 mb-4">Operation Results</h4>
-                    <div className="bg-gray-50 rounded-lg overflow-hidden">
+                    <div className="bg-[#F5F2EE] rounded-lg overflow-hidden">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-100">
                           <tr>
@@ -394,7 +394,7 @@ const BulkOperationsManager: React.FC = () =>{
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-[#F7F3EE] divide-y divide-gray-200">
                           {selectedOperation.results.slice(0, 10).map((result, index) => (
                             <tr key={index}>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

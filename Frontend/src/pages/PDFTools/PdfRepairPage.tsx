@@ -832,7 +832,7 @@ const PdfRepairPage: React.FC = () => {
                 Structure repair
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
-                <File className="w-4 h-4 mr-2 text-purple-600" />
+                <File className="w-4 h-4 mr-2 text-[#155E4B]" />
                 Content reconstruction
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
@@ -840,7 +840,7 @@ const PdfRepairPage: React.FC = () => {
                 Web optimization
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
-                <Search className="w-4 h-4 mr-2 text-indigo-600" />
+                <Search className="w-4 h-4 mr-2 text-emerald-600" />
                 Issue analysis
               </div>
             </div>

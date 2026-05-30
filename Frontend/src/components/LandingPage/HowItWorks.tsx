@@ -12,7 +12,7 @@ const HowItWorks = () => {
       icon: UserPlus,
       title: "Add Fields & Signers",
       description: "Drag-and-drop signature fields and assign signers with custom order",
-      color: "bg-purple-500"
+      color: "bg-[#F0FDF4]0"
     },
     {
       icon: Send,
@@ -23,7 +23,7 @@ const HowItWorks = () => {
   ]
 
   return (
-    <section className="section-padding bg-gray-50">
+    <section className="section-padding bg-[#F5F2EE]">
       <div className="container-max">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -37,7 +37,7 @@ const HowItWorks = () => {
         <div className="grid md:grid-cols-3 gap-8 mb-12">
           {steps.map((step, index) => (
             <div key={index} className="relative">
-              <div className="bg-white rounded-xl p-8 shadow-lg card-hover text-center">
+              <div className="bg-[#F7F3EE] rounded-xl p-8 shadow-lg card-hover text-center">
                 <div className={`${step.color} w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6`}>
                   <step.icon className="h-8 w-8 text-white" />
                 </div>

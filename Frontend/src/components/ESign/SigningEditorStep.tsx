@@ -65,7 +65,7 @@ export type PowerFormData = {
   fields: { _id: string; label: string; type: FieldType }[];
 };
 
-const RECIPIENT_COLORS = ["#2563eb", "#059669", "#d97706", "#db2777", "#7c3aed", "#f43f5e"];
+const RECIPIENT_COLORS = ["#2563eb", "#059669", "#d97706", "#db2777", "#1B6B57", "#f43f5e"];
 const RECIPIENT_BORDER_STYLES = ["dashed", "dotted", "solid", "double", "inset", "outset"];
 
 function getRecipientColor(idx: number) {
@@ -1829,7 +1829,7 @@ export default function SigningEditorStep({
 
               <button
                 onClick={() => setLeftPanel('standard')}
-                className={`w-10 h-12 flex items-center justify-center border-b border-muted transition-colors ${leftPanel === 'standard' ? 'bg-purple-50' : 'hover:bg-muted'}`}
+                className={`w-10 h-12 flex items-center justify-center border-b border-muted transition-colors ${leftPanel === 'standard' ? 'bg-[#F0FDF4]' : 'hover:bg-muted'}`}
               >
                 <RectangleHorizontal className="w-3.5 h-3.5 text-gray-700" />
               </button>

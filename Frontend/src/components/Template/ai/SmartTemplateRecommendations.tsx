@@ -220,7 +220,7 @@ export const SmartTemplateRecommendations: React.FC<SmartTemplateRecommendations
       case 'trending':
         return 'bg-green-100 text-green-700';
       case 'ai_suggested':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-[#DCFCE7] text-[#155E4B]';
       case 'industry_specific':
         return 'bg-orange-100 text-orange-700';
       default:
@@ -229,7 +229,7 @@ export const SmartTemplateRecommendations: React.FC<SmartTemplateRecommendations
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg flex items-center justify-center mr-4">
           <Sparkles className="w-5 h-5 text-white" />

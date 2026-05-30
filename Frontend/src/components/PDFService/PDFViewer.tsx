@@ -1070,7 +1070,7 @@ React.useImperativeHandle(ref, () => ({
           {/* PDF Canvas */}
           <canvas
             ref={canvasRef}
-            className="shadow-lg bg-white cursor-pointer"
+            className="shadow-lg bg-[#F7F3EE] cursor-pointer"
             onClick={handleCanvasClick}
             onMouseDown={handleCanvasMouseDown}
             onMouseMove={handleCanvasMouseMove}

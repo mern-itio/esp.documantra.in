@@ -203,10 +203,10 @@ const DocuSignerVsPandaDocPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 mt-8 pt-24 pb-16">
+    <div className="min-h-screen bg-[#F5F2EE] mt-8 pt-24 pb-16">
       <div className="container-max">
         {/* Hero Section */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg overflow-hidden mb-8">
           <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 p-8 text-white">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">{BRAND.name} vs PandaDoc: The Complete Comparison</h1>
             <p className="text-xl text-primary-100 max-w-3xl">
@@ -278,7 +278,7 @@ const DocuSignerVsPandaDocPage = () => {
         </div>
 
         {/* Feature Comparison */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Feature Comparison</h2>
           
           {features.map((category, index) => (
@@ -287,7 +287,7 @@ const DocuSignerVsPandaDocPage = () => {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-gray-50">
+                    <tr className="bg-[#F5F2EE]">
                       <th className="text-left p-3 w-1/2">Feature</th>
                       <th className="text-center p-3 w-1/4">
                         <div className="flex flex-col items-center">
@@ -305,7 +305,7 @@ const DocuSignerVsPandaDocPage = () => {
                   </thead>
                   <tbody>
                     {category.items.map((feature, featureIndex) => (
-                      <tr key={featureIndex} className={featureIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <tr key={featureIndex} className={featureIndex % 2 === 0 ? 'bg-[#F7F3EE]' : 'bg-[#F5F2EE]'}>
                         <td className="p-3 font-medium text-gray-900">{feature.name}</td>
                         <td className="p-3 text-center">
                           {typeof feature.docusigner === 'boolean' ? (
@@ -339,14 +339,14 @@ const DocuSignerVsPandaDocPage = () => {
         </div>
 
         {/* Pricing Comparison */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Pricing Comparison</h2>
           <p className="text-gray-600 mb-6">See how much you can save by choosing {BRAND.name} over PandaDoc</p>
           
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50">
+                <tr className="bg-[#F5F2EE]">
                   <th className="text-left p-4">Plan</th>
                   <th className="p-4">
                     <div className="flex flex-col items-center">
@@ -390,7 +390,7 @@ const DocuSignerVsPandaDocPage = () => {
                   }
                   
                   return (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <tr key={index} className={index % 2 === 0 ? 'bg-[#F7F3EE]' : 'bg-[#F5F2EE]'}>
                       <td className="p-4 font-semibold text-gray-900">{plan.name}</td>
                       <td className="p-4">
                         <div className="flex flex-col items-center">
@@ -451,11 +451,11 @@ const DocuSignerVsPandaDocPage = () => {
         </div>
 
         {/* Key Advantages */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Advantages of {BRAND.name} over PandaDoc</h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-[#F5F2EE] rounded-xl p-6">
               <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                 <FileText className="h-6 w-6 text-primary-600" />
               </div>
@@ -465,7 +465,7 @@ const DocuSignerVsPandaDocPage = () => {
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-[#F5F2EE] rounded-xl p-6">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
                 <DollarSign className="h-6 w-6 text-green-600" />
               </div>
@@ -475,7 +475,7 @@ const DocuSignerVsPandaDocPage = () => {
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-[#F5F2EE] rounded-xl p-6">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                 <Award className="h-6 w-6 text-blue-600" />
               </div>
@@ -485,9 +485,9 @@ const DocuSignerVsPandaDocPage = () => {
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-                <Zap className="h-6 w-6 text-purple-600" />
+            <div className="bg-[#F5F2EE] rounded-xl p-6">
+              <div className="w-12 h-12 bg-[#DCFCE7] rounded-full flex items-center justify-center mb-4">
+                <Zap className="h-6 w-6 text-[#155E4B]" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">AI-Powered Features</h3>
               <p className="text-gray-700">
@@ -495,7 +495,7 @@ const DocuSignerVsPandaDocPage = () => {
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-[#F5F2EE] rounded-xl p-6">
               <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-4">
                 <Users className="h-6 w-6 text-orange-600" />
               </div>
@@ -505,7 +505,7 @@ const DocuSignerVsPandaDocPage = () => {
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-[#F5F2EE] rounded-xl p-6">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
                 <Clock className="h-6 w-6 text-red-600" />
               </div>
@@ -518,12 +518,12 @@ const DocuSignerVsPandaDocPage = () => {
         </div>
 
         {/* Customer Testimonials */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">What Customers Say After Switching</h2>
           
           <div className="grid md:grid-cols-3 gap-6">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 rounded-xl p-6">
+              <div key={index} className="bg-[#F5F2EE] rounded-xl p-6">
                 <div className="flex items-center gap-1 mb-4">
                   {[...Array(5)].map((_, i) => (
                     <svg key={i} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 24 24">
@@ -542,14 +542,14 @@ const DocuSignerVsPandaDocPage = () => {
         </div>
 
         {/* Migration Guide */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Easy Migration from PandaDoc</h2>
           <p className="text-gray-600 mb-6">
             Switching from PandaDoc to {BRAND.name} is simple with our migration tools and dedicated support.
           </p>
           
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-[#F5F2EE] rounded-xl p-6">
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                 <span className="text-primary-600 font-bold">1</span>
               </div>
@@ -559,7 +559,7 @@ const DocuSignerVsPandaDocPage = () => {
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-[#F5F2EE] rounded-xl p-6">
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                 <span className="text-primary-600 font-bold">2</span>
               </div>
@@ -569,7 +569,7 @@ const DocuSignerVsPandaDocPage = () => {
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-xl p-6">
+            <div className="bg-[#F5F2EE] rounded-xl p-6">
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mb-4">
                 <span className="text-primary-600 font-bold">3</span>
               </div>
@@ -589,12 +589,12 @@ const DocuSignerVsPandaDocPage = () => {
         </div>
 
         {/* FAQ Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
           
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">Is {BRAND.name} as legally binding as PandaDoc?</h3>
               </div>
               <div className="p-4">
@@ -605,7 +605,7 @@ const DocuSignerVsPandaDocPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How does {BRAND.name}'s proposal functionality compare to PandaDoc?</h3>
               </div>
               <div className="p-4">
@@ -616,7 +616,7 @@ const DocuSignerVsPandaDocPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How difficult is it to switch from PandaDoc to {BRAND.name}?</h3>
               </div>
               <div className="p-4">
@@ -627,7 +627,7 @@ const DocuSignerVsPandaDocPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">Is {BRAND.name} as secure as PandaDoc?</h3>
               </div>
               <div className="p-4">
@@ -638,7 +638,7 @@ const DocuSignerVsPandaDocPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How much can I save by switching from PandaDoc to {BRAND.name}?</h3>
               </div>
               <div className="p-4">
@@ -657,10 +657,10 @@ const DocuSignerVsPandaDocPage = () => {
             Join thousands of businesses that have switched from PandaDoc to {BRAND.name} for better features at lower prices.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
+            <Link to="/signup" className="bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
               Start Free Forever <ArrowRight className="ml-2 h-5 w-5 inline" />
             </Link>
-            <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
+            <Link to="/contact" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
               Schedule Demo
             </Link>
           </div>

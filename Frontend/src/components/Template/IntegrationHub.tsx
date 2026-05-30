@@ -169,7 +169,7 @@ export const IntegrationHub: React.FC<IntegrationHubProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">Integration Hub</h2>
         <button className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium">
@@ -263,7 +263,7 @@ export const IntegrationHub: React.FC<IntegrationHubProps> = ({
       {/* Configuration Modal */}
       {configuringIntegration && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Configure {configuringIntegration.name}
             </h3>

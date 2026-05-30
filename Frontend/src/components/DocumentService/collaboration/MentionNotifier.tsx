@@ -91,7 +91,7 @@ export function MentionNotifier({
       case 'comment_reply':
         return <MessageCircle className="w-4 h-4 text-green-600" />;
       case 'document_shared':
-        return <Bell className="w-4 h-4 text-purple-600" />;
+        return <Bell className="w-4 h-4 text-[#155E4B]" />;
       case 'workflow_assigned':
         return <Bell className="w-4 h-4 text-orange-600" />;
       default:
@@ -141,7 +141,7 @@ export function MentionNotifier({
 
       {/* Notifications Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-[#F7F3EE] border border-gray-200 rounded-lg shadow-lg z-50">
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-900">
@@ -181,7 +181,7 @@ export function MentionNotifier({
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                  className={`p-4 border-b border-gray-100 hover:bg-[#F5F2EE] cursor-pointer transition-colors ${
                     !notification.read ? 'bg-blue-50' : ''
                   }`}
                   onClick={() => handleNotificationClick(notification)}

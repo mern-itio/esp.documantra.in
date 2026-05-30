@@ -214,7 +214,7 @@ export const ConversationalTemplateBuilder: React.FC<ConversationalTemplateBuild
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mr-4">
           <MessageCircle className="w-5 h-5 text-white" />
@@ -248,7 +248,7 @@ export const ConversationalTemplateBuilder: React.FC<ConversationalTemplateBuild
               
               {/* Template Preview */}
               {message.templatePreview && (
-                <div className="mt-3 p-3 bg-white rounded border border-gray-200">
+                <div className="mt-3 p-3 bg-[#F7F3EE] rounded border border-gray-200">
                   <div className="flex items-center mb-2">
                     <FileText className="w-4 h-4 mr-2 text-blue-600" />
                     <span className="text-sm font-medium text-gray-900">{message.templatePreview.name}</span>
@@ -269,7 +269,7 @@ export const ConversationalTemplateBuilder: React.FC<ConversationalTemplateBuild
                     <button
                       key={index}
                       onClick={() => handleSuggestionClick(suggestion)}
-                      className="block w-full text-left px-3 py-2 text-xs bg-white bg-opacity-20 hover:bg-opacity-30 rounded border border-white border-opacity-30 transition-colors"
+                      className="block w-full text-left px-3 py-2 text-xs bg-[#F7F3EE] bg-opacity-20 hover:bg-opacity-30 rounded border border-white border-opacity-30 transition-colors"
                     >
                       {suggestion}
                     </button>

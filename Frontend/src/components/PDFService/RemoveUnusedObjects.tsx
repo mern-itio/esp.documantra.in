@@ -406,7 +406,7 @@ const RemoveUnusedObjects: React.FC = () => {
                         Images: {analysis.structure.hasImages ? 'Yes' : 'No'}
                       </div>
                       <div className="flex items-center text-sm">
-                        <Type className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />
+                        <Type className="w-4 h-4 mr-2 text-[#155E4B] dark:text-purple-400" />
                         Fonts: {analysis.structure.hasFonts ? 'Yes' : 'No'}
                       </div>
                       <div className="flex items-center text-sm">
@@ -499,11 +499,11 @@ const RemoveUnusedObjects: React.FC = () => {
                       </div>
                       <div className="text-sm text-blue-700 dark:text-blue-300">New Size</div>
                     </div>
-                    <div className="text-center p-3 bg-purple-50 dark:bg-purple-950/35 rounded-lg">
+                    <div className="text-center p-3 bg-[#F0FDF4] dark:bg-purple-950/35 rounded-lg">
                       <div className="text-2xl font-bold text-purple-900 dark:text-purple-200">
                         {result.sizeReductionPercent}
                       </div>
-                      <div className="text-sm text-purple-700 dark:text-purple-300">Reduction</div>
+                      <div className="text-sm text-[#155E4B] dark:text-purple-300">Reduction</div>
                     </div>
                     <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/35 rounded-lg">
                       <div className="text-2xl font-bold text-orange-900 dark:text-orange-200">

@@ -126,7 +126,7 @@ const ManageRecipients: React.FC = () => {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
@@ -139,7 +139,7 @@ const ManageRecipients: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4">
@@ -169,7 +169,7 @@ const ManageRecipients: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-[#F5F2EE] border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
@@ -182,9 +182,9 @@ const ManageRecipients: React.FC = () => {
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-[#F7F3EE] divide-y divide-gray-200">
                 {filtered.map((r) => (
-                  <tr key={r._id} className="hover:bg-gray-50">
+                  <tr key={r._id} className="hover:bg-[#F5F2EE]">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{r.name}</div>
                     </td>
@@ -217,7 +217,7 @@ const ManageRecipients: React.FC = () => {
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl m-4">
+          <div className="bg-[#F7F3EE] rounded-xl shadow-xl w-full max-w-2xl m-4">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">{editing ? 'Edit Recipient' : 'Add Recipient'}</h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">

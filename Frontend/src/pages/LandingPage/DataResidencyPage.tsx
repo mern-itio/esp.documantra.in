@@ -117,7 +117,7 @@ const DataResidencyPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-[#F5F2EE] pt-24 pb-16">
       <div className="container-max">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 mb-8 text-white">
@@ -128,22 +128,22 @@ const DataResidencyPage = () => {
                 Control where your data is stored with DocuSigner's global data center network. Meet compliance requirements and optimize performance with flexible data residency options.
               </p>
               <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Globe className="h-5 w-5" />
                   <span className="font-medium">7 Active Regions</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Shield className="h-5 w-5" />
                   <span className="font-medium">Regional Compliance</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Database className="h-5 w-5" />
                   <span className="font-medium">Data Sovereignty</span>
                 </div>
               </div>
             </div>
             <div className="md:w-1/3 flex justify-center">
-              <div className="w-48 h-48 bg-white/10 rounded-full flex items-center justify-center">
+              <div className="w-48 h-48 bg-[#F7F3EE]/10 rounded-full flex items-center justify-center">
                 <MapPin className="h-24 w-24 text-white" />
               </div>
             </div>
@@ -151,7 +151,7 @@ const DataResidencyPage = () => {
         </div>
 
         {/* Data Residency Features */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Data Residency Features</h2>
           
           <div className="grid md:grid-cols-2 gap-6">
@@ -170,7 +170,7 @@ const DataResidencyPage = () => {
         </div>
 
         {/* Available Regions */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Available Data Regions</h2>
           <p className="text-gray-600 mb-8 max-w-3xl">
             DocuSigner offers data storage in multiple geographic regions to help you meet your compliance requirements and optimize for performance. Select the region that best meets your needs during account setup.
@@ -231,7 +231,7 @@ const DataResidencyPage = () => {
         </div>
 
         {/* Compliance Requirements */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Regional Compliance Requirements</h2>
           <p className="text-gray-600 mb-8 max-w-3xl">
             Many countries and regions have specific requirements regarding where data can be stored and processed. Our data residency options help you meet these requirements.
@@ -243,7 +243,7 @@ const DataResidencyPage = () => {
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">{item.region}</h3>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {item.regulations.map((reg, regIndex) => (
-                    <span key={regIndex} className="bg-purple-100 text-purple-800 text-sm px-3 py-1 rounded-full">
+                    <span key={regIndex} className="bg-[#DCFCE7] text-purple-800 text-sm px-3 py-1 rounded-full">
                       {reg}
                     </span>
                   ))}
@@ -255,7 +255,7 @@ const DataResidencyPage = () => {
         </div>
 
         {/* How It Works */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">How Data Residency Works</h2>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -296,62 +296,62 @@ const DataResidencyPage = () => {
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div>
               <h2 className="text-2xl font-bold mb-4">Enterprise Data Residency Options</h2>
-              <p className="text-indigo-100 mb-6">
+              <p className="text-emerald-100 mb-6">
                 Enterprise customers have access to additional data residency features and customization options to meet specific compliance and operational requirements.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-indigo-200 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-emerald-200 mt-0.5" />
                   <span>Custom data residency agreements</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-indigo-200 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-emerald-200 mt-0.5" />
                   <span>Multi-region data replication options</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-indigo-200 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-emerald-200 mt-0.5" />
                   <span>Dedicated infrastructure options</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-indigo-200 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-emerald-200 mt-0.5" />
                   <span>Advanced compliance reporting</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-indigo-200 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-emerald-200 mt-0.5" />
                   <span>Data residency consultation services</span>
                 </li>
               </ul>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+            <div className="bg-[#F7F3EE]/10 backdrop-blur-sm rounded-xl p-6">
               <h3 className="text-xl font-semibold mb-4">Enterprise Data Residency Consultation</h3>
-              <p className="text-indigo-100 mb-6">
+              <p className="text-emerald-100 mb-6">
                 Our compliance and data governance experts can help you design a data residency strategy that meets your specific regulatory requirements and business needs.
               </p>
               <div className="space-y-4">
-                <div className="flex items-center gap-3 p-3 bg-white/20 rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg">
                   <MapPin className="h-5 w-5 text-white" />
                   <div>
                     <div className="font-medium">Custom Region Selection</div>
-                    <div className="text-xs text-indigo-100">Tailored to your compliance needs</div>
+                    <div className="text-xs text-emerald-100">Tailored to your compliance needs</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white/20 rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg">
                   <Shield className="h-5 w-5 text-white" />
                   <div>
                     <div className="font-medium">Compliance Documentation</div>
-                    <div className="text-xs text-indigo-100">Comprehensive reporting for audits</div>
+                    <div className="text-xs text-emerald-100">Comprehensive reporting for audits</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white/20 rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg">
                   <Server className="h-5 w-5 text-white" />
                   <div>
                     <div className="font-medium">Dedicated Infrastructure</div>
-                    <div className="text-xs text-indigo-100">For highest security requirements</div>
+                    <div className="text-xs text-emerald-100">For highest security requirements</div>
                   </div>
                 </div>
               </div>
-              <button className="mt-6 w-full bg-white text-indigo-600 hover:bg-indigo-50 font-semibold py-3 px-4 rounded-lg transition-colors">
+              <button className="mt-6 w-full bg-[#F7F3EE] text-emerald-600 hover:bg-emerald-50 font-semibold py-3 px-4 rounded-lg transition-colors">
                 Contact Enterprise Sales
               </button>
             </div>
@@ -359,12 +359,12 @@ const DataResidencyPage = () => {
         </div>
 
         {/* FAQ Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
           
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">Can I change my data region after setting up my account?</h3>
               </div>
               <div className="p-4">
@@ -375,7 +375,7 @@ const DataResidencyPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How does data residency affect performance?</h3>
               </div>
               <div className="p-4">
@@ -386,7 +386,7 @@ const DataResidencyPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">What happens if my preferred region is not available?</h3>
               </div>
               <div className="p-4">
@@ -397,7 +397,7 @@ const DataResidencyPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">How do you ensure data stays within my selected region?</h3>
               </div>
               <div className="p-4">
@@ -408,7 +408,7 @@ const DataResidencyPage = () => {
             </div>
             
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50">
+              <div className="p-4 bg-[#F5F2EE]">
                 <h3 className="font-semibold text-gray-900">Do you offer multi-region data replication?</h3>
               </div>
               <div className="p-4">
@@ -427,10 +427,10 @@ const DataResidencyPage = () => {
             Join thousands of organizations that trust DocuSigner for secure, compliant document management with flexible data residency options.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
+            <Link to="/signup" className="bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
               Start Free Trial
             </Link>
-            <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
+            <Link to="/contact" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
               Contact Sales
             </Link>
           </div>

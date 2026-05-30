@@ -27,7 +27,7 @@ export const TextSelectionToolbar: React.FC<TextSelectionToolbarProps> = ({
 }) => {
   return (
     <div
-      className="text-selection-toolbar absolute bg-white border border-gray-300 rounded-lg shadow-xl p-3 flex items-center space-x-3 z-50"
+      className="text-selection-toolbar absolute bg-[#F7F3EE] border border-gray-300 rounded-lg shadow-xl p-3 flex items-center space-x-3 z-50"
       style={{
         left: position.x,
         top: position.y,

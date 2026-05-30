@@ -72,7 +72,7 @@ const ESignature = () => {
 
           {/* Right Visual - Mock Signature Interface */}
           <div className="relative">
-            <div className="bg-white rounded-2xl shadow-2xl p-6 space-y-6">
+            <div className="bg-[#F7F3EE] rounded-2xl shadow-2xl p-6 space-y-6">
               {/* Header */}
               <div className="flex items-center justify-between pb-4 border-b">
                 <h3 className="font-semibold text-gray-900">Document Signing</h3>
@@ -82,7 +82,7 @@ const ESignature = () => {
               </div>
 
               {/* Document Preview */}
-              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+              <div className="bg-[#F5F2EE] rounded-lg p-4 space-y-4">
                 <div className="flex items-center gap-3">
                   <FileCheck className="h-5 w-5 text-primary-600" />
                   <span className="font-medium text-gray-900">Employment Contract.pdf</span>

@@ -1075,7 +1075,7 @@ const FillPdfFormPage: React.FC = () => {
                 Data validation
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
-                <PenTool className="w-4 h-4 mr-2 text-purple-600" />
+                <PenTool className="w-4 h-4 mr-2 text-[#155E4B]" />
                 Signature fields
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
@@ -1083,7 +1083,7 @@ const FillPdfFormPage: React.FC = () => {
                 Bulk processing
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
-                <Save className="w-4 h-4 mr-2 text-indigo-600" />
+                <Save className="w-4 h-4 mr-2 text-emerald-600" />
                 Template management
               </div>
             </div>

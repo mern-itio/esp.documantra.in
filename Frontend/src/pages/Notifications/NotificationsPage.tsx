@@ -157,7 +157,7 @@ const NotificationsPage: React.FC = () => {
     : notifications;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F2EE]">
       <div className="px-4 py-8">
         {/* Header */}
         <div className="mb-6">
@@ -221,7 +221,7 @@ const NotificationsPage: React.FC = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-12 text-center">
             <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 font-medium">
               {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
@@ -237,7 +237,7 @@ const NotificationsPage: React.FC = () => {
             {filteredNotifications.map((notification) => (
               <div
                 key={notification._id}
-                className={`bg-white rounded-lg border transition-all cursor-pointer hover:shadow-md ${
+                className={`bg-[#F7F3EE] rounded-lg border transition-all cursor-pointer hover:shadow-md ${
                   !notification.isRead ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
                 }`}
                 onClick={() => handleNotificationClick(notification)}

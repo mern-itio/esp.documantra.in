@@ -285,7 +285,7 @@ export default function SignPad({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 sm:px-6 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-[90vw] sm:max-w-[520px] lg:max-w-[600px] max-h-[82vh] overflow-y-auto rounded-xl p-5 sm:p-6 shadow-xl">
+      <div className="bg-[#F7F3EE] w-full max-w-[90vw] sm:max-w-[520px] lg:max-w-[600px] max-h-[82vh] overflow-y-auto rounded-xl p-5 sm:p-6 shadow-xl">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -320,7 +320,7 @@ export default function SignPad({
                 className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
                   isTab === tab
                     ? "bg-blue-600 text-white border-blue-700"
-                    : "bg-white text-gray-700 border-gray-200"
+                    : "bg-[#F7F3EE] text-gray-700 border-gray-200"
                 }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -436,7 +436,7 @@ export default function SignPad({
             {isSignImg && (
               <div className="mt-4 flex flex-col items-center w-full">
                 <div className="text-xs text-gray-500 mb-2">Preview</div>
-                <img src={isSignImg} alt="signature-preview" className="h-28 object-contain border rounded p-1 bg-white" />
+                <img src={isSignImg} alt="signature-preview" className="h-28 object-contain border rounded p-1 bg-[#F7F3EE]" />
               </div>
             )}
             

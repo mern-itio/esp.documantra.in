@@ -357,7 +357,7 @@ useEffect(() => {
   }
 
   return (
-    <section id="legal-templates" className="section-padding bg-gray-50">
+    <section id="legal-templates" className="section-padding bg-[#F5F2EE]">
       <div className="container-max">
         {/* Header */}
         <div className="text-center mb-8">
@@ -395,7 +395,7 @@ useEffect(() => {
           id="chat-container-wrapper"
         >
           <div 
-            className="bg-white rounded-xl shadow-lg flex flex-col" 
+            className="bg-[#F7F3EE] rounded-xl shadow-lg flex flex-col" 
             style={{ 
               height: '700px', 
               maxHeight: '700px', 
@@ -468,7 +468,7 @@ useEffect(() => {
               
             {/* Action Buttons (shown when document is generated) */}
             {conversationState === 'generated' && generatedContent && (
-              <div className="border-t border-gray-200 p-4 bg-gray-50 flex gap-3">
+              <div className="border-t border-gray-200 p-4 bg-[#F5F2EE] flex gap-3">
                   <button
                     onClick={handleDownloadPDF}
                     disabled={isDownloading}
@@ -515,7 +515,7 @@ useEffect(() => {
             )}
 
             {/* Input Area */}
-            <div className="border-t border-gray-200 p-4 bg-white">
+            <div className="border-t border-gray-200 p-4 bg-[#F7F3EE]">
               <div className="flex gap-3 items-end">
                 <div className="flex-1 relative">
                   <textarea
@@ -573,12 +573,12 @@ useEffect(() => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/contact-sales">
-                <button className="bg-white text-[#260559]/80 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
+                <button className="bg-[#F7F3EE] text-[#260559]/80 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-all duration-200">
                   Request Custom Document
                 </button>
               </Link>
               <Link to="/contact-sales">
-                <button className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-all duration-200">
+                <button className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-all duration-200">
                   Schedule Consultation
                 </button>
               </Link>

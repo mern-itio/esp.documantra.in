@@ -46,8 +46,8 @@ export function DocumentAnalytics() {
       title: 'Shared Documents',
       value: sharedDocuments.toString(),
       icon: Share2,
-      color: 'text-violet-600 dark:text-violet-400',
-      bgColor: 'bg-violet-50 dark:bg-violet-950/40'
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bgColor: 'bg-emerald-50 dark:bg-emerald-950/40'
     },
     {
       title: 'Total Views',
@@ -176,7 +176,7 @@ export function DocumentAnalytics() {
                 <div className="flex-shrink-0">
                   {activity.type === 'upload' && <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
                   {activity.type === 'download' && <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
-                  {activity.type === 'share' && <Share2 className="w-4 h-4 text-violet-600 dark:text-violet-400" />}
+                  {activity.type === 'share' && <Share2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground">

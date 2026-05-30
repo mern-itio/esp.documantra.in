@@ -2,7 +2,7 @@ import { AvailableSdk } from "./AvailableSdk";
 
 const Main = () => {
   return (
-    <div className="p-6 space-y-8 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-8 bg-[#F5F2EE] min-h-screen">
       {/* Header */}
      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>

@@ -68,7 +68,7 @@ export const WebhooksPage: React.FC = () => {
       {/* Webhooks List */}
       <div className="grid gap-6">
         {webhooks.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+          <div className="text-center py-12 bg-[#F7F3EE] rounded-lg border border-gray-200">
             <Webhook className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No webhooks configured</h3>
             <p className="text-gray-600 mb-6">
@@ -83,7 +83,7 @@ export const WebhooksPage: React.FC = () => {
           </div>
         ) : (
           webhooks.map((webhook) => (
-            <div key={webhook.id} className="bg-white rounded-lg border border-gray-200 p-6">
+            <div key={webhook.id} className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
@@ -140,7 +140,7 @@ export const WebhooksPage: React.FC = () => {
 
               {/* Delivery Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-center p-3 bg-[#F5F2EE] rounded-lg">
                   <div className="text-2xl font-bold text-gray-900">
                     {webhook.deliveryStats.totalDeliveries}
                   </div>
@@ -194,7 +194,7 @@ export const WebhooksPage: React.FC = () => {
 
               {/* Last Delivery */}
               {webhook.deliveryStats.lastDelivery && (
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div className="mt-4 p-3 bg-[#F5F2EE] rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-900">Last Delivery</span>
                     <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -281,7 +281,7 @@ const CreateWebhookModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#F7F3EE] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Webhook</h2>
         
         <form onSubmit={handleSubmit} className="space-y-6">  
@@ -415,7 +415,7 @@ const WebhookDetailsModal: React.FC<{
 
   return (
    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-       <div className="bg-white rounded-xl p-6 shadow-lg w-full max-w-md">
+       <div className="bg-[#F7F3EE] rounded-xl p-6 shadow-lg w-full max-w-md">
         <h2 className="text-2xl font-bold text-gray-900 mb-6 cursor-pointer">Edit Webhook</h2>
         
         <form onSubmit={handleSubmit} className="space-y-6">

@@ -211,7 +211,7 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
                   <p className="text-sm text-muted-foreground">Content</p>
                 </div>
                 <div className="text-center p-4 bg-muted rounded-lg">
-                  <p className="text-2xl font-bold text-purple-600">{result.analysis.qualityScore.breakdown.performance}</p>
+                  <p className="text-2xl font-bold text-[#155E4B]">{result.analysis.qualityScore.breakdown.performance}</p>
                   <p className="text-sm text-muted-foreground">Performance</p>
                 </div>
                 <div className="text-center p-4 bg-muted rounded-lg">
@@ -286,7 +286,7 @@ const QualityAnalysis: React.FC<QualityAnalysisProps> = ({ onBack }) => {
             {/* Content Analysis */}
             <Card className="p-6">
               <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <TrendingUp className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
+                <TrendingUp className="w-5 h-5 mr-2 text-[#155E4B] dark:text-purple-400" />
                 Content Analysis
               </h3>
 

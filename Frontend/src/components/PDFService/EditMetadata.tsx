@@ -220,7 +220,7 @@ const EditMetadata: React.FC = () => {
       case 'professional':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'academic':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-[#DCFCE7] text-purple-800 border-[#BBF7D0]';
       case 'legal':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'custom':

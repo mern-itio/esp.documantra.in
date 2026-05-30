@@ -275,7 +275,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     <div className="flex justify-center">
       <div
         ref={canvasRef}
-        className="bg-white border border-gray-300 shadow-lg relative"
+        className="bg-[#F7F3EE] border border-gray-300 shadow-lg relative"
         style={{ width: '8.5in', height: '11in', transform: 'scale(0.8)', transformOrigin: 'top center' }}
         onClick={() => handleCanvasClick()}
       >

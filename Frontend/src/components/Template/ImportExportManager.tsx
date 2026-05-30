@@ -64,7 +64,7 @@ export const ImportExportManager: React.FC<ImportExportManagerProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-6">Import & Export Templates</h2>
 
       {/* Import Section */}
@@ -129,7 +129,7 @@ export const ImportExportManager: React.FC<ImportExportManagerProps> = ({
         
         <div className="space-y-3 mb-6">
           {exportFormats.map((format) => (
-            <label key={format.type} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+            <label key={format.type} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-[#F5F2EE] cursor-pointer">
               <input
                 type="radio"
                 name="exportFormat"
@@ -165,7 +165,7 @@ export const ImportExportManager: React.FC<ImportExportManagerProps> = ({
             { action: 'Imported', file: 'nda-template.pdf', time: '1 day ago', type: 'import' },
             { action: 'Exported', file: 'invoice-template.html', time: '2 days ago', type: 'export' }
           ].map((activity, index) => (
-            <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md">
+            <div key={index} className="flex items-center justify-between p-2 hover:bg-[#F5F2EE] rounded-md">
               <div className="flex items-center">
                 <div className={`w-2 h-2 rounded-full mr-3 ${
                   activity.type === 'import' ? 'bg-blue-500' : 'bg-green-500'

@@ -272,7 +272,7 @@ const TrashPage: React.FC = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-8 w-8 p-0 bg-white shadow-sm border hover:bg-green-50 hover:text-green-600"
+                  className="h-8 w-8 p-0 bg-[#F7F3EE] shadow-sm border hover:bg-green-50 hover:text-green-600"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRestore(document.id);
@@ -284,7 +284,7 @@ const TrashPage: React.FC = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-8 w-8 p-0 bg-white shadow-sm border text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="h-8 w-8 p-0 bg-[#F7F3EE] shadow-sm border text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (window.confirm('Are you sure you want to permanently delete this document? This action cannot be undone.')) {

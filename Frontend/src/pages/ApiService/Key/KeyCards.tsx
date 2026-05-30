@@ -53,7 +53,7 @@ export default function ApiKeyCards({ refresh = 0, onModesFound }: ApiKeyCardsPr
   return (
     <div className="w-full px-2 py-6 flex flex-col gap-7">
       {keys.length === 0 ? (
-        <div className="w-full bg-white rounded-xl border shadow p-8 text-center text-gray-600 text-lg">
+        <div className="w-full bg-[#F7F3EE] rounded-xl border shadow p-8 text-center text-gray-600 text-lg">
           🚫 No API keys found. Please generate a key.
         </div>
       ) : (
@@ -65,7 +65,7 @@ export default function ApiKeyCards({ refresh = 0, onModesFound }: ApiKeyCardsPr
             )?.count ?? 0;
 
           return (
-            <div key={data._id || idx} className="w-full bg-white rounded-xl border shadow p-6 sm:p-8">
+            <div key={data._id || idx} className="w-full bg-[#F7F3EE] rounded-xl border shadow p-6 sm:p-8">
               {/* Header */}
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
                 <span className="font-semibold text-lg">

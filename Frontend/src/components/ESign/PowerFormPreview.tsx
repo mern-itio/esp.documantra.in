@@ -435,7 +435,7 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => 
       `}</style>
 
       <div className="max-w-2xl mx-auto relative z-10">
-        <div className="bg-white/95 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-200/50 overflow-hidden animate-slide-up">
+        <div className="bg-[#F7F3EE]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-200/50 overflow-hidden animate-slide-up">
           {/* Header with animated gradient */}
           <div 
             className="bg-[#260559] px-8 pt-8 pb-6 relative overflow-hidden"
@@ -459,7 +459,7 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => 
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-3">
                   <div 
-                    className="p-2 bg-white/20 rounded-lg backdrop-blur-sm"
+                    className="p-2 bg-[#F7F3EE]/20 rounded-lg backdrop-blur-sm"
                     style={{
                       animation: 'float-icon 3s ease-in-out infinite',
                     }}
@@ -488,7 +488,7 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => 
             {isEmbedded && (
               <div className="relative z-10 flex items-center gap-3">
                 <div 
-                  className="p-2 bg-white/20 rounded-lg backdrop-blur-sm"
+                  className="p-2 bg-[#F7F3EE]/20 rounded-lg backdrop-blur-sm"
                   style={{
                     animation: 'float-icon 3s ease-in-out infinite',
                   }}
@@ -534,7 +534,7 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => 
                   className={`w-full px-4 py-3.5 pl-11 border-2 rounded-lg shadow-sm transition-all duration-300
                     ${focusedField === 'name' 
                       ? 'border-[#260559] ring-2 ring-[#260559]/20 bg-[#260559]/5 shadow-md' 
-                      : 'border-gray-300 hover:border-[#260559]/50 bg-white hover:shadow-md'
+                      : 'border-gray-300 hover:border-[#260559]/50 bg-[#F7F3EE] hover:shadow-md'
                     }
                     focus:outline-none text-gray-900 placeholder-gray-400
                     focus:scale-[1.01] transform
@@ -579,7 +579,7 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => 
                   className={`w-full px-4 py-3.5 pl-11 border-2 rounded-lg shadow-sm transition-all duration-300
                     ${focusedField === 'email' 
                       ? 'border-[#260559] ring-2 ring-[#260559]/20 bg-[#260559]/5 shadow-md' 
-                      : 'border-gray-300 hover:border-[#260559]/50 bg-white hover:shadow-md'
+                      : 'border-gray-300 hover:border-[#260559]/50 bg-[#F7F3EE] hover:shadow-md'
                     }
                     focus:outline-none text-gray-900 placeholder-gray-400
                     focus:scale-[1.01] transform
@@ -734,11 +734,11 @@ export const PowerFormPreview: React.FC<FormPreviewProps> = ({ envelopeId }) => 
       {/* Authentication Modal */}
       {showAuthModal && currentAuthMethod && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full relative overflow-hidden animate-slide-up">
+          <div className="bg-[#F7F3EE] rounded-2xl shadow-2xl max-w-md w-full relative overflow-hidden animate-slide-up">
             {/* Modal Header */}
             <div className="bg-[#260559] px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-lg">
+                <div className="p-2 bg-[#F7F3EE]/20 rounded-lg">
                   <Shield className="w-5 h-5 text-white" />
                 </div>
                 <div>

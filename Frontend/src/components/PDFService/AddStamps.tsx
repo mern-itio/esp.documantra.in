@@ -312,9 +312,9 @@ const AddStamps: React.FC = () => {
       blue: 'bg-blue-500',
       green: 'bg-green-500',
       black: 'bg-black',
-      gray: 'bg-gray-500',
+      gray: 'bg-[#F5F2EE]0',
       orange: 'bg-orange-500',
-      purple: 'bg-purple-500'
+      purple: 'bg-[#F0FDF4]0'
     };
     return colorMap[color] || 'bg-red-500';
   };

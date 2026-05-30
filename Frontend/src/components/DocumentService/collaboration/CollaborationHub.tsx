@@ -595,7 +595,7 @@ export function CollaborationHub({ document, onClose }: CollaborationHubProps) {
                   : userPermissions.permission === 'edit' 
                   ? 'text-green-800 bg-green-50 border-green-200 dark:text-green-300 dark:bg-green-950/40 dark:border-green-900'
                   : userPermissions.permission === 'comment'
-                  ? 'text-violet-700 bg-violet-50 border-violet-200 dark:text-violet-300 dark:bg-violet-950/40 dark:border-violet-900'
+                  ? 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-900'
                   : userPermissions.permission === 'view'
                   ? 'text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-950/40 dark:border-blue-900'
                   : 'text-muted-foreground bg-muted border-border'

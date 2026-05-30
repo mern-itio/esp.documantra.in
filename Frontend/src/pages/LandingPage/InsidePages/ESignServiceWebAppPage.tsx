@@ -5,7 +5,7 @@ import { Diamond, ShieldCheck, FileSearch2 } from 'lucide-react'
 
 const ESignServiceWebAppPage: React.FC = () => {
   return (
-    <main className="bg-slate-50 text-slate-900">
+    <main className="bg-[#F5F2EE] text-slate-900">
       <section className="relative overflow-hidden bg-[#0B0F1F] min-h-screen flex items-center">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(56,189,248,0.12),_transparent_60%)]" />
         <div className="relative mx-auto max-w-7xl px-6 lg:px-10 w-full">
@@ -27,7 +27,7 @@ const ESignServiceWebAppPage: React.FC = () => {
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   to="/signup"
-                  className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                  className="inline-flex items-center justify-center rounded-full bg-[#F7F3EE] px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
                 >
                   Start free
                 </Link>
@@ -62,7 +62,7 @@ const ESignServiceWebAppPage: React.FC = () => {
 
 
       {/* Controlled sending / visibility / security */}
-      <section className="bg-slate-50 py-16 sm:py-20">
+      <section className="bg-[#F5F2EE] py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-3">
             {[
@@ -93,7 +93,7 @@ const ESignServiceWebAppPage: React.FC = () => {
       </section>
 
       {/* What is the E‑sign web app */}
-      <section className="bg-white py-16 sm:py-20">
+      <section className="bg-[#F7F3EE] py-16 sm:py-20">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8 lg:items-center">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">
@@ -114,23 +114,23 @@ const ESignServiceWebAppPage: React.FC = () => {
           </div>
 
           <div className="rounded-3xl bg-slate-100 p-4 shadow-sm ring-1 ring-slate-200">
-            <div className="rounded-2xl bg-white p-4 text-sm text-slate-800 shadow-sm">
+            <div className="rounded-2xl bg-[#F7F3EE] p-4 text-sm text-slate-800 shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <span className="font-semibold text-slate-900">Send for review</span>
                 <span className="text-xs text-slate-500">Workspace · E‑sign</span>
               </div>
               <div className="mt-3 space-y-2 text-xs">
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                <div className="flex items-center justify-between rounded-xl bg-[#F5F2EE] px-3 py-2">
                   <span>Standard services agreement</span>
                   <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-medium text-white">
                     Template
                   </span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                <div className="flex items-center justify-between rounded-xl bg-[#F5F2EE] px-3 py-2">
                   <span>Recipients</span>
                   <span className="text-[11px] text-slate-600">Client signer · Internal approver</span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                <div className="flex items-center justify-between rounded-xl bg-[#F5F2EE] px-3 py-2">
                   <span>Signing order</span>
                   <span className="text-[11px] text-slate-600">Internal approval → Client signature</span>
                 </div>
@@ -141,7 +141,7 @@ const ESignServiceWebAppPage: React.FC = () => {
       </section>
 
       {/* Document lifecycle */}
-      <section className="bg-slate-50 py-16 sm:py-20">
+      <section className="bg-[#F5F2EE] py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
             Track and manage the document lifecycle in one view.
@@ -172,7 +172,7 @@ const ESignServiceWebAppPage: React.FC = () => {
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-1 ring-slate-100"
+                className="rounded-2xl border border-[#E6D8C9] bg-[#F7F3EE] p-5 shadow-sm ring-1 ring-slate-100"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">{item.label}</p>
                 <h3 className="mt-2 text-sm font-semibold text-slate-900 sm:text-[15px]">{item.title}</h3>
@@ -184,7 +184,7 @@ const ESignServiceWebAppPage: React.FC = () => {
       </section>
 
       {/* Security & controls */}
-      <section className="bg-white py-16 sm:py-20">
+      <section className="bg-[#F7F3EE] py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
             <div>
@@ -227,7 +227,7 @@ const ESignServiceWebAppPage: React.FC = () => {
       </section>
 
       {/* Key capabilities grid */}
-      <section className="bg-slate-50 py-16 sm:py-20">
+      <section className="bg-[#F5F2EE] py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">Key capabilities in the web app.</h2>
           <p className="mt-3 max-w-3xl text-sm text-slate-600 sm:text-[15px]">
@@ -245,7 +245,7 @@ const ESignServiceWebAppPage: React.FC = () => {
             ].map((text) => (
               <div
                 key={text}
-                className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="flex items-start gap-3 rounded-2xl border border-[#E6D8C9] bg-[#F7F3EE] p-4 shadow-sm"
               >
                 <span className="mt-1 inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
                   ✓
@@ -258,7 +258,7 @@ const ESignServiceWebAppPage: React.FC = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="bg-white py-16 sm:py-20">
+      <section className="bg-[#F7F3EE] py-16 sm:py-20">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
             Start managing agreements in one connected workspace.
@@ -276,7 +276,7 @@ const ESignServiceWebAppPage: React.FC = () => {
             </Link>
             <Link
               to="/contact-sales"
-              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50"
+              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-[#F7F3EE] px-6 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-[#F5F2EE]"
             >
               Book a live demo
             </Link>

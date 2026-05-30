@@ -209,7 +209,7 @@ export const SecurityAnalyzer: React.FC<SecurityAnalyzerProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center mr-4">
           <Shield className="w-5 h-5 text-white" />
@@ -259,7 +259,7 @@ export const SecurityAnalyzer: React.FC<SecurityAnalyzerProps> = ({
       {analysis && (
         <div className="space-y-6">
           {/* Security Overview */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-[#F5F2EE] rounded-lg p-4">
             <h3 className="text-md font-medium text-gray-900 mb-4">Security Overview</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">

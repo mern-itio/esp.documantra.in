@@ -6,7 +6,7 @@ const ModernDocumentFeatures = () => {
       <div className="container-max">
         {/* Badge */}
         <div className="flex justify-center mb-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs md:text-sm font-medium text-slate-100 backdrop-blur">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#F7F3EE]/5 px-4 py-1.5 text-xs md:text-sm font-medium text-slate-100 backdrop-blur">
             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400/20">
               <Zap className="h-3 w-3 text-emerald-300" />
             </span>
@@ -33,7 +33,7 @@ const ModernDocumentFeatures = () => {
 
             {/* Key points */}
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl border border-white/5 bg-white/5 p-4">
+              <div className="rounded-xl border border-white/5 bg-[#F7F3EE]/5 p-4">
                 <div className="mb-3 inline-flex items-center gap-2 text-emerald-300 text-xs font-medium">
                   <CheckCircle2 className="h-4 w-4" />
                   Frictionless signing
@@ -43,7 +43,7 @@ const ModernDocumentFeatures = () => {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-white/5 bg-white/5 p-4">
+              <div className="rounded-xl border border-white/5 bg-[#F7F3EE]/5 p-4">
                 <div className="mb-3 inline-flex items-center gap-2 text-cyan-300 text-xs font-medium">
                   <Shield className="h-4 w-4" />
                   Enterprise‑grade security
@@ -53,7 +53,7 @@ const ModernDocumentFeatures = () => {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-white/5 bg-white/5 p-4">
+              <div className="rounded-xl border border-white/5 bg-[#F7F3EE]/5 p-4">
                 <div className="mb-3 inline-flex items-center gap-2 text-sky-300 text-xs font-medium">
                   <Globe2 className="h-4 w-4" />
                   Global compliance
@@ -63,7 +63,7 @@ const ModernDocumentFeatures = () => {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-white/5 bg-white/5 p-4">
+              <div className="rounded-xl border border-white/5 bg-[#F7F3EE]/5 p-4">
                 <div className="mb-3 inline-flex items-center gap-2 text-amber-300 text-xs font-medium">
                   <Clock3 className="h-4 w-4" />
                   Faster cycle times
@@ -127,7 +127,7 @@ const ModernDocumentFeatures = () => {
                         Watch how documents move from draft to signed in under a minute.
                       </p>
                     </div>
-                    <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-slate-100">
+                    <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-[#F7F3EE]/10 px-3 py-1 text-[11px] font-medium text-slate-100">
                       <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
                       No training required
                     </div>

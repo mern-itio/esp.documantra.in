@@ -113,7 +113,7 @@ export default function APIRequestForm({
   }, [selectedApi, setBody, setSandboxKey]);
 
   return (
-    <div className="bg-white p-4 rounded mt-4 shadow flex flex-col gap-3 max-w-xl w-full">
+    <div className="bg-[#F7F3EE] p-4 rounded mt-4 shadow flex flex-col gap-3 max-w-xl w-full">
       <label>Method:</label>
       <input className="border rounded p-2" value={selectedApi.method} readOnly />
       <label>Endpoint:</label>
@@ -300,7 +300,7 @@ export default function APIRequestForm({
 //   }, [selectedApi]);
 
 //   return (
-//    <div className="bg-white p-4 rounded mt-4 shadow flex flex-col gap-3 max-w-xl w-full">
+//    <div className="bg-[#F7F3EE] p-4 rounded mt-4 shadow flex flex-col gap-3 max-w-xl w-full">
 //           <label>Method:</label>
 //       <input
 //         className="border rounded p-2"

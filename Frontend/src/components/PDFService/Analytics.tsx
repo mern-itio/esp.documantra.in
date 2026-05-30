@@ -104,9 +104,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
         { category: 'Editing', usage: 22, color: 'bg-green-500' },
         { category: 'Pages', usage: 18, color: 'bg-yellow-500' },
         { category: 'Security', usage: 12, color: 'bg-red-500' },
-        { category: 'Optimization', usage: 8, color: 'bg-purple-500' },
+        { category: 'Optimization', usage: 8, color: 'bg-[#F0FDF4]0' },
         { category: 'OCR', usage: 3, color: 'bg-pink-500' },
-        { category: 'Forms', usage: 2, color: 'bg-indigo-500' }
+        { category: 'Forms', usage: 2, color: 'bg-emerald-500' }
       ],
       recentActivity: [],
       topDocuments: []
@@ -238,7 +238,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Operations</p>
@@ -261,7 +261,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
           )}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Users</p>
@@ -284,7 +284,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
           )}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Success Rate</p>
@@ -314,7 +314,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
           )}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Avg Processing</p>
@@ -333,7 +333,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Usage Trend */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Usage Trend</h3>
             <BarChart3 className="w-5 h-5 text-gray-400" />
@@ -366,7 +366,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
         </div>
 
         {/* Category Usage */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Category Usage</h3>
             <PieChart className="w-5 h-5 text-gray-400" />
@@ -399,7 +399,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
       {/* Detailed Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Popular Tools */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Most Popular Tools</h3>
             <Star className="w-5 h-5 text-gray-400" />
@@ -431,7 +431,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
         </div>
 
         {/* Quality Metrics */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Quality Metrics</h3>
             <Activity className="w-5 h-5 text-gray-400" />
@@ -504,7 +504,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
       {/* Recent Activity and Top Documents */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
             <Activity className="w-5 h-5 text-gray-400" />
@@ -513,7 +513,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
           <div className="space-y-3">
             {recentActivity.length > 0 ? (
               recentActivity.slice(0, 5).map((activity) => (
-                <div key={activity.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div key={activity.id} className="flex items-center space-x-3 p-3 bg-[#F5F2EE] rounded-lg">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
@@ -535,7 +535,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
         </div>
 
         {/* Top Documents */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Most Active Documents</h3>
             <FileText className="w-5 h-5 text-gray-400" />
@@ -544,7 +544,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
           <div className="space-y-3">
             {topDocuments.length > 0 ? (
               topDocuments.map((doc, index) => (
-                <div key={doc.documentId} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div key={doc.documentId} className="flex items-center space-x-3 p-3 bg-[#F5F2EE] rounded-lg">
                   <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
                     {index + 1}
                   </div>
@@ -569,7 +569,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats, onBack }) => {
       </div>
 
       {/* Performance Summary */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Performance Summary</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

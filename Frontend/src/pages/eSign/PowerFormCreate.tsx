@@ -1216,7 +1216,7 @@ const PowerFormCreate: React.FC = () => {
                     {/* Previews row */}
                     <div className="flex gap-4 overflow-x-auto py-1">
                       {documents.map((doc) => (
-                        <div key={doc.id} className="w-60 flex-shrink-0 relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: '320px' }}>
+                        <div key={doc.id} className="w-60 flex-shrink-0 relative bg-[#F7F3EE] rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: '320px' }}>
                           {/* Close button at top right */}
                           {!doc.isUploading && (
                             <button
@@ -1232,7 +1232,7 @@ const PowerFormCreate: React.FC = () => {
 
                           {/* PDF Preview/Thumbnail */}
                           {!doc.isUploading && doc.url && (
-                            <div className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0">
+                            <div className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-[#F7F3EE] rounded-t-lg min-h-0">
                               <object
                                 data={doc.url}
                                 type="application/pdf"
@@ -1281,7 +1281,7 @@ const PowerFormCreate: React.FC = () => {
                                         <>
                                           {/* backdrop to close on outside click */}
                                           <div className="fixed inset-0 z-[999]" onClick={() => setOpenMenuId(null)} />
-                                          <div className="fixed z-[1000] w-48 bg-white rounded-lg border border-gray-200 shadow-xl" style={{ left: (menuPos?.x ?? 0), top: (menuPos?.y ?? 0) }}>
+                                          <div className="fixed z-[1000] w-48 bg-[#F7F3EE] rounded-lg border border-gray-200 shadow-xl" style={{ left: (menuPos?.x ?? 0), top: (menuPos?.y ?? 0) }}>
                                             <div className="py-1">
                                               <button
                                                 onClick={(e) => {
@@ -1289,7 +1289,7 @@ const PowerFormCreate: React.FC = () => {
                                                   setOpenMenuId(null);
                                                   // Handle Apply Templates
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F0FDF4] hover:text-[#155E4B] transition-colors"
                                               >
                                                 Apply Templates
                                               </button>
@@ -1300,7 +1300,7 @@ const PowerFormCreate: React.FC = () => {
                                                   // Handle Replace
                                                   fileInputRef.current?.click();
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F2EE] transition-colors"
                                               >
                                                 Replace
                                               </button>
@@ -1316,7 +1316,7 @@ const PowerFormCreate: React.FC = () => {
                                                     link.click();
                                                   }
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F2EE] transition-colors flex items-center gap-2"
                                               >
                                                 <Download className="w-4 h-4" />
                                                 Download Document
@@ -1333,7 +1333,7 @@ const PowerFormCreate: React.FC = () => {
                                                     ));
                                                   }
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F2EE] transition-colors flex items-center gap-2"
                                               >
                                                 <FileEdit className="w-4 h-4" />
                                                 Rename Document
@@ -1361,7 +1361,7 @@ const PowerFormCreate: React.FC = () => {
                                                     window.open(doc.url, '_blank');
                                                   }
                                                 }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F2EE] transition-colors flex items-center gap-2"
                                               >
                                                 <Eye className="w-4 h-4" />
                                                 View Document
@@ -1432,7 +1432,7 @@ const PowerFormCreate: React.FC = () => {
                     {documents && documents.length > 0 && (
                       <div className="flex gap-4 overflow-x-auto py-1">
                         {documents.map((doc) => (
-                          <div key={doc.id} className="w-80 flex-shrink-0 relative bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: '320px' }}>
+                          <div key={doc.id} className="w-80 flex-shrink-0 relative bg-[#F7F3EE] rounded-lg border border-gray-200 shadow-sm flex flex-col" style={{ height: '320px' }}>
                             {/* Close button at top right */}
                             {!doc.isUploading && (
                               <button
@@ -1448,7 +1448,7 @@ const PowerFormCreate: React.FC = () => {
 
                             {/* PDF Preview/Thumbnail */}
                             {!doc.isUploading && doc.url && (
-                              <div className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-white rounded-t-lg min-h-0">
+                              <div className="w-full flex-1 border-b border-gray-200 overflow-hidden bg-[#F7F3EE] rounded-t-lg min-h-0">
                                 <object
                                   data={doc.url}
                                   type="application/pdf"
@@ -1497,7 +1497,7 @@ const PowerFormCreate: React.FC = () => {
                                           <>
                                             {/* backdrop to close on outside click */}
                                             <div className="fixed inset-0 z-[999]" onClick={() => setOpenMenuId(null)} />
-                                            <div className="fixed z-[1000] w-48 bg-white rounded-lg border border-gray-200 shadow-xl" style={{ left: (menuPos?.x ?? 0), top: (menuPos?.y ?? 0) }}>
+                                            <div className="fixed z-[1000] w-48 bg-[#F7F3EE] rounded-lg border border-gray-200 shadow-xl" style={{ left: (menuPos?.x ?? 0), top: (menuPos?.y ?? 0) }}>
                                               <div className="py-1">
                                                 <button
                                                   onClick={(e) => {
@@ -1505,7 +1505,7 @@ const PowerFormCreate: React.FC = () => {
                                                     setOpenMenuId(null);
                                                     // Handle Apply Templates
                                                   }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F0FDF4] hover:text-[#155E4B] transition-colors"
                                                 >
                                                   Apply Templates
                                                 </button>
@@ -1516,7 +1516,7 @@ const PowerFormCreate: React.FC = () => {
                                                     // Handle Replace
                                                     fileInputRef.current?.click();
                                                   }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F2EE] transition-colors"
                                                 >
                                                   Replace
                                                 </button>
@@ -1532,7 +1532,7 @@ const PowerFormCreate: React.FC = () => {
                                                       link.click();
                                                     }
                                                   }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F2EE] transition-colors flex items-center gap-2"
                                                 >
                                                   <Download className="w-4 h-4" />
                                                   Download Document
@@ -1549,7 +1549,7 @@ const PowerFormCreate: React.FC = () => {
                                                       ));
                                                     }
                                                   }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F2EE] transition-colors flex items-center gap-2"
                                                 >
                                                   <FileEdit className="w-4 h-4" />
                                                   Rename Document
@@ -1577,7 +1577,7 @@ const PowerFormCreate: React.FC = () => {
                                                       window.open(doc.url, '_blank');
                                                     }
                                                   }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F2EE] transition-colors flex items-center gap-2"
                                                 >
                                                   <Eye className="w-4 h-4" />
                                                   View Document
@@ -1707,7 +1707,7 @@ const PowerFormCreate: React.FC = () => {
             </div>
             {showPowerForm && (
                /* ======================== POWER FORM MODE ======================== */
-              <Card className="p-6 shadow-sm border border-gray-200 rounded-sm bg-white space-y-6" data-tour="ec-power-form">
+              <Card className="p-6 shadow-sm border border-gray-200 rounded-sm bg-[#F7F3EE] space-y-6" data-tour="ec-power-form">
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900">Add Slots</h4>
                   <p className="text-sm text-gray-600">
@@ -1719,7 +1719,7 @@ const PowerFormCreate: React.FC = () => {
 
                 {/* Power Form Preview */}
                 {/* {powerFormData && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
+                  <div className="bg-[#F5F2EE] border border-gray-200 rounded-lg p-4 space-y-4">
                     <div>
                       <h5 className="text-base font-semibold text-gray-900">
                         {powerFormData.title}
@@ -1732,7 +1732,7 @@ const PowerFormCreate: React.FC = () => {
                         {powerFormData.fields.map((field: any) => (
                           <li
                             key={field._id}
-                            className="flex items-center justify-between bg-white border rounded p-2 text-sm"
+                            className="flex items-center justify-between bg-[#F7F3EE] border rounded p-2 text-sm"
                           >
                             <span>{field.label || field.type}</span>
                             <span className="text-gray-500">{field.type}</span>
@@ -1903,7 +1903,7 @@ const PowerFormCreate: React.FC = () => {
                     </button>
 
                     {typeDropdownOpen && (
-                      <div className="absolute left-0 bottom-full mb-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                      <div className="absolute left-0 bottom-full mb-1 w-full bg-[#F7F3EE] border border-gray-200 rounded-md shadow-lg z-50">
                         {!showOtherInputInDropdown ? (
                           <>
                             <div className="p-2 border-b border-gray-200">
@@ -1924,7 +1924,7 @@ const PowerFormCreate: React.FC = () => {
                                     key={type.title}
                                     type="button"
                                     onClick={() => handleEnvelopeTypeSelect(type.title)}
-                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${selectedEnvelopeType === type.title ? 'bg-gray-50' : ''}`}
+                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-[#F5F2EE] ${selectedEnvelopeType === type.title ? 'bg-[#F5F2EE]' : ''}`}
                                   >
                                     {type.title}
                                   </button>
@@ -1939,7 +1939,7 @@ const PowerFormCreate: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleEnvelopeTypeSelect('Other')}
-                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-blue-600 font-medium"
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-[#F5F2EE] text-blue-600 font-medium"
                               >
                                 Other
                               </button>
@@ -2000,7 +2000,7 @@ const PowerFormCreate: React.FC = () => {
                     onMouseEnter={() => setShowEnvelopeTooltip(true)}
                     onMouseLeave={() => setShowEnvelopeTooltip(false)}
                   >
-                    <Info className="w-6 h-6 text-indigo-900" />
+                    <Info className="w-6 h-6 text-emerald-900" />
 
                     {showEnvelopeTooltip && (
                       <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 bg-[#1A1333] text-white text-sm rounded-md p-3 shadow-lg z-50">
@@ -2035,7 +2035,7 @@ const PowerFormCreate: React.FC = () => {
                     onMouseEnter={() => setShowFrequencyTooltip(true)}
                     onMouseLeave={() => setShowFrequencyTooltip(false)}
                   >
-                    <Info className="w-6 h-6 text-indigo-900" />
+                    <Info className="w-6 h-6 text-emerald-900" />
 
                     {showFrequencyTooltip && (
                       <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 bg-[#1A1333] text-white text-sm rounded-md p-3 shadow-lg z-50">
@@ -2196,7 +2196,7 @@ const PowerFormCreate: React.FC = () => {
                     onChange={(e) => setDate(e.target.value)}
                     readOnly={!isEditable}
                     className={`w-full px-3 py-2 border border-gray-300 rounded-lg 
-                      ${isEditable ? "bg-white cursor-text" : "bg-gray-100 cursor-not-allowed"}`}
+                      ${isEditable ? "bg-[#F7F3EE] cursor-text" : "bg-gray-100 cursor-not-allowed"}`}
                   />
                   <button
                     type="button"
@@ -2276,7 +2276,7 @@ const PowerFormCreate: React.FC = () => {
 
             <div className="space-y-6">
               {/* Envelope Summary */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6">
                 <h4 className="text-lg font-medium text-gray-900 mb-4">Envelope Summary</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -2290,7 +2290,7 @@ const PowerFormCreate: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-700">Signature Type</p>
                     <div className="flex items-center gap-2">
-                      {envelopeData.signatureType === 'qualified' && <Award className="w-4 h-4 text-purple-600" />}
+                      {envelopeData.signatureType === 'qualified' && <Award className="w-4 h-4 text-[#155E4B]" />}
                       {envelopeData.signatureType === 'advanced' && <Shield className="w-4 h-4 text-blue-600" />}
                       <p className="text-gray-900 capitalize">{envelopeData.signatureType}</p>
                     </div>
@@ -2309,11 +2309,11 @@ const PowerFormCreate: React.FC = () => {
               </div>
 
               {/* Documents */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6">
                 <h4 className="text-lg font-medium text-gray-900 mb-4">Documents</h4>
                 <div className="space-y-3">
                   {documents?.map((doc) => (
-                    <div key={doc.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div key={doc.id} className="flex items-center space-x-3 p-3 bg-[#F5F2EE] rounded-lg">
                       <FileText className="w-6 h-6 text-blue-600" />
                       <div>
                         <p className="font-medium text-gray-900">{doc.name}</p>
@@ -2325,11 +2325,11 @@ const PowerFormCreate: React.FC = () => {
               </div>
 
               {/* Recipients */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="bg-[#F7F3EE] border border-gray-200 rounded-lg p-6">
                 <h4 className="text-lg font-medium text-gray-900 mb-4">Recipients</h4>
                 <div className="space-y-3">
                   {recipients.map((recipient, index) => (
-                    <div key={recipient.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={recipient.id} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
                           {index + 1}
@@ -2379,9 +2379,9 @@ const PowerFormCreate: React.FC = () => {
   }, [showRecipients, bulkList]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F2EE]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-[#F7F3EE] border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center justify-between w-full">
 
@@ -2414,20 +2414,20 @@ const PowerFormCreate: React.FC = () => {
               </button>
 
               {helpMenuOpen && (
-                <div className="absolute right-24 top-10 w-70 bg-white border border-gray-200 rounded-md shadow-xl z-50">
+                <div className="absolute right-24 top-10 w-70 bg-[#F7F3EE] border border-gray-200 rounded-md shadow-xl z-50">
                   <div className="px-4 py-3 border-b">
                     <h4 className="text-sm font-semibold text-gray-900">Help for this Page</h4>
                   </div>
                   <div className="max-h-80 p-4 overflow-y-auto">
                     <button
                       onClick={() => { setHelpMenuOpen(false); setHelpSidebarOpen(true); }}
-                      className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-gray-50"
+                      className="w-full text-left px-4 py-3 text-sm text-blue-700 hover:bg-[#F5F2EE]"
                     >
                       Basic steps to send an envelope
                     </button>
                     <button
                         onClick={() => { setHelpMenuOpen(false); window.open('help-support', '_blank'); }}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-t border-gray-100"
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-[#F5F2EE] border-t border-gray-100"
                     >
                       <span className="text-blue-700">Visit the {APP_NAME} Support Center</span> for helpful articles, guides, videos, and more.
                     </button>
@@ -2459,7 +2459,7 @@ const PowerFormCreate: React.FC = () => {
       <div className="flex">
         {/* Right Help Sidebar */}
         {(
-          <div className={`fixed inset-y-0 right-0 w-[420px] bg-white border-l border-gray-200 shadow-2xl z-40 transform transition-transform duration-300 ${helpSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className={`fixed inset-y-0 right-0 w-[420px] bg-[#F7F3EE] border-l border-gray-200 shadow-2xl z-40 transform transition-transform duration-300 ${helpSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
             {/* Header Bar: back + close icons */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
               <button onClick={() => setHelpSidebarOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100">
@@ -2519,7 +2519,7 @@ const PowerFormCreate: React.FC = () => {
         )}
 
         {/* Progress Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 p-6 hidden">
+        <div className="w-80 bg-[#F7F3EE] border-r border-gray-200 p-6 hidden">
           <div className="space-y-4">
             {steps.map((step) => (
               <div
@@ -2528,7 +2528,7 @@ const PowerFormCreate: React.FC = () => {
                   ? 'bg-blue-50 border border-blue-200'
                   : currentStep > step.id
                     ? 'bg-green-50 border border-green-200'
-                    : 'bg-gray-50'
+                    : 'bg-[#F5F2EE]'
                   }`}
               >
                 <div
@@ -2654,7 +2654,7 @@ const PowerFormCreate: React.FC = () => {
             
             {/* Navigation for step 2 (SigningEditorStep in power mode) - Fixed at bottom */}
             {currentStep === 2 && mode === 'power' && (
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between z-50 shadow-lg">
+            <div className="fixed bottom-0 left-0 right-0 bg-[#F7F3EE] border-t border-gray-200 px-4 py-3 flex items-center justify-between z-50 shadow-lg">
                <button
                  onClick={() => {
                    setCurrentStep(1);
@@ -2709,9 +2709,9 @@ const PowerFormCreate: React.FC = () => {
       {showAdvanced && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowAdvanced(false)} />
-          <div className="relative bg-white w-full h-full flex flex-col overflow-auto">
+          <div className="relative bg-[#F7F3EE] w-full h-full flex flex-col overflow-auto">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-[#F7F3EE] z-10">
               <h2 className="text-xl font-semibold">Advanced Options</h2>
               <button onClick={() => setShowAdvanced(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100" title="Close">
                 <X className="w-5 h-5" />
@@ -2806,7 +2806,7 @@ const PowerFormCreate: React.FC = () => {
               </div>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end">
+                <div className="sticky bottom-0 bg-[#F7F3EE] border-t border-gray-200 p-4 flex justify-end">
                   <button onClick={() => setShowAdvanced(false)} className="px-6 py-2 rounded text-white" style={{ backgroundColor: '#260559' }}>Save</button>
                 </div>
               </div>
@@ -2882,11 +2882,11 @@ const PowerFormCreate: React.FC = () => {
                   <div className="text-xs text-white-900">Step {creatorTourIndex + 1} of {creatorTourSteps.length}</div>
                   <div className="flex items-center gap-2">
                     <button onClick={closeCreatorTour} className="px-3 py-1.5 text-sm text-gray-300 hover:text-white">Skip</button>
-                    <button onClick={prevCreatorStep} disabled={creatorTourIndex===0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${creatorTourIndex===0 ? 'cursor-not-allowed text-white-900' : 'hover:bg-white-700 text-white'}`}>Back</button>
+                    <button onClick={prevCreatorStep} disabled={creatorTourIndex===0} className={`px-3 py-1.5 border border-white-500 rounded-sm text-sm ${creatorTourIndex===0 ? 'cursor-not-allowed text-white-900' : 'hover:bg-[#F7F3EE]-700 text-white'}`}>Back</button>
                     {creatorTourIndex < creatorTourSteps.length - 1 ? (
-                      <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
+                      <button onClick={nextCreatorStep} className="px-3 py-1.5 bg-[#F7F3EE] text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Next</button>
                     ) : (
-                      <button onClick={closeCreatorTour} className="px-3 py-1.5 bg-white text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
+                      <button onClick={closeCreatorTour} className="px-3 py-1.5 bg-[#F7F3EE] text-[#26263d] rounded-sm text-sm font-medium hover:bg-gray-100">Done</button>
                     )}
                   </div>
                 </div>

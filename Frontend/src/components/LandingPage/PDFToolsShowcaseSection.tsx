@@ -10,7 +10,7 @@ const tools = [
     icon: Merge,
     title: 'Merge & split',
     description: 'Combine or split PDFs in seconds.',
-    color: 'bg-violet-500',
+    color: 'bg-emerald-500',
   },
   {
     icon: FileText,
@@ -63,7 +63,7 @@ const PDFToolsShowcaseSection = () => {
     <section
       id="pdf-tools"
       ref={sectionRef}
-      className="section-padding relative overflow-hidden bg-slate-50/80"
+      className="section-padding relative overflow-hidden bg-[#F5F2EE]/80"
     >
       {/* Subtle background */}
       <div
@@ -96,19 +96,19 @@ const PDFToolsShowcaseSection = () => {
                   key={index}
                   to="/login"
                   data-pdf-tool-card
-                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white px-4 py-4 shadow-sm opacity-0 translate-y-6 transition-all duration-600 ease-out hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-md"
+                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-[#F7F3EE] px-4 py-4 shadow-sm opacity-0 translate-y-6 transition-all duration-600 ease-out hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/30 hover:shadow-md"
                   style={{ transitionDelay: `${index * 90}ms` }}
                 >
                   {/* Document-style inner card */}
-                  <div className="relative flex flex-1 flex-col rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 overflow-hidden">
+                  <div className="relative flex flex-1 flex-col rounded-xl border border-slate-100 bg-[#F5F2EE]/80 px-4 py-3 overflow-hidden">
                     {/* Page header bars (document feel) */}
                     <div className="mb-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 w-8 rounded-full bg-slate-200" />
                         <div className="h-1.5 w-4 rounded-full bg-slate-100" />
                       </div>
-                      <div className="relative h-5 w-5 rounded-md bg-indigo-100 border border-indigo-200/80">
-                        <div className="absolute right-0 top-0 h-2 w-2 rounded-tr-md rounded-bl-md bg-indigo-400/80" />
+                      <div className="relative h-5 w-5 rounded-md bg-emerald-100 border border-emerald-200/80">
+                        <div className="absolute right-0 top-0 h-2 w-2 rounded-tr-md rounded-bl-md bg-emerald-400/80" />
                       </div>
                     </div>
 
@@ -119,7 +119,7 @@ const PDFToolsShowcaseSection = () => {
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-slate-900 group-hover:text-indigo-800">
+                        <h3 className="text-sm font-semibold text-slate-900 group-hover:text-emerald-800">
                           {item.title}
                         </h3>
                         <p className="mt-1 text-xs md:text-sm text-slate-600">{item.description}</p>
@@ -135,7 +135,7 @@ const PDFToolsShowcaseSection = () => {
 
                     <div className="mt-4 flex items-center justify-between text-[11px] text-slate-500">
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-2 py-1 text-[10px] uppercase tracking-wide text-slate-600">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#F7F3EE] border border-[#E6D8C9] px-2 py-1 text-[10px] uppercase tracking-wide text-slate-600">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           Instant preview
                         </span>
@@ -147,7 +147,7 @@ const PDFToolsShowcaseSection = () => {
                     </div>
 
                     {/* CTA chip */}
-                    <span className="mt-3 inline-flex h-7 w-fit items-center gap-1 rounded-full bg-indigo-600 px-2.5 text-[11px] font-medium text-white opacity-0 shadow-sm transition-all duration-200 group-hover:opacity-100">
+                    <span className="mt-3 inline-flex h-7 w-fit items-center gap-1 rounded-full bg-emerald-600 px-2.5 text-[11px] font-medium text-white opacity-0 shadow-sm transition-all duration-200 group-hover:opacity-100">
                       Open PDF tool
                       <ArrowRight className="h-3 w-3" />
                     </span>

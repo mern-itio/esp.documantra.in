@@ -188,7 +188,7 @@ export const WorkflowOptimizer: React.FC<WorkflowOptimizerProps> = ({
       case 'condition':
         return <AlertTriangle className="w-4 h-4 text-yellow-600" />;
       case 'delay':
-        return <Clock className="w-4 h-4 text-purple-600" />;
+        return <Clock className="w-4 h-4 text-[#155E4B]" />;
       default:
         return <Settings className="w-4 h-4 text-gray-600" />;
     }
@@ -201,7 +201,7 @@ export const WorkflowOptimizer: React.FC<WorkflowOptimizerProps> = ({
       case 'reliability':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'efficiency':
-        return <BarChart3 className="w-4 h-4 text-purple-600" />;
+        return <BarChart3 className="w-4 h-4 text-[#155E4B]" />;
       default:
         return <Settings className="w-4 h-4 text-gray-600" />;
     }
@@ -221,7 +221,7 @@ export const WorkflowOptimizer: React.FC<WorkflowOptimizerProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-4">
           <Zap className="w-5 h-5 text-white" />
@@ -260,7 +260,7 @@ export const WorkflowOptimizer: React.FC<WorkflowOptimizerProps> = ({
       {analysis && (
         <div className="space-y-6">
           {/* Overall Metrics */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-[#F5F2EE] rounded-lg p-4">
             <h3 className="text-md font-medium text-gray-900 mb-4">Workflow Performance Overview</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
@@ -276,7 +276,7 @@ export const WorkflowOptimizer: React.FC<WorkflowOptimizerProps> = ({
                 <div className="text-sm text-gray-600">Bottlenecks</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{analysis.optimizationPotential.toFixed(1)}%</div>
+                <div className="text-2xl font-bold text-[#155E4B]">{analysis.optimizationPotential.toFixed(1)}%</div>
                 <div className="text-sm text-gray-600">Optimization Potential</div>
               </div>
             </div>
@@ -375,7 +375,7 @@ export const WorkflowOptimizer: React.FC<WorkflowOptimizerProps> = ({
           {/* Performance Visualization */}
           <div className="border-t border-gray-200 pt-6">
             <h3 className="text-md font-medium text-gray-900 mb-4">Performance Visualization</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-[#F5F2EE] rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-gray-700">Workflow Timeline</span>
                 <span className="text-sm text-gray-600">Total: {analysis.totalDuration.toFixed(1)}s</span>

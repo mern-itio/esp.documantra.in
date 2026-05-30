@@ -127,7 +127,7 @@ export function DocumentDirectory() {
       </div>
 
       {/* Filters and Search */}
-      <div className="flex items-center space-x-4 bg-white p-4 rounded-lg border border-gray-200">
+      <div className="flex items-center space-x-4 bg-[#F7F3EE] p-4 rounded-lg border border-gray-200">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
@@ -162,17 +162,17 @@ export function DocumentDirectory() {
         
         <button
           onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-          className="px-3 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 border border-gray-300 rounded-md text-sm hover:bg-[#F5F2EE] focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {sortOrder === 'asc' ? '↑' : '↓'}
         </button>
       </div>
 
       {/* Document Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-[#F5F2EE]">
               <tr>
                 <th className="px-6 py-3 text-left">
                   <input
@@ -202,7 +202,7 @@ export function DocumentDirectory() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-[#F7F3EE] divide-y divide-gray-200">
               {filteredDocuments.map((document) => {
                 const FileIcon = getFileTypeIcon(document.type);
                 const isSelected = selectedDocuments.includes(document.id);
@@ -210,7 +210,7 @@ export function DocumentDirectory() {
                 return (
                   <tr
                     key={document.id}
-                    className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
+                    className={`hover:bg-[#F5F2EE] ${isSelected ? 'bg-blue-50' : ''}`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
@@ -290,7 +290,7 @@ export function DocumentDirectory() {
       </div>
 
       {/* Summary */}
-      <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <div className="bg-[#F7F3EE] p-4 rounded-lg border border-gray-200">
         <div className="flex items-center justify-between text-sm text-gray-600">
           <span>
             Showing {filteredDocuments.length} of {documents.length} documents

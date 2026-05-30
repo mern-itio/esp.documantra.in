@@ -46,11 +46,11 @@ const BookletCreatorPage = () => {
           Binding Edge
         </label>
         <div className="grid grid-cols-2 gap-3">
-          <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] cursor-pointer">
             <input type="radio" name="binding" value="left" className="text-primary-600" defaultChecked />
             <span>Left edge</span>
           </label>
-          <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] cursor-pointer">
             <input type="radio" name="binding" value="right" className="text-primary-600" />
             <span>Right edge</span>
           </label>

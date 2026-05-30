@@ -714,7 +714,7 @@ const BlogPage: React.FC = () => {
       <section className="bg-gradient-to-r from-[#260559] to-blue-700 text-white py-20">
         <div className="container-max px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-[#F7F3EE]/20 rounded-full mb-6">
               <BookOpen className="w-10 h-10" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">Draft and Sign Blog</h1>
@@ -730,7 +730,7 @@ const BlogPage: React.FC = () => {
           <div className="grid lg:grid-cols-4 gap-8">
             {/* Sidebar Navigation */}
             <div className="lg:col-span-1">
-              <div className="sticky top-24 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="sticky top-24 bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Table of Contents</h2>
                 <nav className="space-y-2">
                   {blogSections.map((section) => {
@@ -741,8 +741,8 @@ const BlogPage: React.FC = () => {
                         onClick={() => scrollToSection(section.id)}
                         className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                           activeSection === section.id
-                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                            : 'text-gray-600 hover:bg-gray-50'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'text-gray-600 hover:bg-[#F5F2EE]'
                         }`}
                       >
                         <Icon className="w-4 h-4 flex-shrink-0" />
@@ -762,11 +762,11 @@ const BlogPage: React.FC = () => {
                   <article
                     key={section.id}
                     id={section.id}
-                    className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 scroll-mt-24"
+                    className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-8 scroll-mt-24"
                   >
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="p-3 bg-indigo-100 rounded-lg">
-                        <Icon className="w-6 h-6 text-indigo-600" />
+                      <div className="p-3 bg-emerald-100 rounded-lg">
+                        <Icon className="w-6 h-6 text-emerald-600" />
                       </div>
                       <h2 className="text-3xl font-bold text-gray-900">{section.title}</h2>
                     </div>
@@ -777,12 +777,12 @@ const BlogPage: React.FC = () => {
                       {/* Introduction Section */}
                       {section.id === 'introduction' && (
                         <div className="space-y-6">
-                          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-6 border border-indigo-100">
+                          <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-lg p-6 border border-emerald-100">
                             <h3 className="text-xl font-semibold text-gray-900 mb-4">Key Highlights</h3>
                             <ul className="space-y-3 !list-none" style={{ listStyle: 'none', paddingLeft: 0 }}>
                               {section.content.keyPoints?.map((point, idx) => (
                                 <li key={idx} className="flex items-start gap-3">
-                                  <CheckCircle2 className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                                   <span className="text-gray-700">{point}</span>
                                 </li>
                               ))}
@@ -795,13 +795,13 @@ const BlogPage: React.FC = () => {
                       {section.id === 'esignature' && (
                         <div className="space-y-8">
                           {(section.content.features as { name: string; description: string; details: string[] }[] | undefined)?.map((feature: { name: string; description: string; details: string[] }, idx: number) => (
-                            <div key={idx} className="border-l-4 border-indigo-500 pl-6">
+                            <div key={idx} className="border-l-4 border-emerald-500 pl-6">
                               <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.name}</h3>
                               <p className="text-gray-600 mb-4">{feature.description}</p>
                               <ul className="space-y-2 !list-none" style={{ listStyle: 'none', paddingLeft: 0 }}>
                                 {feature.details.map((detail: string, detailIdx: number) => (
                                   <li key={detailIdx} className="flex items-start gap-2 text-gray-700">
-                                    <ChevronRight className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-1" />
+                                    <ChevronRight className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-1" />
                                     <span>{detail}</span>
                                   </li>
                                 ))}
@@ -819,14 +819,14 @@ const BlogPage: React.FC = () => {
                             return (
                               <div key={idx} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3 mb-4">
-                                  <div className="p-2 bg-indigo-100 rounded-lg">
-                                    <CategoryIcon className="w-5 h-5 text-indigo-600" />
+                                  <div className="p-2 bg-emerald-100 rounded-lg">
+                                    <CategoryIcon className="w-5 h-5 text-emerald-600" />
                                   </div>
                                   <h3 className="text-xl font-semibold text-gray-900">{category.name}</h3>
                                 </div>
                                 <div className="grid md:grid-cols-2 gap-4">
                                   {category.tools.map((tool: { name: string; description: string }, toolIdx: number) => (
-                                    <div key={toolIdx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                    <div key={toolIdx} className="flex items-start gap-3 p-3 bg-[#F5F2EE] rounded-lg">
                                       <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                                       <div>
                                         <h4 className="font-medium text-gray-900">{tool.name}</h4>
@@ -849,13 +849,13 @@ const BlogPage: React.FC = () => {
                               return (
                                 <div key={idx} className="border border-gray-200 rounded-lg p-6">
                                   <div className="flex items-center gap-3 mb-4">
-                                    <CategoryIcon className="w-5 h-5 text-indigo-600" />
+                                    <CategoryIcon className="w-5 h-5 text-emerald-600" />
                                     <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
                                   </div>
                                   <ul className="space-y-2 !list-none" style={{ listStyle: 'none', paddingLeft: 0 }}>
                                     {category.templates.map((template: string, templateIdx: number) => (
                                       <li key={templateIdx} className="flex items-start gap-2 text-gray-700">
-                                        <FileText className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                        <FileText className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                                         <span>{template}</span>
                                       </li>
                                     ))}
@@ -904,7 +904,7 @@ const BlogPage: React.FC = () => {
                             <div key={idx} className="border-l-4 border-blue-500 pl-6">
                               <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.name}</h3>
                               <p className="text-gray-600 mb-4">{feature.description}</p>
-                              <div className="bg-gray-50 rounded-lg p-4">
+                              <div className="bg-[#F5F2EE] rounded-lg p-4">
                                 <h4 className="font-medium text-gray-900 mb-2">Available Endpoints:</h4>
                                 <ul className="space-y-1 !list-none" style={{ listStyle: 'none', paddingLeft: 0 }}>
                                   {feature.endpoints?.map((endpoint: string, endpointIdx: number) => (
@@ -917,12 +917,12 @@ const BlogPage: React.FC = () => {
                               </div>
                             </div>
                           ))}
-                          <div className="bg-indigo-50 rounded-lg p-6 border border-indigo-200">
+                          <div className="bg-emerald-50 rounded-lg p-6 border border-emerald-200">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">API Benefits</h3>
                             <div className="grid md:grid-cols-2 gap-3">
                               {section.content.benefits?.map((benefit, idx) => (
                                 <div key={idx} className="flex items-center gap-2">
-                                  <Award className="w-4 h-4 text-indigo-600" />
+                                  <Award className="w-4 h-4 text-emerald-600" />
                                   <span className="text-gray-700">{benefit}</span>
                                 </div>
                               ))}
@@ -982,15 +982,15 @@ const BlogPage: React.FC = () => {
                             return (
                               <div key={idx} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3 mb-4">
-                                  <div className="p-2 bg-indigo-100 rounded-lg">
-                                    <CaseIcon className="w-5 h-5 text-indigo-600" />
+                                  <div className="p-2 bg-emerald-100 rounded-lg">
+                                    <CaseIcon className="w-5 h-5 text-emerald-600" />
                                   </div>
                                   <h3 className="text-lg font-semibold text-gray-900">{useCase.industry}</h3>
                                 </div>
                                 <ul className="space-y-2 !list-none" style={{ listStyle: 'none', paddingLeft: 0 }}>
                                   {useCase.useCases.map((uc, ucIdx) => (
                                     <li key={ucIdx} className="flex items-start gap-2 text-gray-700">
-                                      <ArrowRight className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                      <ArrowRight className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                                       <span className="text-sm">{uc}</span>
                                     </li>
                                   ))}
@@ -1030,8 +1030,8 @@ const BlogPage: React.FC = () => {
                             <h3 className="text-xl font-semibold text-gray-900 mb-4">Microservices Architecture</h3>
                             <div className="space-y-3">
                               {section.content.services?.map((service, idx) => (
-                                <div key={idx} className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                                  <Server className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                <div key={idx} className="flex items-start gap-3 p-4 bg-[#F5F2EE] rounded-lg">
+                                  <Server className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                                   <span className="text-gray-700">{service}</span>
                                 </div>
                               ))}
@@ -1045,9 +1045,9 @@ const BlogPage: React.FC = () => {
                         <div className="space-y-8">
                           <div className="space-y-6">
                             {section.content.steps?.map((step, idx) => (
-                              <div key={idx} className="border-l-4 border-indigo-500 pl-6">
+                              <div key={idx} className="border-l-4 border-emerald-500 pl-6">
                                 <div className="flex items-center gap-3 mb-3">
-                                  <div className="flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-full font-bold">
+                                  <div className="flex items-center justify-center w-10 h-10 bg-emerald-600 text-white rounded-full font-bold">
                                     {step.step}
                                   </div>
                                   <h3 className="text-xl font-semibold text-gray-900">{step.title}</h3>
@@ -1064,16 +1064,16 @@ const BlogPage: React.FC = () => {
                               </div>
                             ))}
                           </div>
-                          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-6 border border-indigo-200">
+                          <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-lg p-6 border border-emerald-200">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Helpful Resources</h3>
                             <div className="grid md:grid-cols-2 gap-4">
                               {section.content.resources?.map((resource, idx) => (
                                 <Link
                                   key={idx}
                                   to={resource.link}
-                                  className="flex items-center gap-3 p-3 bg-white rounded-lg hover:shadow-md transition-shadow border border-gray-200"
+                                  className="flex items-center gap-3 p-3 bg-[#F7F3EE] rounded-lg hover:shadow-md transition-shadow border border-gray-200"
                                 >
-                                  <BookOpen className="w-5 h-5 text-indigo-600" />
+                                  <BookOpen className="w-5 h-5 text-emerald-600" />
                                   <div>
                                     <h4 className="font-medium text-gray-900">{resource.name}</h4>
                                     <p className="text-sm text-gray-600">{resource.description}</p>
@@ -1101,14 +1101,14 @@ const BlogPage: React.FC = () => {
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 to="/signup"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#260559] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#F7F3EE] text-[#260559] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
                 <Rocket className="w-5 h-5" />
                 Sign Up Free
               </Link>
               <Link
                 to="/contact-sales"
-                className="inline-flex items-center gap-2 px-6 py-3 border-2 border-white text-white rounded-lg font-semibold hover:bg-white/10 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 border-2 border-white text-white rounded-lg font-semibold hover:bg-[#F7F3EE]/10 transition-colors"
               >
                 <Mail className="w-5 h-5" />
                 Contact Sales

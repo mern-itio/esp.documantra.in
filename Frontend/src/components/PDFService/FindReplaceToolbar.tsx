@@ -173,7 +173,7 @@ const FindReplaceToolbar: React.FC<FindReplaceToolbarProps> = ({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-4 min-w-96 max-w-lg">
+    <div className="fixed top-4 right-4 z-50 bg-[#F7F3EE] rounded-lg shadow-xl border border-gray-200 p-4 min-w-96 max-w-lg">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
@@ -261,7 +261,7 @@ const FindReplaceToolbar: React.FC<FindReplaceToolbarProps> = ({
 
         {/* Advanced Options */}
         {showAdvanced && (
-          <div className="space-y-2 p-3 bg-gray-50 rounded-md">
+          <div className="space-y-2 p-3 bg-[#F5F2EE] rounded-md">
             <div className="flex items-center space-x-4">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input

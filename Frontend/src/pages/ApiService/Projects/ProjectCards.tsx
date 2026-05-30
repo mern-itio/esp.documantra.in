@@ -56,7 +56,7 @@ export default function ProjectCards() {
             key={proj.name}
             onClick={() => setSelectedIdx(idx)}
             className={`
-              bg-white rounded-xl border shadow px-6 py-4 text-left transition
+              bg-[#F7F3EE] rounded-xl border shadow px-6 py-4 text-left transition
               ${
                 selectedIdx === idx
                   ? "border-blue-400 shadow-lg ring-2 ring-blue-200"
@@ -140,7 +140,7 @@ export default function ProjectCards() {
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="w-full lg:w-2/3">
           {/* Details Card (updated for stat blocks & endpoints) */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow py-8 px-8 mt-6">
+          <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 shadow py-8 px-8 mt-6">
             <h2 className="text-2xl font-bold mb-3">{selected.name}</h2>
             <div className="text-gray-600 mb-6">{selected.description}</div>
 
@@ -164,8 +164,8 @@ export default function ProjectCards() {
                 </div>
                 <div className="text-xs text-gray-500 mt-1">Avg Latency</div>
               </div>
-              <div className="rounded-lg bg-purple-50 py-4 text-center">
-                <div className="text-lg font-semibold text-purple-600">
+              <div className="rounded-lg bg-[#F0FDF4] py-4 text-center">
+                <div className="text-lg font-semibold text-[#155E4B]">
                   {selected.webhooks}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">Webhooks</div>
@@ -179,7 +179,7 @@ export default function ProjectCards() {
                 {selected.endpoints.map((ep) => (
                   <div
                     key={ep.name}
-                    className="rounded-lg bg-gray-50 px-2 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+                    className="rounded-lg bg-[#F5F2EE] px-2 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
                       <div className="font-mono font-medium">{ep.name}</div>

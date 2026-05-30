@@ -1105,7 +1105,7 @@ const EmailPage: React.FC = () => {
               {[
                 { name: 'Gmail',        icon: <Mail   className="w-3.5 h-3.5" />, color: 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400',    host: 'smtp.gmail.com',       port: '587', tip: 'Requires 2FA and an App Password from Google Account → Security.' },
                 { name: 'Zoho Mail',    icon: <Globe  className="w-3.5 h-3.5" />, color: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400',  host: 'smtp.zoho.com',        port: '587', tip: 'Enable SMTP access in Zoho Mail settings, then use an App-Specific Password.' },
-                { name: 'Webmail',      icon: <Server className="w-3.5 h-3.5" />, color: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400', host: 'mail.yourdomain.com', port: '587', tip: 'Get credentials from your hosting control panel (cPanel / DirectAdmin).' },
+                { name: 'Webmail',      icon: <Server className="w-3.5 h-3.5" />, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400', host: 'mail.yourdomain.com', port: '587', tip: 'Get credentials from your hosting control panel (cPanel / DirectAdmin).' },
                 { name: 'Other',        icon: <Zap    className="w-3.5 h-3.5" />, color: 'bg-muted text-muted-foreground', host: 'custom',               port: 'any', tip: 'Enter your SMTP host and port manually. TLS/SSL supported on any port.' },
               ].map((p) => (
                 <div key={p.name} className="rounded-xl border border-border bg-muted/30 p-3.5">

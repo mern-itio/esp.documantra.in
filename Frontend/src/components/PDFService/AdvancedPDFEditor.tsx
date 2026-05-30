@@ -640,9 +640,9 @@ if (!editorState.pdfInfo) {
         // Show loader when processing PDF
         <Loader />
       ) : (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[#F5F2EE]">
         {/* Header with Back Button */}
-        <div className="bg-white border-b border-gray-200">
+        <div className="bg-[#F7F3EE] border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center py-4">
               <button
@@ -675,17 +675,17 @@ if (!editorState.pdfInfo) {
 
               {/* Feature Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-[#F5F2EE] rounded-lg p-4 text-center">
                   <FileText className="w-6 h-6 text-gray-600 mx-auto mb-2" />
                   <h3 className="font-semibold text-gray-900 mb-1">Text Editing</h3>
                   <p className="text-sm text-gray-600">Edit and format text directly</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-[#F5F2EE] rounded-lg p-4 text-center">
                   <Settings className="w-6 h-6 text-gray-600 mx-auto mb-2" />
                   <h3 className="font-semibold text-gray-900 mb-1">Annotations</h3>
                   <p className="text-sm text-gray-600">Add highlights and comments</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-[#F5F2EE] rounded-lg p-4 text-center">
                   <Save className="w-6 h-6 text-gray-600 mx-auto mb-2" />
                   <h3 className="font-semibold text-gray-900 mb-1">Save & Download</h3>
                   <p className="text-sm text-gray-600">Export your edited PDF</p>
@@ -746,7 +746,7 @@ if (!editorState.pdfInfo) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-[#F5F2EE]">
       {/* Hidden file input - always rendered */}
       <input
         ref={fileInputRef}
@@ -756,7 +756,7 @@ if (!editorState.pdfInfo) {
         className="hidden"
       />
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="bg-[#F7F3EE] border-b border-gray-200 shadow-sm">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
@@ -796,7 +796,7 @@ if (!editorState.pdfInfo) {
                   size="sm"
                   onClick={handleUndo}
                   disabled={historyIndex <= 0}
-                  className="hover:bg-gray-50"
+                  className="hover:bg-[#F5F2EE]"
                 >
                   <Undo className="w-4 h-4" />
                 </Button>
@@ -805,7 +805,7 @@ if (!editorState.pdfInfo) {
                   size="sm"
                   onClick={handleRedo}
                   disabled={historyIndex >= editHistory.length - 1}
-                  className="hover:bg-gray-50"
+                  className="hover:bg-[#F5F2EE]"
                 >
                   <Redo className="w-4 h-4" />
                 </Button>
@@ -813,7 +813,7 @@ if (!editorState.pdfInfo) {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowTextBlocks(!showTextBlocks)}
-                  className="hover:bg-gray-50"
+                  className="hover:bg-[#F5F2EE]"
                 >
                   {showTextBlocks ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
@@ -843,7 +843,7 @@ if (!editorState.pdfInfo) {
                   onClick={handleDownload}
                   disabled={!isDownloadReady || !downloadFileName}
                   variant="outline"
-                  className="border-gray-300 hover:bg-gray-50"
+                  className="border-gray-300 hover:bg-[#F5F2EE]"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   {isDownloadReady ? 'Download PDF' : `Ready in ${countdown}s`}
@@ -852,7 +852,7 @@ if (!editorState.pdfInfo) {
                 <Button
                   onClick={handleReplacePdf}
                   variant="outline"
-                  className="border-gray-300 hover:bg-gray-50"
+                  className="border-gray-300 hover:bg-[#F5F2EE]"
                   title="Replace PDF"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
@@ -866,7 +866,7 @@ if (!editorState.pdfInfo) {
 
       <div className="flex-1 flex">
         {/* Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        <div className="w-80 bg-[#F7F3EE] border-r border-gray-200 flex flex-col">
 
           {/* Toolbar */}
           <Toolbar
@@ -885,7 +885,7 @@ if (!editorState.pdfInfo) {
 
 
           {/* Edit History */}
-          <div className="border-t border-gray-200 p-6 bg-gray-50 flex-1">
+          <div className="border-t border-gray-200 p-6 bg-[#F5F2EE] flex-1">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Edit History</h3>
             <EditHistory
               edits={editorState.edits}
@@ -897,7 +897,7 @@ if (!editorState.pdfInfo) {
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* PDF Viewer Controls */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+          <div className="bg-[#F7F3EE] border-b border-gray-200 px-6 py-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-6">
                 <PageNavigator

@@ -87,7 +87,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ step, onNext, onPrev, onC
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 backdrop-blur-[2px]"></div>
-      <div className={`bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-300 ease-in-out min-h-[340px] flex flex-col justify-between ${position}`}>
+      <div className={`bg-[#F7F3EE]/90 backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-lg w-full absolute transition-all duration-300 ease-in-out min-h-[340px] flex flex-col justify-between ${position}`}>
         <div className="relative">
           {step === 1 && (
             <div className="absolute -top-16 right-8 w-16 h-16">

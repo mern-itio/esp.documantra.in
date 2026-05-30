@@ -38,12 +38,12 @@ export const PowerFormEmbed: React.FC = () => {
   const embedCode = `<iframe src="${window.location.origin}/e-sign/power-form/${envelopeId}" width="100%" height="100%" frameborder="0"></iframe>`;
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-8 bg-[#F5F2EE] min-h-screen">
       <h1 className="text-2xl font-bold mb-4">Embed Power Form</h1>
 
       {/* <div className="mb-6">
         <p className="mb-2">Preview:</p>
-        <div className="border rounded-lg p-4 bg-white">
+        <div className="border rounded-lg p-4 bg-[#F7F3EE]">
           <FormPreview fields={fields} />
         </div>
       </div> */}

@@ -187,14 +187,14 @@ export const TemplateComplexityAnalyzer: React.FC<TemplateComplexityAnalyzerProp
       case 'optimization':
         return <TrendingUp className="w-4 h-4 text-blue-600" />;
       case 'restructuring':
-        return <Zap className="w-4 h-4 text-purple-600" />;
+        return <Zap className="w-4 h-4 text-[#155E4B]" />;
       default:
         return <BarChart3 className="w-4 h-4 text-gray-600" />;
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center mr-4">
           <BarChart3 className="w-5 h-5 text-white" />
@@ -233,7 +233,7 @@ export const TemplateComplexityAnalyzer: React.FC<TemplateComplexityAnalyzerProp
       {analysis && (
         <div className="space-y-6">
           {/* Overall Complexity */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-[#F5F2EE] rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-md font-medium text-gray-900">Complexity Assessment</h3>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getComplexityColor(analysis.level)}`}>
@@ -352,7 +352,7 @@ export const TemplateComplexityAnalyzer: React.FC<TemplateComplexityAnalyzerProp
           {/* Complexity Visualization */}
           <div className="border-t border-gray-200 pt-6">
             <h3 className="text-md font-medium text-gray-900 mb-4">Complexity Visualization</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-[#F5F2EE] rounded-lg p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-3">Complexity Distribution</h4>

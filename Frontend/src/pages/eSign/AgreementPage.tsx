@@ -2368,7 +2368,7 @@ const AgreementPage: React.FC = () => {
                     <div className="text-xs text-white/80">Step {tourStepIndex + 1} of {tourSteps.length}</div>
                     <div className="flex items-center gap-2">
                       <button onClick={closeTour} className="px-3 py-1.5 text-sm text-white/70 hover:text-white">Skip</button>
-                      <button onClick={prevStep} disabled={tourStepIndex === 0} className={`px-3 py-1.5 border border-white/25 rounded-sm text-sm ${tourStepIndex === 0 ? 'cursor-not-allowed text-white/35' : 'hover:bg-white/10 text-white'}`}>Back</button>
+                      <button onClick={prevStep} disabled={tourStepIndex === 0} className={`px-3 py-1.5 border border-white/25 rounded-sm text-sm ${tourStepIndex === 0 ? 'cursor-not-allowed text-white/35' : 'hover:bg-[#F7F3EE]/10 text-white'}`}>Back</button>
                       {tourStepIndex < tourSteps.length - 1 ? (
                         <button onClick={nextStep} className="px-3 py-1.5 bg-card text-foreground rounded-sm text-sm font-medium hover:bg-muted">Next</button>
                       ) : (

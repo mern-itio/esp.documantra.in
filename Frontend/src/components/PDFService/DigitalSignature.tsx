@@ -216,7 +216,7 @@ const DigitalSignature: React.FC = () => {
 
   return (
     <div className="mx-auto p-2 space-y-6">
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-[#F7F3EE] shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Link
@@ -237,7 +237,7 @@ const DigitalSignature: React.FC = () => {
 
       {/* Tab Navigation */}
       <div className="flex justify-center mb-8">
-        <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm">
+        <div className="flex space-x-1 bg-[#F7F3EE] rounded-lg p-1 shadow-sm">
           <button
             onClick={() => setActiveTab('sign')}
             className={`px-6 py-3 rounded-md font-medium transition-colors ${activeTab === 'sign'
@@ -291,7 +291,7 @@ const DigitalSignature: React.FC = () => {
       )}
 
       {/* Tab Content */}
-      <div className="bg-white rounded-xl shadow-lg p-8">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-lg p-8">
         {/* Add Signature Tab */}
         {activeTab === 'sign' && (
           <div className="space-y-6">
@@ -356,7 +356,7 @@ const DigitalSignature: React.FC = () => {
                         ))}
                     </select>
                   ) : (
-                    <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm">
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-[#F5F2EE] text-gray-500 text-sm">
                       No private key files available. Please add a private key file first from manage certificate.
                     </div>
                   )}
@@ -382,7 +382,7 @@ const DigitalSignature: React.FC = () => {
                         ))}
                     </select>
                   ) : (
-                    <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm">
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-[#F5F2EE] text-gray-500 text-sm">
                       No certificate files available. Please add a certificate file first from manage certificate.
                     </div>
                   )}
@@ -455,7 +455,7 @@ const DigitalSignature: React.FC = () => {
                 </button>
                 <button
                   onClick={clearResults}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-[#F5F2EE] transition-colors"
                 >
                   Clear
                 </button>
@@ -627,7 +627,7 @@ const DigitalSignature: React.FC = () => {
             </div>
 
             {/* Generate New Certificate */}
-            <div className="bg-gray-50 rounded-lg p-6">
+            <div className="bg-[#F5F2EE] rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Generate New Certificate</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -691,7 +691,7 @@ const DigitalSignature: React.FC = () => {
                   {certificates.map((cert, index) => (
                     <div
                       key={index}
-                      className={`p-4 rounded-lg border ${cert.type === 'certificate' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
+                      className={`p-4 rounded-lg border ${cert.type === 'certificate' ? 'bg-blue-50 border-blue-200' : 'bg-[#F5F2EE] border-gray-200'
                         }`}
                     >
                       <div className="flex items-center justify-between">

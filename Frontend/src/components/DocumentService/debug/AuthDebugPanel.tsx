@@ -18,7 +18,7 @@ export function AuthDebugPanel() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-lg shadow-lg p-4 max-w-md z-50">
+    <div className="fixed bottom-4 right-4 bg-[#F7F3EE] border border-gray-300 rounded-lg shadow-lg p-4 max-w-md z-50">
       <h3 className="text-sm font-semibold text-gray-900 mb-3">🔐 Auth Debug Panel</h3>
       
       <div className="space-y-3">

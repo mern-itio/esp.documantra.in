@@ -149,7 +149,7 @@ function Sidebar({ onApiSelect, activeEndpoint }: SidebarProps): React.ReactElem
             px-4 sm:px-5 py-3 transition-all duration-100
             ${activeEndpoint === api.endpoint
               ? "bg-blue-50 border-blue-400 text-blue-900 font-bold shadow"
-              : "bg-white hover:bg-blue-100 border-gray-200 text-gray-700"}
+              : "bg-[#F7F3EE] hover:bg-blue-100 border-gray-200 text-gray-700"}
             outline-none
           `}
         >

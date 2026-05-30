@@ -82,13 +82,13 @@ const RightWidgets: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Active Projects */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Projects</h2>
         <div className="space-y-4">
           {activeProjects.map((proj) => (
             <div
               key={proj.name}
-              className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3"
+              className="flex items-center justify-between bg-[#F5F2EE] rounded-lg px-4 py-3"
             >
               <div>
                 <div className="font-semibold text-gray-900">{proj.name}</div>
@@ -109,7 +109,7 @@ const RightWidgets: React.FC = () => {
         </a>
       </div>
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
         <ul className="space-y-4">
           {activities.map((activity, idx) => (
@@ -126,7 +126,7 @@ const RightWidgets: React.FC = () => {
         </ul>
       </div>
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <ul className="space-y-5">
           {quickActions.map((action, idx) => (

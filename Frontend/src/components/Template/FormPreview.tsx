@@ -59,7 +59,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({ fields }) => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-8">
+      <div className="bg-[#F7F3EE] rounded-sm shadow-sm border border-gray-200 p-8">
         {!isEmbedded && (
           <div className="mb-8">
             <h2 className="text-2xl text-gray-900 mb-2">Form Preview</h2>

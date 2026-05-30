@@ -200,10 +200,10 @@ const RedactContent: React.FC = () => {
 
   const redactionColors: { value: RedactionColor; label: string; color: string }[] = [
     { value: 'black', label: 'Black', color: 'bg-black' },
-    { value: 'white', label: 'White', color: 'bg-white border' },
+    { value: 'white', label: 'White', color: 'bg-[#F7F3EE] border' },
     { value: 'red', label: 'Red', color: 'bg-red-500' },
     { value: 'blue', label: 'Blue', color: 'bg-blue-500' },
-    { value: 'gray', label: 'Gray', color: 'bg-gray-500' }
+    { value: 'gray', label: 'Gray', color: 'bg-[#F5F2EE]0' }
   ];
 
   const redactionMethods: { value: RedactionMethod; label: string; description: string }[] = [
@@ -557,7 +557,7 @@ const RedactContent: React.FC = () => {
                   <div className="bg-destructive/10 border border-destructive rounded-lg p-3 mb-4">
                     <div className="flex items-center justify-center space-x-4 text-sm">
                       <div className="flex items-center space-x-1">
-                        <span className={`w-4 h-4 rounded ${options.redactionColor === 'black' ? 'bg-black' : options.redactionColor === 'white' ? 'bg-white border' : `bg-${options.redactionColor}-500`}`}></span>
+                        <span className={`w-4 h-4 rounded ${options.redactionColor === 'black' ? 'bg-black' : options.redactionColor === 'white' ? 'bg-[#F7F3EE] border' : `bg-${options.redactionColor}-500`}`}></span>
                         <span className="text-muted-foreground">= Content to be redacted</span>
                       </div>
                     </div>
@@ -582,7 +582,7 @@ const RedactContent: React.FC = () => {
                               <span className="text-muted-foreground">
                                 {match.context.substring(0, match.position)}
                               </span>
-                              <span className={`${options.redactionColor === 'black' ? 'bg-black text-white' : options.redactionColor === 'white' ? 'bg-white text-black border' : `bg-${options.redactionColor}-500 text-white`} px-1 rounded`}>
+                              <span className={`${options.redactionColor === 'black' ? 'bg-black text-white' : options.redactionColor === 'white' ? 'bg-[#F7F3EE] text-black border' : `bg-${options.redactionColor}-500 text-white`} px-1 rounded`}>
                                 {match.text}
                               </span>
                               <span className="text-muted-foreground">

@@ -23,9 +23,9 @@ const GiftWidget: React.FC = () => {
     <div className="fixed bottom-6 left-4 md:left-6 z-40 pointer-events-none">
       {/* Info card */}
       {isOpen && (
-        <div className="mb-3 max-w-xs rounded-2xl bg-white shadow-xl border border-purple-100 p-4 pointer-events-auto">
+        <div className="mb-3 max-w-xs rounded-2xl bg-[#F7F3EE] shadow-xl border border-purple-100 p-4 pointer-events-auto">
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-[#4D0080]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F0FDF4] text-[#4D0080]">
               <Gift className="h-5 w-5" />
             </div>
             <div className="flex-1">

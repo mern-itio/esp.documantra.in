@@ -35,8 +35,8 @@ export function CollaborationAnalytics() {
       title: 'Version Updates',
       value: documentMetrics.versionActivity.toString(),
       icon: GitBranch,
-      color: 'text-violet-600 dark:text-violet-400',
-      bgColor: 'bg-violet-50 dark:bg-violet-950/40',
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bgColor: 'bg-emerald-50 dark:bg-emerald-950/40',
       change: '+15%'
     },
     {
@@ -270,7 +270,7 @@ export function CollaborationAnalytics() {
               <div className="text-sm text-muted-foreground">Completion rate</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-violet-600 dark:text-violet-400">
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 {documentMetrics.workflowsActive}
               </div>
               <div className="text-sm text-muted-foreground">Active workflows</div>

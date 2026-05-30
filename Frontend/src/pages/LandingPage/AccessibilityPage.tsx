@@ -118,7 +118,7 @@ const AccessibilityPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-[#F5F2EE] pt-24 pb-16">
       <div className="container-max">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-[#260559]/100 to-[#260559]/90 rounded-2xl shadow-lg p-8 mb-8 text-white">
@@ -129,22 +129,22 @@ const AccessibilityPage = () => {
                 DocuSigner is committed to ensuring our platform is accessible to everyone, including people with disabilities. We strive to meet WCAG 2.1 AA standards and continuously improve our accessibility features.
               </p>
               <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Accessibility className="h-5 w-5" />
                   <span className="font-medium">WCAG 2.1 AA Compliant</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <CheckCircle className="h-5 w-5" />
                   <span className="font-medium">Section 508 Compliant</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
                   <Users className="h-5 w-5" />
                   <span className="font-medium">Inclusive Design</span>
                 </div>
               </div>
             </div>
             <div className="md:w-1/3 flex justify-center">
-              <div className="w-48 h-48 bg-white/10 rounded-full flex items-center justify-center">
+              <div className="w-48 h-48 bg-[#F7F3EE]/10 rounded-full flex items-center justify-center">
                 <Accessibility className="h-24 w-24 text-white" />
               </div>
             </div>
@@ -152,7 +152,7 @@ const AccessibilityPage = () => {
         </div>
 
         {/* Accessibility Features */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Accessibility Features</h2>
           
           <div className="grid md:grid-cols-2 gap-8">
@@ -174,7 +174,7 @@ const AccessibilityPage = () => {
         </div>
 
         {/* Compliance Standards */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Compliance Standards</h2>
           <p className="text-gray-600 mb-8 max-w-3xl">
             DocuSigner is committed to meeting international accessibility standards and regulations. We regularly audit our platform against these standards and work to address any gaps.
@@ -199,7 +199,7 @@ const AccessibilityPage = () => {
         </div>
 
         {/* Accessible PDF Tools */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Accessible PDF Tools</h2>
           <p className="text-gray-600 mb-8 max-w-3xl">
             DocuSigner provides specialized tools to help you create and maintain accessible PDF documents that meet WCAG 2.1 AA and PDF/UA standards.
@@ -222,7 +222,7 @@ const AccessibilityPage = () => {
         </div>
 
         {/* Accessibility Statement */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Accessibility Statement</h2>
           
           <div className="space-y-4 text-gray-700">
@@ -291,7 +291,7 @@ const AccessibilityPage = () => {
         </div>
 
         {/* Continuous Improvement */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+        <div className="bg-[#F7F3EE] rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Our Commitment to Continuous Improvement</h2>
           
           <div className="grid md:grid-cols-3 gap-6">
@@ -334,10 +334,10 @@ const AccessibilityPage = () => {
             Join thousands of organizations that trust DocuSigner for accessible document management and e-signature solutions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/signup" className="bg-white text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
+            <Link to="/signup" className="bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg">
               Start Free Trial
             </Link>
-            <Link to="/contact" className="border-2 border-white text-white hover:bg-white hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
+            <Link to="/contact" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-[#260559] font-semibold py-3 px-8 rounded-lg transition-colors text-lg">
               Contact Accessibility Team
             </Link>
           </div>

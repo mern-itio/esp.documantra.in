@@ -108,7 +108,7 @@ export function ActivityFeed({
       case 'version':
         return <GitBranch className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
       case 'upload':
-        return <Upload className="w-4 h-4 text-violet-600 dark:text-violet-400" />;
+        return <Upload className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
       case 'download':
         return <Download className="w-4 h-4 text-orange-600 dark:text-orange-400" />;
       case 'share':

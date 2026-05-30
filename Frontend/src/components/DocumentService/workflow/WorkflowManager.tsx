@@ -762,7 +762,7 @@ export function WorkflowManager({
                               </div>
 
                               <div className="flex items-center space-x-2 text-muted-foreground">
-                                <User className="w-4 h-4 text-purple-600" />
+                                <User className="w-4 h-4 text-[#155E4B]" />
                                 <span>
                                   Created by:{" "}
                                   <strong>{workflow.createdBy}</strong>

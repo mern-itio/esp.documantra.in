@@ -74,7 +74,7 @@ export const MOCK_FOLDERS: Folder[] = [
     id: 'team-shared',
     name: 'Team Shared',
     parentId: null,
-    color: '#8b5cf6',
+    color: '#155E4B',
     icon: 'Users',
     documentCount: 25,
     createdAt: '2024-01-05T08:00:00Z',

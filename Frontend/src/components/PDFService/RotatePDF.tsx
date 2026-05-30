@@ -296,7 +296,7 @@ const RotatePDF: React.FC<RotatePDFProps> = ({ onRotateResult }) => {
     
     if (thumbnail) {
       return (
-        <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200 bg-white relative">
+        <div className="w-full h-40 rounded-lg overflow-hidden border border-gray-200 bg-[#F7F3EE] relative">
           <div 
             className="w-full h-full flex items-center justify-center"
             style={{ 

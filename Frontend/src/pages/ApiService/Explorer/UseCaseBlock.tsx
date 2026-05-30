@@ -362,7 +362,7 @@ function renderSuccess(api: ApiType) {
 }
 function UseCaseBlock({ selectedApi }: { selectedApi: ApiType }): React.ReactElement {
   return (
-    <div className="w-full min-w-0 p-3 md:p-4 rounded-lg bg-gray-50 border shadow-sm">
+    <div className="w-full min-w-0 p-3 md:p-4 rounded-lg bg-[#F5F2EE] border shadow-sm">
       <div className="font-bold text-sm mb-2">Request Fields</div>
       <div className="break-words">{renderFields(selectedApi)}</div>
       <div className="font-bold text-sm mb-2 mt-2">Success Response</div>

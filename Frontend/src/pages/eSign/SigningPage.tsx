@@ -37,7 +37,7 @@ const SigningPage: React.FC = () => {
 
   if (!session || !envelope || !recipient) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <div className="text-center">
           <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Signing Link</h2>
@@ -122,14 +122,14 @@ const SigningPage: React.FC = () => {
         <p className="text-gray-600">Please review the document before signing</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Document Information</h3>
           <span className="text-sm text-gray-500">{envelope.documents.length} document(s)</span>
         </div>
         
         {envelope.documents.map((doc) => (
-          <div key={doc.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+          <div key={doc.id} className="flex items-center space-x-4 p-4 bg-[#F5F2EE] rounded-lg">
             <FileText className="w-8 h-8 text-blue-600" />
             <div className="flex-1">
               <p className="font-medium text-gray-900">{doc.name}</p>
@@ -143,11 +143,11 @@ const SigningPage: React.FC = () => {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Signing Requirements</h3>
         <div className="space-y-3">
           {recipientFields.map((field, index) => (
-            <div key={field.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div key={field.id} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
                   {index + 1}
@@ -193,7 +193,7 @@ const SigningPage: React.FC = () => {
       </div>
 
       {currentField && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="text-center mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2 capitalize">
               {currentField.type.replace('_', ' ')} Required
@@ -361,11 +361,11 @@ const SigningPage: React.FC = () => {
         <p className="text-gray-600">Review your signatures before submitting</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Completed Fields</h3>
         <div className="space-y-4">
           {recipientFields.map((field) => (
-            <div key={field.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={field.id} className="flex items-center justify-between p-4 bg-[#F5F2EE] rounded-lg">
               <div className="flex items-center space-x-3">
                 <CheckCircle className="w-5 h-5 text-green-600" />
                 <div>
@@ -434,7 +434,7 @@ const SigningPage: React.FC = () => {
         </p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">What happens next?</h3>
         <div className="space-y-3 text-left">
           <div className="flex items-center space-x-3">
@@ -462,9 +462,9 @@ const SigningPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F5F2EE]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-[#F7F3EE] border-b border-gray-200 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">

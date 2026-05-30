@@ -73,7 +73,7 @@ export function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutPro
 
   if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'team_admin') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <div className="text-center">
           <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Admin Access Required</h3>
@@ -84,7 +84,7 @@ export function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutPro
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-[#F5F2EE] flex">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
@@ -95,7 +95,7 @@ export function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutPro
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-[#F7F3EE] border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
@@ -137,7 +137,7 @@ export function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutPro
                     "w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors",
                     isActive
                       ? "bg-blue-50 text-blue-700 border border-blue-200"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      : "text-gray-600 hover:bg-[#F5F2EE] hover:text-gray-900"
                   )}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
@@ -174,7 +174,7 @@ export function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutPro
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile header */}
-        <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+        <div className="lg:hidden bg-[#F7F3EE] border-b border-gray-200 px-4 py-3">
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"

@@ -154,7 +154,7 @@ export const WorkflowAutomation: React.FC = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
               <Zap className="w-5 h-5 text-blue-600" />
@@ -165,7 +165,7 @@ export const WorkflowAutomation: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <CheckCircle className="w-5 h-5 text-green-600" />
@@ -176,10 +176,10 @@ export const WorkflowAutomation: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Clock className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-[#DCFCE7] rounded-lg">
+              <Clock className="w-5 h-5 text-[#155E4B]" />
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-600">Time Saved</p>
@@ -187,7 +187,7 @@ export const WorkflowAutomation: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-2 bg-orange-100 rounded-lg">
               <AlertCircle className="w-5 h-5 text-orange-600" />
@@ -201,13 +201,13 @@ export const WorkflowAutomation: React.FC = () => {
       </div>
 
       {/* Workflows List */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 mb-8">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Your Workflows</h2>
         </div>
         <div className="divide-y divide-gray-200">
           {workflows.map((workflow) => (
-            <div key={workflow.id} className="p-6 hover:bg-gray-50 transition-colors">
+            <div key={workflow.id} className="p-6 hover:bg-[#F5F2EE] transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
@@ -256,7 +256,7 @@ export const WorkflowAutomation: React.FC = () => {
       {/* Workflow Builder Preview and Recent Runs */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Workflow Builder Preview */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Workflow Builder Preview</h2>
           <div className="space-y-4">
             {workflowSteps.map((step, index) => {
@@ -264,7 +264,7 @@ export const WorkflowAutomation: React.FC = () => {
               const colorClasses = {
                 green: 'bg-green-100 text-green-600 border-green-200',
                 blue: 'bg-blue-100 text-blue-600 border-blue-200',
-                purple: 'bg-purple-100 text-purple-600 border-purple-200',
+                purple: 'bg-[#DCFCE7] text-[#155E4B] border-[#BBF7D0]',
                 orange: 'bg-orange-100 text-orange-600 border-orange-200'
               };
               
@@ -297,7 +297,7 @@ export const WorkflowAutomation: React.FC = () => {
         </div>
 
         {/* Recent Runs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Recent Runs</h2>
           <div className="space-y-4">
             {recentRuns.map((run) => (

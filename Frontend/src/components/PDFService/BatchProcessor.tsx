@@ -160,11 +160,11 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({ onBack }) => {
         </div>
 
         <div className="flex items-center space-x-3">
-          <div className="bg-white rounded-lg border border-gray-200 px-4 py-2">
+          <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 px-4 py-2">
             <div className="text-sm text-gray-600">Total Jobs</div>
             <div className="text-xl font-bold text-gray-900">{jobs.length}</div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 px-4 py-2">
+          <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 px-4 py-2">
             <div className="text-sm text-gray-600">Files Processed</div>
             <div className="text-xl font-bold text-green-600">{formatNumber(successfulFiles)}</div>
           </div>
@@ -172,7 +172,7 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({ onBack }) => {
       </div>
 
       {/* Create New Job */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Batch Job</h3>
         
         <div className="flex items-center space-x-4">
@@ -226,7 +226,7 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({ onBack }) => {
         </div>
 
         {jobs.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-12 text-center">
             <RefreshCw className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h4 className="text-lg font-medium text-gray-900 mb-2">No batch jobs yet</h4>
             <p className="text-gray-600">Create your first batch job to get started</p>
@@ -238,7 +238,7 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({ onBack }) => {
               const tool = allTools.find(t => t.id === job.tool);
               
               return (
-                <div key={job.id} className="bg-white rounded-xl border border-gray-200 p-6">
+                <div key={job.id} className="bg-[#F7F3EE] rounded-xl border border-gray-200 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">

@@ -248,9 +248,9 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-[#F5F2EE]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-[#F7F3EE] border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
@@ -294,7 +294,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Workflows List */}
-        <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="w-80 bg-[#F7F3EE] border-r border-gray-200 overflow-y-auto">
           <div className="p-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Workflows ({workflows.length})
@@ -381,7 +381,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
           {selectedWorkflow ? (
             <>
               {/* Workflow Header */}
-              <div className="bg-white border-b border-gray-200 px-6 py-4">
+              <div className="bg-[#F7F3EE] border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div>
@@ -480,7 +480,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                               {step.order}
                             </div>
                             
-                            <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4">
+                            <div className="flex-1 bg-[#F7F3EE] border border-gray-200 rounded-lg p-4">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
                                   <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -528,7 +528,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
 
         {/* Tools Panel */}
         {isEditing && selectedWorkflow && (
-          <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
+          <div className="w-80 bg-[#F7F3EE] border-l border-gray-200 overflow-y-auto">
             <div className="p-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Tools</h3>
               
@@ -547,7 +547,7 @@ export const WorkflowDesigner: React.FC<WorkflowDesignerProps> = ({ onBack }) =>
                             key={tool.id}
                             onClick={() => addStepToWorkflow(tool.id)}
                             disabled={loading}
-                            className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
+                            className="w-full flex items-center space-x-3 p-3 text-left hover:bg-[#F5F2EE] rounded-lg transition-colors disabled:opacity-50"
                           >
                             <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
                               <Icon className="w-4 h-4 text-blue-600" />

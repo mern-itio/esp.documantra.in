@@ -152,7 +152,7 @@ export const NLPTemplateGenerator: React.FC<NLPTemplateGeneratorProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center mb-6">
         <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mr-4">
           <Wand2 className="w-5 h-5 text-white" />
@@ -233,7 +233,7 @@ export const NLPTemplateGenerator: React.FC<NLPTemplateGeneratorProps> = ({
             <button
               key={index}
               onClick={() => setUserInput(prompt)}
-              className="w-full text-left p-3 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full text-left p-3 text-sm text-gray-600 bg-[#F5F2EE] hover:bg-gray-100 rounded-lg transition-colors"
             >
               <MessageSquare className="w-4 h-4 inline mr-2" />
               {prompt}
@@ -255,7 +255,7 @@ export const NLPTemplateGenerator: React.FC<NLPTemplateGeneratorProps> = ({
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+          <div className="bg-[#F5F2EE] rounded-lg p-4 mb-4">
             <h4 className="font-medium text-gray-900 mb-2">{generatedTemplate.name}</h4>
             <div className="space-y-2">
               {generatedTemplate.structure.sections.map((section, index) => (

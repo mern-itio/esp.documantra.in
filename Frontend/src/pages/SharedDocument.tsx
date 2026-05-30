@@ -7,7 +7,7 @@ const SharedDocumentPage: React.FC = () => {
 
   if (!shareToken) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">Invalid Share Link</h1>
           <p className="text-gray-600">The share link is invalid or malformed.</p>

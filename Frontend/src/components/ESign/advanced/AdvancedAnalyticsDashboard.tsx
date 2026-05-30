@@ -56,7 +56,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       change: '+1.2%',
       trend: 'up',
       icon: Shield,
-      color: 'bg-purple-500'
+      color: 'bg-[#F0FDF4]0'
     },
     {
       name: 'Workflow Efficiency',
@@ -77,7 +77,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
           const TrendIcon = metric.trend === 'up' ? TrendingUp : TrendingDown;
           
           return (
-            <div key={metric.name} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div key={metric.name} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className={`w-12 h-12 rounded-lg ${metric.color} flex items-center justify-center`}>
                   <Icon className="w-6 h-6 text-white" />
@@ -100,7 +100,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       </div>
 
       {/* Completion Rates by Document Type */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Completion Rates by Document Type</h3>
           <select
@@ -135,7 +135,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       </div>
 
       {/* Signature Type Performance */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Signature Type Performance</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -160,7 +160,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
   const renderAuthentication = () => (
     <div className="space-y-6">
       {/* Authentication Success Rates */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Authentication Method Performance</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -220,10 +220,10 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       </div>
 
       {/* Risk Score Distribution */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Risk Score Distribution</h3>
         
-        <div className="flex items-end justify-between h-48 bg-gray-50 rounded-lg p-4">
+        <div className="flex items-end justify-between h-48 bg-[#F5F2EE] rounded-lg p-4">
           {analytics.authenticationMetrics.riskScoreDistribution.map((count, index) => (
             <div key={index} className="flex flex-col items-center gap-2">
               <div 
@@ -241,12 +241,12 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       </div>
 
       {/* Time to Complete by Auth Method */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Completion Time by Authentication Method</h3>
         
         <div className="space-y-4">
           {Object.entries(analytics.timeToCompletion.byAuthMethod).map(([method, time]) => (
-            <div key={method} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div key={method} className="flex items-center justify-between p-3 bg-[#F5F2EE] rounded-lg">
               <div className="flex items-center gap-3">
                 <Shield className="w-5 h-5 text-gray-600" />
                 <span className="font-medium text-gray-900 capitalize">{method.replace('_', ' ')}</span>
@@ -265,7 +265,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
   const renderWorkflows = () => (
     <div className="space-y-6">
       {/* Workflow Efficiency */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Workflow Performance</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -296,7 +296,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       </div>
 
       {/* Bottlenecks Analysis */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Workflow Bottlenecks</h3>
         
         <div className="space-y-4">
@@ -328,12 +328,12 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       </div>
 
       {/* Escalation Types */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Escalation Analysis</h3>
         
         <div className="space-y-4">
           {Object.entries(analytics.workflowAnalytics.escalationRates).map(([type, rate]) => (
-            <div key={type} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={type} className="flex items-center justify-between p-4 bg-[#F5F2EE] rounded-lg">
               <div className="flex items-center gap-3">
                 <AlertTriangle className={`w-5 h-5 ${
                   rate > 10 ? 'text-red-500' : rate > 5 ? 'text-yellow-500' : 'text-green-500'
@@ -364,7 +364,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
   const renderCompliance = () => (
     <div className="space-y-6">
       {/* Compliance Adherence */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Compliance Adherence Rates</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -390,7 +390,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       </div>
 
       {/* Audit Summary */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Audit & Risk Summary</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -408,17 +408,17 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             <div className="text-xs text-blue-600 mt-1">Completed this month</div>
           </div>
           
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 text-center">
-            <Globe className="w-12 h-12 text-purple-600 mx-auto mb-4" />
-            <div className="text-3xl font-bold text-purple-600 mb-2">4</div>
-            <div className="text-sm text-purple-700">Compliance Standards</div>
-            <div className="text-xs text-purple-600 mt-1">Actively monitored</div>
+          <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg p-6 text-center">
+            <Globe className="w-12 h-12 text-[#155E4B] mx-auto mb-4" />
+            <div className="text-3xl font-bold text-[#155E4B] mb-2">4</div>
+            <div className="text-sm text-[#155E4B]">Compliance Standards</div>
+            <div className="text-xs text-[#155E4B] mt-1">Actively monitored</div>
           </div>
         </div>
       </div>
 
       {/* Compliance Timeline */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Compliance Status Timeline</h3>
         
         <div className="space-y-4">
@@ -428,11 +428,11 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             { date: '2024-01-05', event: 'HIPAA compliance review scheduled', status: 'scheduled', type: 'review' },
             { date: '2024-01-01', event: 'SOX compliance monitoring activated', status: 'active', type: 'monitoring' }
           ].map((item, index) => (
-            <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+            <div key={index} className="flex items-center gap-4 p-4 bg-[#F5F2EE] rounded-lg">
               <div className={`w-3 h-3 rounded-full ${
                 item.status === 'completed' ? 'bg-green-500' :
                 item.status === 'active' ? 'bg-blue-500' :
-                item.status === 'scheduled' ? 'bg-yellow-500' : 'bg-gray-500'
+                item.status === 'scheduled' ? 'bg-yellow-500' : 'bg-[#F5F2EE]0'
               }`} />
               <div className="flex-1">
                 <div className="font-medium text-gray-900">{item.event}</div>

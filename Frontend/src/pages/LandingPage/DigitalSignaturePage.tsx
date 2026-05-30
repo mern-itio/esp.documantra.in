@@ -37,15 +37,15 @@ const DigitalSignaturePage = () => {
           Signature Position
         </label>
         <div className="grid grid-cols-3 gap-2">
-          <label className="flex items-center gap-2 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <label className="flex items-center gap-2 p-2 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] cursor-pointer">
             <input type="radio" name="position" value="auto" className="text-primary-600" defaultChecked />
             <span className="text-sm">Auto-detect</span>
           </label>
-          <label className="flex items-center gap-2 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <label className="flex items-center gap-2 p-2 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] cursor-pointer">
             <input type="radio" name="position" value="manual" className="text-primary-600" />
             <span className="text-sm">Manual</span>
           </label>
-          <label className="flex items-center gap-2 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <label className="flex items-center gap-2 p-2 border border-gray-300 rounded-lg hover:bg-[#F5F2EE] cursor-pointer">
             <input type="radio" name="position" value="last" className="text-primary-600" />
             <span className="text-sm">Last page</span>
           </label>

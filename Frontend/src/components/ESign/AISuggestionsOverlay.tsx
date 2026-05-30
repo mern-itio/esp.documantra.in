@@ -65,11 +65,11 @@ export const AISuggestionsOverlay: React.FC<AISuggestionsOverlayProps> = ({
     const colors: Record<string, string> = {
       signature: 'bg-blue-500',
       date: 'bg-green-500',
-      name: 'bg-purple-500',
+      name: 'bg-[#F0FDF4]0',
       email: 'bg-orange-500',
-      text: 'bg-gray-500',
+      text: 'bg-[#F5F2EE]0',
       initial: 'bg-pink-500',
-      company: 'bg-indigo-500',
+      company: 'bg-emerald-500',
       title: 'bg-teal-500',
       phone: 'bg-yellow-500'
     };
@@ -122,8 +122,8 @@ export const AISuggestionsOverlay: React.FC<AISuggestionsOverlayProps> = ({
               <div
                 className={`relative w-full h-full border-2 rounded-lg shadow-lg transition-all ${
                   isHovered
-                    ? 'border-indigo-500 bg-indigo-100/80'
-                    : 'border-indigo-400 bg-indigo-50/60'
+                    ? 'border-emerald-500 bg-emerald-100/80'
+                    : 'border-emerald-400 bg-emerald-50/60'
                 }`}
               >
                 {/* Field Type Badge */}
@@ -138,7 +138,7 @@ export const AISuggestionsOverlay: React.FC<AISuggestionsOverlayProps> = ({
                 {/* Confidence Badge */}
                 {suggestion.confidence && (
                   <div
-                    className={`absolute -top-3 right-2 px-2 py-0.5 rounded-full text-xs font-medium bg-white border border-gray-300 ${getConfidenceColor(
+                    className={`absolute -top-3 right-2 px-2 py-0.5 rounded-full text-xs font-medium bg-[#F7F3EE] border border-gray-300 ${getConfidenceColor(
                       suggestion.confidence
                     )}`}
                   >
@@ -176,7 +176,7 @@ export const AISuggestionsOverlay: React.FC<AISuggestionsOverlayProps> = ({
                 {suggestion.reason && (
                   <div className="absolute bottom-1 right-1">
                     <div className="group relative">
-                      <Info className="w-3 h-3 text-indigo-600 cursor-help" />
+                      <Info className="w-3 h-3 text-emerald-600 cursor-help" />
                       <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
                         <div className="font-semibold mb-1">Reason:</div>
                         <div>{suggestion.reason}</div>
@@ -198,10 +198,10 @@ export const AISuggestionsOverlay: React.FC<AISuggestionsOverlayProps> = ({
 
       {/* Suggestions Summary Panel */}
       {pageSuggestions.length > 0 && (
-        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-xl border-2 border-indigo-300 p-4 z-30 pointer-events-auto max-w-sm">
+        <div className="absolute top-4 right-4 bg-[#F7F3EE] rounded-lg shadow-xl border-2 border-emerald-300 p-4 z-30 pointer-events-auto max-w-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-600" />
+              <Sparkles className="w-5 h-5 text-emerald-600" />
               <h4 className="font-semibold text-gray-900">
                 AI Suggestions ({pageSuggestions.length})
               </h4>
@@ -221,7 +221,7 @@ export const AISuggestionsOverlay: React.FC<AISuggestionsOverlayProps> = ({
             {pageSuggestions.map((suggestion, index) => (
               <div
                 key={`summary-${index}`}
-                className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center justify-between p-2 bg-[#F5F2EE] rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <div
@@ -266,7 +266,7 @@ export const AISuggestionsOverlay: React.FC<AISuggestionsOverlayProps> = ({
               {onAcceptAll && (
                 <button
                   onClick={onAcceptAll}
-                  className="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   <Check className="w-4 h-4" />
                   Accept All

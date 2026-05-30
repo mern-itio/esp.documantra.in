@@ -351,7 +351,7 @@ const SignupPage = () => {
         {/* Dashboard Preview Content */}
         <div className="p-6 space-y-6 min-h-screen">
           {/* Dashboard Header */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-[#F7F3EE] rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Welcome to {BRAND.name}</h1>
@@ -369,9 +369,9 @@ const SignupPage = () => {
               { title: 'Documents', value: '1,247', color: 'bg-blue-100', iconColor: 'text-blue-600' },
               { title: 'Signed', value: '892', color: 'bg-green-100', iconColor: 'text-green-600' },
               { title: 'Pending', value: '156', color: 'bg-yellow-100', iconColor: 'text-yellow-600' },
-              { title: 'Templates', value: '43', color: 'bg-purple-100', iconColor: 'text-purple-600' }
+              { title: 'Templates', value: '43', color: 'bg-[#DCFCE7]', iconColor: 'text-[#155E4B]' }
             ].map((stat, idx) => (
-              <div key={idx} className="bg-white rounded-lg shadow-sm p-6">
+              <div key={idx} className="bg-[#F7F3EE] rounded-lg shadow-sm p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">{stat.title}</p>
@@ -387,22 +387,22 @@ const SignupPage = () => {
 
           {/* Recent Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-[#F7F3EE] rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Documents</h3>
               <div className="space-y-3">
                 {['Contract_2024.pdf', 'Invoice_001.pdf', 'Agreement.docx'].map((doc, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div key={idx} className="flex items-center gap-3 p-3 bg-[#F5F2EE] rounded-lg">
                     <FileText className="h-5 w-5 text-gray-600" />
                     <span className="text-sm text-gray-700">{doc}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-[#F7F3EE] rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="grid grid-cols-2 gap-3">
                 {['Upload', 'Sign', 'Template', 'Share'].map((action, idx) => (
-                  <div key={idx} className="p-4 bg-gray-50 rounded-lg text-center">
+                  <div key={idx} className="p-4 bg-[#F5F2EE] rounded-lg text-center">
                     <span className="text-sm font-medium text-gray-700">{action}</span>
                   </div>
                 ))}
@@ -420,7 +420,7 @@ const SignupPage = () => {
         <div className="grid lg:grid-cols-2 items-stretch book-container" style={{ perspective: '2000px' }}>
           {/* Left Column - Signup Form */}
           <div className={`order-2 lg:order-1 flex book-page-left ${bookOpen ? 'book-open-left' : ''}`}>
-            <div className="bg-white shadow-2xl p-8 lg:p-6 w-full flex flex-col book-page-inner">
+            <div className="bg-[#F7F3EE] shadow-2xl p-8 lg:p-6 w-full flex flex-col book-page-inner">
               {/* Header */}
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-4">
@@ -607,9 +607,9 @@ const SignupPage = () => {
                 </div>
                 
                 <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-slate-200"></div>
+                  <div className="flex-grow border-t border-[#E6D8C9]"></div>
                   <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">Or continue with email</span>
-                  <div className="flex-grow border-t border-slate-200"></div>
+                  <div className="flex-grow border-t border-[#E6D8C9]"></div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -652,12 +652,12 @@ const SignupPage = () => {
                           required: false
                         }}
                         containerClass="w-full"
-                        inputClass={`w-full !pl-12 !pr-3 !py-2 !text-sm !border-2 !rounded-lg !bg-white focus:!outline-none focus:!ring-2 !transition-all !duration-300 ${
+                        inputClass={`w-full !pl-12 !pr-3 !py-2 !text-sm !border-2 !rounded-lg !bg-[#F7F3EE] focus:!outline-none focus:!ring-2 !transition-all !duration-300 ${
                           errors.phone
                             ? '!border-red-400 focus:!border-red-500 focus:!ring-red-200'
                             : '!border-gray-300 focus:!border-[#3E2B66] focus:!ring-[#3E2B66]/20 hover:!border-gray-400'
                         }`}
-                        buttonClass="!border-2 !border-gray-300 !bg-white"
+                        buttonClass="!border-2 !border-gray-300 !bg-[#F7F3EE]"
                       />
                     </div>
                     {errors.phone && <p className="text-red-600 text-xs mt-1 animate-fade-in">{errors.phone}</p>}
@@ -764,7 +764,7 @@ const SignupPage = () => {
                     </button>
                   </div>
                   {passwordFocused && formData.password.length > 0 && (
-                    <div className="mt-2 p-2 bg-gray-50 rounded-lg animate-fade-in">
+                    <div className="mt-2 p-2 bg-[#F5F2EE] rounded-lg animate-fade-in">
                       <div className="grid grid-cols-3 gap-1.5 text-xs">
                         <div className={`flex items-center gap-1 transition-all duration-300 ${passwordChecks.letter ? 'text-green-600' : 'text-gray-500'}`}>
                           {passwordChecks.letter ? (
@@ -899,7 +899,7 @@ const SignupPage = () => {
           {/* Right Column - Live Document Preview */}
           <div className={`order-1 lg:order-2 hidden lg:block flex book-page-right ${bookOpen ? 'book-open-right' : ''}`}>
             <div className="w-full flex flex-col h-full">
-              <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 shadow-2xl overflow-hidden flex-1 flex flex-col border-2 border-purple-200/50 relative book-page-inner">
+              <div className="bg-gradient-to-br from-purple-50 via-emerald-50 to-blue-50 shadow-2xl overflow-hidden flex-1 flex flex-col border-2 border-[#BBF7D0]/50 relative book-page-inner">
                 {/* Animated background pattern */}
                 <div className="absolute inset-0 opacity-30">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.1),transparent_50%)] animate-pulse"></div>
@@ -919,7 +919,7 @@ const SignupPage = () => {
                         <User className="h-4 w-4 text-[#3E2B66]" />
                         Personal Information
                       </h4>
-                      <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                      <div className="bg-[#F7F3EE] p-3 rounded-lg border border-gray-200 shadow-sm">
                         <div className="space-y-2">
                           <div>
                             <p className="text-xs text-gray-500">Full Name</p>
@@ -951,7 +951,7 @@ const SignupPage = () => {
                         <Building className="h-4 w-4 text-[#3E2B66]" />
                         Company Information
                       </h4>
-                      <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                      <div className="bg-[#F7F3EE] p-3 rounded-lg border border-gray-200 shadow-sm">
                           <div className="space-y-2">
                           <div>
                             <p className="text-xs text-gray-500">Company Name</p>
@@ -975,12 +975,12 @@ const SignupPage = () => {
                         <PenTool className="h-4 w-4 text-[#3E2B66]" />
                         Signature
                       </h4>
-                      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 rounded-lg border-2 border-dashed border-[#3E2B66]/30">
+                      <div className="bg-gradient-to-br from-purple-50 to-emerald-50 p-4 rounded-lg border-2 border-dashed border-[#3E2B66]/30">
                         <div className="flex items-center justify-center min-h-[100px]">
                           {formData.firstName && formData.email ? (
                             <div className="text-center w-full animate-fade-in">
                               {/* Cursive Signature Display */}
-                              <div className="bg-white p-2 rounded-lg shadow-inner border border-gray-200">
+                              <div className="bg-[#F7F3EE] p-2 rounded-lg shadow-inner border border-gray-200">
                                 <div className="signature-container">
                                   <div className="signature-line"></div>
                                   <div className="signature-text">
