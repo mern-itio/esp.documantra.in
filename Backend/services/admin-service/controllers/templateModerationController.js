@@ -92,7 +92,7 @@ const generateTemplateContent = async (req, res) => {
 
 const generateTemplateContentStream = async (req, res) => {
   try {
-    const baseURL = process.env.TEMPLATE_SERVICE_URL || 'http://165.22.215.73:2106';
+    const baseURL = process.env.TEMPLATE_SERVICE_URL || 'https://esp.documantra.in/template';
     const upstream = await axios.post(`${baseURL}/public/ai-content/generate-stream`, req.body, {
       responseType: 'stream',
       timeout: 180000,

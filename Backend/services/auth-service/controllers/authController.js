@@ -1385,7 +1385,7 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordRequestLog = prunedLog;
     await user.save({ validateBeforeSave: false });
 
-    const frontendBase = process.env.FRONTEND_BASE_URL || process.env.BASE_URL || 'http://165.22.215.73:8081/';
+    const frontendBase = process.env.FRONTEND_BASE_URL || process.env.BASE_URL || 'https://esp.documantra.in/';
     const resetLink = `${frontendBase.replace(/\/$/, '')}/reset-password?token=${token}`;
 
     await sendPasswordResetEmail(user.email, resetLink, user.fullname || null);

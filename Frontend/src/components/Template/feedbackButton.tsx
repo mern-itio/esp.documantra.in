@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ThumbsUp, ThumbsDown, X, Send } from 'lucide-react';
-const TEMPLATE_SERVICE_URL = import.meta.env.VITE_TEMPLATE_SERVICE_URL || 'http://165.22.215.73:2106';
+const TEMPLATE_SERVICE_URL = import.meta.env.VITE_TEMPLATE_SERVICE_URL || 'https://esp.documantra.in/template';
 
 interface FeedbackCategory {
   id: number;

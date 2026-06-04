@@ -9,7 +9,7 @@ async function fetchUserPlan(req, userId) {
   const now = Date.now();
   if (cached && now - cached.fetchedAt < TTL_MS) return cached;
 
-  const baseUrl = process.env.SUBSCRIPTION_SERVICE_URL || 'http://165.22.215.73:2110';
+  const baseUrl = process.env.SUBSCRIPTION_SERVICE_URL || 'https://esp.documantra.in/subscription';
   try {
     const token = req.headers?.authorization;
     const res = await axios.get(`${baseUrl}/subscriptions/me`, {
@@ -23,7 +23,7 @@ async function fetchUserPlan(req, userId) {
       const authToken = req.headers?.authorization;
       if (authToken) {
         try {
-          const authRes = await axios.get(`${process.env.AUTH_SERVICE_URL || 'http://165.22.215.73:2101'}/api/auth/me`, {
+          const authRes = await axios.get(`${process.env.AUTH_SERVICE_URL || 'https://esp.documantra.in/auth'}/api/auth/me`, {
             headers: { Authorization: authToken }
           });
           const userPlan = authRes.data?.plan || 'free';
@@ -52,7 +52,7 @@ async function fetchUserPlan(req, userId) {
     const authToken = req.headers?.authorization;
     if (authToken) {
       try {
-        const authRes = await axios.get(`${process.env.AUTH_SERVICE_URL || 'http://165.22.215.73:2101'}/api/auth/me`, {
+        const authRes = await axios.get(`${process.env.AUTH_SERVICE_URL || 'https://esp.documantra.in/auth'}/api/auth/me`, {
           headers: { Authorization: authToken }
         });
         const userPlan = authRes.data?.plan || 'free';

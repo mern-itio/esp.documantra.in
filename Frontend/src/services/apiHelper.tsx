@@ -89,17 +89,17 @@ const createApiInstance = (baseURL: string, serviceName: string, tokenKey: strin
 
 // Create service-specific API instances
 export const authApi = createApiInstance(
-  import.meta.env.VITE_API_BASE_URL || 'http://165.22.215.73:2101',
+  import.meta.env.VITE_API_BASE_URL || 'https://esp.documantra.in/auth',
   'Auth'
 );
 
 export const documentApi = createApiInstance(
-  import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http://165.22.215.73:2102',
+  import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'https://esp.documantra.in/document',
   'Document'
 );
 
 export const eSignApi = createApiInstance(
-  import.meta.env.VITE_ESIGN_SERVICE_URL || 'http://165.22.215.73:2103',
+  import.meta.env.VITE_ESIGN_SERVICE_URL || 'https://esp.documantra.in/esign',
   'E-Sign'
 );
 
@@ -260,12 +260,12 @@ documentApi.interceptors.response.use((response) => {
 }, (error) => Promise.reject(error));
 
 export const apiServiceApi = createApiInstance(
-  import.meta.env.VITE_API_SERVICE_URL || 'http://165.22.215.73:2105',
+  import.meta.env.VITE_API_SERVICE_URL || 'https://esp.documantra.in/service',
   'Api-Serivce'
 );
 
 export const templateServiceApi = createApiInstance(
-  import.meta.env.VITE_TEMPLATE_SERVICE_URL || 'http://165.22.215.73:2106',
+  import.meta.env.VITE_TEMPLATE_SERVICE_URL || 'https://esp.documantra.in/template',
   'Template-Serivce'
 );
 

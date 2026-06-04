@@ -82,7 +82,7 @@ class AIService {
       platform: {
         name: 'Draft and Sign',
         description: 'A comprehensive electronic signature platform that allows users to create, edit, sign, and manage documents with legal compliance across 40+ countries.',
-        url: 'http://165.22.215.73:8081/',
+        url: 'https://esp.documantra.in/',
         features: [
           'Electronic Signatures — Legally binding signatures with compliance across 40+ countries',
           'PDF Tools — 30+ free PDF manipulation tools (convert, edit, merge, compress, secure)',

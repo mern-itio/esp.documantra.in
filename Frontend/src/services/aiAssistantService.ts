@@ -36,7 +36,7 @@ const createApiInstance = (baseURL: string) => {
 };
 
 const aiAssistantApi = createApiInstance(
-  import.meta.env.VITE_AI_ASSISTANT_SERVICE_URL || 'http://165.22.215.73:2108'
+  import.meta.env.VITE_AI_ASSISTANT_SERVICE_URL || 'https://esp.documantra.in/ai'
 );
 
 export interface AICommandResponse {

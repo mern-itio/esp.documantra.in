@@ -474,7 +474,7 @@ const CustomerChatWidget: React.FC = () => {
                                   filePath = filePath.substring(1);
                                 }
 
-                                const supportServiceUrl = import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://165.22.215.73:2107';
+                                const supportServiceUrl = import.meta.env.VITE_SUPPORT_SERVICE_URL || 'https://esp.documantra.in/support';
                                 const fileUrl = `${supportServiceUrl}/uploads/${filePath}`;
                                 const isImage = att.mimeType?.startsWith('image/');
 
@@ -656,7 +656,7 @@ const CustomerChatWidget: React.FC = () => {
                         <div className="space-y-2 border-b border-border bg-muted/30 p-3">
                           <div className="mb-2 text-xs text-muted-foreground">Attachments ({pendingAttachments.length}):</div>
                           {pendingAttachments.map((att, idx) => {
-                            const supportServiceUrl = import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://165.22.215.73:2107';
+                            const supportServiceUrl = import.meta.env.VITE_SUPPORT_SERVICE_URL || 'https://esp.documantra.in/support';
                             const filePath = att.path.startsWith('/') ? att.path.substring(1) : att.path;
                             const fileUrl = `${supportServiceUrl}/uploads/${filePath}`;
                             const isImage = att.mimeType?.startsWith('image/');

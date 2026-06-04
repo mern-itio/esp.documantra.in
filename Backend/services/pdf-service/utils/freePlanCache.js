@@ -7,7 +7,7 @@ async function fetchFreePlanLimit() {
   const now = Date.now();
   if (now - cached.fetchedAt < TTL_MS) return cached;
 
-  const baseUrl = process.env.SUBSCRIPTION_SERVICE_URL || 'http://165.22.215.73:2110';
+  const baseUrl = process.env.SUBSCRIPTION_SERVICE_URL || 'https://esp.documantra.in/subscription';
   try {
     const res = await axios.get(`${baseUrl}/admin/plans/public/free-plan`);
     const data = res.data || {};

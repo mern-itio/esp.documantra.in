@@ -96,8 +96,8 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
-      frameSrc: ["'self'", "http://localhost:2104", "http://165.22.215.73:2104", "http://165.22.215.73:8081"],
-      frameAncestors: ["'self'", "http://localhost:3000", "http://localhost:5173", "http://165.22.215.73:3000", "http://165.22.215.73:8081"],
+      frameSrc: ["'self'", "http://localhost:2104", "https://esp.documantra.in/pdf", "https://esp.documantra.in"],
+      frameAncestors: ["'self'", "http://localhost:3000", "http://localhost:5173", "https://esp.documantra.in", "https://esp.documantra.in"],
       connectSrc: ["'self'"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
@@ -189,7 +189,7 @@ app.use('/outputs', (req, res, next) => {
   // Set headers to allow iframe embedding for PDF files
   if (req.url.endsWith('.pdf')) {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:8081");
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 https://esp.documantra.in");
   }
   
   next();
@@ -210,7 +210,7 @@ app.get('/outputs/:filename', (req, res) => {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader(
       'Content-Security-Policy',
-      "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:8081"
+      "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 https://esp.documantra.in"
     );
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET');

@@ -8,7 +8,7 @@ const { getOrCreateConfig } = require('./referralProgramAdminController');
 const LEGACY_ENV_CREDITS = parseInt(process.env.REFERRAL_REWARD_CREDITS || '10', 10);
 
 function subscriptionBaseUrl() {
-  const rawBase = process.env.SUBSCRIPTION_SERVICE_URL || 'http://165.22.215.73:2110';
+  const rawBase = process.env.SUBSCRIPTION_SERVICE_URL || 'https://esp.documantra.in/subscription';
   return String(rawBase).replace(/\/+$/, '');
 }
 
@@ -259,8 +259,8 @@ async function getMyReferral(req, res) {
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const config = await getOrCreateConfig();
-    const rawBase = process.env.FRONTEND_URL || process.env.BASE_URL || 'http://165.22.215.73:8081';
-    const base = String(rawBase).replace(/\/+$/, '') || 'http://165.22.215.73:8081';
+    const rawBase = process.env.FRONTEND_URL || process.env.BASE_URL || 'https://esp.documantra.in';
+    const base = String(rawBase).replace(/\/+$/, '') || 'https://esp.documantra.in';
     const referralLink = `${base}/signup?ref=${encodeURIComponent(String(userId))}`;
 
     const rid = new mongoose.Types.ObjectId(String(userId));

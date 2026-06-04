@@ -344,7 +344,7 @@ const createCheckoutSession = async (req, res) => {
     const frontendBase =
       process.env.FRONTEND_BASE_URL ||
       process.env.BASE_URL ||
-      'http://165.22.215.73:8081/';
+      'https://esp.documantra.in/';
 
     const userEmail = getUserEmailFromRequest(req);
 

@@ -2,7 +2,7 @@
   "platform": {
     "name": "Draft and Sign",
     "description": "A comprehensive electronic signature platform that allows users to create, edit, sign, and manage documents with legal compliance across 40+ countries.",
-    "url": "http://165.22.215.73:8081/",
+    "url": "https://esp.documantra.in/",
     "tagline": "All in One Document Management Platform",
     "features": [
       "Electronic Signatures — Legally binding signatures with compliance across 40+ countries",
@@ -438,7 +438,7 @@
           }
         ]
       },
-      "apiBaseUrl": "http://165.22.215.73:2104"
+      "apiBaseUrl": "https://esp.documantra.in/pdf"
     },
     "template-service": {
       "name": "Template Service",
@@ -682,11 +682,11 @@
   },
   "apiInformation": {
     "baseUrls": {
-      "gateway": "http://165.22.215.73:8081",
-      "auth": "http://165.22.215.73:2101",
-      "document": "http://165.22.215.73:2102",
-      "esign": "http://165.22.215.73:2103",
-      "pdf": "http://165.22.215.73:2104",
+      "gateway": "https://esp.documantra.in",
+      "auth": "https://esp.documantra.in/auth",
+      "document": "https://esp.documantra.in/document",
+      "esign": "https://esp.documantra.in/esign",
+      "pdf": "https://esp.documantra.in/pdf",
       "template": "http://165.22.215.73:2105",
       "support": "http://165.22.215.73:2107"
     },

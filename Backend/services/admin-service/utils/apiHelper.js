@@ -28,23 +28,23 @@ function createClient(req, { baseURL, extraHeaders } = {}) {
 function getServiceBaseURL(serviceName) {
   switch (serviceName) {
     case 'auth':
-      return process.env.AUTH_SERVICE_URL || 'http://165.22.215.73:2101';
+      return process.env.AUTH_SERVICE_URL || 'https://esp.documantra.in/auth';
     case 'document':
-      return process.env.DOCUMENT_SERVICE_URL || 'http://165.22.215.73:2102';
+      return process.env.DOCUMENT_SERVICE_URL || 'https://esp.documantra.in/document';
     case 'esign':
-      return process.env.ESIGN_SERVICE_URL || 'http://165.22.215.73:2103';
+      return process.env.ESIGN_SERVICE_URL || 'https://esp.documantra.in/esign';
     case 'pdf':
-      return process.env.PDF_SERVICE_URL || 'http://165.22.215.73:2104';
+      return process.env.PDF_SERVICE_URL || 'https://esp.documantra.in/pdf';
     case 'api':
-      return process.env.API_SERVICE_URL || 'http://165.22.215.73:2105';
+      return process.env.API_SERVICE_URL || 'https://esp.documantra.in/service';
     case 'template':
-      return process.env.TEMPLATE_SERVICE_URL || 'http://165.22.215.73:2106';
+      return process.env.TEMPLATE_SERVICE_URL || 'https://esp.documantra.in/template';
     case 'subscription':
-      return process.env.SUBSCRIPTION_SERVICE_URL || 'http://165.22.215.73:2110';
+      return process.env.SUBSCRIPTION_SERVICE_URL || 'https://esp.documantra.in/subscription';
     case 'organization':
-      return process.env.ORGANIZATION_SERVICE_URL || 'http://165.22.215.73:2111';
+      return process.env.ORGANIZATION_SERVICE_URL || 'https://esp.documantra.in/organization';
     case 'email':
-      return process.env.EMAIL_SERVICE_URL || 'http://165.22.215.73:2112';
+      return process.env.EMAIL_SERVICE_URL || 'https://esp.documantra.in/email';
     default:
       return process.env.DEFAULT_SERVICE_URL || '';
   }

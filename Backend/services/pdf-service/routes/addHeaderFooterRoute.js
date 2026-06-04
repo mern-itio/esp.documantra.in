@@ -55,7 +55,7 @@ router.get('/preview/:filename', async (req, res) => {
       // console.log(`Header/Footer Preview route: File found, serving: ${filename}`);
       // Set headers to allow iframe embedding
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-      res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 http://165.22.215.73:8081");
+      res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:3000 http://localhost:5173 https://esp.documantra.in");
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
