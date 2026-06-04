@@ -20,7 +20,9 @@ const HIDE_HEADER_FOOTER_ROUTES: string[] = [
 ];
 
 
-  const shouldHideHeaderFooter = HIDE_HEADER_FOOTER_ROUTES.some((path) => location.pathname === path);
+  const shouldHideHeaderFooter =
+    HIDE_HEADER_FOOTER_ROUTES.some((path) => location.pathname === path) ||
+    location.pathname.startsWith('/public-sign');
   
   return (
     <div className="min-h-screen bg-[#F7F3EE]">

@@ -41,6 +41,45 @@ const envelopesData = async (req, res) => {
     organizationId ;
 
   try {
+    if (req.isPublicFlow && req.publicFlowEnvelopeId) {
+      const envelope = await Envelope.findById(req.publicFlowEnvelopeId)
+        .populate('documentIds')
+        .populate({
+          path: 'recipientIds',
+          model: 'Recipient',
+          select: 'name email UserId',
+        })
+        .lean();
+
+      if (!envelope) {
+        return res.status(404).json({ status: 'error', message: 'Envelope not found' });
+      }
+
+      const permissions = await RecipientPermission.find({
+        envelopeId: envelope._id,
+      })
+        .select('recipientId role order status authLevel')
+        .lean();
+
+      const recipients = (envelope.recipientIds || []).map((r) => {
+        const perm = permissions.find(
+          (p) => String(p.recipientId) === String(r._id)
+        );
+        return {
+          ...r,
+          role: perm?.role,
+          order: perm?.order,
+          status: perm?.status,
+          authentication: perm?.authLevel,
+        };
+      });
+
+      return res.status(200).json({
+        status: 'success',
+        data: [{ ...envelope, recipients }],
+        totalEnvelopes: 1,
+      });
+    }
     /* ============================================================
        ================= ORGANIZATION CONTEXT =====================
        ============================================================ */
@@ -364,6 +403,14 @@ const envelopesData = async (req, res) => {
 const envelopesDetail = async (req, res) => {
   const envelopeId = req.params.id;
   const userId = req?.user?.data?.id;
+
+  if (
+    req.isPublicFlow &&
+    req.publicFlowEnvelopeId &&
+    String(envelopeId) !== String(req.publicFlowEnvelopeId)
+  ) {
+    return res.status(403).json({ message: 'Access denied' });
+  }
 
   try {
     // Step 1: Fetch single envelope by ID

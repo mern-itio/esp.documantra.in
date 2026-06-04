@@ -2881,8 +2881,52 @@ const EnvelopeCreator: React.FC = () => {
       const params = new URLSearchParams(location.search);
       const step = params.get('step');
       const envelopeId = params.get('envelopeId');
+      const publicFlowToken =
+        typeof window !== 'undefined'
+          ? sessionStorage.getItem('publicFlowToken')
+          : null;
+
+      const applyStep = async (stepNum: number, envId: string) => {
+        switch (stepNum) {
+          case 1:
+            setCurrentStep(1);
+            setEnvelopeId(envId);
+            if (envId) await getEnvelopeDetail(envId);
+            break;
+          case 2:
+            setCurrentStep(2);
+            setEnvelopeId(envId);
+            await getEnvelopeDetail(envId);
+            break;
+          case 3:
+            setCurrentStep(3);
+            setEnvelopeId(envId);
+            await getEnvelopeDetail(envId);
+            await getSignatureFields(envId);
+            break;
+          case 4:
+            setCurrentStep(4);
+            setEnvelopeId(envId);
+            break;
+          case 5:
+            setCurrentStep(5);
+            setEnvelopeId(envId);
+            break;
+          case 6:
+            setCurrentStep(6);
+            setEnvelopeId(envId);
+            await getEnvelopeDetail(envId);
+            break;
+          default:
+            setCurrentStep(1);
+        }
+      };
 
       if (step && envelopeId) {
+        if (publicFlowToken) {
+          await applyStep(Number(step), envelopeId);
+          return;
+        }
         const response = await eSignApi.get('/api/e-sign/get-envelopes');
         if (response) {
           switch (Number(step)) {
@@ -2897,7 +2941,6 @@ const EnvelopeCreator: React.FC = () => {
               await getEnvelopeDetail(envelopeId);
               break;
             case 3:
-              console.log('Current step', step);
               setCurrentStep(3);
               setEnvelopeId(envelopeId);
               await getEnvelopeDetail(envelopeId);

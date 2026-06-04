@@ -33,8 +33,14 @@ const LandingHero = () => {
           {/* Primary actions */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-6">
             <Link
-              to="/signup"
+              to="/public-sign"
               className="inline-flex items-center justify-center rounded-full bg-[#2563eb] px-7 py-3 text-sm md:text-base font-semibold text-white shadow-[0_14px_30px_rgba(37,99,235,0.35)] hover:bg-[#1d4ed8] transition-colors"
+            >
+              Upload & sign
+            </Link>
+            <Link
+              to="/signup"
+              className="inline-flex items-center justify-center rounded-full border border-sky-200 bg-white/80 px-7 py-3 text-sm md:text-base font-semibold text-sky-800 shadow-sm hover:bg-white transition-colors"
             >
               Get started for free
             </Link>

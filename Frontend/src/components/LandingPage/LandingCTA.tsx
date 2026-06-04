@@ -13,11 +13,17 @@ const LandingCTA = () => {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            to="/signup"
+            to="/public-sign"
             className="inline-flex items-center justify-center gap-2 bg-[#F7F3EE] text-slate-900 font-semibold px-6 py-3.5 rounded-xl hover:bg-slate-100 transition-colors"
           >
-            Start free
+            Upload & sign
             <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            to="/signup"
+            className="inline-flex items-center justify-center gap-2 border-2 border-slate-500 text-white font-semibold px-6 py-3.5 rounded-xl hover:bg-slate-800 transition-colors"
+          >
+            Start free
           </Link>
           <Link
             to="/login"

@@ -1,10 +1,12 @@
 const express = require('express');
 const verifyJWT  = require('@draftnsign/auth-lib');
+const verifyJWTOrPublicFlow = require('./middleware/verifyJWTOrPublicFlow');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const eSignRoutes = require('./routes/eSignRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const publicWizardRoutes = require('./routes/publicWizardRoutes');
 const certificateRoutes  = require('./routes/certificateRoutes');
 const otpRoutes = require("./routes/otpRoutes");
 const digitalSignatureRoutes = require('./routes/digitalSignatureRoutes');
@@ -30,7 +32,8 @@ connectDB();
 app.get('/health', (req, res) => {
   res.send(`E-Sign service is running ${req.user?.data?.fullname || ''}`);
 });
-// API Routes
+// API Routes — public wizard first (no JWT); must not fall through to verifyJWT
+app.use('/api/e-sign/public/wizard', publicWizardRoutes);
 app.use('/api/e-sign/public', publicRoutes);
 app.use("/api/e-sign", certificateRoutes);
 app.use("/api/e-sign", otpRoutes);
@@ -39,7 +42,7 @@ app.use('/api/e-sign', tsaRoutes);
 app.use('/api/e-sign',verificationRoutes);
 app.use('/api/e-sign/anchor', anchorRoutes);
 app.use('/api/e-sign/envelope-types', verifyJWT(), envelopeTypeRoutes);
-app.use('/api/e-sign', verifyJWT(), eSignRoutes);
+app.use('/api/e-sign', verifyJWTOrPublicFlow(), eSignRoutes);
 app.use('/admin', verifyJWT("admin"),adminRoutes );
 // Start server
 const PORT = process.env.PORT || 2103;

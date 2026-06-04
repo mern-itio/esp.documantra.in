@@ -214,6 +214,12 @@ import SignerStatusPage from '../pages/eSign/SignerStatusPage';
 import FinishLaterPage from '../pages/eSign/FinishLaterPage';
 import NotificationsPage from '../pages/Notifications/NotificationsPage';
 import SignerCycle from '../pages/eSign/SignerCycle';
+import { PublicSignProvider } from '../pages/public-sign/PublicSignContext';
+import PublicSignLayout from '../pages/public-sign/PublicSignLayout';
+import PublicSignUploadPage from '../pages/public-sign/UploadPage';
+import PublicSignActionPage from '../pages/public-sign/ActionPage';
+import PublicSignSignerSelectionPage from '../pages/public-sign/SignerSelectionPage';
+import PublicSignRecipientPage from '../pages/public-sign/RecipientPage';
 import CreateOrganizationPage from '../pages/Organization/CreateOrganizationPage';
 import MyOrganizationPage from '../pages/Organization/MyOrganizationPage';
 import OrganizationFolder from '../pages/Organization/organizationFolder';
@@ -500,6 +506,38 @@ const GuestRoute = ({ children }: { children: React.ReactElement }) => {
   const { isAuthenticated } = useAuth();
   return !isAuthenticated ? children : <Navigate to="/dashboard" />;
 };
+
+/** Envelope editor: logged-in users OR public wizard token for one envelope. */
+const EnvelopeCreateRoute = ({ children }: { children: React.ReactElement }) => {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) return null;
+
+  if (isAuthenticated) return children;
+
+  const params = new URLSearchParams(location.search);
+  const envelopeId = params.get('envelopeId');
+  const publicFlow = params.get('publicFlow') === '1';
+  let publicToken: string | null = null;
+  try {
+    publicToken = sessionStorage.getItem('publicFlowToken');
+  } catch {
+    publicToken = null;
+  }
+
+  if (publicFlow && envelopeId && publicToken) {
+    return children;
+  }
+
+  return (
+    <Navigate
+      to="/login"
+      state={{ returnTo: `${location.pathname}${location.search}` }}
+    />
+  );
+};
+
 function DocumentView() {
   const { viewMode } = useDocumentStore();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -641,6 +679,21 @@ const guestRoutes = [
   { path: '/sign-pdf-online', element: <UploadDocumentPage /> },
   { path: '/sign-pdf-online/signer', element: <SignerPage /> },
   { path: '/sign-pdf-online/plan', element: <ChoosePlanPage /> },
+  { path: '/sign', element: <Navigate to="/public-sign" replace /> },
+  {
+    path: '/public-sign',
+    element: (
+      <PublicSignProvider>
+        <PublicSignLayout />
+      </PublicSignProvider>
+    ),
+    children: [
+      { index: true, element: <PublicSignUploadPage /> },
+      { path: 'action', element: <PublicSignActionPage /> },
+      { path: 'signers', element: <PublicSignSignerSelectionPage /> },
+      { path: 'recipients', element: <PublicSignRecipientPage /> },
+    ],
+  },
   // Public signer status page should show landing header/footer
   { path: '/e-sign/signer/status/:envelopeId/:recipientId', element: <SignerStatusPage /> },
   { path: '/e-sign/signer/finish-later/:envelopeId/:recipientId', element: <FinishLaterPage /> },
@@ -769,7 +822,6 @@ const authRoutes = [
   { path: '/e-sign/dashboard', element: <EsignDashboard /> },
   // moved to no-sidebar layout group below
   { path: '/e-sign/sign/:token', element: <EsignSigningPage /> },
-  { path: '/e-sign/create', element: <EnvelopeCreator /> },
   { path: '/e-sign/edit/:envelopeId', element: <EnvelopeCreator /> },
 
   { path: '/e-sign/analytics', element: <EsignAnalytics /> },
@@ -947,6 +999,14 @@ const router = createBrowserRouter([
 
 
         ],
+      },
+      {
+        element: (
+          <EnvelopeCreateRoute>
+            <DashboardNoSidebarLayout />
+          </EnvelopeCreateRoute>
+        ),
+        children: [{ path: '/e-sign/create', element: <EnvelopeCreator /> }],
       },
       {
         // Public Signer Routes

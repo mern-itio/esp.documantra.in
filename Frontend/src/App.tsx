@@ -30,7 +30,7 @@ const ConditionalWidgets: React.FC = () => {
         setShouldHide(true);
         return;
       }
-      if (path === '/e-sign/create') {
+      if (path === '/e-sign/create' || path.startsWith('/public-sign')) {
         setShouldHide(true);
         return;
       }   

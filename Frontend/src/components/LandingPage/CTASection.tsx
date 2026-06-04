@@ -14,9 +14,9 @@ const CTASection = () => {
             e-signature, and legal template needs.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link to="/signup">
+            <Link to="/public-sign">
             <button className="flex items-center justify-center gap-2 bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold text-base px-6 py-3 rounded-md shadow-md hover:shadow-lg transition duration-200">
-              Start Free Forever
+              Upload & sign — no login
               <ArrowRight className="h-4 w-4 align-middle" />
             </button>
             </Link>

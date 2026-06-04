@@ -1,6 +1,8 @@
 import axios from 'axios';
-import type { AxiosInstance } from 'axios';
+import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { SubscriptionStorage } from './subscriptionService';
+
+export type ApiRequestConfig = InternalAxiosRequestConfig & { skipAuth?: boolean };
 
 const createApiInstance = (baseURL: string, serviceName: string, tokenKey: string = 'accessToken'): AxiosInstance => {
 
@@ -11,7 +13,16 @@ const createApiInstance = (baseURL: string, serviceName: string, tokenKey: strin
   });
 
   // Request Interceptor
-  instance.interceptors.request.use(async (config) => {
+  instance.interceptors.request.use(async (config: ApiRequestConfig) => {
+    const url = String(config.url || '');
+    const isPublicWizard =
+      url.includes('/api/e-sign/public/wizard/') || config.skipAuth === true;
+
+    if (isPublicWizard && config.headers) {
+      delete (config.headers as Record<string, unknown>).Authorization;
+      delete (config.headers as Record<string, unknown>)['X-Public-Flow-Token'];
+    }
+
     // Try multiple localStorage keys to maximize compatibility across auth flows
     let token: string | null = null;
     try {
@@ -31,8 +42,15 @@ const createApiInstance = (baseURL: string, serviceName: string, tokenKey: strin
         }
       } catch {}
     }
-    if (token) {
+    if (token && !isPublicWizard) {
       (config.headers as any).Authorization = `Bearer ${token}`;
+    } else if (serviceName === 'E-Sign' && !isPublicWizard) {
+      try {
+        const publicFlowToken = sessionStorage.getItem('publicFlowToken');
+        if (publicFlowToken) {
+          (config.headers as any)['X-Public-Flow-Token'] = publicFlowToken;
+        }
+      } catch {}
     }
 
     // Inject account switching headers if present
@@ -60,8 +78,17 @@ const createApiInstance = (baseURL: string, serviceName: string, tokenKey: strin
   instance.interceptors.response.use(
     (response) => response,
     (error) => {
+      const failedUrl = String(error.config?.url || '');
+      const isPublicWizardFailure = failedUrl.includes(
+        '/api/e-sign/public/wizard/'
+      );
+
       // Dispatch logout event on 401 Unauthorized globally
-      if (error.response?.status === 401 && typeof window !== 'undefined') {
+      if (
+        error.response?.status === 401 &&
+        typeof window !== 'undefined' &&
+        !isPublicWizardFailure
+      ) {
         try { window.dispatchEvent(new CustomEvent('app:auth-logout')); } catch {}
       }
 
