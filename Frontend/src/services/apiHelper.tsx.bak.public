@@ -62,20 +62,8 @@ const createApiInstance = (baseURL: string, serviceName: string, tokenKey: strin
     (error) => {
       // Dispatch logout event on 401 Unauthorized globally
       if (error.response?.status === 401 && typeof window !== 'undefined') {
-
-  const path = window.location.pathname;
-
-  const isPublicRoute =
-    path.startsWith('/public-sign');
-
-  if (!isPublicRoute) {
-    try {
-      window.dispatchEvent(
-        new CustomEvent('app:auth-logout')
-      );
-    } catch {}
-  }
-}
+        try { window.dispatchEvent(new CustomEvent('app:auth-logout')); } catch {}
+      }
 
       console.error(`${serviceName} API Error:`, {
         message: error.message,

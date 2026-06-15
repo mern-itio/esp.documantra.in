@@ -48,6 +48,7 @@ router.get('/health', (_, res) => res.send('E-Sign Private Service is running...
 router.post('/upload', upload.array('files'), Upload);
 router.post('/add-recipients',insertRecipient);
 router.post('/save-signature-fields', saveSignatureFields);
+router.post('/public/save-signature-fields', saveSignatureFields);
 router.post('/update-envelope', updateEnvelope);
 router.post('/add-signature', addSignature);
 router.get('/get-envelopes', envelopesData);

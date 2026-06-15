@@ -2,7 +2,33 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 // Configure multer storage (files go to /uploads folder)
-const { envelopesDetail,getSignatureFields,addSignature, activityLogs,getEnvelopePower,signerInitiate,getSelfSigner,saveNonSignatureField,saveupdateSignature,LinkUserRecipient, assignEnvelopeToSomeoneElsePublic, declineEnvelopePublic,acceptTerms,fetchCurrentRecipient, getRecipientAuditTrail,completeSignature,validateRecipient } = require('../controllers/mainController');
+//const { envelopesDetail,getSignatureFields,addSignature, activityLogs,getEnvelopePower,signerInitiate,getSelfSigner,saveNonSignatureField,saveupdateSignature,LinkUserRecipient, assignEnvelopeToSomeoneElsePublic, declineEnvelopePublic,acceptTerms,fetchCurrentRecipient, getRecipientAuditTrail,completeSignature,validateRecipient } = require('../controllers/mainController');
+
+const {
+  envelopesDetail,
+  getSignatureFields,
+  addSignature,
+  activityLogs,
+  getEnvelopePower,
+  signerInitiate,
+  getSelfSigner,
+  saveNonSignatureField,
+  saveupdateSignature,
+  LinkUserRecipient,
+  assignEnvelopeToSomeoneElsePublic,
+  declineEnvelopePublic,
+  acceptTerms,
+  fetchCurrentRecipient,
+  getRecipientAuditTrail,
+  completeSignature,
+  validateRecipient,
+  sendEnvelope
+} = require('../controllers/mainController');
+
+const {
+  Upload,
+  insertRecipient
+} = require('../controllers/eSignController');
 
 const {updateAuthStatus,saveAadhaar} = require('../controllers/recipientController');
 const vSignController = require('../controllers/vSignController');
@@ -18,9 +44,26 @@ const upload = multer({ storage });
 
 const router = express.Router();
 
+
+
 router.get('/health', (_, res) => res.send('E-Sign Public Service is running...'));
 router.get('/envelope/:id', envelopesDetail);
 router.get('/document/signature-fields/:id/:mode?', getSignatureFields);
+router.post(
+  '/upload',
+  upload.array('files'),
+  Upload
+);
+router.post(
+  '/add-recipients',
+  insertRecipient
+);
+
+router.post(
+  '/send-envelope/:envelopeId',
+  sendEnvelope
+);
+
 router.post('/save-signature', saveupdateSignature);
 router.post('/add-signature', addSignature); 
 router.post('/signature-complete',completeSignature);

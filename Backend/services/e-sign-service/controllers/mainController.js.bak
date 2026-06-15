@@ -415,37 +415,14 @@ const envelopesDetail = async (req, res) => {
     }
 
     // Step 2: Fetch sender details from User service
-    //const senderResponse = await axios.get(
-      //`${process.env.AUTH_URL}/api/user-details/${senderId}`,
-   // );
-
-    //const senderDetails = senderResponse.data;
-   // if (!senderDetails || !senderDetails.data) {
-     // return res.status(404).json({ message: 'Sender not found' });
-   // }
-
-let senderDetails = {
-  data: {
-    _id: null,
-    fullname: 'Public User',
-    email: '',
-    role: 'sender'
-  }
-};
-
-if (senderId) {
-  try {
     const senderResponse = await axios.get(
-      `${process.env.AUTH_URL}/api/user-details/${senderId}`
+      `${process.env.AUTH_URL}/api/user-details/${senderId}`,
     );
 
-    if (senderResponse?.data) {
-      senderDetails = senderResponse.data;
+    const senderDetails = senderResponse.data;
+    if (!senderDetails || !senderDetails.data) {
+      return res.status(404).json({ message: 'Sender not found' });
     }
-  } catch (err) {
-    console.log('Sender lookup skipped:', err.message);
-  }
-}
 
     // Step 3: Collect decline metadata from activity logs (if any)
     const declineLogs = await ActivityLogs.find({

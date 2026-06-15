@@ -1618,12 +1618,7 @@ const isPublicFlow =
         console.error('Failed to save recipients from Step 1:', err);
       }
       await getEnvelopeDetail(loopEnvelopeId);
-if (isPublicFlow) {
-  navigate(`/public-sign/editor?step=2&envelopeId=${loopEnvelopeId}&public=true`);
-} else {
-  navigate(`/e-sign/create?step=2&envelopeId=${loopEnvelopeId}`);
-}      
-//navigate(`/e-sign/create?step=2&envelopeId=${loopEnvelopeId}`);
+      navigate(`/e-sign/create?step=2&envelopeId=${loopEnvelopeId}`);
       return true; // success
     }
   };
@@ -1652,13 +1647,7 @@ if (isPublicFlow) {
         console.log('Recipients inserted successfully:', response.data.envelopeId);
         await getEnvelopeDetail(response.data.envelopeId);
         console.log('Current Step:', currentStep + 1);
-      
-if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}&public=true`);
-} else {
-  await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
-}
-  //await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
+        await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
       }
     } catch (error) {
       console.error('Error inserting recipients:', error);
@@ -1714,24 +1703,13 @@ if (isPublicFlow) {
     console.log('Transformed fields data for saving:', fieldsData);
 
     try {
-      //const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
-const url = isPublicFlow
-  ? '/api/e-sign/public/save-signature-fields'
-  : '/api/e-sign/save-signature-fields';
-
-const response = await eSignApi.post(url, {        
-envelopeId,
+      const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
+        envelopeId,
         signatureFields: fieldsData
       });
       if (response.status === 200) {
         setSignatureFields(response.data.data.signatureFields);
-        
-if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${envelopeId}&public=true`);
-} else {
-  await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
-}
-//await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
+        await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
       }
     } catch (error) {
       console.error('Error saving signature fields:', error);
@@ -1760,13 +1738,8 @@ if (isPublicFlow) {
         fieldId: field.fieldId ?? null,
       }));
 
-      //const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
-const url = isPublicFlow
-  ? '/api/e-sign/public/save-signature-fields'
-  : '/api/e-sign/save-signature-fields';
-
-const response = await eSignApi.post(url, {        
-envelopeId,
+      const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
+        envelopeId,
         signatureFields: fieldsData,
       });
       if (response.status === 200) {
@@ -1778,13 +1751,8 @@ envelopeId,
   };
   const getEnvelopeDetail = async (envelopeId: string) => {
     try {
-      //const response = await eSignApi.get(`/api/e-sign/envelope/${envelopeId}`);
-const url = isPublicFlow
-  ? `/api/e-sign/public/envelope/${envelopeId}`
-  : `/api/e-sign/envelope/${envelopeId}`;
-
-const response = await eSignApi.get(url);     
- if (response.status === 200) {
+      const response = await eSignApi.get(`/api/e-sign/envelope/${envelopeId}`);
+      if (response.status === 200) {
         // Normalize documents to ensure preview works in both upload and edit flows
         const apiDocs = (response.data.data.documents || []).map((doc: any) => ({
           ...doc,
@@ -1894,13 +1862,7 @@ const response = await eSignApi.get(url);
       });
       if (response.status === 200) {
         console.log('Signature type updated successfully:', response.data);
-if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}&public=true`);
-} else {
-  await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
-}       
-
- //await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
+        await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
       }
     } catch (error) {
       console.error('Error updating signature type:', error);
@@ -2183,13 +2145,7 @@ if (isPublicFlow) {
             return;
           }
           // navigate to next step with returned envelope/template id
-         
-if (isPublicFlow) {
-  navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${savedId}&public=true`);
-} else {
-  navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${savedId}`);
-}
- //navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${savedId}`);
+          navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${savedId}`);
         }
       }
       if (currentStep === 3) {
@@ -2208,13 +2164,7 @@ if (isPublicFlow) {
       }
       if (currentStep === 6) {
         alert('Envelope created successfully, Ready to send!');
-if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${envelopeId}&public=true`);
-} else {
-  await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
-}        
-
-//await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
+        await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
       }
       if (currentStep == 1) {
         setCurrentStep(prev => Math.min(6, prev + 2));
@@ -2484,13 +2434,8 @@ if (isPublicFlow) {
   const handleEmailOnBlur = async (id: string, email: string) => {
     if (!email || !envelopeId) return;
     try {
-      //const response = await eSignApi.get(`/api/e-sign/get-recipient/${email}`);
-const url = isPublicFlow
-  ? `/api/e-sign/public/document/signature-fields/${envelopeId}`
-  : `/api/e-sign/envelope/get-signature-fields/${envelopeId}`;
-
-const response = await eSignApi.get(url);      
-if (response.status == 200) {
+      const response = await eSignApi.get(`/api/e-sign/get-recipient/${email}`);
+      if (response.status == 200) {
         const { recipient } = response.data;
         setRecipients((prev) =>
           prev.map((r) => {
@@ -2947,12 +2892,8 @@ const sendResp = await eSignApi.post(sendUrl);
       const envelopeId = params.get('envelopeId');
 
       if (step && envelopeId) {
-
-  if (!isPublicFlow) {
-    const response = await eSignApi.get('/api/e-sign/get-envelopes');
-
-    if (!response) return;
-  }
+        const response = await eSignApi.get('/api/e-sign/get-envelopes');
+        if (response) {
           switch (Number(step)) {
             case 1:
               setCurrentStep(1);
@@ -2987,7 +2928,8 @@ const sendResp = await eSignApi.post(sendUrl);
             default:
               setCurrentStep(1);
           }
-        } else if (routeEnvelopeId) {
+        }
+      } else if (routeEnvelopeId) {
         setCurrentStep(1);
         setEnvelopeId(routeEnvelopeId);
         await getEnvelopeDetail(routeEnvelopeId);
@@ -3001,11 +2943,7 @@ const sendResp = await eSignApi.post(sendUrl);
   }
 
   const loadRecipientSuggestions = async (forceReload = false) => {
-if (isPublicFlow) {
-    setRecipientSuggestions([]);
-    return;
-  }   
- if (!forceReload && (recipientSuggestions.length > 0 || loadingRecipientSuggestions)) return;
+    if (!forceReload && (recipientSuggestions.length > 0 || loadingRecipientSuggestions)) return;
     setLoadingRecipientSuggestions(true);
     const map = new Map<string, { name: string; email: string }>();
     const addIfValid = (r: any) => {
@@ -3080,12 +3018,6 @@ if (isPublicFlow) {
     }, 250)
   ).current;
   const fetchSavedRecipients = async () => {
-
-if (isPublicFlow) {
-  setSavedRecipients([]);
-  setLoadingSavedRecipients(false);
-  return;
-}
     setLoadingSavedRecipients(true);
     try {
       const [envelopesResponse, savedRecipientsResponse] = await Promise.allSettled([

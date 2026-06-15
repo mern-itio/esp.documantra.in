@@ -143,17 +143,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         // Verify session in background
-        fetch(API_ENDPOINTS.AUTH.STATUS.replace('/status', '/me'), {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).then(async (res) => {
-          if (res.status === 401 || res.status === 403) {
-            console.warn('Session is invalid or revoked, logging out.');
-            // dispatch logout event to clear local state
-            window.dispatchEvent(new CustomEvent('app:auth-logout'));
-          }
-        }).catch(() => {
-          // ignore network errors
-        });
+       fetch(API_ENDPOINTS.AUTH.STATUS.replace('/status', '/me'), {
+  headers: { 'Authorization': `Bearer ${token}` },
+  cache: 'no-store'
+}).then(async (res) => {
+
+  if (res.status === 401 || res.status === 403) {
+
+    const isPublicRoute =
+      window.location.pathname.startsWith('/public-sign');
+
+    if (isPublicRoute) return;
+
+    console.warn('Session is invalid or revoked, logging out.');
+
+    window.dispatchEvent(
+      new CustomEvent('app:auth-logout')
+    );
+  }
+
+}).catch(() => {});
 
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -171,16 +180,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const checkSession = () => {
       const token = localStorage.getItem('accessToken');
       if (token && document.visibilityState === 'visible') {
-        fetch(API_ENDPOINTS.AUTH.STATUS.replace('/status', '/me'), {
-          headers: { 'Authorization': `Bearer ${token}` },
-          cache: 'no-store' // Ensure we don't get a cached 200 response
-        }).then(async (res) => {
-          if (res.status === 401 || res.status === 403) {
-            console.warn('Session is invalid or revoked, logging out.');
-            window.dispatchEvent(new CustomEvent('app:auth-logout'));
-          }
-        }).catch(() => {});
-      }
+  fetch(API_ENDPOINTS.AUTH.STATUS.replace('/status', '/me'), {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  }).then(async (res) => {
+
+    if (res.status === 401 || res.status === 403) {
+
+      const isPublicRoute =
+        window.location.pathname.startsWith('/public-sign');
+
+      if (isPublicRoute) return;
+
+      console.warn('Session is invalid or revoked, logging out.');
+
+      window.dispatchEvent(
+        new CustomEvent('app:auth-logout')
+      );
+    }
+
+  }).catch(() => {});
+}
     };
 
     // Check on focus and visibility change

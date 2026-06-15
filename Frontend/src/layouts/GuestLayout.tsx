@@ -17,10 +17,34 @@ const HIDE_HEADER_FOOTER_ROUTES: string[] = [
     '/settings',
     '/sign-pdf-online/signer',
     '/sign-pdf-online/plan',
+    '/tools'
 ];
 
-
-  const shouldHideHeaderFooter = HIDE_HEADER_FOOTER_ROUTES.some((path) => location.pathname === path);
+const shouldHideHeaderFooter =
+  HIDE_HEADER_FOOTER_ROUTES.some(
+    (path) => location.pathname === path
+  ) ||
+  location.pathname === "/tools" ||
+  location.pathname.startsWith("/pdf-") ||
+  location.pathname.startsWith("/word-") ||
+  location.pathname.startsWith("/excel-") ||
+  location.pathname.startsWith("/powerpoint-") ||
+  location.pathname.startsWith("/merge-") ||
+  location.pathname.startsWith("/split-") ||
+  location.pathname.startsWith("/compress-") ||
+  location.pathname.startsWith("/rotate-") ||
+  location.pathname.startsWith("/extract-") ||
+  location.pathname.startsWith("/delete-") ||
+  location.pathname.startsWith("/protect-") ||
+  location.pathname.startsWith("/unlock-") ||
+  location.pathname.startsWith("/watermark-") ||
+  location.pathname.startsWith("/ocr-") ||
+  location.pathname.startsWith("/validate-") ||
+  location.pathname.startsWith("/redact-") ||
+  location.pathname.startsWith("/repair-") ||
+  location.pathname.startsWith("/img-") ||
+  location.pathname.startsWith("/text-") ||
+  location.pathname.startsWith("/html-");
   
   return (
     <div className="min-h-screen bg-[#F7F3EE]">

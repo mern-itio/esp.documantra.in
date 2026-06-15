@@ -1346,6 +1346,10 @@
   background-color: #fafafa;
 }
 
+svg.lucide-arrow-left {
+    visibility: hidden !important;
+}
+
 /* Signature Styles */
 .signature-container {
   position: relative;

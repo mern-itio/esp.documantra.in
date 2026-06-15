@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createBrowserRouter, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../components/AuthService/AuthContext';
-
+import PublicPDFTools from '../pages/PublicPDFTools/PublicPDFTools';
 // Layouts
 import RootLayout from '../layouts/RootLayout';
 import DashboardNoSidebarLayout from '../layouts/DashboardNoSidebarLayout';
@@ -19,7 +19,7 @@ import SignatureExperienceSection from '../components/LandingPage/SignatureExper
 // import LandingCTA from '../components/LandingPage/LandingCTA';
 import FAQ from '../components/LandingPage/FAQ';
 import Pricing from '../components/LandingPage/Pricing';
-
+import PublicWizard from '../pages/PublicFlow/PublicWizard';
 import PDFToolsMergePDFPage from '../pages/PDFTools/MergePDFPage';
 import PDFToolsSplitPDFPage from '../pages/PDFTools/SplitPDFPage';
 import PDFToolsExtractPDFPage from '../pages/PDFTools/ExtractPDFPage';
@@ -158,7 +158,6 @@ import { Analytics } from '../components/PDFService/Analytics';
 // import { PDFEditor } from '../components/PDFService/PDFEditor';
 // import { PDFViewer } from '../components/PDFService/PDFViewer';
 import { Header } from '../components/PDFService/Header';
-import CostHeader from '../components/PDFService/CostHeader';
 import { PdftoDoc } from '../pages/PDFTools/PDFtoDoc';
 import { DoctoPdf } from '../pages/PDFTools/DoctoPdf';
 import { PdfToExcel } from '../pages/PDFTools/PdftoExcel';
@@ -233,16 +232,21 @@ import DigitaCertificate from '../components/LandingPage/DigitaCertificate';
 import CouponPage from '../pages/Account/CouponPage';
 
 // Lightweight wrapper to show PDF header on individual tool pages
+//const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  //return (
+    //<div className='bg-background p-2'>
+      //<CostHeader />
+      //<div>
+        //{children}
+      //</div>
+    //</div>
+ // );
+//};
+
 const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <div className='bg-background p-2'>
-      <CostHeader />
-      <div>
-        {children}
-      </div>
-    </div>
-  );
+  return <>{children}</>;
 };
+
 // PDF Tools Layout Component
 const PDFToolsLayout = () => {
   const location = useLocation();
@@ -611,8 +615,14 @@ const guestRoutes = [
   { path: '/reset-password', element: <GuestRoute><ResetPasswordPage /></GuestRoute> },
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> },
   { path: '/cookie-policy', element: <CookiePolicyPage /> },
-  { path: '/use-cases', element: <UseCasesPage /> },
-  { path: '/workspace', element: <WorkspacePage /> },
+{path: '/tools',  element: <PublicPDFTools />},  
+{ path: '/use-cases', element: <UseCasesPage /> },
+{ path: '/public-sign', element: <PublicWizard /> },
+{
+  path: '/public-sign/editor',
+  element: <EnvelopeCreator />
+}, 
+ { path: '/workspace', element: <WorkspacePage /> },
   { path: '/feature-comparison', element: <FeatureComparisonPage /> },
   { path: '/sitemap', element: <SitemapPage /> },
   { path: '/security-overview', element: <SecurityOverviewPage /> },

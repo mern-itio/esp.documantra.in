@@ -1,4 +1,3 @@
-
 const { isEmailValid } = require('@draftnsign/validators');
 const Envelope = require('../models/Envelope');
 const Document = require('../models/Document');
@@ -8,6 +7,20 @@ const SignatureField = require('../models/SignatureFields');
 const { logActivity } = require("../services/activityLogService");
 const mongoose = require('mongoose');
 const axios = require('axios');
+
+
+/** Client temp ids (e.g. recipient_123) must not crash Mongo ObjectId cast. */
+const normalizeRecipientId = (value) => {
+  if (value == null || value === '') return null;
+  const str = String(value);
+  if (
+    mongoose.Types.ObjectId.isValid(str) &&
+    String(new mongoose.Types.ObjectId(str)) === str
+  ) {
+    return str;
+  }
+  return null;
+};
 
 const parseAuthLevel = (authentication) => {
   if (!authentication) return [];
@@ -60,8 +73,9 @@ const parseAuthLevel = (authentication) => {
 // Documents Upload 
 const Upload = async (req, res) => {
     const { files } = req;
-    const userId = req.user.data.id;
-    if (!files || files.length === 0) {
+    //const userId = req.user?.data?.id || null;
+const userId = req.user?.data?.id;   
+ if (!files || files.length === 0) {
         console.error('No files uploaded');
         return res.status(400).json({ message: 'No files uploaded' });
     }
@@ -108,7 +122,8 @@ const Upload = async (req, res) => {
       
       envelope = new Envelope({
         sender: userId,
-        name: typeof name === 'string' && name.trim().length > 0 ? name.trim() : undefined,
+     //sender: userId || null,  
+ name: typeof name === 'string' && name.trim().length > 0 ? name.trim() : undefined,
         subject: typeof subject === 'string' ? subject.trim() : undefined,
         envelopetype: typeof envelopetype === 'string' && envelopetype.trim().length > 0 ? envelopetype.trim() : (typeof subject === 'string' ? subject.trim() : undefined),
         message: typeof message === 'string' ? message.trim() : undefined,
@@ -158,8 +173,8 @@ const Upload = async (req, res) => {
 
 const insertRecipient = async (req, res) => {
   const { recipients, envelopeId } = req.body;
-  const userId = req.user.data.id;
-
+  //const userId = req.user?.data?.id || null;
+const userId = req.user?.data?.id || null;
   if (!envelopeId) {
     return res.status(400).json({ message: 'Envelope ID is required' });
   }
@@ -186,8 +201,11 @@ const insertRecipient = async (req, res) => {
         console.log(`Checking for existing user with email: ${r.email}`);
         try {
         const response = await axios.get(`${process.env.AUTH_URL}/api/find-user/${r.email}`, {
-          headers: { Authorization: req.headers.authorization },
-        });
+          //headers: { Authorization: req.headers.authorization },
+headers: req.headers.authorization
+  ? { Authorization: req.headers.authorization }
+  : {},
+ });
         if (response.data?.data) {
           console.log('User found in auth service:', response.data.data);
           recUserId= response.data.data._id;
@@ -238,7 +256,8 @@ const insertRecipient = async (req, res) => {
         await RecipientPermission.create({
           recipientId: recipient._id,
           envelopeId: envelope._id,
-          role: r.role,
+role: (r.role || 'signer').toLowerCase(),          
+//role: r.role,
           order: r.order,
           status: 'waiting',
           authLevel: parseAuthLevel(r.authentication)
@@ -275,8 +294,9 @@ const insertRecipient = async (req, res) => {
 };
 
 const saveSignatureFields = async (req, res) => {
+  try {
   const { signatureFields, envelopeId } = req.body;
-  const userId = req.user.data.id;
+  const userId = req.user?.data?.id || null;
 
   console.log('Received signature fields:', JSON.stringify(signatureFields, null, 2));
 
@@ -289,7 +309,8 @@ const saveSignatureFields = async (req, res) => {
 
   const processedFields = await Promise.all(
     signatureFields.map(async (sf) => {
-      console.log('Processing field with type:', sf.type, 'for field:', sf);
+      const recipientId = normalizeRecipientId(sf.recipientId);    
+  console.log('Processing field with type:', sf.type, 'for field:', sf);
       if (sf._id) {
         // Update existing field
         const updatedField = await SignatureField.findByIdAndUpdate(
@@ -297,7 +318,7 @@ const saveSignatureFields = async (req, res) => {
           {
             envelopeId: envelopeId,
             documentId: sf.documentId,
-            recipientId: sf.recipientId,
+            recipientId: recipientId,
             slotId: sf.slotId || null,
             label: sf.label || '',
             page: sf.page,
@@ -318,7 +339,7 @@ const saveSignatureFields = async (req, res) => {
           senderId: userId,
           signatureFieldId: updatedField._id,
           documentId: sf.documentId,
-          recipientId: sf.recipientId,
+          recipientId: recipientId,
         });
 
         return updatedField;
@@ -328,7 +349,7 @@ const saveSignatureFields = async (req, res) => {
         const newField = new SignatureField({
           envelopeId: envelopeId,
           documentId: sf.documentId,
-          recipientId: sf.recipientId,
+          recipientId: recipientId,
           slotId: sf.slotId || null,
           label: sf.label || '',
           page: sf.page,
@@ -350,7 +371,7 @@ const saveSignatureFields = async (req, res) => {
           senderId: userId,
           signatureFieldId: newField._id,
           documentId: sf.documentId,
-          recipientId: sf.recipientId,
+          recipientId: recipientId,
         });
 
         return newField;
@@ -371,11 +392,17 @@ const saveSignatureFields = async (req, res) => {
       signatureFields: processedFields,  // Return full array of saved/updated fields
     }
   });
+  } catch (err) {
+    console.error('saveSignatureFields error:', err);
+    return res.status(400).json({
+      message: err.message || 'Failed to save signature fields',
+    });
+  }
 };
 
 const updateEnvelope = async (req, res) => {
    const { envelopeData,envelopeId } = req.body;
-   const userId = req.user.data.id;
+   const userId = req.user?.data?.id || null;
     if (!envelopeId) {
       return res.status(400).json({ message: 'Envelope ID is required' });
     }

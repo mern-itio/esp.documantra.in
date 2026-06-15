@@ -1618,12 +1618,7 @@ const isPublicFlow =
         console.error('Failed to save recipients from Step 1:', err);
       }
       await getEnvelopeDetail(loopEnvelopeId);
-if (isPublicFlow) {
-  navigate(`/public-sign/editor?step=2&envelopeId=${loopEnvelopeId}&public=true`);
-} else {
-  navigate(`/e-sign/create?step=2&envelopeId=${loopEnvelopeId}`);
-}      
-//navigate(`/e-sign/create?step=2&envelopeId=${loopEnvelopeId}`);
+      navigate(`/e-sign/create?step=2&envelopeId=${loopEnvelopeId}`);
       return true; // success
     }
   };
@@ -1652,13 +1647,7 @@ if (isPublicFlow) {
         console.log('Recipients inserted successfully:', response.data.envelopeId);
         await getEnvelopeDetail(response.data.envelopeId);
         console.log('Current Step:', currentStep + 1);
-      
-if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}&public=true`);
-} else {
-  await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
-}
-  //await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
+        await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
       }
     } catch (error) {
       console.error('Error inserting recipients:', error);
@@ -1714,24 +1703,13 @@ if (isPublicFlow) {
     console.log('Transformed fields data for saving:', fieldsData);
 
     try {
-      //const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
-const url = isPublicFlow
-  ? '/api/e-sign/public/save-signature-fields'
-  : '/api/e-sign/save-signature-fields';
-
-const response = await eSignApi.post(url, {        
-envelopeId,
+      const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
+        envelopeId,
         signatureFields: fieldsData
       });
       if (response.status === 200) {
         setSignatureFields(response.data.data.signatureFields);
-        
-if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${envelopeId}&public=true`);
-} else {
-  await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
-}
-//await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
+        await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
       }
     } catch (error) {
       console.error('Error saving signature fields:', error);
@@ -1760,13 +1738,8 @@ if (isPublicFlow) {
         fieldId: field.fieldId ?? null,
       }));
 
-      //const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
-const url = isPublicFlow
-  ? '/api/e-sign/public/save-signature-fields'
-  : '/api/e-sign/save-signature-fields';
-
-const response = await eSignApi.post(url, {        
-envelopeId,
+      const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
+        envelopeId,
         signatureFields: fieldsData,
       });
       if (response.status === 200) {
@@ -1894,13 +1867,7 @@ const response = await eSignApi.get(url);
       });
       if (response.status === 200) {
         console.log('Signature type updated successfully:', response.data);
-if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}&public=true`);
-} else {
-  await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
-}       
-
- //await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
+        await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
       }
     } catch (error) {
       console.error('Error updating signature type:', error);
@@ -2183,13 +2150,7 @@ if (isPublicFlow) {
             return;
           }
           // navigate to next step with returned envelope/template id
-         
-if (isPublicFlow) {
-  navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${savedId}&public=true`);
-} else {
-  navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${savedId}`);
-}
- //navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${savedId}`);
+          navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${savedId}`);
         }
       }
       if (currentStep === 3) {
@@ -2208,13 +2169,7 @@ if (isPublicFlow) {
       }
       if (currentStep === 6) {
         alert('Envelope created successfully, Ready to send!');
-if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${envelopeId}&public=true`);
-} else {
-  await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
-}        
-
-//await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
+        await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
       }
       if (currentStep == 1) {
         setCurrentStep(prev => Math.min(6, prev + 2));
