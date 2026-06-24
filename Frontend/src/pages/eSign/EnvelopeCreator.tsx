@@ -40,6 +40,11 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
+import {
+  getEsignMaxUploadLabel,
+  getEsignUploadErrorMessage,
+  isFileTooLargeForEsign,
+} from '../../utils/uploadErrorMessage';
 import { isAuthMethodFreeViaReferralPerk } from '../../utils/referralAuthPerks';
 import toast from 'react-hot-toast';
 // import { useApp } from '../../context/AppContext';
@@ -1423,12 +1428,19 @@ const isPublicFlow =
   const processFiles = async (files: File[]) => {
     const validDocs: ESDocument[] = [];
     const invalidFiles: File[] = [];
+    const oversizedFiles: File[] = [];
+    const maxLabel = getEsignMaxUploadLabel();
 
     for (const file of files) {
       // Only accept PDF files
       if (file.type !== "application/pdf") {
         invalidFiles.push(file);
         continue; // skip adding invalid file
+      }
+
+      if (isFileTooLargeForEsign(file)) {
+        oversizedFiles.push(file);
+        continue;
       }
 
       // Get actual page count from PDF
@@ -1453,6 +1465,16 @@ const isPublicFlow =
           .map((f) => f.name)
           .join("\n")}`
       );
+    }
+
+    if (oversizedFiles.length > 0) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'File too large',
+        html: `Maximum upload size is <b>${maxLabel}</b> per PDF.<br/><br/>${oversizedFiles
+          .map((f) => `• ${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`)
+          .join('<br/>')}`,
+      });
     }
 
     // Add only valid PDFs to document state
@@ -1533,6 +1555,8 @@ const isPublicFlow =
     );
 
     let loopEnvelopeId = envelopeId; // local variable
+    let uploadFailed = false;
+    let lastUploadError = '';
 
     for (const doc of documents) {
       const formData = new FormData();
@@ -1585,6 +1609,8 @@ const isPublicFlow =
         );
       } catch (err) {
         console.error('Upload failed for', doc.name, err);
+        uploadFailed = true;
+        lastUploadError = getEsignUploadErrorMessage(err, doc.name);
         setDocuments((prev) =>
           prev.map((d) =>
             d.id === doc.id
@@ -1593,6 +1619,15 @@ const isPublicFlow =
           )
         );
       }
+    }
+
+    if (uploadFailed) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Upload failed',
+        text: lastUploadError,
+      });
+      return false;
     }
 
     if (loopEnvelopeId) {
@@ -1626,6 +1661,8 @@ if (isPublicFlow) {
 //navigate(`/e-sign/create?step=2&envelopeId=${loopEnvelopeId}`);
       return true; // success
     }
+
+    return false;
   };
 
 

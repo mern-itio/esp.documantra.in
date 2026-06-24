@@ -1,5 +1,10 @@
 import { useRef, useState } from 'react';
 import { eSignApi } from '../../services/apiHelper';
+import {
+  getEsignMaxUploadLabel,
+  getEsignUploadErrorMessage,
+  isFileTooLargeForEsign,
+} from '../../utils/uploadErrorMessage';
 
 type Recipient = {
   name: string;
@@ -87,6 +92,12 @@ export default function PublicWizard() {
       alert('Please upload a PDF file');
       return;
     }
+    if (isFileTooLargeForEsign(selected)) {
+      alert(
+        `"${selected.name}" is too large (${(selected.size / 1024 / 1024).toFixed(2)} MB). Maximum size is ${getEsignMaxUploadLabel()}.`
+      );
+      return;
+    }
     setFile(selected);
   };
 
@@ -146,7 +157,7 @@ export default function PublicWizard() {
       setStep(2);
     } catch (e) {
       console.error(e);
-      alert('Upload failed');
+      alert(getEsignUploadErrorMessage(e, file?.name));
     } finally {
       setLoading(false);
     }

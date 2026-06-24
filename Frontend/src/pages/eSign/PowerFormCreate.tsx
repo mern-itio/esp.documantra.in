@@ -31,6 +31,11 @@ import SignatureTypeSelector from '../../components/ESign/advanced/SignatureType
 import { eSignApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
 import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
+import {
+  getEsignMaxUploadLabel,
+  getEsignUploadErrorMessage,
+  isFileTooLargeForEsign,
+} from '../../utils/uploadErrorMessage';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
 type EditorSignatureFieldExt = EditorSignatureField & {
@@ -206,11 +211,18 @@ const PowerFormCreate: React.FC = () => {
   const processFiles = (files: File[]) => {
     const validDocs: Document[] = [];
     const invalidFiles: File[] = [];
+    const oversizedFiles: File[] = [];
+    const maxLabel = getEsignMaxUploadLabel();
 
     files.forEach((file) => {
       if (file.type !== "application/pdf") {
         invalidFiles.push(file);
         return; 
+      }
+
+      if (isFileTooLargeForEsign(file)) {
+        oversizedFiles.push(file);
+        return;
       }
 
       const newDocument: Document = {
@@ -231,6 +243,15 @@ const PowerFormCreate: React.FC = () => {
           .map((f) => f.name)
           .join("\n")}`
       );
+    }
+    if (oversizedFiles.length > 0) {
+      void Swal.fire({
+        icon: 'error',
+        title: 'File too large',
+        html: `Maximum upload size is <b>${maxLabel}</b> per PDF.<br/><br/>${oversizedFiles
+          .map((f) => `• ${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`)
+          .join('<br/>')}`,
+      });
     }
     if (validDocs.length > 0) {
       const allDocNames = [...(documents || []).map(d => d.name), ...validDocs.map(d => d.name)].filter(Boolean);
@@ -295,7 +316,9 @@ const PowerFormCreate: React.FC = () => {
     setDocuments((prev) =>
       prev.map((doc) => ({ ...doc, isUploading: true, uploadProgress: 0 }))
     );
-    let loopEnvelopeId = envelopeId; 
+    let loopEnvelopeId = envelopeId;
+    let uploadFailed = false;
+    let lastUploadError = '';
     for (const doc of documents) {
       const formData = new FormData();
       if (doc.file) {
@@ -338,6 +361,8 @@ const PowerFormCreate: React.FC = () => {
         );
       } catch (err) {
         console.error('Upload failed for', doc.name, err);
+        uploadFailed = true;
+        lastUploadError = getEsignUploadErrorMessage(err, doc.name);
         setDocuments((prev) =>
           prev.map((d) =>
             d.id === doc.id
@@ -347,6 +372,14 @@ const PowerFormCreate: React.FC = () => {
         );
       }
     }
+    if (uploadFailed) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Upload failed',
+        text: lastUploadError,
+      });
+      return false;
+    }
     if (loopEnvelopeId) {
       setEnvelopeId(loopEnvelopeId);    
       await savePowerFormSlots(loopEnvelopeId);
@@ -354,6 +387,7 @@ const PowerFormCreate: React.FC = () => {
       navigate(`/e-sign/powerforms?step=2&envelopeId=${loopEnvelopeId}`);
       return true;
     }
+    return false;
   };
   const insertRecipient = async () => {
     if (recipients?.length === 0) return;
