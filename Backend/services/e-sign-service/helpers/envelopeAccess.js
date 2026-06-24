@@ -1,8 +1,13 @@
 const Envelope = require('../models/Envelope');
 const Recipient = require('../models/Recipient');
 const RecipientPermission = require('../models/RecipientPermission');
+const mongoose = require('mongoose');
 
 const getUserId = (req) => req?.user?.data?.id || req?.user?.id || null;
+
+const isValidObjectId = (value) =>
+  mongoose.Types.ObjectId.isValid(String(value)) &&
+  String(new mongoose.Types.ObjectId(String(value))) === String(value);
 
 const isAnonymousDraftEnvelope = (envelope) => {
   if (!envelope) return false;
@@ -65,6 +70,10 @@ const userHasEnvelopeAccess = async (req, envelope) => {
 };
 
 const assertAuthenticatedEnvelopeAccess = async (req, envelopeId, { requireSender = false } = {}) => {
+  if (!isValidObjectId(envelopeId)) {
+    return { ok: false, status: 400, message: 'Invalid envelope ID' };
+  }
+
   const envelope = await loadEnvelope(envelopeId);
   if (!envelope) {
     return { ok: false, status: 404, message: 'Envelope not found' };
@@ -90,6 +99,10 @@ const assertAuthenticatedEnvelopeAccess = async (req, envelopeId, { requireSende
 };
 
 const assertPublicSenderDraftAccess = async (req, envelopeId) => {
+  if (!isValidObjectId(envelopeId)) {
+    return { ok: false, status: 400, message: 'Invalid envelope ID' };
+  }
+
   const envelope = await Envelope.findById(envelopeId);
   if (!envelope) {
     return { ok: false, status: 404, message: 'Envelope not found' };
