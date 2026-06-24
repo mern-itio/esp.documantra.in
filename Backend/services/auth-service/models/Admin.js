@@ -11,7 +11,10 @@ const adminUserSchema = new mongoose.Schema({
   permissions: {
     type: [String], // e.g. ['MANAGE_USERS', 'VIEW_AUDIT_LOGS']
     default: []
-  }
+  },
+  resetPasswordToken: { type: String, default: null },
+  resetPasswordExpires: { type: Date, default: null },
+  resetPasswordRequestLog: [{ requestedAt: { type: Date, required: true } }],
 }, { timestamps: true });
 
 // 🔐 Hash password before saving

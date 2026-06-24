@@ -1,9 +1,11 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const AdminUser = require('../models/Admin');
-const { isEmailValid } = require('@draftnsign/validators');
+const { isEmailValid, getPasswordPolicyError } = require('@draftnsign/validators');
 const mongoose = require('mongoose');
 const { getAdminAccessTokenCookieOptions } = require('../utils/cookieOptions');
+const { sendPasswordResetEmail } = require('../utils/email');
 
 const adminLogin = async (req, res) => {
   try {
@@ -286,4 +288,118 @@ function generateAdminAccessToken(admin, expireIn) {
   );
 }
 
-module.exports = { adminLogin };
+const adminForgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ status: 400, message: 'Email is required', data: null });
+  }
+  if (!isEmailValid(email)) {
+    return res.status(400).json({ status: 400, message: 'Invalid email format', data: null });
+  }
+
+  const genericSuccess = {
+    status: 200,
+    message: 'If an admin account exists with this email, you will receive a password reset link shortly.',
+    data: null,
+  };
+
+  try {
+    const normalizedEmail = email.toLowerCase().trim();
+    const admin = await AdminUser.findOne({ email: normalizedEmail });
+
+    if (!admin || admin.status === false) {
+      return res.status(200).json(genericSuccess);
+    }
+
+    if (admin.resetPasswordToken && admin.resetPasswordExpires && admin.resetPasswordExpires > new Date()) {
+      return res.status(429).json({
+        status: 429,
+        message: 'You already have a password reset link. Please check your email or try again after 1 hour.',
+        data: null,
+      });
+    }
+
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentRequests = (admin.resetPasswordRequestLog || []).filter(
+      (entry) => entry.requestedAt && new Date(entry.requestedAt) > twentyFourHoursAgo
+    );
+    if (recentRequests.length >= 2) {
+      return res.status(429).json({
+        status: 429,
+        message: 'You can only request a password reset 2 times in 24 hours. Please try again later.',
+        data: null,
+      });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    admin.resetPasswordToken = token;
+    admin.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
+    admin.resetPasswordRequestLog = recentRequests.concat([{ requestedAt: new Date() }]);
+    await admin.save({ validateBeforeSave: false });
+
+    const adminBase = process.env.ADMIN_FRONTEND_BASE_URL || (
+      process.env.FRONTEND_BASE_URL
+        ? `${String(process.env.FRONTEND_BASE_URL).replace(/\/$/, '')}/admin`
+        : 'https://esp.documantra.in/admin'
+    );
+    const resetLink = `${String(adminBase).replace(/\/$/, '')}/reset-password?token=${token}`;
+
+    await sendPasswordResetEmail(admin.email, resetLink, admin.fullname || null);
+
+    return res.status(200).json(genericSuccess);
+  } catch (error) {
+    console.error('Admin forgot password error:', error);
+    return res.status(500).json({
+      status: 500,
+      message: 'Something went wrong. Please try again later.',
+      data: null,
+    });
+  }
+};
+
+const adminResetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+  if (!token) {
+    return res.status(400).json({ status: 400, message: 'Reset token is required', data: null });
+  }
+
+  const passwordError = getPasswordPolicyError(newPassword);
+  if (passwordError) {
+    return res.status(400).json({ status: 400, message: passwordError, data: null });
+  }
+
+  try {
+    const admin = await AdminUser.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+
+    if (!admin) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Invalid or expired reset link. Please request a new one.',
+        data: null,
+      });
+    }
+
+    admin.password = newPassword;
+    admin.resetPasswordToken = undefined;
+    admin.resetPasswordExpires = undefined;
+    await admin.save();
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Password has been reset successfully. You can now sign in.',
+      data: null,
+    });
+  } catch (error) {
+    console.error('Admin reset password error:', error);
+    return res.status(500).json({
+      status: 500,
+      message: 'Something went wrong. Please try again later.',
+      data: null,
+    });
+  }
+};
+
+module.exports = { adminLogin, adminForgotPassword, adminResetPassword };

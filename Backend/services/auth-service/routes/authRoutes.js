@@ -2,7 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { login, googleLogin, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoverySingleAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp, sendRecoveryEmailOtp, verifyRecoveryEmailOtp, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, regenerateAuthenticatorBackupCodes, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, changePassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, verifyActiveSession, validateSessionEndpoint } = require('../controllers/authController');
 const { getMyReferral, listRewards, onFirstDocumentSentInternal } = require('../controllers/referralController');
-const {adminLogin} = require('../controllers/adminAuthController');
+const {adminLogin, adminForgotPassword, adminResetPassword} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail,insertNotifications,getNotifications,markNotificationReadById,markAllNotificationAsRead } = require('../controllers/mainController');
 const verifyJWT  = require('@draftnsign/auth-lib');
 const router = express.Router();
@@ -41,6 +41,8 @@ router.post('/2fa/recovery/verify-answer', loginLimiter, verifyTwoFaRecoverySing
 router.post('/2fa/recovery/verify-answers', loginLimiter, verifyTwoFaRecoveryAnswers);
 router.post('/2fa/recovery/verify-otp', loginLimiter, verifyTwoFaRecoveryOtp);
 router.post('/admin/login', loginLimiter, adminLogin);
+router.post('/admin-forgot-password', otpLimiter, adminForgotPassword);
+router.post('/admin-reset-password', resetPasswordLimiter, adminResetPassword);
 router.post('/register', otpLimiter, register);
 router.post('/signup/send-email-otp', otpLimiter, sendSignupEmailOtp);
 router.post('/signup/verify-email-otp', verifySignupEmailOtp);
