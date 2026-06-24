@@ -8,6 +8,8 @@ services:
     volumes:
     - ./services/auth-service:/app/services/auth-service:cached
     - /app/services/auth-service/node_modules
+    - ./packages/validators:/app/packages/validators:cached
+    - /app/packages/validators/node_modules
 
     command: npm run dev
 
@@ -20,6 +22,8 @@ services:
     volumes:
     - ./services/pdf-service:/app/services/pdf-service:cached
     - /app/services/pdf-service/node_modules
+    - ./packages/validators:/app/packages/validators:cached
+    - /app/packages/validators/node_modules
     - ./services/pdf-service/uploads:/app/services/pdf-service/uploads
     - ./services/pdf-service/outputs:/app/services/pdf-service/outputs
     env_file:
@@ -46,6 +50,8 @@ services:
     volumes:
       - ./services/document-service:/app/services/document-service:cached
       - /app/services/document-service/node_modules
+      - ./packages/validators:/app/packages/validators:cached
+      - /app/packages/validators/node_modules
     command: npm run dev
 
   e-sign-service:
@@ -57,6 +63,8 @@ services:
     volumes:
       - ./services/e-sign-service:/app/services/e-sign-service:cached
       - /app/services/e-sign-service/node_modules
+      - ./packages/validators:/app/packages/validators:cached
+      - /app/packages/validators/node_modules
       - ./services/e-sign-service/uploads:/app/services/e-sign-service/uploads  # <-- added
     command: npm run dev
 
@@ -69,6 +77,8 @@ services:
     volumes:
       - ./services/subscription-service:/app/services/subscription-service:cached
       - /app/services/subscription-service/node_modules
+      - ./packages/validators:/app/packages/validators:cached
+      - /app/packages/validators/node_modules
       - ./services/subscription-service/uploads:/app/services/subscription-service/uploads  # <-- added
     command: npm run dev
 
@@ -81,6 +91,8 @@ services:
     volumes:
       - ./services/api-service:/app/services/api-service:cached
       - /app/services/api-service/node_modules
+      - ./packages/validators:/app/packages/validators:cached
+      - /app/packages/validators/node_modules
       - ./services/api-service/uploads:/app/services/api-service/uploads  # <-- added
     command: npm run dev
 
@@ -93,6 +105,8 @@ services:
     volumes:
       - ./services/template-service:/app/services/template-service:cached
       - /app/services/template-service/node_modules
+      - ./packages/validators:/app/packages/validators:cached
+      - /app/packages/validators/node_modules
       - ./services/template-service/uploads:/app/services/template-service/uploads  # <-- added
     command: npm run dev
     
@@ -105,6 +119,8 @@ services:
     volumes:
       - ./services/admin-service:/app/services/admin-service:cached
       - /app/services/admin-service/node_modules
+      - ./packages/validators:/app/packages/validators:cached
+      - /app/packages/validators/node_modules
       - ./services/admin-service/uploads:/app/services/admin-service/uploads  # <-- added
     command: npm run dev
     env_file:
@@ -119,6 +135,8 @@ services:
     volumes:
       - ./services/support-service:/app/services/support-service:cached
       - /app/services/support-service/node_modules
+      - ./packages/validators:/app/packages/validators:cached
+      - /app/packages/validators/node_modules
       - ./services/support-service/uploads:/app/services/support-service/uploads
     command: npm run dev
     env_file:
@@ -133,6 +151,8 @@ services:
     volumes:
       - ./services/ai-assistant-service:/app/services/ai-assistant-service:cached
       - /app/services/ai-assistant-service/node_modules
+      - ./packages/validators:/app/packages/validators:cached
+      - /app/packages/validators/node_modules
     command: npm run dev
     env_file:
       - ./services/ai-assistant-service/.env
@@ -150,6 +170,8 @@ services:
     volumes:
       - ./services/organization-service:/app/services/organization-service:cached
       - /app/services/organization-service/node_modules
+      - ./packages/validators:/app/packages/validators:cached
+      - /app/packages/validators/node_modules
       - ./services/organization-service/uploads:/app/services/organization-service/uploads  # <-- added
     command: npm run dev
 
@@ -162,6 +184,8 @@ services:
     volumes:
     - ./services/api-gateway:/app/services/api-gateway:cached
     - /app/services/api-gateway/node_modules
+    - ./packages/validators:/app/packages/validators:cached
+    - /app/packages/validators/node_modules
 
     command: npm run dev
   
@@ -174,6 +198,8 @@ services:
     volumes:
     - ./services/email-service:/app/services/email-service:cached
     - /app/services/email-service/node_modules
+    - ./packages/validators:/app/packages/validators:cached
+    - /app/packages/validators/node_modules
 
     command: npm run dev
 
@@ -186,6 +212,8 @@ services:
     volumes:
     - ./services/identity-service:/app/services/identity-service:cached
     - /app/services/identity-service/node_modules
+    - ./packages/validators:/app/packages/validators:cached
+    - /app/packages/validators/node_modules
 
     command: npm run dev
 
