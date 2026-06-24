@@ -402,4 +402,57 @@ const adminResetPassword = async (req, res) => {
   }
 };
 
-module.exports = { adminLogin, adminForgotPassword, adminResetPassword };
+const adminChangePassword = async (req, res) => {
+  const adminId = req.user?.data?.id || req.user?.id || req.user?._id;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!adminId) {
+    return res.status(401).json({ status: 401, message: 'Not authenticated', data: null });
+  }
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({
+      status: 400,
+      message: 'Current and new password are required',
+      data: null,
+    });
+  }
+
+  const passwordError = getPasswordPolicyError(newPassword);
+  if (passwordError) {
+    return res.status(400).json({ status: 400, message: passwordError, data: null });
+  }
+
+  try {
+    const admin = await AdminUser.findById(adminId);
+    if (!admin || admin.status === false) {
+      return res.status(401).json({ status: 401, message: 'Not authenticated', data: null });
+    }
+
+    const matches = await bcrypt.compare(currentPassword, admin.password);
+    if (!matches) {
+      return res.status(401).json({ status: 401, message: 'Current password is incorrect', data: null });
+    }
+
+    admin.password = newPassword;
+    admin.resetPasswordToken = undefined;
+    admin.resetPasswordExpires = undefined;
+    await admin.save();
+
+    res.clearCookie('adminAccessToken', getAdminAccessTokenCookieOptions(req));
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Password changed successfully. Please sign in again.',
+      data: null,
+    });
+  } catch (error) {
+    console.error('Admin change password error:', error);
+    return res.status(500).json({
+      status: 500,
+      message: 'Something went wrong. Please try again later.',
+      data: null,
+    });
+  }
+};
+
+module.exports = { adminLogin, adminForgotPassword, adminResetPassword, adminChangePassword };

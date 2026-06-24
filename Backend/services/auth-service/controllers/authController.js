@@ -1350,13 +1350,15 @@ const forgotPassword = async (req, res) => {
   if (!email) return res.status(400).json({ message: 'Email is required' });
   if (!isEmailValid(email)) return res.status(400).json({ message: 'Invalid email format' });
 
+  const genericSuccess = {
+    status: 200,
+    message: 'If an account exists with this email, you will receive a password reset link shortly.',
+  };
+
   try {
     const user = await User.findOne({ email: email.trim().toLowerCase() });
-    if (!user) {
-      return res.status(404).json({
-        status: 404,
-        message: 'We don\'t find any account with this email address. Please check the email or sign up for a new account.',
-      });
+    if (!user || user.status === false) {
+      return res.status(200).json(genericSuccess);
     }
 
     // Already have an active reset link (within 1 hour)
@@ -1391,10 +1393,7 @@ const forgotPassword = async (req, res) => {
 
     await sendPasswordResetEmail(user.email, resetLink, user.fullname || null);
 
-    return res.status(200).json({
-      status: 200,
-      message: 'If an account exists with this email, you will receive a password reset link shortly.',
-    });
+    return res.status(200).json(genericSuccess);
   } catch (err) {
     console.error('Forgot password error:', err);
     return res.status(500).json({ message: 'Something went wrong. Please try again later.' });
