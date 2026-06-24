@@ -348,6 +348,15 @@ function validateRange(value, fieldName, min, max) {
 const { getCorsOptions, getAllowedOrigins } = require('./corsOptions');
 const { applySecurityHeaders } = require('./securityHeaders');
 const { createErrorHandler } = require('./errorHandler');
+const {
+  UPLOAD_PRESETS,
+  sanitizeUploadFilename,
+  isBlockedExtension,
+  createMulterFileFilter,
+  getMulterLimits,
+  validateUploadedFile,
+  createMulterErrorHandler,
+} = require('./uploadValidation');
 
 // ============================================================================
 // EXPORTS
@@ -378,4 +387,11 @@ module.exports = {
   getAllowedOrigins,
   applySecurityHeaders,
   createErrorHandler,
+  UPLOAD_PRESETS,
+  sanitizeUploadFilename,
+  isBlockedExtension,
+  createMulterFileFilter,
+  getMulterLimits,
+  validateUploadedFile,
+  createMulterErrorHandler,
 };

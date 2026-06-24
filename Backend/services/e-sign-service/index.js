@@ -3,7 +3,7 @@ const verifyJWT  = require('@draftnsign/auth-lib');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
-const { getCorsOptions, applySecurityHeaders, createErrorHandler } = require('@draftnsign/validators');
+const { getCorsOptions, applySecurityHeaders, createErrorHandler, createMulterErrorHandler } = require('@draftnsign/validators');
 const eSignRoutes = require('./routes/eSignRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const certificateRoutes  = require('./routes/certificateRoutes');
@@ -41,6 +41,7 @@ app.use('/api/e-sign/envelope-types', verifyJWT(), envelopeTypeRoutes);
 app.use('/api/e-sign', verifyJWT(), eSignRoutes);
 app.use('/admin', verifyJWT("admin"),adminRoutes );
 
+app.use(createMulterErrorHandler());
 app.use(createErrorHandler('E-Sign'));
 
 // Start server

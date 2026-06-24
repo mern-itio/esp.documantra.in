@@ -1,14 +1,13 @@
 const express = require('express');
-const multer = require('multer');
 const { signDocumentController } = require('../controllers/digitalSignatureController');
 const { addSignature } = require('../controllers/mainController');
 const { downloadSignedDocument,downloadAllSignedDocument } = require('../controllers/documentController');
+const { pdfUpload } = require('../utils/secureUpload');
 
-const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
 // Advanced compliance-based signature submission
-router.post('/signatures/sign', upload.single('pdf'), signDocumentController);
+router.post('/signatures/sign', pdfUpload.single('pdf'), signDocumentController);
 
 // New: Signature with visible + compliance integration '
 router.post('/add-signature', addSignature);

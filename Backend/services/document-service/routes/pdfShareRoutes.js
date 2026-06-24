@@ -2,6 +2,11 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const {
+  UPLOAD_PRESETS,
+  sanitizeUploadFilename,
+  createMulterFileFilter,
+} = require('@draftnsign/validators');
 const pdfShareController = require('../controllers/pdfShareController');
 
 const router = express.Router();
@@ -24,28 +29,20 @@ const storage = multer.diskStorage({
     cb(null, userDir);
   },
   filename: function (req, file, cb) {
-    // Generate unique filename with timestamp
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
+    const ext = path.extname(sanitizeUploadFilename(file.originalname)) || '.pdf';
     cb(null, 'pdf-share-' + uniqueSuffix + ext);
   }
 });
 
-// File filter for PDF files only
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf') {
-    cb(null, true);
-  } else {
-    cb(new Error('Only PDF files are allowed for sharing'), false);
-  }
-};
+const fileFilter = createMulterFileFilter(UPLOAD_PRESETS.PDF_ONLY);
 
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
-    files: 1 // Only one file per upload
+    fileSize: UPLOAD_PRESETS.PDF_ONLY.maxFileSize,
+    files: UPLOAD_PRESETS.PDF_ONLY.maxFiles,
   }
 });
 

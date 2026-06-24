@@ -1,6 +1,4 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
 // Configure multer storage (files go to /uploads folder)
 //const { envelopesDetail,getSignatureFields,addSignature, activityLogs,getEnvelopePower,signerInitiate,getSelfSigner,saveNonSignatureField,saveupdateSignature,LinkUserRecipient, assignEnvelopeToSomeoneElsePublic, declineEnvelopePublic,acceptTerms,fetchCurrentRecipient, getRecipientAuditTrail,completeSignature,validateRecipient } = require('../controllers/mainController');
 
@@ -33,15 +31,7 @@ const {
 
 const {updateAuthStatus,saveAadhaar} = require('../controllers/recipientController');
 const vSignController = require('../controllers/vSignController');
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', 'uploads')); // one level up from /routes
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
-const upload = multer({ storage });
+const { upload } = require('../utils/secureUpload');
 
 const router = express.Router();
 

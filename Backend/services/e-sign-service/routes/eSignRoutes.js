@@ -29,18 +29,7 @@ const {
          getEnvelopesExcludingIds,
         downloadCompletionZip  } = require('../controllers/mainController');
 const { listRecipients, createRecipient, updateRecipient, deleteRecipient } = require('../controllers/recipientController');
-const multer = require('multer');
-const path = require('path');
-// Configure multer storage (files go to /uploads folder)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', 'uploads')); // one level up from /routes
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
-const upload = multer({ storage });
+const { upload } = require('../utils/secureUpload');
 
 const router = express.Router();
 

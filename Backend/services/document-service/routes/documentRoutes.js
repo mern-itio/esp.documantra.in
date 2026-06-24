@@ -2,6 +2,11 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const {
+  sanitizeUploadFilename,
+  createMulterFileFilter,
+  UPLOAD_PRESETS,
+} = require('@draftnsign/validators');
 const documentController = require('../controllers/documentController');
 
 const router = express.Router();
@@ -23,59 +28,21 @@ const storage = multer.diskStorage({
     cb(null, userDir);
   },
   filename: function (req, file, cb) {
-    // Generate unique filename with timestamp
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
+    const safeName = sanitizeUploadFilename(file.originalname);
+    const ext = path.extname(safeName) || path.extname(file.originalname);
     cb(null, file.fieldname + '-' + uniqueSuffix + ext);
   }
 });
 
-// File filter for allowed file types
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = [
-    // Documents
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/plain',
-    'application/rtf',
-    
-    // Spreadsheets
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/csv',
-    
-    // Presentations
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    
-    // Images
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/bmp',
-    'image/tiff',
-    
-    // Other
-    'text/html',
-    'application/xml',
-    'application/json',
-    'application/zip'
-  ];
-
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('File type not allowed'), false);
-  }
-};
+const fileFilter = createMulterFileFilter(UPLOAD_PRESETS.DOCUMENT_SERVICE);
 
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
-    files: 10 // Maximum 10 files per upload
+    fileSize: UPLOAD_PRESETS.DOCUMENT_SERVICE.maxFileSize,
+    files: UPLOAD_PRESETS.DOCUMENT_SERVICE.maxFiles,
   }
 });
 

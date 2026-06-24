@@ -1,4 +1,4 @@
-const { isEmailValid } = require('@draftnsign/validators');
+const { isEmailValid, UPLOAD_PRESETS, validateUploadedFile } = require('@draftnsign/validators');
 const Envelope = require('../models/Envelope');
 const Document = require('../models/Document');
 const Recipient = require('../models/Recipient');
@@ -91,6 +91,12 @@ const userId = req.user?.data?.id;
  if (!files || files.length === 0) {
         console.error('No files uploaded');
         return res.status(400).json({ message: 'No files uploaded' });
+    }
+    for (const file of files) {
+      const check = validateUploadedFile(file, UPLOAD_PRESETS.ESIGN_DOCUMENTS);
+      if (!check.valid) {
+        return res.status(400).json({ message: check.message });
+      }
     }
     // Step 1: Create empty envelope (or reuse if client sends envelopeId)
     let envelope;
