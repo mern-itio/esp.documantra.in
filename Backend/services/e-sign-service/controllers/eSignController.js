@@ -102,6 +102,9 @@ const userId = req.user?.data?.id;
     let envelope;
   if (req.body.envelopeId) {
       envelope = await Envelope.findById(req.body.envelopeId);
+      if (!envelope) {
+        return res.status(404).json({ message: 'Envelope not found' });
+      }
       // Update subject/message/name if provided on existing envelope
       const { name, subject, message, envelopetype, isAIGenerated } = req.body || {};
       if (typeof name === 'string' && name.trim().length > 0) {

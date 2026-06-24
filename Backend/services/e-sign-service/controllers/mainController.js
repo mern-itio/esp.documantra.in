@@ -653,9 +653,15 @@ const getSignatureFields = async (req, res) => {
 };
 const getEnvelopeStats = async (req, res) => {
   try {
+    const userId = req?.user?.data?.id || req?.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
     const now = new Date();
 
     const stats = await Envelope.aggregate([
+      { $match: { sender: userId } },
       {
         $addFields: {
           derivedStatus: {
@@ -3202,7 +3208,14 @@ const fetchBulkEnvelopes = async (req, res) => {
     if (!envelopeIds || !Array.isArray(envelopeIds) || envelopeIds.length === 0) {
       return res.status(400).json({ message: "envelopeIds must be a non-empty array." });
     }
-    const envelopes = await Envelope.find({ _id: { $in: envelopeIds } })
+
+    const { filterAccessibleEnvelopeIds } = require('../helpers/envelopeAccess');
+    const allowedIds = await filterAccessibleEnvelopeIds(req, envelopeIds);
+    if (!allowedIds.length) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const envelopes = await Envelope.find({ _id: { $in: allowedIds } })
       .populate({
         path: 'recipientIds',
         select: 'name email title company createdAt'
@@ -3314,10 +3327,23 @@ const fetchBulkEnvelopes = async (req, res) => {
 const getEnvelopesExcludingIds = async (req, res) => {
   try {
     const { envelopeIds, organizationId } = req.body;
+    const userId = req?.user?.data?.id || req?.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    if (!organizationId) {
+      return res.status(400).json({ success: false, message: 'organizationId is required' });
+    }
+
+    const headerOrgId = req.headers['x-organization-id'];
+    if (headerOrgId && String(headerOrgId) !== String(organizationId)) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
 
     const query = {
       isOrganization: true,
-      organizationId: new mongoose.Types.ObjectId(organizationId)
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+      sender: userId,
     };
 
     if (envelopeIds?.length) {

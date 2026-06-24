@@ -28,8 +28,11 @@ router.get('/', (req, res) => {
   });
 });
 
-// Debug endpoint to list all shared documents
+// Debug endpoint disabled in production (IDOR / information disclosure risk)
 router.get('/debug/all', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ success: false, message: 'Not found' });
+  }
   try {
     const sharedDocuments = await SharedDocument.find({})
       .populate('documentId', 'name size')

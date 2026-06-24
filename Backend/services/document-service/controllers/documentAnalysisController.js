@@ -1,6 +1,7 @@
 const DocumentAnalysis = require('../models/DocumentAnalysis');
 const Document = require('../models/Document');
 const documentAnalysisService = require('../services/documentAnalysisService');
+const { buildDocumentAccessQuery } = require('../helpers/documentAccess');
 const path = require('path');
 
 class DocumentAnalysisController {
@@ -13,6 +14,13 @@ class DocumentAnalysisController {
     this.reprocessDocument = this.reprocessDocument.bind(this);
     this.getUserAnalyses = this.getUserAnalyses.bind(this);
     this.deleteAnalysis = this.deleteAnalysis.bind(this);
+  }
+
+  async findAccessibleDocument(req, documentId) {
+    const userId = req.user?.data?.id;
+    const userEmail = req.user?.data?.email;
+    if (!userId) return null;
+    return Document.findOne(buildDocumentAccessQuery(documentId, userId, userEmail));
   }
 
   /**
@@ -31,11 +39,8 @@ class DocumentAnalysisController {
 
       console.log(`🔍 Processing document analysis for: ${documentId}`);
 
-      // Check if document exists
-      const document = await Document.findOne({
-        _id: documentId,
-        isDeleted: { $ne: true } // Exclude deleted documents
-      });
+      // Check if document exists and caller has access
+      const document = await this.findAccessibleDocument(req, documentId);
       if (!document) {
         return res.status(404).json({
           success: false,
@@ -274,6 +279,15 @@ class DocumentAnalysisController {
 
       console.log(`🔍 Fetching analysis for document: ${documentId}`);
 
+      const document = await this.findAccessibleDocument(req, documentId);
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Document not found or access denied',
+          data: null,
+        });
+      }
+
       // Find the most recent analysis for this document
       const analysis = await DocumentAnalysis.findOne({ 
         documentId: documentId,
@@ -315,6 +329,14 @@ class DocumentAnalysisController {
         return res.status(400).json({
           success: false,
           message: 'Document ID is required'
+        });
+      }
+
+      const document = await this.findAccessibleDocument(req, documentId);
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Document not found or access denied',
         });
       }
 
@@ -367,11 +389,8 @@ class DocumentAnalysisController {
 
       console.log(`🔄 Reprocessing document analysis for: ${documentId}`);
 
-      // Check if document exists
-      const document = await Document.findOne({
-        _id: documentId,
-        isDeleted: { $ne: true } // Exclude deleted documents
-      });
+      // Check if document exists and caller has access
+      const document = await this.findAccessibleDocument(req, documentId);
       if (!document) {
         return res.status(404).json({
           success: false,
@@ -461,13 +480,13 @@ class DocumentAnalysisController {
    */
   async getUserAnalyses(req, res) {
     try {
-      const { userId } = req.params;
+      const userId = req.user?.data?.id;
       const { page = 1, limit = 10, status } = req.query;
       
       if (!userId) {
-        return res.status(400).json({
+        return res.status(401).json({
           success: false,
-          message: 'User ID is required'
+          message: 'Authentication required'
         });
       }
 
@@ -546,14 +565,23 @@ class DocumentAnalysisController {
 
       console.log(`🗑️ Deleting analysis: ${analysisId}`);
 
-      const deletedAnalysis = await DocumentAnalysis.findByIdAndDelete(analysisId);
-      
-      if (!deletedAnalysis) {
+      const analysis = await DocumentAnalysis.findById(analysisId);
+      if (!analysis) {
         return res.status(404).json({
           success: false,
           message: 'Analysis not found'
         });
       }
+
+      const document = await this.findAccessibleDocument(req, analysis.documentId);
+      if (!document) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+
+      const deletedAnalysis = await DocumentAnalysis.findByIdAndDelete(analysisId);
 
       res.json({
         success: true,
