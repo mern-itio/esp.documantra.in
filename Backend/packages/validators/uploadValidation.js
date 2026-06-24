@@ -190,8 +190,11 @@ const createMulterErrorHandler = () => (error, req, res, next) => {
     return next();
   }
 
-  const multer = require('multer');
-  if (error instanceof multer.MulterError) {
+  if (error.message && /not allowed|security/i.test(error.message)) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+
+  if (error.name === 'MulterError') {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ success: false, message: 'File size exceeds the allowed limit' });
     }
@@ -199,10 +202,6 @@ const createMulterErrorHandler = () => (error, req, res, next) => {
       return res.status(400).json({ success: false, message: 'Too many files in this upload' });
     }
     return res.status(400).json({ success: false, message: 'File upload error' });
-  }
-
-  if (error.message && /not allowed|security/i.test(error.message)) {
-    return res.status(400).json({ success: false, message: error.message });
   }
 
   return next(error);
