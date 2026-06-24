@@ -37,7 +37,7 @@ const NotificationsPage: React.FC = () => {
     try {
       setLoading(true);
       // const unreadOnly = filter === 'unread' ? 'true' : 'false';
-      const response = await apiGateway.get('/api/get-notifications');
+      const response = await apiGateway.get('/get-notifications');
       if (response.data?.status === 'success') {
         setNotifications(response.data.data.notifications || []);
         setUnreadCount(response.data.data.unreadCount || 0);
@@ -59,7 +59,7 @@ const NotificationsPage: React.FC = () => {
 
   const handleMarkAsRead = async (notificationId: string, source: string) => {
     try {
-      await apiGateway.post(`/api/mark-read/${notificationId}`,{
+      await apiGateway.post(`/mark-read/${notificationId}`,{
         source:source
       });
       setNotifications(prev =>
@@ -75,7 +75,7 @@ const NotificationsPage: React.FC = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await apiGateway.post('api/mark-read');
+      await apiGateway.post('/mark-read');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true, readAt: new Date().toISOString() })));
       setUnreadCount(0);
       toast.success('All notifications marked as read');

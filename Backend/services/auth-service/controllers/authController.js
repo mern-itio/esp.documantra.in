@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const { authenticator } = require('otplib');
 const User  = require('../models/User');
 const { attachReferralOnSignup } = require('./referralController');
-const { isEmailValid } = require('@draftnsign/validators');
+const { isEmailValid, getPasswordPolicyError } = require('@draftnsign/validators');
 const { sendPasswordResetEmail, sendVerificationOtpEmail, sendNewLoginAlertEmail } = require('../utils/email');
 const { sendVerificationOtpSms } = require('../utils/sms');
 // const { verifyJWT } = require('@draftnsign/auth-lib');
@@ -964,6 +964,11 @@ const register = async (req, res) => {
     return res.status(400).json({ message: 'Invalid email format' });
   }
 
+  const passwordError = getPasswordPolicyError(password);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
+  }
+
   try {
     // Sequential verification: send email OTP first; phone OTP is sent only after email verification.
     const emailOtp = generateOtp();
@@ -1398,7 +1403,11 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
   if (!token) return res.status(400).json({ message: 'Reset token is required' });
-  if (!newPassword || newPassword.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' });
+
+  const passwordError = getPasswordPolicyError(newPassword);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
+  }
 
   try {
     const user = await User.findOne({
@@ -1412,6 +1421,10 @@ const resetPassword = async (req, res) => {
     user.password = newPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
+    user.activeSessions = [];
+    user.passwordChangedAt = new Date();
+    user.failedLoginAttempts = 0;
+    user.lockUntil = undefined;
     await user.save();
 
     return res.status(200).json({
@@ -1665,6 +1678,37 @@ const verifyProfilePhoneOtp = async (req, res) => {
   return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({ message: 'Phone updated successfully', token: generateToken });
 };
 
+const getSessionIdleTimeoutMs = () =>
+  Number(process.env.SESSION_IDLE_TIMEOUT_MS || 8 * 60 * 60 * 1000);
+
+const validateAndTouchSession = async (user, sessionId, tokenIssuedAtSec) => {
+  const session = (user.activeSessions || []).find((s) => s.sessionId === sessionId);
+  if (!session) {
+    return { valid: false, message: 'Session expired or revoked' };
+  }
+
+  if (user.passwordChangedAt && tokenIssuedAtSec) {
+    const tokenIssuedAtMs = tokenIssuedAtSec * 1000;
+    if (tokenIssuedAtMs < user.passwordChangedAt.getTime()) {
+      return { valid: false, message: 'Session invalidated due to password change' };
+    }
+  }
+
+  const idleMs = getSessionIdleTimeoutMs();
+  if (session.lastActive) {
+    const idle = Date.now() - new Date(session.lastActive).getTime();
+    if (idle > idleMs) {
+      user.activeSessions = user.activeSessions.filter((s) => s.sessionId !== sessionId);
+      await user.save({ validateBeforeSave: false });
+      return { valid: false, message: 'Session expired due to inactivity' };
+    }
+  }
+
+  session.lastActive = new Date();
+  await user.save({ validateBeforeSave: false });
+  return { valid: true };
+};
+
 const verifyActiveSession = async (req, res, next) => {
   const userId = req.user?.data?.id || req.user?.id || req.user?._id;
   const sessionId = req.user?.data?.sessionId || req.user?.sessionId;
@@ -1677,14 +1721,18 @@ const verifyActiveSession = async (req, res, next) => {
   }
 
   try {
-    const user = await User.findById(userId).select('activeSessions status');
+    const user = await User.findById(userId).select('activeSessions status passwordChangedAt');
     if (!user || user.status === false) {
       return res.status(401).json({ message: 'User not found or suspended' });
     }
 
-    const isActive = user.activeSessions.some(s => s.sessionId === sessionId);
-    if (!isActive) {
-      return res.status(401).json({ message: 'Session expired or revoked' });
+    const sessionCheck = await validateAndTouchSession(
+      user,
+      sessionId,
+      req.user?.iat
+    );
+    if (!sessionCheck.valid) {
+      return res.status(401).json({ message: sessionCheck.message });
     }
 
     next();
@@ -1756,14 +1804,14 @@ const validateSessionEndpoint = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(userId).select('activeSessions status');
+    const user = await User.findById(userId).select('activeSessions status passwordChangedAt');
     if (!user || user.status === false) {
       return res.status(401).json({ valid: false, message: 'User suspended or not found' });
     }
 
-    const isActive = user.activeSessions.some(s => s.sessionId === sessionId);
-    if (!isActive) {
-      return res.status(401).json({ valid: false, message: 'Session revoked' });
+    const sessionCheck = await validateAndTouchSession(user, sessionId, decoded?.iat);
+    if (!sessionCheck.valid) {
+      return res.status(401).json({ valid: false, message: sessionCheck.message });
     }
 
     return res.status(200).json({ valid: true });

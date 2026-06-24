@@ -1,0 +1,221 @@
+x-backend-service: &backend-defaults
+  restart: unless-stopped
+  env_file:
+    - .env.prod
+  environment:
+    NODE_ENV: production
+  networks:
+    - esp-net
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - esp-net
+
+  auth-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/auth-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/auth-service
+    depends_on:
+      - mongo
+
+  document-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/document-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/document-service
+    volumes:
+      - document_uploads:/app/services/document-service/uploads
+    depends_on:
+      - mongo
+
+  e-sign-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/e-sign-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/e-sign-service
+    volumes:
+      - esign_uploads:/app/services/e-sign-service/uploads
+    depends_on:
+      - mongo
+      - auth-service
+      - email-service
+
+  email-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/email-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/email-service
+    depends_on:
+      - mongo
+
+  organization-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/organization-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/organization-service
+    volumes:
+      - organization_uploads:/app/services/organization-service/uploads
+    depends_on:
+      - mongo
+
+  subscription-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/subscription-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/subscription-service
+    depends_on:
+      - mongo
+
+  api-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/api-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/api-service
+    depends_on:
+      - mongo
+
+  template-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/template-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/template-service
+    depends_on:
+      - mongo
+
+  support-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/support-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/support-service
+    depends_on:
+      - mongo
+
+  admin-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/admin-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/admin-service
+    depends_on:
+      - mongo
+
+  ai-assistant-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/ai-assistant-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/ai-assistant-service
+    environment:
+      NODE_ENV: production
+      DOCUMENT_SERVICE_URL: http://document-service:2102
+      ESIGN_SERVICE_URL: http://e-sign-service:2103
+      SUBSCRIPTION_SERVICE_URL: http://subscription-service:2110
+    depends_on:
+      - mongo
+      - document-service
+      - e-sign-service
+
+  pdf-service:
+    <<: *backend-defaults
+    build:
+      context: ./Backend
+      dockerfile: services/pdf-service/Dockerfile
+    command: npm start
+    working_dir: /app/services/pdf-service
+    environment:
+      NODE_ENV: production
+      PYTHON_PATH: /opt/venv/bin/python
+    volumes:
+      - pdf_uploads:/app/services/pdf-service/uploads
+      - pdf_outputs:/app/services/pdf-service/outputs
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  pdf-java-service:
+    build:
+      context: ./Backend
+      dockerfile: services/pdf-java-service/Dockerfile
+    restart: unless-stopped
+    networks:
+      - esp-net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: https://esp.documantra.in/auth
+        VITE_DOCUMENT_SERVICE_URL: https://esp.documantra.in/document
+        VITE_ESIGN_SERVICE_URL: https://esp.documantra.in/esign
+        VITE_PDF_SERVICE_URL: https://esp.documantra.in/pdf
+        VITE_API_SERVICE_URL: https://esp.documantra.in/service
+        VITE_TEMPLATE_SERVICE_URL: https://esp.documantra.in/template
+        VITE_SUBSCRIPTION_SERVICE_URL: https://esp.documantra.in/subscription
+        VITE_ORGANIZATION_SERVICE_URL: https://esp.documantra.in/organization
+        VITE_ADMIN_SERVICE_URL: https://esp.documantra.in/admin
+        VITE_SUPPORT_SERVICE_URL: https://esp.documantra.in/support
+        VITE_AI_ASSISTANT_SERVICE_URL: https://esp.documantra.in/ai
+        VITE_PUBLIC_APP_URL: https://esp.documantra.in
+    restart: unless-stopped
+    networks:
+      - esp-net
+
+  nginx:
+    build:
+      context: ./deploy/nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - frontend
+      - auth-service
+      - document-service
+      - e-sign-service
+      - organization-service
+      - email-service
+    networks:
+      - esp-net
+
+networks:
+  esp-net:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  document_uploads:
+  esign_uploads:
+  organization_uploads:
+  pdf_uploads:
+  pdf_outputs:

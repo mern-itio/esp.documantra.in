@@ -267,6 +267,22 @@ function isEmailValid(email) {
 function isPasswordValid(password) {
   return PATTERNS.PASSWORD.test(password);
 }
+
+const PASSWORD_POLICY_MESSAGE =
+  'Password must be at least 8 characters and include uppercase, lowercase, number, and special character (@$!%*?&)';
+
+function getPasswordPolicyError(password) {
+  if (!password || typeof password !== 'string') {
+    return 'Password is required';
+  }
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters long';
+  }
+  if (!PATTERNS.PASSWORD.test(password)) {
+    return PASSWORD_POLICY_MESSAGE;
+  }
+  return null;
+}
 function isPhoneValid(phone) {
   return PATTERNS.PHONE.test(phone);
 }
@@ -345,6 +361,8 @@ module.exports = {
   validateSearchQuery,
   isEmailValid,
   isPasswordValid,
+  getPasswordPolicyError,
+  PASSWORD_POLICY_MESSAGE,
   isPhoneValid,
   isUrlValid,
   isDateValid,

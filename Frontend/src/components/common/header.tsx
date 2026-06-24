@@ -121,7 +121,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
     if (!user) return;
     try {
       setNotificationsLoading(true);
-      const response = await apiGateway.get('/api/get-notifications');
+      const response = await apiGateway.get('/get-notifications');
       if (response.data?.status === 'success') {
         setNotifications(response.data.data.notifications || []);
         setUnreadCount(response.data.data.unreadCount || 0);
@@ -155,7 +155,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   // Mark all notifications as read
   const handleMarkAllAsRead = async () => {
     try {
-      await apiGateway.post('api/mark-read');
+      await apiGateway.post('/mark-read');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (error) {

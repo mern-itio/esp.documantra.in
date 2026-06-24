@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
+const { getPasswordPolicyError } = require('@draftnsign/validators');
 // Admin Controller
 const userList = async (req, res) => {
   try {
@@ -108,17 +109,27 @@ const updateUserPassword = async (req, res) =>{
   if (!id || !password) {
     return res.status(400).json({ status: 400, message: 'User ID and password are required', data: null });
   }
+
+  const passwordError = getPasswordPolicyError(password);
+  if (passwordError) {
+    return res.status(400).json({ status: 400, message: passwordError, data: null });
+  }
+
   try{
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await User.findByIdAndUpdate(
-      id,
-      { password: hashed },
-      { new: true }
-    ).select('-password');
+    const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ status: 404, message: 'User not found', data: null });
     }
-    return res.status(200).json({ status: 200, message: 'Password updated successfully', data: user });
+
+    user.password = password;
+    user.activeSessions = [];
+    user.passwordChangedAt = new Date();
+    user.failedLoginAttempts = 0;
+    user.lockUntil = undefined;
+    await user.save();
+
+    const safeUser = await User.findById(id).select('-password');
+    return res.status(200).json({ status: 200, message: 'Password updated successfully', data: safeUser });
 
   }catch (err){
     console.error('Error updating user:', err);

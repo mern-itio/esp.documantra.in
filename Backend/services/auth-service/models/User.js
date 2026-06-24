@@ -74,6 +74,7 @@ const userSchema = new mongoose.Schema({
   // Account locking
   failedLoginAttempts: { type: Number, required: true, default: 0 },
   lockUntil: { type: Date },
+  passwordChangedAt: { type: Date, default: null },
   /** Set when this user registered via a referral link (referrer's User id). */
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
 }, { timestamps: true });

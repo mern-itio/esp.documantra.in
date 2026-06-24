@@ -24,6 +24,14 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { status: 429, message: 'Too many password reset attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.get('/status', (_, res) => res.send('Auth Service is running and changing'));
 router.post('/login', loginLimiter, login);
 router.post('/google-login', loginLimiter, googleLogin);
@@ -39,7 +47,7 @@ router.post('/signup/verify-email-otp', verifySignupEmailOtp);
 router.post('/signup/send-phone-otp', otpLimiter, sendSignupPhoneOtp);
 router.post('/signup/verify-phone-otp', verifySignupPhoneOtp);
 router.post('/forgot-password', otpLimiter, forgotPassword);
-router.post('/reset-password', resetPassword);
+router.post('/reset-password', resetPasswordLimiter, resetPassword);
 router.get('/api/user-details/:id', userDetails);
 router.get('/api/find-user/:email', findUserByEmail);
 router.get('/api/auth/me', verifyJWT(), verifyActiveSession, getMe);

@@ -131,7 +131,10 @@ export const pdfApi = createApiInstance(
   'PDF'
 );
 export const apiGateway = createApiInstance(
-  import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:2113',
+  resolveServiceUrl(import.meta.env.VITE_API_GATEWAY_URL, {
+    productionPath: '/api',
+    localUrl: 'http://localhost:2113/api',
+  }),
   'API-Gateway'
 );
 // Centralized credit gating for PDF conversions
