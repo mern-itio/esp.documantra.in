@@ -59,7 +59,7 @@ function getSupportQueryEmailHtml({
   createdAt,
   content,
 }) {
-  const appName = process.env.APP_NAME';
+  const appName = process.env.APP_NAME || 'Documantra';
   const fmt = (v) => String(v ?? '-').replace(/[<>]/g, '');
   const safeTicket = fmt(ticketNumber);
   const safeSubject = fmt(subject);
