@@ -7,7 +7,6 @@ const {
   isValidObjectId,
   isAnonymousDraftEnvelope,
   userHasEnvelopeAccess,
-  assertAuthenticatedEnvelopeAccess,
   loadEnvelope,
 } = require('./envelopeAccess');
 
