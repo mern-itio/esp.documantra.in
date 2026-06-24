@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { authApi } from '../../services/apiHelper'
+import { APP_NAME } from '../../components/constants/appConfig'
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('')
@@ -128,9 +129,11 @@ const bgItems = Array.from({ length: 24 }, (_, i) => ({
           <div className="rounded-2xl border border-[#E6D8C9]/90 bg-[#F7F3EE] shadow-[0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden">
             {/* Card header with brand */}
             <div className="px-6 pt-8 pb-2 text-center border-b border-slate-100">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#260559] to-[#084bdc] text-white text-sm font-bold mb-4">
-                D&S
-              </div>
+              <img
+                src="https://documantra.in/logo.png"
+                alt={APP_NAME}
+                className="h-12 w-auto object-contain mx-auto mb-4"
+              />
               <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
                 {success ? 'Check your email' : 'Reset your password'}
               </h1>
