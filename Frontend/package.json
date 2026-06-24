@@ -33,6 +33,7 @@
     "autoprefixer": "^10.4.21",
     "axios": "^1.11.0",
     "canvas-confetti": "^1.9.4",
+    "canvg": "^4.0.3",
     "chart.js": "^4.5.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",

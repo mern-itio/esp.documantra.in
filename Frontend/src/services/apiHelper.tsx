@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import { SubscriptionStorage } from './subscriptionService';
+import { resolveServiceUrl } from '../utils/secureApiUrl';
 
 const createApiInstance = (baseURL: string, serviceName: string, tokenKey: string = 'accessToken'): AxiosInstance => {
 
@@ -32,7 +33,14 @@ const createApiInstance = (baseURL: string, serviceName: string, tokenKey: strin
       } catch {}
     }
     if (token) {
-      (config.headers as any).Authorization = `Bearer ${token}`;
+      const requestUrl = String(config.url || '');
+      const isPublicEsignRequest =
+        requestUrl.includes('/api/e-sign/public/') ||
+        (typeof window !== 'undefined' &&
+          window.location.pathname.startsWith('/public-sign'));
+      if (!isPublicEsignRequest) {
+        (config.headers as any).Authorization = `Bearer ${token}`;
+      }
     }
 
     // Inject account switching headers if present
@@ -101,7 +109,10 @@ const createApiInstance = (baseURL: string, serviceName: string, tokenKey: strin
 
 // Create service-specific API instances
 export const authApi = createApiInstance(
-  import.meta.env.VITE_API_BASE_URL || 'https://esp.documantra.in/auth',
+  resolveServiceUrl(import.meta.env.VITE_API_BASE_URL, {
+    productionPath: '/auth',
+    localUrl: 'http://localhost:2101',
+  }),
   'Auth'
 );
 

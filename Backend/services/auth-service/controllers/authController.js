@@ -10,6 +10,7 @@ const { sendVerificationOtpSms } = require('../utils/sms');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const { OAuth2Client } = require('google-auth-library');
+const { getAccessTokenCookieOptions } = require('../utils/cookieOptions');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -241,8 +242,7 @@ async function maybeIssueAccessTokenIfVerified(user, res, req) {
   if (!user.emailVerified) return null;
   const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
   const accessToken = await generateAccessTokenUser(user, expireIn, req);
-  const options = { httpOnly: true, expiresIn: expireIn };
-  res.cookie('accessToken', accessToken, options);
+  res.cookie('accessToken', accessToken, getAccessTokenCookieOptions(req, expireIn));
   return {
     status: 200,
     message: 'Account verified successfully',
@@ -408,12 +408,8 @@ const login = async (req, res) => {
   const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
-  const options = {
-    httpOnly: true,
-    expiresIn: expireIn
-  };
 
-  return res.cookie('accessToken', generateToken, options).status(200).json({
+  return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({
     status: 201,
     message: "User is logged in successfully",
     user_id: user._id,
@@ -501,9 +497,8 @@ const verifyTwoFaLogin = async (req, res) => {
   const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
-  const options = { httpOnly: true, expiresIn: expireIn };
 
-  return res.cookie('accessToken', generateToken, options).status(200).json({
+  return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({
     status: 201,
     message: "User is logged in successfully",
     user_id: user._id,
@@ -695,9 +690,8 @@ const verifyTwoFaRecoveryOtp = async (req, res) => {
   const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
-  const options = { httpOnly: true, expiresIn: expireIn };
 
-  return res.cookie('accessToken', generateToken, options).status(200).json({
+  return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({
     status: 201,
     message: 'User is logged in successfully',
     user_id: user._id,
@@ -1501,12 +1495,8 @@ const googleLogin = async (req, res) => {
     const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
     const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
-    const options = {
-      httpOnly: true,
-      expiresIn: expireIn
-    };
 
-    return res.cookie('accessToken', generateToken, options).status(200).json({
+    return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({
       status: 200,
       message: "User is logged in successfully with Google",
       user_id: user._id,
@@ -1540,9 +1530,8 @@ const updateProfile = async (req, res) => {
   const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
-  const options = { httpOnly: true, expiresIn: expireIn };
 
-  return res.cookie('accessToken', generateToken, options).status(200).json({
+  return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({
     message: 'Profile updated successfully',
     user: {
       id: user._id,
@@ -1612,9 +1601,8 @@ const verifyProfileEmailOtp = async (req, res) => {
   const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
-  const options = { httpOnly: true, expiresIn: expireIn };
 
-  return res.cookie('accessToken', generateToken, options).status(200).json({ message: 'Email updated successfully', token: generateToken });
+  return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({ message: 'Email updated successfully', token: generateToken });
 };
 
 const sendProfilePhoneOtp = async (req, res) => {
@@ -1673,9 +1661,8 @@ const verifyProfilePhoneOtp = async (req, res) => {
   const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
-  const options = { httpOnly: true, expiresIn: expireIn };
 
-  return res.cookie('accessToken', generateToken, options).status(200).json({ message: 'Phone updated successfully', token: generateToken });
+  return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({ message: 'Phone updated successfully', token: generateToken });
 };
 
 const verifyActiveSession = async (req, res, next) => {

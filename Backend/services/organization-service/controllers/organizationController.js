@@ -10,6 +10,25 @@ const ALL_PERMISSIONS = {
     ORG_SHARE: true,
     ORG_SETTINGS_EDIT: true
 };
+
+const getOrganizationErrorStatus = (err) => {
+    const message = String(err?.message || '').toLowerCase();
+    if (message.includes('not found')) {
+        return 404;
+    }
+    if (
+        message.includes('required') ||
+        message.includes('already in use') ||
+        message.includes('conflict') ||
+        message.includes('logo url') ||
+        message.includes('not allowed') ||
+        message.includes('invalid logo')
+    ) {
+        return 400;
+    }
+    return 500;
+};
+
 const createOrganization = async (req, res) => {
     const userId = req?.user?.data?.id; // Assuming user ID is available in req.user
     try {
@@ -21,7 +40,7 @@ const createOrganization = async (req, res) => {
             data: result
         });
     } catch (err) {
-        return res.status(500).json({
+        return res.status(getOrganizationErrorStatus(err)).json({
             success: false,
             message: err.message || "Internal server error"
         });
@@ -116,7 +135,7 @@ const updateOrganizationDetails = async (req, res) => {
             data: result
         });
     }catch(err){
-        return res.status(500).json({
+        return res.status(getOrganizationErrorStatus(err)).json({
             success: false,
             message: err.message || "Internal server error"
         });

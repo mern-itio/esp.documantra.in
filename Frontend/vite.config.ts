@@ -35,6 +35,11 @@ export default defineConfig({
         target: 'http://localhost:2104',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/pdf-service/, '')
+      },
+      '/esign': {
+        target: 'http://localhost:2103',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/esign/, '')
       }
     }
   }

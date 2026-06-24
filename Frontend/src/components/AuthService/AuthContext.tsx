@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { API_ENDPOINTS, apiRequest } from '../../services/api';
+import { assertSecureApiUrl } from '../../utils/secureApiUrl';
 import { authApi } from '../../services/apiHelper';
 import { SubscriptionService, SubscriptionStorage } from '../../services/subscriptionService';
 
@@ -368,6 +369,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string, recaptchaToken?: string) => {
     try {
+      assertSecureApiUrl(API_ENDPOINTS.AUTH.LOGIN, 'Auth API');
       const deviceId = getOrCreateDeviceId();
       const resp = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
         method: 'POST',

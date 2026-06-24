@@ -1,14 +1,59 @@
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
 const SmtpConfiguration = require('../models/SmtpConfiguration');
+
+const SMTP_RETRYABLE = /ECONNRESET|ETIMEDOUT|ESOCKET|ECONNREFUSED|socket hang up/i;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const withSmtpRetry = async (fn, { retries = 2, delayMs = 2000 } = {}) => {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const transient = SMTP_RETRYABLE.test(err?.message || '');
+      if (!transient || attempt === retries) {
+        throw err;
+      }
+      await sleep(delayMs * (attempt + 1));
+    }
+  }
+  throw lastErr;
+};
+
+const createSmtpTransporter = ({ host, port, secure, auth }) =>
+  nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth,
+    pool: true,
+    maxConnections: 1,
+    maxMessages: 5,
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 60000,
+    requireTLS: !secure && port === 587,
+  });
 
 const sendEmailByUserId = async ({ userId, toEmail, subject, html, attachments = [] }) => {
 
-  const smtpConfig = await SmtpConfiguration.findOne({
-    userId,
-    isDefault: true,
-    isVerified: true,
-    status: 'active'
-  });
+  const hasValidUserId =
+    userId &&
+    userId !== 'undefined' &&
+    userId !== 'null' &&
+    mongoose.Types.ObjectId.isValid(String(userId));
+
+  const smtpConfig = hasValidUserId
+    ? await SmtpConfiguration.findOne({
+        userId,
+        isDefault: true,
+        isVerified: true,
+        status: 'active',
+      })
+    : null;
 
   let host = 'smtp.gmail.com';
   let port = 587;
@@ -32,12 +77,7 @@ const sendEmailByUserId = async ({ userId, toEmail, subject, html, attachments =
     fromEmail = smtpConfig.fromEmail;
   }
 
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth
-  });
+  const transporter = createSmtpTransporter({ host, port, secure, auth });
   const normalizedAttachments = attachments.map(file => ({
   filename: file.filename,
   content:
@@ -57,7 +97,7 @@ const sendEmailByUserId = async ({ userId, toEmail, subject, html, attachments =
     attachments:normalizedAttachments
   };
 
-  const info = await transporter.sendMail(mailOptions);
+  const info = await withSmtpRetry(() => transporter.sendMail(mailOptions));
 
   if (smtpConfig) {
     await SmtpConfiguration.updateOne(
@@ -76,14 +116,14 @@ const sendEmailByUserId = async ({ userId, toEmail, subject, html, attachments =
 };
 const sendEmailBySystem = async ({ to, subject, html, attachments = [] }) => {
 
-  const transporter = nodemailer.createTransport({
+  const transporter = createSmtpTransporter({
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
     auth: {
       user: 'draftnsign@gmail.com',
-      pass: 'tbqhooitksgusmpc'
-    }
+      pass: 'tbqhooitksgusmpc',
+    },
   });
 
   const mailOptions = {
@@ -94,7 +134,7 @@ const sendEmailBySystem = async ({ to, subject, html, attachments = [] }) => {
     attachments
   };
 
-  const info = await transporter.sendMail(mailOptions);
+  const info = await withSmtpRetry(() => transporter.sendMail(mailOptions));
 
   return info;
 };

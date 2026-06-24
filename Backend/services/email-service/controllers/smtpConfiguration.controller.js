@@ -291,11 +291,22 @@ const testSmtpConfig = async (req, res) => {
       }
 }
 const sendMail = async (req, res) =>{
-  const { toEmail, subject, html,attachments } = req.body;
+  const { toEmail, subject, html, attachments } = req.body;
   try {
     const userId = req.params.id;
-    const response = await email.sendEmailByUserId({ userId, toEmail, subject, html,attachments });
-    return res.json({   
+    const hasValidUserId =
+      userId &&
+      userId !== 'undefined' &&
+      userId !== 'null' &&
+      mongoose.Types.ObjectId.isValid(String(userId));
+
+    if (hasValidUserId) {
+      await email.sendEmailByUserId({ userId, toEmail, subject, html, attachments });
+    } else {
+      await email.sendEmailBySystem({ to: toEmail, subject, html, attachments });
+    }
+
+    return res.json({
       success: true,
       message: 'Email sent successfully',
       sentTo: toEmail

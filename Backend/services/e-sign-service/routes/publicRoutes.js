@@ -27,7 +27,8 @@ const {
 
 const {
   Upload,
-  insertRecipient
+  insertRecipient,
+  saveSignatureFields
 } = require('../controllers/eSignController');
 
 const {updateAuthStatus,saveAadhaar} = require('../controllers/recipientController');
@@ -43,8 +44,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const router = express.Router();
-
-
 
 router.get('/health', (_, res) => res.send('E-Sign Public Service is running...'));
 router.get('/envelope/:id', envelopesDetail);
@@ -63,6 +62,8 @@ router.post(
   '/send-envelope/:envelopeId',
   sendEnvelope
 );
+
+router.post('/save-signature-fields', saveSignatureFields);
 
 router.post('/save-signature', saveupdateSignature);
 router.post('/add-signature', addSignature); 
@@ -84,4 +85,10 @@ router.post('/fetch/current-recipient',fetchCurrentRecipient);
 //V Sign
 // router.post('/start-esign', vSignController.startEsign);
 router.post('/v-sign/response', vSignController.esignResponse);
+
+// Prevent unmatched /api/e-sign/public/* requests from falling through to JWT-protected routes.
+router.use((req, res) => {
+  res.status(404).json({ message: `Public route not found: ${req.method} ${req.path}` });
+});
+
 module.exports = router;

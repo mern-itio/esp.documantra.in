@@ -10,12 +10,16 @@ const folderEnvelope = require('../models/folderEnvelope');
 
 const mongoose = require('mongoose');
 const axios = require('axios');
+const { validateLogoUrl } = require('../utils/logoUrl');
+
 const createOrganization = async (payload, userId) => {
     const { name, logo, website, gst } = payload;
 
     if (!name?.trim()) {
         throw new Error('Organization name is required');
     }
+
+    const normalizedLogo = logo ? await validateLogoUrl(logo) : undefined;
 
     const normalizedWebsite = website
         ? String(website).trim().toLowerCase()
@@ -54,7 +58,7 @@ const createOrganization = async (payload, userId) => {
 
     const org = await Organization.create({
         name: name.trim(),
-        logo: logo || undefined,
+        logo: normalizedLogo,
         website: normalizedWebsite,
         gst: normalizedGst,
         createdBy: userId,
@@ -74,6 +78,11 @@ const getOrganizationDetails = async (orgId) => {
 }
 const updateOrganizationDetails = async (orgId,payload) => {
     const { name, logo, website, gst } = payload;
+
+    let normalizedLogo;
+    if (logo !== undefined) {
+        normalizedLogo = logo ? await validateLogoUrl(logo) : undefined;
+    }
 
     // Normalize website and GST for duplicate checking
     const normalizedWebsite = website
@@ -116,6 +125,9 @@ const updateOrganizationDetails = async (orgId,payload) => {
 
     // If gst or website is being changed, reset verification status and remark
     const updatePayload = { ...payload };
+    if (logo !== undefined) {
+        updatePayload.logo = normalizedLogo;
+    }
     if (website !== undefined || gst !== undefined) {
         updatePayload.isVerified = false;
         updatePayload.verificationStatus = 'PENDING';

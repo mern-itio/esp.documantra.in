@@ -22,6 +22,19 @@ const normalizeRecipientId = (value) => {
   return null;
 };
 
+/** When client omits recipientId, assign the first signer on the envelope. */
+const resolveRecipientIdForField = async (envelopeId, recipientId) => {
+  const normalized = normalizeRecipientId(recipientId);
+  if (normalized) return normalized;
+
+  const permission = await RecipientPermission.findOne({
+    envelopeId,
+    role: { $nin: ['carbon_copy', 'cc', 'in_person_signer'] },
+  }).sort({ order: 1, createdAt: 1 });
+
+  return permission?.recipientId ? String(permission.recipientId) : null;
+};
+
 const parseAuthLevel = (authentication) => {
   if (!authentication) return [];
 
@@ -285,11 +298,26 @@ role: (r.role || 'signer').toLowerCase(),
     recipientIds: recps,
   });
 
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+  const recipientDetails = await Promise.all(
+    recps.map(async (id) => {
+      const recipient = await Recipient.findById(id);
+      if (!recipient) return null;
+      return {
+        recipientId: recipient._id,
+        name: recipient.name,
+        email: recipient.email,
+        signLink: `${frontendUrl}/e-sign/signer/${envelopeId}/${recipient._id}`,
+      };
+    })
+  );
+
   return res.status(200).json({
     status: 'success',
     message: 'Recipients processed successfully',
     envelopeId: envelope._id,
-    recipientIds: recps
+    recipientIds: recps,
+    signingLinks: recipientDetails.filter(Boolean),
   });
 };
 
@@ -309,7 +337,7 @@ const saveSignatureFields = async (req, res) => {
 
   const processedFields = await Promise.all(
     signatureFields.map(async (sf) => {
-      const recipientId = normalizeRecipientId(sf.recipientId);    
+      const recipientId = await resolveRecipientIdForField(envelopeId, sf.recipientId);    
   console.log('Processing field with type:', sf.type, 'for field:', sf);
       if (sf._id) {
         // Update existing field

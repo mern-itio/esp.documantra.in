@@ -7,9 +7,13 @@ const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const verifyJWT = require('@draftnsign/auth-lib');
+const { httpsSecurityMiddleware } = require('./middleware/httpsSecurity');
 
 
 const app = express();
+
+app.set('trust proxy', 1);
+app.use(httpsSecurityMiddleware);
 
 app.use(cors({
   origin: "*"

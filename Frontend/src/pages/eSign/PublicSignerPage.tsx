@@ -217,6 +217,10 @@ const EnvelopeDetails: React.FC = () => {
         }
         setSignatureFields(allFields);
         if (docs.length > 0) setActiveDocument(docs[0]);
+
+        if (allFields.length === 0) {
+          console.warn('No signature fields found for envelope', id);
+        }
       }
     } catch (error) {
       console.error("Error fetching envelope:", error);

@@ -147,7 +147,10 @@ const DocumentViewerContent: React.FC<Props> = ({
   // Get matched recipient for a field (recipient mode only)
   const getMatchedRecipient = (field: any) => {
     if (mode !== MODE.RECIPIENT) return null;
-    return allRecipients?.find((r: any) => r.id === field.recipientId);
+    return allRecipients?.find((r: any) => {
+      const rid = normalizeMongoId(r?.id ?? r?._id);
+      return rid && rid === normalizeMongoId(field.recipientId);
+    });
   };
 
   // Check if current user owns this field
@@ -158,7 +161,10 @@ const DocumentViewerContent: React.FC<Props> = ({
         return matchedSigner ? matchedSigner._id?.toString?.() === currentUserId?.toString?.() : false;
       }
       case MODE.RECIPIENT:
-        return field.recipientId === currentUserId;
+        return (
+          normalizeMongoId(field.recipientId) === normalizeMongoId(currentUserId) ||
+          (!field.recipientId && !!currentUserId)
+        );
       default:
         return false;
     }
@@ -516,7 +522,11 @@ const isFieldFilled = (f: any): boolean => {
 
 // returns true only if ALL non-signature fields for that recipient are filled
 const areAllNonSignatureFieldsFilledForRecipient = (recipientId: string) => {
-  const fields = signatureFields.filter((ff: any) => ff.type !== "signature" && ff.recipientId === recipientId);
+  const fields = signatureFields.filter(
+    (ff: any) =>
+      ff.type !== "signature" &&
+      normalizeMongoId(ff.recipientId) === normalizeMongoId(recipientId)
+  );
   if (fields.length === 0) return true; // no other fields => allow signing
   return fields.every(isFieldFilled);
 };

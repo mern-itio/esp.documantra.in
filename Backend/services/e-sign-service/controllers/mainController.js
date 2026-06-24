@@ -732,19 +732,24 @@ const sendEnvelope = async (req, res) => {
       });
     }
 
-    // Update envelope status if draft
-    if (envelope.status === 'draft') {
-      envelope.status = 'in-progress';
-      await envelope.save();
-    }
-
     // Send to First recipient in Signing Order
     const sentRecipients = [];
+    const mailUserId =
+      userId ||
+      (envelope.sender && mongoose.Types.ObjectId.isValid(String(envelope.sender))
+        ? envelope.sender
+        : null);
 
-      const result = await sendToRecipients(envelope._id, envelope.subject, envelope.message,userId);
+      const result = await sendToRecipients(
+        envelope._id,
+        envelope.subject,
+        envelope.message,
+        mailUserId
+      );
       
       if (result.error) {
           console.error("Error sending to recipient:", result.error);
+          return res.status(502).json({ message: result.error });
       } else if (result.success) {
         sentRecipients.push({
           recipientId: result.recipientId,
@@ -754,6 +759,10 @@ const sendEnvelope = async (req, res) => {
 
     // If we sent to at least one recipient, return success
     if (sentRecipients.length > 0) {
+      if (envelope.status === 'draft') {
+        envelope.status = 'in-progress';
+        await envelope.save();
+      }
       let referralMilestone = null;
       try {
         const uid = userId && String(userId);
@@ -936,6 +945,64 @@ const scheduleEnvelope = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 }
+const buildSigningLinks = async (envelopeId) => {
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+  const permissions = await RecipientPermission.find({ envelopeId })
+    .sort({ order: 1, createdAt: 1 })
+    .populate('recipientId');
+
+  return permissions
+    .filter((p) => p.recipientId && p.role !== 'in_person_signer')
+    .map((p) => ({
+      recipientId: p.recipientId._id,
+      name: p.recipientId.name,
+      email: p.recipientId.email,
+      order: p.order,
+      signLink: `${frontendUrl}/e-sign/signer/${envelopeId}/${p.recipientId._id}`,
+    }));
+};
+const dispatchEnvelopeEmail = async ({ userId, toEmail, subject, html, attachments }) => {
+  const emailServiceUrl = process.env.EMAIL_SERVICE_URL;
+  if (!emailServiceUrl) {
+    throw new Error('EMAIL_SERVICE_URL is not configured');
+  }
+
+  const validUserId =
+    userId &&
+    userId !== 'undefined' &&
+    userId !== 'null' &&
+    mongoose.Types.ObjectId.isValid(String(userId));
+
+  const mailPath = validUserId
+    ? `${emailServiceUrl}/mail/send/${userId}`
+    : `${emailServiceUrl}/mail/send-by-system`;
+  const mailBody = validUserId
+    ? { toEmail, subject, html, attachments }
+    : { to: toEmail, subject, html, attachments };
+
+  const axiosConfig = { timeout: 90000 };
+  const retryable = /ECONNRESET|ETIMEDOUT|ESOCKET|ECONNREFUSED|socket hang up|502|503|504/i;
+
+  let lastErr;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await axios.post(mailPath, mailBody, axiosConfig);
+      return;
+    } catch (err) {
+      lastErr = err;
+      const errText = [
+        err?.message,
+        err?.response?.data?.message,
+        String(err?.response?.status || ''),
+      ].join(' ');
+      if (!retryable.test(errText) || attempt === 1) {
+        throw err;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
+};
 const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage,userId) => {
   try {
     // Step 1: Find the first waiting recipient who is NOT in_person_signer (in-person signers
@@ -952,28 +1019,36 @@ const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage,use
       return { error: "No waiting recipients" };
     }
 
-    // Step 2: Update permission status
-    waitingPermission.status = 'sent';
-    await waitingPermission.save();
-
-    // Step 3: Send email (never sent to in_person_signer - they sign via host-opened link)
-    const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelopeId}/${waitingPermission.recipientId._id}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const signLink = `${frontendUrl}/e-sign/signer/${envelopeId}/${waitingPermission.recipientId._id}`;
     const html = signRequestTemplate(
       waitingPermission.recipientId.name, 
       envelopeSubject,
       envelopeMessage,
       signLink
     );
-    // Send email via Email Service
-    try{
-       await axios.post(`${process.env.EMAIL_SERVICE_URL}/mail/send/${userId}`, {
+
+    try {
+      await dispatchEnvelopeEmail({
+        userId,
         toEmail: waitingPermission.recipientId.email,
         subject: `Action Required: Sign "${envelopeSubject}"`,
-        html: html
+        html,
       });
-    }catch(err){
-      console.error("Error generating sign link:", err);
+    } catch (err) {
+      console.error('Error sending sign request email:', err.response?.data || err.message);
+      const rawMessage = err.response?.data?.message || err.message || 'Failed to send sign request email';
+      const friendlyMessage = /ECONNRESET|ETIMEDOUT|ESOCKET|socket hang up/i.test(rawMessage)
+        ? 'Email delivery failed due to a temporary connection issue. Please try again.'
+        : rawMessage;
+      return {
+        error: friendlyMessage,
+      };
     }
+
+    waitingPermission.status = 'sent';
+    await waitingPermission.save();
+
     return {
       success: true,
       recipientId: waitingPermission.recipientId._id,

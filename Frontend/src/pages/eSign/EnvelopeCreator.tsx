@@ -1774,6 +1774,7 @@ envelopeId,
       }
     } catch (err) {
       console.error('Immediate save of signature fields failed:', err);
+      throw err;
     }
   };
   const getEnvelopeDetail = async (envelopeId: string) => {
@@ -1873,10 +1874,12 @@ const response = await eSignApi.get(url);
         }));
 
         setEnvelopeId(envelopeId);
+        return loadedRecipients;
       }
     } catch (error) {
       console.error('Error fetching envelope details:', error);
     }
+    return [];
   };
   const updateEnvelope = async () => {
     console.log('Updating envelope with data:', envelopeId);
@@ -2643,6 +2646,15 @@ if (response.status == 200) {
       return;
     }
 
+    if (isPublicFlow) {
+      try {
+        await confirmAndSendEnvelope();
+      } catch (error) {
+        console.error('Error in public send flow:', error);
+      }
+      return;
+    }
+
     try {
       const latestPlan = await fetchSendConfirmationData();
       const effectivePlan = latestPlan || subscriptionPlan || SubscriptionStorage.getPlan();
@@ -2693,7 +2705,7 @@ if (response.status == 200) {
     const effectivePlan = subscriptionPlan || SubscriptionStorage.getPlan();
     const creditsBalance = Number(effectivePlan?.creditsBalance || 0);
 
-    if (totalCost > 0 && creditsBalance < totalCost) {
+    if (!isPublicFlow && totalCost > 0 && creditsBalance < totalCost) {
       setShowSendConfirmationModal(false);
       setSending(false);
       setShowSubscriptionModal(true);
@@ -2703,6 +2715,7 @@ if (response.status == 200) {
 
     setSending(true);
     // Keep modal open to show loading state
+    let refreshedRecipients: EnvelopeRecipient[] = [];
     try {
       // First, save the recipients with their updated order to the backend
       // Normalize orders to ensure they're sequential
@@ -2728,12 +2741,34 @@ if (response.status == 200) {
         setRecipients(normalizedRecipients);
 
         // Refresh envelope details to ensure backend state is reflected
-        await getEnvelopeDetail(envelopeId);
+        refreshedRecipients = (await getEnvelopeDetail(envelopeId)) || [];
       } catch (saveErr) {
         console.error('Failed to save recipients order:', saveErr);
         toast.error('Failed to save signing order. Please try again.');
         setSending(false);
         return;
+      }
+
+      if (isPublicFlow) {
+        if (signatureFields.length === 0) {
+          toast.error('Please add at least one signature field.');
+          setSending(false);
+          return;
+        }
+        const recipientsForFields =
+          refreshedRecipients.length > 0 ? refreshedRecipients : normalizedRecipients;
+        const defaultSignerId =
+          recipientsForFields.find((r) => {
+            const role = (r.role || 'signer').toString().toLowerCase();
+            return role !== 'cc' && role !== 'carbon_copy' && role !== 'in_person_signer';
+          })?.id ?? recipientsForFields[0]?.id;
+
+        const fieldsToSave = signatureFields.map((field) => ({
+          ...field,
+          recipientId: field.recipientId || defaultSignerId,
+        }));
+
+        await saveSignatureFieldsImmediate(fieldsToSave);
       }
 
       // Send the envelope immediately (only if not scheduled)
@@ -2755,8 +2790,15 @@ const sendResp = await eSignApi.post(sendUrl);
           html: referralMilestoneSwalHtml(milestone),
           confirmButtonText: 'Awesome',
         });
-        // Milestone popup already shown; avoid triggering Agreement success popup again.
-        navigate('/e-sign/aggrement');
+        navigate(isPublicFlow ? '/e-sign/signer/thank-you' : '/e-sign/aggrement');
+      } else if (isPublicFlow) {
+        await Swal.fire({
+          title: 'Sent!',
+          text: 'Signing request has been sent to recipients by email.',
+          icon: 'success',
+          confirmButtonText: 'OK',
+        });
+        navigate('/e-sign/signer/thank-you');
       } else {
         // Keep existing app flow: Agreement page shows the standard success popup via `sent=true`.
         navigate('/e-sign/aggrement?sent=true');
@@ -2764,7 +2806,7 @@ const sendResp = await eSignApi.post(sendUrl);
 
       // Record credit usage
       const totalCost = calculateTotalCost();
-      if (totalCost > 0 && subscriptionPlan) {
+      if (!isPublicFlow && totalCost > 0 && subscriptionPlan) {
         try {
           // Include all recipients with authentication, including email verification
           const recipientsWithAuth = recipients.filter(r => parseAuthentication(r.authentication).length > 0);
@@ -2833,9 +2875,18 @@ const sendResp = await eSignApi.post(sendUrl);
       // Close modal before showing error alert
       setShowSendConfirmationModal(false);
 
+      const rawMessage =
+        (err as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || (err as Error)?.message || "";
+      const friendlyMessage = /ECONNRESET|ETIMEDOUT|ESOCKET|socket hang up/i.test(
+        rawMessage
+      )
+        ? "Could not reach the email server. Please wait a moment and try Review again."
+        : rawMessage || "Failed to send envelope. Please try again.";
+
       Swal.fire({
         title: "Error",
-        text: "Failed to send envelope. Please try again.",
+        text: friendlyMessage,
         icon: "error",
         confirmButtonText: "OK",
       });

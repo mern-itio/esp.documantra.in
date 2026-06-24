@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const AdminUser = require('../models/Admin');
 const { isEmailValid } = require('@draftnsign/validators');
 const mongoose = require('mongoose');
+const { getAdminAccessTokenCookieOptions } = require('../utils/cookieOptions');
 
 const adminLogin = async (req, res) => {
   try {
@@ -38,14 +39,7 @@ const adminLogin = async (req, res) => {
       const expireIn = process.env.ADMIN_ACCESS_TOKEN_EXPIRY || '8h';
       const token = generateAdminAccessToken(admin, expireIn);
 
-      const options = {
-        httpOnly: true,
-        sameSite: 'Strict',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 8 * 60 * 60 * 1000 // 8 hours
-      };
-
-      return res.cookie('adminAccessToken', token, options).status(200).json({
+      return res.cookie('adminAccessToken', token, getAdminAccessTokenCookieOptions(req, expireIn)).status(200).json({
         status: 200,
         message: "Admin logged in successfully",
         admin_id: admin._id,
@@ -250,12 +244,7 @@ let agent = null;
       // Continue anyway - not critical
     }
 
-    const options = {
-      httpOnly: true,
-      sameSite: 'Strict',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 8 * 60 * 60 * 1000 // 8 hours
-    };
+    const options = getAdminAccessTokenCookieOptions(req, process.env.ADMIN_ACCESS_TOKEN_EXPIRY || '8h');
 
       const responseData = {
         status: 200,
