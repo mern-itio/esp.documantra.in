@@ -3,6 +3,7 @@ const { signDocumentController } = require('../controllers/digitalSignatureContr
 const { addSignature } = require('../controllers/mainController');
 const { downloadSignedDocument,downloadAllSignedDocument } = require('../controllers/documentController');
 const { pdfUpload } = require('../utils/secureUpload');
+const optionalJwt = require('../middleware/optionalJwt');
 
 const router = express.Router();
 
@@ -12,8 +13,8 @@ router.post('/signatures/sign', pdfUpload.single('pdf'), signDocumentController)
 // New: Signature with visible + compliance integration '
 router.post('/add-signature', addSignature);
 
-// New: Download signed PDF
-router.get('/signatures/download/:documentId', downloadSignedDocument);
-router.get('/signatures/download-all/:envelopeId', downloadAllSignedDocument);
+// Download signed PDFs — optional JWT + envelope/recipient/fileToken checks in controller
+router.get('/signatures/download/:documentId', optionalJwt(), downloadSignedDocument);
+router.get('/signatures/download-all/:envelopeId', optionalJwt(), downloadAllSignedDocument);
 
 module.exports = router;

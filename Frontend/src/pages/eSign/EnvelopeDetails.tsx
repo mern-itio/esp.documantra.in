@@ -295,14 +295,48 @@ const EnvelopeDetails: React.FC = () => {
       console.log(err);
     }
   }
-const handleDownloadSignedPdf = (id:String) => {
-  const downloadUrl = `${import.meta.env.VITE_ESIGN_SERVICE_URL}/api/e-sign/signatures/download/${id}`;
-  window.open(downloadUrl, '_blank');
+const handleDownloadSignedPdf = async (documentId: String) => {
+  try {
+    const response = await eSignApi.get(`/api/e-sign/signatures/download/${documentId}`, {
+      responseType: 'blob',
+    });
+    const blob = response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `signed-document-${documentId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+    alert('Failed to download signed document.');
+  }
 };
-const handleDownloadAll = () =>{
-    const downloadUrl = `${import.meta.env.VITE_ESIGN_SERVICE_URL}/api/e-sign/signatures/download-all/${id}`;
-  window.open(downloadUrl, '_blank');
-}
+const handleDownloadAll = async () => {
+  try {
+    const response = await eSignApi.get(`/api/e-sign/signatures/download-all/${id}`, {
+      responseType: 'blob',
+    });
+    const blob = response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: 'application/zip' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `signed_documents_${id}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+    alert('Failed to download signed documents.');
+  }
+};
 const handleSendEnvelope = async () => {
     if (!id) return;
     setSending(true);

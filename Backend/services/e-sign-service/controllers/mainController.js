@@ -22,6 +22,7 @@ const { values } = require('pdf-lib');
 const Notification = require('../models/Notification');
 const { AuditTrail } = require('../models/AuditTrail');
 const archiver = require('archiver');
+const { assertEnvelopeDownloadAccess } = require('../helpers/documentDownloadAccess');
 const { json } = require('stream/consumers');
 const signingServices = require('../services/signing');
 const signatureOperationServices = require('../services/signatureOperationServices');
@@ -476,20 +477,13 @@ if (senderId) {
     ).trim();
 
     // Convert stored local paths to public /uploads URL so browser preview never tries file:// paths.
-    const toPublicUploadUrl = (rawPath) => {
-      if (!rawPath) return null;
-      const normalized = String(rawPath).replace(/\\/g, '/');
-      const uploadRelative = normalized
-        .replace(/^.*\/uploads\//, '')
-        .replace(/^uploads\//, '')
-        .replace(/^\/+/, '');
-
-      const base = process.env.PUBLIC_ESIGN_URL || `https://${req.get('host')}`;
-      return `${base}/uploads/${uploadRelative}`;
-
-      //const base = `${req.protocol}://${req.get('host')}`;
-      //return `${base}/uploads/${uploadRelative}`;
-    };
+    const { buildPublicUploadUrl } = require('../helpers/documentDownloadAccess');
+    const toPublicUploadUrl = (rawPath, documentId) =>
+      buildPublicUploadUrl(rawPath, {
+        envelopeId: envelope._id,
+        documentId,
+        baseUrl: process.env.PUBLIC_ESIGN_URL || `https://${req.get('host')}`,
+      });
 
     // Step 4: Format the response (single envelope object)
     const formattedEnvelope = {
@@ -524,8 +518,8 @@ if (senderId) {
         name: doc.fileName,
         size: doc.fileSize,
         type: doc.mimeType,
-        filePath: toPublicUploadUrl(doc.filePath),
-        signedFilePath: toPublicUploadUrl(doc.signedFilePath)
+        filePath: toPublicUploadUrl(doc.filePath, doc._id),
+        signedFilePath: toPublicUploadUrl(doc.signedFilePath, doc._id)
       })),
       recipients: envelope.recipientIds.map(recipient => {
         const perm = recipient.permissions?.[0] || {};
@@ -3376,6 +3370,11 @@ const downloadCompletionZip = async (req, res) =>{
     const cycle = await Cycle.findById(cycleId).lean();
     if (!cycle) {
       return res.status(404).json({ message: "Cycle not found" });
+    }
+
+    const access = await assertEnvelopeDownloadAccess(req, cycle.envelopeId);
+    if (!access.ok) {
+      return res.status(access.status).json({ message: access.message });
     }
 
     const certPath = cycle.completionCertificate?.path;

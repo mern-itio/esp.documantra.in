@@ -382,8 +382,8 @@ export default function SignerStatusPage() {
     .replace(/\/+$/, "");
 
   const handleDownloadAll = () => {
-    if (!envelopeId || !esignBase) return;
-    const url = `${esignBase}/api/e-sign/signatures/download-all/${envelopeId}`;
+    if (!envelopeId || !esignBase || !recipientId) return;
+    const url = `${esignBase}/api/e-sign/signatures/download-all/${envelopeId}?recipientId=${encodeURIComponent(recipientId)}`;
     window.open(url, "_blank");
   };
 

@@ -140,6 +140,7 @@ const filterAccessibleEnvelopeIds = async (req, envelopeIds = []) => {
 
 module.exports = {
   getUserId,
+  isValidObjectId,
   isAnonymousDraftEnvelope,
   sendAccessDenied,
   loadEnvelope,

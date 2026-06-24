@@ -3,10 +3,19 @@ const archiver = require('archiver');
 const path = require('path');
 const fs = require('fs');
 const Envelope = require('../models/Envelope');
+const {
+  assertDocumentDownloadAccess,
+  assertEnvelopeDownloadAccess,
+} = require('../helpers/documentDownloadAccess');
 
 const downloadSignedDocument = async (req, res) => {
   try {
     const { documentId } = req.params;
+    const access = await assertDocumentDownloadAccess(req, documentId);
+    if (!access.ok) {
+      return res.status(access.status).json({ message: access.message });
+    }
+
     const docRecord = await Document.findById(documentId);
     if (!docRecord || !docRecord.signedFilePath) {
       return res.status(404).json({ message: 'Signed document not found' });
@@ -18,12 +27,17 @@ const downloadSignedDocument = async (req, res) => {
     res.status(500).json({ message: 'Failed to download document' });
   }
 };
-const downloadAllSignedDocument = async(req, res) =>{
-    try {
+
+const downloadAllSignedDocument = async (req, res) => {
+  try {
     const { envelopeId } = req.params;
+    const access = await assertEnvelopeDownloadAccess(req, envelopeId);
+    if (!access.ok) {
+      return res.status(access.status).json({ message: access.message });
+    }
 
     const documents = await Document.find({ envelopeId });
-    const envelope =  await Envelope.findById(envelopeId);
+    const envelope = await Envelope.findById(envelopeId);
     if (documents.length === 0) {
       return res.status(404).json({ message: 'No signed documents found for this envelope' });
     }
@@ -35,22 +49,21 @@ const downloadAllSignedDocument = async(req, res) =>{
     archive.pipe(res);
 
     for (const doc of documents) {
-      if (fs.existsSync(doc.signedFilePath)) {
+      if (doc.signedFilePath && fs.existsSync(doc.signedFilePath)) {
         archive.file(doc.signedFilePath, { name: doc.signedFileName });
       }
     }
     if (envelope?.completionCertificate && fs.existsSync(envelope.completionCertificate.path)) {
-      archive.file(envelope.completionCertificate.path, { 
-        name: envelope.completionCertificate.filename 
+      archive.file(envelope.completionCertificate.path, {
+        name: envelope.completionCertificate.filename,
       });
     }
-
 
     await archive.finalize();
   } catch (err) {
     console.error('Bulk download error:', err);
     res.status(500).json({ message: 'Failed to download signed documents' });
   }
-}
+};
 
-module.exports = { downloadSignedDocument, downloadAllSignedDocument};
+module.exports = { downloadSignedDocument, downloadAllSignedDocument };

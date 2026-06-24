@@ -9,6 +9,8 @@ const publicRoutes = require('./routes/publicRoutes');
 const certificateRoutes  = require('./routes/certificateRoutes');
 const otpRoutes = require("./routes/otpRoutes");
 const digitalSignatureRoutes = require('./routes/digitalSignatureRoutes');
+const { serveUploadFile } = require('./controllers/uploadServeController');
+const optionalJwt = require('./middleware/optionalJwt');
 const tsaRoutes = require('./routes/tsaRoutes');
 const verificationRoutes = require('./routes/verificationRoutes');
 const anchorRoutes = require('./routes/anchorRoutes');
@@ -21,7 +23,7 @@ applySecurityHeaders(app);
 app.use(cors(getCorsOptions()));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use('/uploads', express.static('uploads'));
+app.get('/uploads/:filename', optionalJwt(), serveUploadFile);
 
 // DB Connection
 connectDB();
