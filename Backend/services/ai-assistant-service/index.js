@@ -4,16 +4,15 @@ const express = require('express');
 const verifyJWT = require('@draftnsign/auth-lib');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const { getCorsOptions, applySecurityHeaders, createErrorHandler } = require('@draftnsign/validators');
 
 // Import routes
 const aiAssistantRoutes = require('./routes/aiAssistantRoutes');
 
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: "*"
-}));
+applySecurityHeaders(app);
+app.use(cors(getCorsOptions()));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -33,24 +32,7 @@ app.get('/health', (req, res) => {
 app.use('/api', verifyJWT('user'));
 app.use('/api/ai-assistant', aiAssistantRoutes);
 
-// Error handling middleware
-app.use((error, req, res, next) => {
-  console.error('Global error handler:', error);
-  
-  if (error.name === 'ValidationError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation Error',
-      error: error.message
-    });
-  }
-  
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
-  });
-});
+app.use(createErrorHandler('AI-Assistant'));
 
 // 404 handler
 app.use('*', (req, res) => {

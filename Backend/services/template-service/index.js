@@ -4,6 +4,7 @@ const express = require('express');
 const verifyJWT  = require('@draftnsign/auth-lib');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
+const { getCorsOptions, applySecurityHeaders, createErrorHandler } = require('@draftnsign/validators');
 const formBuilderRoutes = require('./routes/formBuilderRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const aiContentRoutes = require('./routes/aiContentRoutes');
@@ -14,9 +15,8 @@ const aiContentRoutes = require('./routes/aiContentRoutes');
 
 const app = express();
 
-app.use(cors({
-  origin: "*"
-}));
+applySecurityHeaders(app);
+app.use(cors(getCorsOptions()));
 
 connectDB();
 
@@ -48,6 +48,8 @@ app.get('/health', (req, res) => {
   res.send(`Template service is running ${req.user?.data?.fullname || ''}`);
 });
 // API Routes
+
+app.use(createErrorHandler('Template'));
 
 const PORT = process.env.PORT || 2106;
 app.listen(PORT, () => console.log(`Template running on ${PORT}/`));

@@ -2,24 +2,16 @@ const express = require('express');
 const dotenv = require('dotenv');
 dotenv.config();
 const cors = require('cors');
-const helmet = require('helmet');
 const { connectDB } = require('./config/db');
 const verifyJWT = require('@draftnsign/auth-lib');
 const organizationRoutes = require('./routes/organization.routes');
 const adminRoutes = require('./routes/adminRoutes');
+const { getCorsOptions, applySecurityHeaders, createErrorHandler } = require('@draftnsign/validators');
 const app = express();
 
-app.set('trust proxy', 1);
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false,
-  hsts: false,
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-}));
+applySecurityHeaders(app);
 
-app.use(cors({
-  origin: "*"
-}));
+app.use(cors(getCorsOptions()));
 
 connectDB();
 
@@ -29,6 +21,8 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api', verifyJWT());
 app.use('/api/organization', organizationRoutes);
 app.use('/admin', verifyJWT("admin"),adminRoutes );
+
+app.use(createErrorHandler('Organization'));
 
 const PORT = process.env.PORT || 2111;
 app.listen(PORT, () => console.log(`Organization running on ${PORT}/`));

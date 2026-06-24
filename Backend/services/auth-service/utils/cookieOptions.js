@@ -1,4 +1,5 @@
 const ACCESS_TOKEN_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const DEFAULT_ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '8h';
 
 const parseExpiryToMs = (expireIn) => {
   if (!expireIn) return ACCESS_TOKEN_MAX_AGE_MS;
@@ -24,7 +25,7 @@ const isSecureRequest = (req) => {
   );
 };
 
-const getAccessTokenCookieOptions = (req, expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d') => ({
+const getAccessTokenCookieOptions = (req, expireIn = DEFAULT_ACCESS_TOKEN_EXPIRY) => ({
   httpOnly: true,
   secure: isSecureRequest(req),
   sameSite: 'lax',

@@ -4,6 +4,7 @@ dotenv.config();
 const cors = require('cors');
 const { connectDB } = require('./src/config/db');
 const verifyJWT = require('@draftnsign/auth-lib');
+const { getCorsOptions, applySecurityHeaders, createErrorHandler } = require('@draftnsign/validators');
 const plansRoutes = require('./src/routes/plansRoutes');
 const userPlanRoutes = require('./src/routes/userPlanRoutes');
 const toolSettingsRoutes = require('./src/routes/toolSettingsRoutes');
@@ -17,7 +18,8 @@ const creditPackageRoutes = require('./src/routes/creditPackagesRoutes');//Admin
 const userCreditPackageRoutes = require('./src/routes/userCreditPackagesRoutes');//User
 const app = express();
 
-app.use(cors({ origin: '*' }));
+applySecurityHeaders(app);
+app.use(cors(getCorsOptions()));
 app.use(express.json());
 connectDB();
 
@@ -56,6 +58,7 @@ app.use('/user/credit-packages', userCreditPackageRoutes);
 //Authprovider callback routes - no auth required
 app.use('/api/authproviders',authProviderOpenRoutes);
 
+app.use(createErrorHandler('Subscription'));
 
 const PORT = process.env.PORT || 2110;
 app.listen(PORT, () => console.log(`Subscription service running on ${PORT}`));

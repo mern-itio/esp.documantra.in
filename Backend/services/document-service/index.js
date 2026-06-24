@@ -2,6 +2,7 @@ const express = require('express');
 const verifyJWT  = require('@draftnsign/auth-lib');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const { getCorsOptions, applySecurityHeaders, createErrorHandler } = require('@draftnsign/validators');
 const connectDB = require('./config/db');
 
 // Import routes
@@ -20,10 +21,8 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: "*"
-}));
+applySecurityHeaders(app);
+app.use(cors(getCorsOptions()));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -155,6 +154,8 @@ app.use('*', (req, res) => {
     message: 'Route not found'
   });
 });
+
+app.use(createErrorHandler('Document'));
 
 // Start server
 const PORT = process.env.PORT || 2102;

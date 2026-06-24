@@ -4,15 +4,15 @@ const dotenv = require('dotenv');
 dotenv.config();
 const cors = require('cors');
 const { connectDB } = require('./config/db');
+const { getCorsOptions, applySecurityHeaders, createErrorHandler } = require('@draftnsign/validators');
 const adminRoutes = require('./routes/adminRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const verifyJWT = require('@draftnsign/auth-lib');
 
 const app = express();
 
-app.use(cors({
-  origin: "*"
-}));
+applySecurityHeaders(app);
+app.use(cors(getCorsOptions()));
 
 connectDB();
 
@@ -24,6 +24,8 @@ app.use('/admin/public', publicRoutes);
 // Protected admin routes (auth required)
 app.use('/admin', verifyJWT('admin'));
 app.use('/admin', adminRoutes);
+
+app.use(createErrorHandler('Admin'));
 
 const PORT = process.env.PORT || 3100;
 app.listen(PORT, () => console.log(`Admin running on ${PORT}/`));

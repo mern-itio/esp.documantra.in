@@ -66,6 +66,7 @@ const connectDB = require('./config/db');
 const path = require('path');
 const fs = require('fs-extra');
 const helmet = require('helmet');
+const { getCorsOptions, createErrorHandler } = require('@draftnsign/validators');
 
 
 dotenv.config();
@@ -73,9 +74,7 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: "*"
-}));
+app.use(cors(getCorsOptions()));
 
 // Session middleware for OAuth state management
 app.use(session({
@@ -1055,15 +1054,7 @@ process.on('SIGINT', () => {
   console.error('=== END SIGINT ===');
 });
 
-// Global error middleware
-app.use((error, req, res, next) => {
-  console.error('Global error handler:', error);
-  res.status(500).json({
-    success: false,
-    error: 'Internal server error',
-    details: process.env.NODE_ENV === 'development' ? error.message : undefined
-  });
-});
+app.use(createErrorHandler('PDF'));
 
 // Start server
 const PORT = process.env.PORT || 2104;

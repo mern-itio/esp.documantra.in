@@ -6,9 +6,9 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const helmet = require('helmet');
 const path = require('path');
 const { connectDB } = require('./config/db');
+const { getCorsOptions, getAllowedOrigins, applySecurityHeaders, createErrorHandler } = require('@draftnsign/validators');
 const customerRoutes = require('./routes/customerRoutes');
 const agentRoutes = require('./routes/agentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -17,11 +17,12 @@ const SocketService = require('./services/socketService');
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = getAllowedOrigins();
 
 // Socket.IO setup with CORS
 const io = new Server(server, {
   cors: {
-    origin: true,
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true
   },
@@ -35,14 +36,9 @@ const socketService = new SocketService(io);
 app.set('io', io);
 
 // Middleware
-app.use(helmet({
-  contentSecurityPolicy: false // Allow Socket.IO connections
-}));
+applySecurityHeaders(app);
 
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
+app.use(cors(getCorsOptions()));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -81,15 +77,7 @@ app.use('/api/support-service/agent', agentRoutes);
 app.use('/api/support-service/admin', adminRoutes);
 app.use('/api/support-service/public', publicRoutes);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
-    status: err.status || 500,
-    message: err.message || 'Internal server error',
-    data: null
-  });
-});
+app.use(createErrorHandler('Support'));
 
 // 404 handler
 app.use((req, res) => {

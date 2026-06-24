@@ -345,6 +345,10 @@ function validateRange(value, fieldName, min, max) {
   return result;
 }
 
+const { getCorsOptions, getAllowedOrigins } = require('./corsOptions');
+const { applySecurityHeaders } = require('./securityHeaders');
+const { createErrorHandler } = require('./errorHandler');
+
 // ============================================================================
 // EXPORTS
 // ============================================================================
@@ -369,5 +373,9 @@ module.exports = {
   validateFile,
   validateRequired,
   validateLength,
-  validateRange
+  validateRange,
+  getCorsOptions,
+  getAllowedOrigins,
+  applySecurityHeaders,
+  createErrorHandler,
 };

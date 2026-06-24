@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 dotenv.config();
 const cors = require('cors');
+const { getCorsOptions, createErrorHandler } = require('@draftnsign/validators');
 const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -15,9 +16,7 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(httpsSecurityMiddleware);
 
-app.use(cors({
-  origin: "*"
-}));
+app.use(cors(getCorsOptions()));
 
 connectDB();
 
@@ -25,6 +24,8 @@ app.use(express.json());
 app.use('/api-admin', verifyJWT('admin'));
 app.use('/', authRoutes);
 app.use('/api-admin', adminRoutes);
+
+app.use(createErrorHandler('Auth'));
 
 const PORT = process.env.PORT || 2101;
 app.listen(PORT, () => console.log(`Auth running on ${PORT}/`));

@@ -240,7 +240,7 @@ function verificationState(user) {
 /** Email verification completes signup; phone SMS is optional when a number is on file. */
 async function maybeIssueAccessTokenIfVerified(user, res, req) {
   if (!user.emailVerified) return null;
-  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
+  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
   const accessToken = await generateAccessTokenUser(user, expireIn, req);
   res.cookie('accessToken', accessToken, getAccessTokenCookieOptions(req, expireIn));
   return {
@@ -278,7 +278,7 @@ const login = async (req, res) => {
   if (!user) {
     return res.status(401).json({
       status: 401,
-      message: "User is not exists with Us! Please check your Email Id",
+      message: 'Invalid email or password',
       data: null
     });
   }
@@ -405,7 +405,7 @@ const login = async (req, res) => {
     await user.save();
   }
 
-  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
+  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
 
@@ -494,7 +494,7 @@ const verifyTwoFaLogin = async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   // Continue normal login (verification gates should already be satisfied for existing users)
-  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
+  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
 
@@ -687,7 +687,7 @@ const verifyTwoFaRecoveryOtp = async (req, res) => {
 
   await user.save({ validateBeforeSave: false });
 
-  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
+  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
 
@@ -1017,7 +1017,9 @@ const register = async (req, res) => {
   } catch (error) {
     if (error.code === 11000) {
       console.error('Email or phone already exists');
-      return res.status(400).json({ message: 'Email or phone already exists' });
+      return res.status(400).json({
+        message: 'Unable to create account. If you already have an account, try logging in or resetting your password.',
+      });
     }
     console.error('Server error', error);
     return res.status(500).json({ message: 'Server error', error });
@@ -1505,7 +1507,7 @@ const googleLogin = async (req, res) => {
       await user.save({ validateBeforeSave: false });
     }
 
-    const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
+    const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
     const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
 
@@ -1540,7 +1542,7 @@ const updateProfile = async (req, res) => {
   
   await user.save({ validateBeforeSave: false });
   
-  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
+  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
 
@@ -1611,7 +1613,7 @@ const verifyProfileEmailOtp = async (req, res) => {
   user.emailOtpExpires = undefined;
   await user.save({ validateBeforeSave: false });
   
-  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
+  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
 
@@ -1671,7 +1673,7 @@ const verifyProfilePhoneOtp = async (req, res) => {
   user.phoneOtpExpires = undefined;
   await user.save({ validateBeforeSave: false });
 
-  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '30d';
+  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
   const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
 
@@ -1777,6 +1779,56 @@ const revokeSession = async (req, res) => {
   return res.status(200).json({ message: 'Session revoked successfully' });
 };
 
+const changePassword = async (req, res) => {
+  const userId = req.user?.data?.id || req.user?.id || req.user?._id;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'Current and new password are required' });
+  }
+
+  const passwordError = getPasswordPolicyError(newPassword);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (!user.password) {
+      return res.status(400).json({
+        message: 'Password login is not available for this account',
+      });
+    }
+
+    const matches = await bcrypt.compare(currentPassword, user.password);
+    if (!matches) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    user.activeSessions = [];
+    user.passwordChangedAt = new Date();
+    user.failedLoginAttempts = 0;
+    user.lockUntil = undefined;
+    await user.save();
+
+    res.clearCookie('accessToken', getAccessTokenCookieOptions(req));
+
+    return res.status(200).json({
+      message: 'Password changed successfully. Please sign in again.',
+    });
+  } catch (err) {
+    console.error('Change password error:', err);
+    return res.status(500).json({ message: 'Something went wrong. Please try again later.' });
+  }
+};
+
 const validateSessionEndpoint = async (req, res) => {
   // This endpoint is meant to be called by other microservices via the auth-lib.
   // IMPORTANT: We decode the JWT locally here instead of using the auth-lib verifyJWT middleware
@@ -1846,6 +1898,7 @@ module.exports = {
   getUsersList,
   forgotPassword,
   resetPassword,
+  changePassword,
   googleLogin,
   updateProfile,
   sendProfileEmailOtp,
