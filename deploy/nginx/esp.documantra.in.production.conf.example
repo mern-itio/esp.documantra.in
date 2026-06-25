@@ -84,6 +84,17 @@ server {
         proxy_pass http://127.0.0.1:3100/;
     }
 
+    # RFC 9116 security contact (VAPT LOW)
+    location = /security.txt {
+        root /var/www/draft-and-sign;
+        default_type text/plain;
+    }
+
+    location ^~ /.well-known/ {
+        root /var/www/draft-and-sign;
+        default_type text/plain;
+    }
+
     location / {
         root /var/www/draft-and-sign;
         try_files $uri $uri/ /index.html;

@@ -6,6 +6,7 @@ import { authApi } from '../../services/apiHelper';
 const SessionManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<any[]>([]);
+  const [maxConcurrentSessions, setMaxConcurrentSessions] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [revoking, setRevoking] = useState<string | null>(null);
 
@@ -15,6 +16,9 @@ const SessionManagementPage: React.FC = () => {
       try {
         const resp = await authApi.get('/api/auth/sessions');
         setSessions(resp.data?.sessions || []);
+        if (typeof resp.data?.maxConcurrentSessions === 'number') {
+          setMaxConcurrentSessions(resp.data.maxConcurrentSessions);
+        }
       } catch (e: any) {
         console.error('Failed to load sessions');
       } finally {
@@ -71,6 +75,11 @@ const SessionManagementPage: React.FC = () => {
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <div className="border-b border-border p-6">
             <h2 className="text-lg font-semibold text-foreground">Active Sessions</h2>
+            {maxConcurrentSessions != null && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Up to {maxConcurrentSessions} devices can stay signed in at once. Older sessions are signed out automatically when this limit is reached.
+              </p>
+            )}
           </div>
           
           <div className="overflow-x-auto">

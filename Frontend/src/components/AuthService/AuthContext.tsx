@@ -397,6 +397,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             !!data?.recoveryAvailable
           );
         }
+        if (resp.status === 403 && data?.code === 'TWO_FA_SETUP_REQUIRED') {
+          const setupError = new Error(
+            data?.message || 'Two-factor authentication is required for your account.'
+          );
+          setupError.name = 'TwoFaSetupRequiredError';
+          (setupError as any).setupPath = data?.setupPath || '/account/security';
+          throw setupError;
+        }
         throw new Error(data?.message || 'Login failed');
       }
       

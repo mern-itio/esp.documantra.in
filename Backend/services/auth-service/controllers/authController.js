@@ -12,6 +12,8 @@ const axios = require('axios');
 const { OAuth2Client } = require('google-auth-library');
 const { getAccessTokenCookieOptions } = require('../utils/cookieOptions');
 const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/passwordHistory');
+const { enforceConcurrentSessionLimit, getMaxConcurrentSessions } = require('../utils/sessionLimits');
+const { shouldRequireTwoFaSetup, isLoginTwoFaEnforcementEnabled, getTwoFaGraceDays } = require('../utils/twoFaPolicy');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -339,6 +341,16 @@ const login = async (req, res) => {
     user.failedLoginAttempts = 0;
     user.lockUntil = undefined;
     await user.save({ validateBeforeSave: false });
+  }
+
+  if (shouldRequireTwoFaSetup(user)) {
+    return res.status(403).json({
+      status: 403,
+      code: 'TWO_FA_SETUP_REQUIRED',
+      message: 'Two-factor authentication is required for your account. Enable it in Account Security settings.',
+      setupPath: '/account/security',
+      data: null,
+    });
   }
 
   // Optional 2FA: if enabled and device is not trusted, require OTP
@@ -1178,6 +1190,7 @@ async function generateAccessTokenUser(user, expireIn, req, keepSessionId = null
       lastActive: new Date(),
       createdAt: new Date()
     });
+    enforceConcurrentSessionLimit(user, { keepSessionId: sessionId });
   }
   
   await user.save({ validateBeforeSave: false });
@@ -1245,6 +1258,7 @@ const getMe = async (req, res) => {
         plan: user.plan || 'free',
         twoFaEnabled: !!user.twoFaEnabled,
         twoFaMethod: user.twoFaMethod || 'email',
+        twoFaSetupRequired: shouldRequireTwoFaSetup(user),
         status: user.status,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
@@ -1513,6 +1527,16 @@ const googleLogin = async (req, res) => {
       await user.save({ validateBeforeSave: false });
     }
 
+    if (shouldRequireTwoFaSetup(user)) {
+      return res.status(403).json({
+        status: 403,
+        code: 'TWO_FA_SETUP_REQUIRED',
+        message: 'Two-factor authentication is required for your account. Enable it in Account Security settings.',
+        setupPath: '/account/security',
+        data: null,
+      });
+    }
+
     const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
     const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
   const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
@@ -1775,7 +1799,20 @@ const getSessions = async (req, res) => {
     isCurrent: session.sessionId === currentSessionId
   }));
 
-  return res.status(200).json({ sessions });
+  return res.status(200).json({
+    sessions,
+    maxConcurrentSessions: getMaxConcurrentSessions(),
+  });
+};
+
+const getSecurityPolicy = (_req, res) => {
+  return res.status(200).json({
+    requireTwoFaForLogin: isLoginTwoFaEnforcementEnabled(),
+    requireTwoFaForESign:
+      String(process.env.REQUIRE_2FA_FOR_E_SIGN || '').toLowerCase() === 'true',
+    requireTwoFaGraceDays: getTwoFaGraceDays(),
+    maxConcurrentSessions: getMaxConcurrentSessions(),
+  });
 };
 
 const revokeSession = async (req, res) => {
@@ -1927,6 +1964,7 @@ module.exports = {
   verifyProfilePhoneOtp,
   getSessions,
   revokeSession,
+  getSecurityPolicy,
   verifyActiveSession,
   validateSessionEndpoint,
 };

@@ -143,6 +143,9 @@ const LoginPage = () => {
         )
         setPhoneOtpSent(false)
         setError(anyErr?.message || 'Please verify your account to continue.')
+      } else if (anyErr?.name === 'TwoFaSetupRequiredError') {
+        setError(anyErr?.message || 'Two-factor authentication is required. Enable it in Account Security.')
+        navigate(anyErr?.setupPath || '/account/security')
       } else if (anyErr?.name === 'TwoFaRequiredError') {
         setTwoFaToken(anyErr?.twoFaToken || '')
         setTwoFaMethod(anyErr?.method || 'email')

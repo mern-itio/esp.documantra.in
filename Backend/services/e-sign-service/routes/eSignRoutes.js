@@ -31,6 +31,7 @@ const {
 const { listRecipients, createRecipient, updateRecipient, deleteRecipient } = require('../controllers/recipientController');
 const { upload } = require('../utils/secureUpload');
 const { viewDocument } = require('../controllers/documentViewController');
+const requireTwoFaForSensitiveActions = require('../middleware/requireTwoFaForSensitiveActions');
 const {
   requireAuthenticatedEnvelopeAccess,
 } = require('../middleware/envelopeAccessMiddleware');
@@ -52,7 +53,7 @@ router.get('/documents/:documentId/view', viewDocument);
 router.get('/envelope/:id', readAccess, envelopesDetail);
 router.get('/envelope-exist/:id', envelopExists);
 router.get('/analytics/envelope-stats', getEnvelopeStats);
-router.post('/send-envelope/:envelopeId', senderAccess, sendEnvelope);
+router.post('/send-envelope/:envelopeId', senderAccess, requireTwoFaForSensitiveActions, sendEnvelope);
 router.post('/schedule-envelope/:envelopeId', senderAccess, scheduleEnvelope);
 router.post('/process-scheduled-envelopes', processScheduledEnvelopesHandler);
 router.get('/get-recipient/:email',getRecipientByEmail);

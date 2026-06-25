@@ -1,0 +1,5 @@
+Contact: mailto:security@documantra.in
+Expires: 2027-06-15T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://esp.documantra.in/.well-known/security.txt
+Policy: https://esp.documantra.in/account/security

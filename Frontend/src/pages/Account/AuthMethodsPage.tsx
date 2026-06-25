@@ -49,6 +49,11 @@ const AuthMethodsPage: React.FC = () => {
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [securityPolicy, setSecurityPolicy] = useState<{
+    requireTwoFaForLogin?: boolean;
+    requireTwoFaGraceDays?: number;
+    maxConcurrentSessions?: number;
+  } | null>(null);
 
   const [twoFa, setTwoFa] = useState<TwoFaState>({
     enabled: false,
@@ -132,7 +137,12 @@ const AuthMethodsPage: React.FC = () => {
       setLoading(true);
       setError('');
       try {
-        const resp = await authApi.get('/api/auth/2fa');
+        const [settingsResp, policyResp] = await Promise.all([
+          authApi.get('/api/auth/2fa'),
+          authApi.get('/api/auth/security-policy').catch(() => ({ data: null })),
+        ]);
+        const resp = settingsResp;
+        setSecurityPolicy(policyResp?.data || null);
         const enabled = !!resp.data?.twoFaEnabled;
         const method: AuthMethod = resp.data?.twoFaMethod === 'sms'
           ? 'sms'
@@ -540,6 +550,19 @@ const AuthMethodsPage: React.FC = () => {
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),320px]">
           <section className="space-y-6">
+            {securityPolicy?.requireTwoFaForLogin && !twoFa.enabled && (
+              <div className="rounded-2xl border border-amber-300/60 bg-amber-50 px-5 py-4 text-amber-950 dark:border-amber-500/40 dark:bg-amber-950/30 dark:text-amber-100">
+                <p className="text-sm font-semibold">Two-factor authentication is required</p>
+                <p className="mt-1 text-sm opacity-90">
+                  Your organization policy requires 2FA
+                  {securityPolicy.requireTwoFaGraceDays
+                    ? ` after a ${securityPolicy.requireTwoFaGraceDays}-day grace period`
+                    : ''}
+                  . Enable it below to keep signing in.
+                </p>
+              </div>
+            )}
+
             <div className="overflow-hidden border border-border/70 bg-card shadow-sm">
               <div className="border-b border-border/70 bg-gradient-to-r from-card to-primary/10 px-5 py-4 md:px-6">
                 <div className="flex items-center gap-3">
