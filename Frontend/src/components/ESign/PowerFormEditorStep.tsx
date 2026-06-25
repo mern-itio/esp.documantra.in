@@ -3,7 +3,7 @@ import { FileText, UserCircle } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { useTutorial } from '../../context/TutorialContext';
-import { resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
+import { resolveEsignDocumentFileProp } from '../../utils/esignDocumentUrl';
 
 export type Doc = {
   id: string;
@@ -475,8 +475,7 @@ export default function PowerFormEditorStep({
             {activeDoc?.type === "application/pdf" ? (
               <Document
                 file={
-                  activeDoc.file ||
-                  resolveEsignDocumentUrl(activeDoc, envelopeId || undefined)
+                  resolveEsignDocumentFileProp(activeDoc, { envelopeId: envelopeId || undefined })
                 }
                 onLoadSuccess={onDocLoadSuccess}
               >

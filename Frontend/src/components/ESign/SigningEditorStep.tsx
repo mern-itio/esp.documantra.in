@@ -11,7 +11,7 @@ import type { Recipient } from "../../types";
 import { eSignApi } from "../../services/apiHelper";
 import toast from "react-hot-toast"
 import { useAuth } from "../AuthService/AuthContext";
-import { resolveEsignDocumentUrl } from "../../utils/esignDocumentUrl";
+import { fetchEsignDocumentData } from "../../utils/esignDocumentUrl";
 
 // Type declarations for PDF.js
 declare global {
@@ -840,11 +840,9 @@ export default function SigningEditorStep({
         if (activeDoc.file) {
           data = await activeDoc.file.arrayBuffer();
         } else {
-          // Fetch from URL
-          const response = await fetch(
-            resolveEsignDocumentUrl(activeDoc, envelopeId || undefined)
-          );
-          data = await response.arrayBuffer();
+          data = await fetchEsignDocumentData(activeDoc, {
+            envelopeId: envelopeId || undefined,
+          });
         }
 
         if (isCancelled) return;

@@ -45,7 +45,7 @@ import {
   getEsignUploadErrorMessage,
   isFileTooLargeForEsign,
 } from '../../utils/uploadErrorMessage';
-import { resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
+import { fetchEsignDocumentData, resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
 import { isAuthMethodFreeViaReferralPerk } from '../../utils/referralAuthPerks';
 import toast from 'react-hot-toast';
 // import { useApp } from '../../context/AppContext';
@@ -1837,15 +1837,15 @@ const response = await eSignApi.get(url);
             // If page count is missing or seems incorrect, recalculate it
             if (!doc.pages || doc.pages === 1) {
               try {
-                // Try to fetch the document and count pages
-                const docUrl = resolveEsignDocumentUrl(doc, envelopeId);
-                const fetchResponse = await fetch(docUrl);
-                if (fetchResponse.ok) {
-                  const blob = await fetchResponse.blob();
-                  const file = new File([blob], doc.name || 'document.pdf', { type: 'application/pdf' });
-                  const pageCount = await getPDFPageCount(file);
-                  return { ...doc, pages: pageCount };
-                }
+                const pageCount = await getPDFPageCount(
+                  doc.file ||
+                    new File(
+                      [await fetchEsignDocumentData(doc, { envelopeId })],
+                      doc.name || 'document.pdf',
+                      { type: doc.type || 'application/pdf' }
+                    )
+                );
+                return { ...doc, pages: pageCount };
               } catch (error) {
                 console.warn('Could not verify page count for document:', doc.name, error);
               }

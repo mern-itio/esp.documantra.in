@@ -8,6 +8,16 @@ const {
 
 const APP_NAME = process.env.APP_NAME || 'Draft and Sign';
 
+function escapeHtml(value) {
+  if (value == null) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /** Returns true if string looks like a valid email (has @ and no URL). */
 function isValidEmailAddress(value) {
   if (!value || typeof value !== 'string') return false;
@@ -83,7 +93,7 @@ function getPasswordResetHtml(resetLink, recipientEmail, expiresInMinutes = 60) 
           <!-- Body -->
           <tr>
             <td style="padding: 40px 40px 36px;">
-              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientEmail ? ` <strong>${recipientEmail}</strong>` : ''},</p>
+              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientEmail ? ` <strong>${escapeHtml(recipientEmail)}</strong>` : ''},</p>
               <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #475569;">We received a request to reset the password for your account. Click the button below to set a new password. This link will expire in <strong>${expiresInMinutes} minutes</strong>.</p>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
@@ -138,7 +148,7 @@ function getVerificationOtpHtml(otpCode, recipientName = null, expiresInMinutes 
           </tr>
           <tr>
             <td style="padding: 40px 40px 36px;">
-              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientName ? ` <strong>${recipientName}</strong>` : ''},</p>
+              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientName ? ` <strong>${escapeHtml(recipientName)}</strong>` : ''},</p>
               <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #475569;">Use the code below to verify your email. This code expires in <strong>${expiresInMinutes} minutes</strong>.</p>
               <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px; font-size: 28px; font-weight: 700; letter-spacing: 8px; color: #4D0080;">${otpCode}</div>
               <p style="margin: 24px 0 0; font-size: 13px; color: #94a3b8;">If you didn't sign up for an account, you can safely ignore this email.</p>
@@ -302,12 +312,12 @@ function getNewLoginAlertHtml(recipientName, deviceInfo, ipAddress, time, userTi
           </tr>
           <tr>
             <td style="padding: 40px 40px 36px;">
-              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientName ? ` <strong>${recipientName}</strong>` : ''},</p>
+              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientName ? ` <strong>${escapeHtml(recipientName)}</strong>` : ''},</p>
               <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #475569;">We noticed a new login to your account from a device or location we haven't seen before.</p>
               
               <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #f44336; margin: 0 0 24px;">
-                <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Device/Browser:</strong> <span style="color: #64748b;">${deviceInfo || 'Unknown Device'}</span></p>
-                <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>IP Address:</strong> <span style="color: #64748b;">${ipAddress || 'Unknown IP'}</span></p>
+                <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Device/Browser:</strong> <span style="color: #64748b;">${escapeHtml(deviceInfo || 'Unknown Device')}</span></p>
+                <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>IP Address:</strong> <span style="color: #64748b;">${escapeHtml(ipAddress || 'Unknown IP')}</span></p>
                 <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Time:</strong> <span style="color: #64748b;">${formattedTime}</span></p>
               </div>
 

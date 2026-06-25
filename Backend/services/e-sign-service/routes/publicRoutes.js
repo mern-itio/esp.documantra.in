@@ -32,6 +32,7 @@ const {
 const {updateAuthStatus,saveAadhaar} = require('../controllers/recipientController');
 const vSignController = require('../controllers/vSignController');
 const { upload } = require('../utils/secureUpload');
+const { viewDocument } = require('../controllers/documentViewController');
 const {
   requirePublicDraftOrSenderAccess,
 } = require('../middleware/envelopeAccessMiddleware');
@@ -42,6 +43,7 @@ const publicDraftWriteRequired = requirePublicDraftOrSenderAccess({ fromBody: tr
 const publicSendEnvelope = requirePublicDraftOrSenderAccess();
 
 router.get('/health', (_, res) => res.send('E-Sign Public Service is running...'));
+router.get('/documents/:documentId/view', viewDocument);
 router.get('/envelope/:id', envelopesDetail);
 router.get('/document/signature-fields/:id/:mode?', getSignatureFields);
 router.post(

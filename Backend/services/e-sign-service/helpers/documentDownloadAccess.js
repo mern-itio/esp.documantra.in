@@ -1,6 +1,8 @@
+const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const Document = require('../models/Document');
+const { uploadsDir } = require('../utils/secureUpload');
 const RecipientPermission = require('../models/RecipientPermission');
 const {
   getUserId,
@@ -96,26 +98,48 @@ const recipientBelongsToEnvelope = async (recipientId, envelopeId) => {
 
 const findDocumentByFilename = async (filename) => {
   if (!filename) return null;
-  const safeName = path.basename(String(filename));
+  const safeName = path.basename(decodeURIComponent(String(filename)));
+  if (!safeName) return null;
+
+  const byFileName = await Document.findOne({ fileName: safeName }).lean();
+  if (byFileName) return byFileName;
+
   const escaped = safeName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedEncoded = encodeURIComponent(safeName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return Document.findOne({
     $or: [
+      { fileName: safeName },
       { filePath: new RegExp(`${escaped}$`) },
+      { filePath: new RegExp(`${escapedEncoded}$`) },
       { signedFilePath: new RegExp(`${escaped}$`) },
+      { signedFilePath: new RegExp(`${escapedEncoded}$`) },
       { preparedDoc: new RegExp(`${escaped}$`) },
+      { preparedDoc: new RegExp(`${escapedEncoded}$`) },
     ],
   }).lean();
 };
 
 const resolveLocalUploadPath = (doc, filename) => {
-  const safeName = path.basename(String(filename));
-  const candidates = [doc?.signedFilePath, doc?.filePath, doc?.preparedDoc].filter(Boolean);
-  const match = candidates.find((entry) => String(entry).replace(/\\/g, '/').endsWith(`/${safeName}`));
-  if (!match) return null;
+  const safeName = path.basename(
+    decodeURIComponent(String(filename || doc?.fileName || ''))
+  );
+  if (!safeName) return null;
 
-  const normalized = String(match).replace(/\\/g, '/');
-  if (path.isAbsolute(normalized)) return normalized;
-  return path.join(process.cwd(), 'uploads', safeName);
+  const diskPath = path.join(uploadsDir, safeName);
+  if (fs.existsSync(diskPath)) return diskPath;
+
+  const candidates = [doc?.signedFilePath, doc?.filePath, doc?.preparedDoc].filter(Boolean);
+  for (const entry of candidates) {
+    const normalized = String(entry).replace(/\\/g, '/');
+    if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+      continue;
+    }
+    if (path.isAbsolute(normalized) && fs.existsSync(normalized)) {
+      return normalized;
+    }
+  }
+
+  return null;
 };
 
 const assertEnvelopeDownloadAccess = async (req, envelopeId) => {

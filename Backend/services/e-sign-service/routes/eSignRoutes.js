@@ -30,6 +30,7 @@ const {
         downloadCompletionZip  } = require('../controllers/mainController');
 const { listRecipients, createRecipient, updateRecipient, deleteRecipient } = require('../controllers/recipientController');
 const { upload } = require('../utils/secureUpload');
+const { viewDocument } = require('../controllers/documentViewController');
 const {
   requireAuthenticatedEnvelopeAccess,
 } = require('../middleware/envelopeAccessMiddleware');
@@ -47,6 +48,7 @@ router.post('/update-envelope', requireAuthenticatedEnvelopeAccess({ fromBody: t
 router.post('/add-signature', addSignature);
 router.get('/get-envelopes', envelopesData);
 router.get('/get-all-recipients',getAllRecipients);
+router.get('/documents/:documentId/view', viewDocument);
 router.get('/envelope/:id', readAccess, envelopesDetail);
 router.get('/envelope-exist/:id', envelopExists);
 router.get('/analytics/envelope-stats', getEnvelopeStats);

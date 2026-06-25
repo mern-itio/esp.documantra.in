@@ -1607,16 +1607,17 @@ const verifyProfileEmailOtp = async (req, res) => {
     user.email = user.pendingEmail;
     user.pendingEmail = undefined;
   }
-  
+
   user.emailOtpHash = undefined;
   user.emailOtpExpires = undefined;
+  user.emailChangedAt = new Date();
+  user.activeSessions = [];
   await user.save({ validateBeforeSave: false });
-  
-  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
-  const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
-  const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
 
-  return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({ message: 'Email updated successfully', token: generateToken });
+  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
+  const generateToken = await generateAccessTokenUser(user, expireIn, req);
+
+  return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({ message: 'Email updated successfully. Other sessions have been signed out.', token: generateToken });
 };
 
 const sendProfilePhoneOtp = async (req, res) => {
@@ -1695,6 +1696,13 @@ const validateAndTouchSession = async (user, sessionId, tokenIssuedAtSec) => {
     }
   }
 
+  if (user.emailChangedAt && tokenIssuedAtSec) {
+    const tokenIssuedAtMs = tokenIssuedAtSec * 1000;
+    if (tokenIssuedAtMs < user.emailChangedAt.getTime()) {
+      return { valid: false, message: 'Session invalidated due to email change' };
+    }
+  }
+
   const idleMs = getSessionIdleTimeoutMs();
   if (session.lastActive) {
     const idle = Date.now() - new Date(session.lastActive).getTime();
@@ -1722,7 +1730,7 @@ const verifyActiveSession = async (req, res, next) => {
   }
 
   try {
-    const user = await User.findById(userId).select('activeSessions status passwordChangedAt');
+    const user = await User.findById(userId).select('activeSessions status passwordChangedAt emailChangedAt');
     if (!user || user.status === false) {
       return res.status(401).json({ message: 'User not found or suspended' });
     }
@@ -1855,7 +1863,7 @@ const validateSessionEndpoint = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(userId).select('activeSessions status passwordChangedAt');
+    const user = await User.findById(userId).select('activeSessions status passwordChangedAt emailChangedAt');
     if (!user || user.status === false) {
       return res.status(401).json({ valid: false, message: 'User suspended or not found' });
     }

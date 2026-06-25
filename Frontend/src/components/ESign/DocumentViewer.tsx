@@ -8,7 +8,7 @@ import confetti from "canvas-confetti";
 import { Link, useNavigate } from "react-router-dom";
 import { Upload, Stamp as StampIcon, X, Pencil, Check, ChevronDown, ArrowUp } from "lucide-react";
 import { toTitleCase } from "../../utils/formatName";
-import { resolveEsignDocumentUrl } from "../../utils/esignDocumentUrl";
+import { resolveEsignDocumentFileProp } from "../../utils/esignDocumentUrl";
 
 interface Props {
   // Backward compatible single document
@@ -1606,7 +1606,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
       return (
         <Document
-          file={resolveEsignDocumentUrl(doc, envelopeID)}
+          file={resolveEsignDocumentFileProp(doc, { envelopeId: envelopeID })}
           onLoadSuccess={({ numPages: n }) => setNumPages(n)}
         >
           {Array.from({ length: numPages }, (_, i) => {

@@ -165,7 +165,7 @@ const userId = req.user?.data?.id;
           envelopeId: envelope._id,
           fileName: file.filename,
           mimeType: file.mimetype,
-          filePath: `${process.env.PUBLIC_ESIGN_URL}/uploads/${encodeURIComponent(file.filename)}`,          
+          filePath: `uploads/${file.filename}`,          
           fileSize: file.size
         });
         await doc.save();
