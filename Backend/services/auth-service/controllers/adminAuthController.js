@@ -47,6 +47,7 @@ const adminLogin = async (req, res) => {
         status: 200,
         message: "Admin logged in successfully",
         admin_id: admin._id,
+        token,
         type: 'admin',
         admin: {
           id: admin._id,
@@ -254,6 +255,7 @@ let agent = null;
         message: "Agent logged in successfully",
         admin_id: finalSupportServiceAgentId,  
         agent_id: finalSupportServiceAgentId,  
+        token,
         type: 'agent',
         agent: {
           id: finalSupportServiceAgentId,  
