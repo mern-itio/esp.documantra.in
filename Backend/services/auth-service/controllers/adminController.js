@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const { getPasswordPolicyError } = require('@draftnsign/validators');
+const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/passwordHistory');
 // Admin Controller
 const userList = async (req, res) => {
   try {
@@ -121,6 +122,12 @@ const updateUserPassword = async (req, res) =>{
       return res.status(404).json({ status: 404, message: 'User not found', data: null });
     }
 
+    const reuseError = await getPasswordReuseError(user, password);
+    if (reuseError) {
+      return res.status(400).json({ status: 400, message: reuseError, data: null });
+    }
+
+    archiveCurrentPassword(user);
     user.password = password;
     user.activeSessions = [];
     user.passwordChangedAt = new Date();

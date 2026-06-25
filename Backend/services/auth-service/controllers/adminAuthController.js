@@ -6,6 +6,7 @@ const { isEmailValid, getPasswordPolicyError } = require('@draftnsign/validators
 const mongoose = require('mongoose');
 const { getAdminAccessTokenCookieOptions } = require('../utils/cookieOptions');
 const { sendPasswordResetEmail } = require('../utils/email');
+const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/passwordHistory');
 
 const adminLogin = async (req, res) => {
   try {
@@ -382,6 +383,12 @@ const adminResetPassword = async (req, res) => {
       });
     }
 
+    const reuseError = await getPasswordReuseError(admin, newPassword);
+    if (reuseError) {
+      return res.status(400).json({ status: 400, message: reuseError, data: null });
+    }
+
+    archiveCurrentPassword(admin);
     admin.password = newPassword;
     admin.resetPasswordToken = undefined;
     admin.resetPasswordExpires = undefined;
@@ -433,6 +440,12 @@ const adminChangePassword = async (req, res) => {
       return res.status(401).json({ status: 401, message: 'Current password is incorrect', data: null });
     }
 
+    const reuseError = await getPasswordReuseError(admin, newPassword);
+    if (reuseError) {
+      return res.status(400).json({ status: 400, message: reuseError, data: null });
+    }
+
+    archiveCurrentPassword(admin);
     admin.password = newPassword;
     admin.resetPasswordToken = undefined;
     admin.resetPasswordExpires = undefined;

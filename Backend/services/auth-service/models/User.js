@@ -76,6 +76,10 @@ const userSchema = new mongoose.Schema({
   lockUntil: { type: Date },
   passwordChangedAt: { type: Date, default: null },
   emailChangedAt: { type: Date, default: null },
+  passwordHistory: [{
+    hash: { type: String, required: true },
+    changedAt: { type: Date, default: Date.now },
+  }],
   /** Set when this user registered via a referral link (referrer's User id). */
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
 }, { timestamps: true });

@@ -1,6 +1,22 @@
 // emailTemplates.js
 
-const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, signLink) => `
+function escapeHtml(value) {
+  if (value == null) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, signLink) => {
+  const safeName = escapeHtml(recipientName);
+  const safeSubject = escapeHtml(envelopeSubject);
+  const safeMessage = escapeHtml(envelopeMessage) || 'No message provided.';
+  const safeLinkText = escapeHtml(signLink);
+
+  return `
   <div style="
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background-color: #f4f4f7;
@@ -25,17 +41,17 @@ const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, si
       </div>
 
       <div style="padding: 30px;">
-        <p style="font-size: 16px; color: #333;">Hello <strong>${recipientName}</strong>,</p>
+        <p style="font-size: 16px; color: #333;">Hello <strong>${safeName}</strong>,</p>
 
         <p style="font-size: 15px; color: #555; line-height: 1.6;">
           You’ve been requested to sign the document: <br>
-          <strong style="color: #4D0080;">${envelopeSubject}</strong>.
+          <strong style="color: #4D0080;">${safeSubject}</strong>.
         </p>
 
         <p style="font-size: 15px; color: #555; line-height: 1.6;">
           <em>Message from sender:</em><br>
           <span style="display: inline-block; background: #f9f9f9; padding: 10px 14px; border-left: 4px solid #4D0080; border-radius: 4px;">
-            ${envelopeMessage || "No message provided."}
+            ${safeMessage}
           </span>
         </p>
 
@@ -56,7 +72,7 @@ const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, si
 
         <p style="font-size: 14px; color: #777; text-align: center; line-height: 1.5;">
           If the button doesn’t work, copy and paste this link into your browser:<br>
-          <a href="${signLink}" target="_blank" style="color: #4D0080;">${signLink}</a>
+          <a href="${signLink}" target="_blank" style="color: #4D0080;">${safeLinkText}</a>
         </p>
       </div>
 
@@ -72,8 +88,15 @@ const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, si
     </div>
   </div>
 `;
+};
 
-const signReminderTemplate = (recipientName, envelopeSubject, envelopeMessage, signLink) => `
+const signReminderTemplate = (recipientName, envelopeSubject, envelopeMessage, signLink) => {
+  const safeName = escapeHtml(recipientName);
+  const safeSubject = escapeHtml(envelopeSubject);
+  const safeMessage = escapeHtml(envelopeMessage) || 'No message provided.';
+  const safeLinkText = escapeHtml(signLink);
+
+  return `
  
    <div style="
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -99,17 +122,17 @@ const signReminderTemplate = (recipientName, envelopeSubject, envelopeMessage, s
       </div>
 
       <div style="padding: 30px;">
-        <p style="font-size: 16px; color: #333;">Hello <strong>${recipientName}</strong>,</p>
+        <p style="font-size: 16px; color: #333;">Hello <strong>${safeName}</strong>,</p>
 
         <p style="font-size: 15px; color: #555; line-height: 1.6;">
           This is a reminder to sign the document:
-          <strong style="color: #4D0080;">${envelopeSubject}</strong>.
+          <strong style="color: #4D0080;">${safeSubject}</strong>.
         </p>
 
         <p style="font-size: 15px; color: #555; line-height: 1.6;">
           <em>Message from sender:</em><br>
           <span style="display: inline-block; background: #f9f9f9; padding: 10px 14px; border-left: 4px solid #4D0080; border-radius: 4px;">
-            ${envelopeMessage || "No message provided."}
+            ${safeMessage}
           </span>
         </p>
 
@@ -130,7 +153,7 @@ const signReminderTemplate = (recipientName, envelopeSubject, envelopeMessage, s
 
         <p style="font-size: 14px; color: #777; text-align: center; line-height: 1.5;">
           If the button doesn’t work, copy and paste this link into your browser:<br>
-          <a href="${signLink}" target="_blank" style="color: #4D0080;">${signLink}</a>
+          <a href="${signLink}" target="_blank" style="color: #4D0080;">${safeLinkText}</a>
         </p>
       </div>
 
@@ -146,8 +169,13 @@ const signReminderTemplate = (recipientName, envelopeSubject, envelopeMessage, s
     </div>
   </div>
 `;
+};
 
-const envelopeCompletedTemplate = (recipientName, envelopeSubject) => `
+const envelopeCompletedTemplate = (recipientName, envelopeSubject) => {
+  const safeName = escapeHtml(recipientName);
+  const safeSubject = escapeHtml(envelopeSubject);
+
+  return `
   <div style="
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background-color: #f4f4f7;
@@ -175,12 +203,12 @@ const envelopeCompletedTemplate = (recipientName, envelopeSubject) => `
       <div style="padding: 30px;">
 
         <p style="font-size: 16px; color: #333;">
-          Hello <strong>${recipientName}</strong>,
+          Hello <strong>${safeName}</strong>,
         </p>
 
         <p style="font-size: 15px; color: #555; line-height: 1.6;">
           The document:
-          <strong style="color: #4D0080;">${envelopeSubject}</strong>
+          <strong style="color: #4D0080;">${safeSubject}</strong>
           has been fully signed and successfully completed.
         </p>
 
@@ -220,6 +248,7 @@ const envelopeCompletedTemplate = (recipientName, envelopeSubject) => `
     </div>
   </div>
 `;
+};
 
 const reassignedSignRequestTemplate = ({
   recipientName,
@@ -229,7 +258,16 @@ const reassignedSignRequestTemplate = ({
   reassignedByName,
   reassignedByEmail,
   reassignmentReason,
-}) => `
+}) => {
+  const safeName = escapeHtml(recipientName);
+  const safeSubject = escapeHtml(envelopeSubject);
+  const safeMessage = escapeHtml(envelopeMessage) || 'No message provided.';
+  const safeReassignedByName = escapeHtml(reassignedByName || 'Signer');
+  const safeReassignedByEmail = escapeHtml(reassignedByEmail);
+  const safeReason = escapeHtml(reassignmentReason);
+  const safeLinkText = escapeHtml(signLink);
+
+  return `
   <div style="
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background-color: #f4f4f7;
@@ -257,7 +295,7 @@ const reassignedSignRequestTemplate = ({
 
       <div style="padding: 24px 22px;">
         <p style="font-size: 15px; color: #111827; margin: 0 0 14px;">
-          Hello <strong>${recipientName}</strong>,
+          Hello <strong>${safeName}</strong>,
         </p>
 
         <div style="
@@ -271,12 +309,12 @@ const reassignedSignRequestTemplate = ({
         ">
           <div style="font-size: 13px; color: #075985; margin-bottom: 6px;"><strong>This request was reassigned to you</strong></div>
           <div style="font-size: 14px; line-height: 1.5;">
-            Reassigned by: <strong>${reassignedByName || 'Signer'}</strong>${reassignedByEmail ? ` (${reassignedByEmail})` : ''}
+            Reassigned by: <strong>${safeReassignedByName}</strong>${safeReassignedByEmail ? ` (${safeReassignedByEmail})` : ''}
           </div>
           ${
-            reassignmentReason
+            safeReason
               ? `<div style="font-size: 14px; line-height: 1.5; margin-top: 6px;">
-                   Reason: <span style="color:#0f172a;">${reassignmentReason}</span>
+                   Reason: <span style="color:#0f172a;">${safeReason}</span>
                  </div>`
               : ''
           }
@@ -291,7 +329,7 @@ const reassignedSignRequestTemplate = ({
         ">
           <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Document</div>
           <div style="font-size: 15px; color: #111827; font-weight: 700; margin-bottom: 8px;">
-            ${envelopeSubject || 'Untitled document'}
+            ${safeSubject || 'Untitled document'}
           </div>
 
           <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Message</div>
@@ -305,7 +343,7 @@ const reassignedSignRequestTemplate = ({
             padding: 10px 12px;
             white-space: pre-wrap;
           ">
-            ${envelopeMessage || 'No message provided.'}
+            ${safeMessage}
           </div>
         </div>
 
@@ -326,7 +364,7 @@ const reassignedSignRequestTemplate = ({
 
         <p style="font-size: 13px; color: #6b7280; text-align: center; line-height: 1.5; margin: 0;">
           If the button doesn’t work, copy and paste this link into your browser:<br>
-          <a href="${signLink}" target="_blank" style="color: #1d4ed8; word-break: break-all;">${signLink}</a>
+          <a href="${signLink}" target="_blank" style="color: #1d4ed8; word-break: break-all;">${safeLinkText}</a>
         </p>
       </div>
 
@@ -342,6 +380,7 @@ const reassignedSignRequestTemplate = ({
     </div>
   </div>
 `;
+};
 
 const reassignedOwnerCcTemplate = ({
   ownerName,
@@ -350,7 +389,15 @@ const reassignedOwnerCcTemplate = ({
   replacementRecipientEmail,
   reassignmentReason,
   viewLink,
-}) => `
+}) => {
+  const safeOwnerName = escapeHtml(ownerName || 'Signer');
+  const safeSubject = escapeHtml(envelopeSubject || 'an envelope');
+  const safeReplacementName = escapeHtml(replacementRecipientName || 'a new signer');
+  const safeReplacementEmail = escapeHtml(replacementRecipientEmail);
+  const safeReason = escapeHtml(reassignmentReason);
+  const safeViewLinkText = escapeHtml(viewLink);
+
+  return `
   <div style="
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background-color: #f4f4f7;
@@ -378,7 +425,7 @@ const reassignedOwnerCcTemplate = ({
 
       <div style="padding: 24px 22px;">
         <p style="font-size: 15px; color: #111827; margin: 0 0 14px;">
-          Hello <strong>${ownerName || 'Signer'}</strong>,
+          Hello <strong>${safeOwnerName}</strong>,
         </p>
 
         <div style="
@@ -392,14 +439,14 @@ const reassignedOwnerCcTemplate = ({
         ">
           <div style="font-size: 13px; color: #92400e; margin-bottom: 6px;"><strong>Signing responsibility transferred</strong></div>
           <div style="font-size: 14px; line-height: 1.5;">
-            You reassigned signing for <strong>${envelopeSubject || 'an envelope'}</strong> to
-            <strong>${replacementRecipientName || 'a new signer'}</strong>
-            ${replacementRecipientEmail ? `(${replacementRecipientEmail})` : ''}.
+            You reassigned signing for <strong>${safeSubject}</strong> to
+            <strong>${safeReplacementName}</strong>
+            ${safeReplacementEmail ? `(${safeReplacementEmail})` : ''}.
           </div>
           ${
-            reassignmentReason
+            safeReason
               ? `<div style="font-size: 14px; line-height: 1.5; margin-top: 6px;">
-                   Reason: <span style="color:#0f172a;">${reassignmentReason}</span>
+                   Reason: <span style="color:#0f172a;">${safeReason}</span>
                  </div>`
               : ''
           }
@@ -439,7 +486,7 @@ const reassignedOwnerCcTemplate = ({
                </div>
                <p style="font-size: 13px; color: #6b7280; text-align: center; line-height: 1.5; margin: 0;">
                  If the button doesn’t work, copy and paste this link into your browser:<br>
-                 <a href="${viewLink}" target="_blank" style="color: #1d4ed8; word-break: break-all;">${viewLink}</a>
+                 <a href="${viewLink}" target="_blank" style="color: #1d4ed8; word-break: break-all;">${safeViewLinkText}</a>
                </p>`
             : ''
         }
@@ -457,6 +504,7 @@ const reassignedOwnerCcTemplate = ({
     </div>
   </div>
 `;
+};
 
 
 module.exports = {

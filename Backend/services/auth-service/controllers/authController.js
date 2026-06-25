@@ -11,6 +11,7 @@ const bcrypt = require('bcrypt');
 const axios = require('axios');
 const { OAuth2Client } = require('google-auth-library');
 const { getAccessTokenCookieOptions } = require('../utils/cookieOptions');
+const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/passwordHistory');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -1419,6 +1420,12 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ message: 'Invalid or expired reset link. Please request a new one.' });
     }
 
+    const reuseError = await getPasswordReuseError(user, newPassword);
+    if (reuseError) {
+      return res.status(400).json({ message: reuseError });
+    }
+
+    archiveCurrentPassword(user);
     user.password = newPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
@@ -1818,6 +1825,12 @@ const changePassword = async (req, res) => {
       return res.status(401).json({ message: 'Current password is incorrect' });
     }
 
+    const reuseError = await getPasswordReuseError(user, newPassword);
+    if (reuseError) {
+      return res.status(400).json({ message: reuseError });
+    }
+
+    archiveCurrentPassword(user);
     user.password = newPassword;
     user.activeSessions = [];
     user.passwordChangedAt = new Date();

@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../../services/apiHelper';
-import { ArrowLeft, Mail, Phone, ShieldCheck, KeyRound, Smartphone, Loader2, Copy, CheckCircle2, QrCode, HelpCircle, X, Edit, Plus } from 'lucide-react';
+import { useAuth } from '../../components/AuthService/AuthContext';
+import { ArrowLeft, Mail, Phone, ShieldCheck, KeyRound, Smartphone, Loader2, Copy, CheckCircle2, QrCode, HelpCircle, X, Edit, Plus, Eye, EyeOff } from 'lucide-react';
 
 type AuthMethod = 'email' | 'sms' | 'authenticator';
 type RecoveryQuestionTab = 'prebuilt' | 'custom';
@@ -33,6 +34,21 @@ interface AuthenticatorSetupState {
 
 const AuthMethodsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showPasswordFields, setShowPasswordFields] = useState({
+    current: false,
+    next: false,
+    confirm: false,
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   const [twoFa, setTwoFa] = useState<TwoFaState>({
     enabled: false,
@@ -84,6 +100,32 @@ const AuthMethodsPage: React.FC = () => {
     width: number;
     height: number;
   } | null>(null);
+
+  const handleChangePassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New passwords do not match.');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await authApi.post('/change-password', {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setPasswordSuccess('Password updated. Signing you out on all other devices...');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      window.setTimeout(() => logout(), 1500);
+    } catch (err: any) {
+      setPasswordError(err?.response?.data?.message || 'Failed to change password.');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -498,6 +540,92 @@ const AuthMethodsPage: React.FC = () => {
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),320px]">
           <section className="space-y-6">
+            <div className="overflow-hidden border border-border/70 bg-card shadow-sm">
+              <div className="border-b border-border/70 bg-gradient-to-r from-card to-primary/10 px-5 py-4 md:px-6">
+                <div className="flex items-center gap-3">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                    <KeyRound className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Password
+                    </p>
+                    <h2 className="text-lg font-semibold text-foreground">Change password</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Use a strong password. You cannot reuse your last 5 passwords.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="space-y-4 px-5 py-5 md:px-6">
+                {passwordError && (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {passwordError}
+                  </div>
+                )}
+                {passwordSuccess && (
+                  <div className="rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+                    {passwordSuccess}
+                  </div>
+                )}
+
+                {(['currentPassword', 'newPassword', 'confirmPassword'] as const).map((field, index) => {
+                  const labels = {
+                    currentPassword: 'Current password',
+                    newPassword: 'New password',
+                    confirmPassword: 'Confirm new password',
+                  };
+                  const visibilityKey = index === 0 ? 'current' : index === 1 ? 'next' : 'confirm';
+                  return (
+                    <div key={field}>
+                      <label className="mb-2 block text-sm font-medium text-foreground">
+                        {labels[field]}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPasswordFields[visibilityKey] ? 'text' : 'password'}
+                          value={passwordForm[field]}
+                          onChange={(e) =>
+                            setPasswordForm((prev) => ({ ...prev, [field]: e.target.value }))
+                          }
+                          className="w-full rounded-lg border border-border bg-background px-4 py-3 pr-11 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                          autoComplete={field === 'currentPassword' ? 'current-password' : 'new-password'}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowPasswordFields((prev) => ({
+                              ...prev,
+                              [visibilityKey]: !prev[visibilityKey],
+                            }))
+                          }
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          aria-label={`Toggle ${labels[field]} visibility`}
+                        >
+                          {showPasswordFields[visibilityKey] ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <button
+                  type="submit"
+                  disabled={changingPassword}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {changingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {changingPassword ? 'Updating...' : 'Update password'}
+                </button>
+              </form>
+            </div>
+
             <div className="overflow-hidden border border-border/70 bg-card shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 bg-gradient-to-r from-card to-primary/10 px-5 py-4 md:px-6">
                 <div className="flex items-center gap-3">
