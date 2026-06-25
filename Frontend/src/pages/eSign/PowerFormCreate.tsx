@@ -36,6 +36,7 @@ import {
   getEsignUploadErrorMessage,
   isFileTooLargeForEsign,
 } from '../../utils/uploadErrorMessage';
+import { resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
 type EditorSignatureFieldExt = EditorSignatureField & {
@@ -492,7 +493,7 @@ const PowerFormCreate: React.FC = () => {
         const apiDocs = (response.data.data.documents || []).map((doc: any) => ({
           ...doc,
           type: doc.type || 'application/pdf',
-          url: doc.url || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${encodeURIComponent(doc.name || '')}`,
+          url: resolveEsignDocumentUrl(doc, envelopeId),
         }));
         setDocuments(apiDocs);
         console.log('Fetched documents:', apiDocs);

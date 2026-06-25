@@ -3,6 +3,7 @@ import { FileText, UserCircle } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { useTutorial } from '../../context/TutorialContext';
+import { resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
 
 export type Doc = {
   id: string;
@@ -72,6 +73,7 @@ export default function PowerFormEditorStep({
   mode,
   powerFormData,
   slots,
+  envelopeId,
 }: {
   documents: Doc[];
   recipients: Recipient[];
@@ -79,7 +81,8 @@ export default function PowerFormEditorStep({
   setSignatureFields: React.Dispatch<React.SetStateAction<SignatureField[]>>;
   mode: "normal" | "power";
   powerFormData?: PowerFormData;
-  slots?: PowerFormSlot[]; // preferred prop for slots
+  slots?: PowerFormSlot[];
+  envelopeId?: string | null;
 }) {
   // pdf worker
   useEffect(() => {
@@ -473,7 +476,7 @@ export default function PowerFormEditorStep({
               <Document
                 file={
                   activeDoc.file ||
-                  `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${activeDoc.name}`
+                  resolveEsignDocumentUrl(activeDoc, envelopeId || undefined)
                 }
                 onLoadSuccess={onDocLoadSuccess}
               >

@@ -45,6 +45,7 @@ import {
   getEsignUploadErrorMessage,
   isFileTooLargeForEsign,
 } from '../../utils/uploadErrorMessage';
+import { resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
 import { isAuthMethodFreeViaReferralPerk } from '../../utils/referralAuthPerks';
 import toast from 'react-hot-toast';
 // import { useApp } from '../../context/AppContext';
@@ -1827,7 +1828,7 @@ const response = await eSignApi.get(url);
         const apiDocs = (response.data.data.documents || []).map((doc: any) => ({
           ...doc,
           type: doc.type || 'application/pdf',
-          url: doc.url || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${encodeURIComponent(doc.name || '')}`,
+          url: resolveEsignDocumentUrl(doc, envelopeId),
         }));
 
         // Verify and update page counts for documents loaded from backend
@@ -1837,7 +1838,7 @@ const response = await eSignApi.get(url);
             if (!doc.pages || doc.pages === 1) {
               try {
                 // Try to fetch the document and count pages
-                const docUrl = doc.url || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${encodeURIComponent(doc.name || '')}`;
+                const docUrl = resolveEsignDocumentUrl(doc, envelopeId);
                 const fetchResponse = await fetch(docUrl);
                 if (fetchResponse.ok) {
                   const blob = await fetchResponse.blob();

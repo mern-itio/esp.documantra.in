@@ -47,6 +47,22 @@ const verifyFileAccessToken = (token, { envelopeId, documentId } = {}) => {
   }
 };
 
+const normalizeEsignPublicBase = (baseUrl) => {
+  const raw = String(baseUrl || process.env.PUBLIC_ESIGN_URL || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (!raw) {
+    return '';
+  }
+  if (raw.endsWith('/esign')) {
+    return raw;
+  }
+  if (raw.includes('esp.documantra.in')) {
+    return `${raw}/esign`;
+  }
+  return raw;
+};
+
 const buildPublicUploadUrl = (rawPath, { envelopeId, documentId, recipientId, baseUrl } = {}) => {
   if (!rawPath) return null;
 
@@ -59,7 +75,7 @@ const buildPublicUploadUrl = (rawPath, { envelopeId, documentId, recipientId, ba
       .split('?')[0]
   );
 
-  const base = (baseUrl || process.env.PUBLIC_ESIGN_URL || '').replace(/\/+$/, '');
+  const base = normalizeEsignPublicBase(baseUrl);
   const fileToken = createFileAccessToken({ envelopeId, documentId, recipientId });
   const query = new URLSearchParams();
   if (fileToken) query.set('fileToken', fileToken);
@@ -169,7 +185,7 @@ const assertDocumentDownloadAccess = async (req, documentId) => {
 };
 
 const assertUploadFileAccess = async (req, filename) => {
-  const safeName = path.basename(String(filename || ''));
+  const safeName = path.basename(decodeURIComponent(String(filename || '')));
   if (!safeName) {
     return { ok: false, status: 400, message: 'Invalid file name' };
   }

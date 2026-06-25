@@ -8,6 +8,7 @@ import confetti from "canvas-confetti";
 import { Link, useNavigate } from "react-router-dom";
 import { Upload, Stamp as StampIcon, X, Pencil, Check, ChevronDown, ArrowUp } from "lucide-react";
 import { toTitleCase } from "../../utils/formatName";
+import { resolveEsignDocumentUrl } from "../../utils/esignDocumentUrl";
 
 interface Props {
   // Backward compatible single document
@@ -1603,12 +1604,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         return fieldDoc ? String(fieldDoc) === String(docId) : true; // fallback if backend omitted doc id
       };
 
-console.log("DOC OBJECT =", doc);
-console.log("DOC FILEPATH =", doc?.filePath);
-
       return (
         <Document
-          file={doc.filePath || `${import.meta.env.VITE_ESIGN_SERVICE_URL}/uploads/${doc.name}`}
+          file={resolveEsignDocumentUrl(doc, envelopeID)}
           onLoadSuccess={({ numPages: n }) => setNumPages(n)}
         >
           {Array.from({ length: numPages }, (_, i) => {
