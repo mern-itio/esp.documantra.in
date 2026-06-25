@@ -674,6 +674,7 @@ const SignupPage = () => {
                       type="email"
                       id="email"
                       name="email"
+                      autoComplete="email"
                       value={formData.email}
                       onChange={handleInputChange}
                       className={`w-full pl-8 pr-3 py-2 text-sm border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 ${
@@ -743,6 +744,7 @@ const SignupPage = () => {
                       type={showPassword ? 'text' : 'password'}
                       id="password"
                       name="password"
+                      autoComplete="new-password"
                       value={formData.password}
                       onChange={handleInputChange}
                       onFocus={() => setPasswordFocused(true)}
@@ -805,6 +807,7 @@ const SignupPage = () => {
                       type={showConfirmPassword ? 'text' : 'password'}
                       id="confirmPassword"
                       name="confirmPassword"
+                      autoComplete="new-password"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
                       className={`w-full pl-8 pr-10 py-2 text-sm border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#3E2B66]/20 ${

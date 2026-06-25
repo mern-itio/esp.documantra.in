@@ -111,6 +111,8 @@ const ResetPasswordPage = () => {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         id="newPassword"
+                        name="newPassword"
+                        autoComplete="new-password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 pr-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#260559] focus:outline-none focus:ring-2 focus:ring-[#260559]/20"
@@ -137,6 +139,8 @@ const ResetPasswordPage = () => {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         id="confirmPassword"
+                        name="confirmPassword"
+                        autoComplete="new-password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#260559] focus:outline-none focus:ring-2 focus:ring-[#260559]/20"

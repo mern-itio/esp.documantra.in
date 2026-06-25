@@ -925,6 +925,8 @@ const LoginPage = () => {
                         <input
                           type="email"
                           id="email"
+                          name="email"
+                          autoComplete="username"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
@@ -943,6 +945,8 @@ const LoginPage = () => {
                         <input
                           type={showPassword ? 'text' : 'password'}
                           id="password"
+                          name="password"
+                          autoComplete="current-password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 pr-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
