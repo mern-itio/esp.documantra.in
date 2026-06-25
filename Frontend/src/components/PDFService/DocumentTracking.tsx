@@ -24,7 +24,7 @@ import {
 import { Button } from '../DocumentService/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../DocumentService/ui/card';
 import { documentTrackingService } from '../../services/documentTrackingService';
-import { getCurrentUserId, getUserProfileSnapshot, isLoggedInSnapshot } from '../../utils/authSession';
+import { getCurrentUserId, getUserProfileSnapshot } from '../../utils/authSession';
 import type {
   DocumentTrackingRecord,
   TrackedDocument,
@@ -52,8 +52,6 @@ const DocumentTracking: React.FC = () => {
   const [expiresInDays, setExpiresInDays] = useState(30);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
-
-  const getCurrentUserIdLocal = (): string => getCurrentUserId();
 
   // Helper function to get user information (ID and name)
   const getUserInfo = (userId: string): { id: string; name: string } => {

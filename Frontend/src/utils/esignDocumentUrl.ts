@@ -96,7 +96,8 @@ export const resolveEsignDocumentFileProp = (
       if (token) {
         return { url, httpHeaders: { Authorization: `Bearer ${token}` } };
       }
-      return { url, withCredentials: true };
+      // Same-origin httpOnly cookie auth — browser sends cookies on direct URL fetch.
+      return url;
     }
 
     return url;

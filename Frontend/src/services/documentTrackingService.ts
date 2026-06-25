@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getAccountContextHeaders, getCurrentUserId, getUserProfileSnapshot, isLoggedInSnapshot } from '../utils/authSession';
+import { getAccountContextHeaders, getCurrentUserId, getUserProfileSnapshot } from '../utils/authSession';
 import type { 
   DocumentTrackingResponse, 
   TrackedDocumentsResponse,
