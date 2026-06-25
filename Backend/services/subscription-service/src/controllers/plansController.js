@@ -1,68 +1,65 @@
 const PlanTemplate = require('../models/PlanTemplate');
+const { validatePlanPayload } = require('../utils/billingValidation');
 
 const createPlan = async (req, res) => {
   try {
     const payload = req.body || {};
-
-    if (!payload || !payload.name || payload.pricePerPeriod === undefined) {
-      return res.status(400).json({ status: 400, message: 'Missing required fields', data: null });
+    const validation = validatePlanPayload(payload);
+    if (!validation.ok) {
+      return res.status(400).json({ status: 400, message: validation.message, data: null });
     }
 
-    // Check if a free plan already exists
-    if (payload.type === 'free') {
+    const sanitized = validation.sanitized;
+
+    if (sanitized.type === 'free') {
       const existingFreePlan = await PlanTemplate.findOne({ type: 'free' });
       if (existingFreePlan) {
         return res.status(400).json({
           status: 400,
           message: 'A free plan already exists. You cannot create another.',
-          data: null
+          data: null,
         });
       }
     }
 
-    // console.log('Creating plan with documentCosts:', payload.documentCosts);
-
     const plan = await PlanTemplate.create({
-      name: payload.name,
-      services: payload.services,
-      type: payload.type || 'paid',
-      toolCosts: payload.toolCosts,
-      authCosts: payload.authCosts,
-      documentCosts: payload.documentCosts || { credits: 0 },
-      shareCosts: payload.shareCosts || { credits: 0 },
-      pdfShareCosts: payload.pdfShareCosts || { credits: 0 },
-      monthlyCredits: payload.monthlyCredits,
-      pricePerPeriod: payload.pricePerPeriod,
-      period: payload.period || 'monthly',
+      name: sanitized.name,
+      services: sanitized.services,
+      type: sanitized.type || 'paid',
+      toolCosts: sanitized.toolCosts,
+      authCosts: sanitized.authCosts,
+      documentCosts: sanitized.documentCosts || { credits: 0 },
+      shareCosts: sanitized.shareCosts || { credits: 0 },
+      pdfShareCosts: sanitized.pdfShareCosts || { credits: 0 },
+      monthlyCredits: sanitized.monthlyCredits,
+      pricePerPeriod: sanitized.pricePerPeriod,
+      period: sanitized.period || 'monthly',
     });
-    
-    // console.log('Plan created:', plan);
-    
+
     return res.status(201).json({ status: 201, message: 'Plan created', data: plan });
   } catch (error) {
     console.error('Error creating plan:', error);
-    return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
+    return res.status(400).json({ status: 400, message: 'Invalid request', data: null });
   }
 };
-
 
 const getPlan = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!id) {
       return res.status(400).json({ status: 400, message: 'Plan ID is required', data: null });
     }
 
     const plan = await PlanTemplate.findById(id);
-    
+
     if (!plan) {
       return res.status(404).json({ status: 404, message: 'Plan not found', data: null });
     }
 
     return res.status(200).json({ status: 200, message: 'Plan retrieved successfully', data: plan });
   } catch (error) {
-    return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
+    return res.status(400).json({ status: 400, message: 'Invalid request', data: null });
   }
 };
 
@@ -70,8 +67,7 @@ const listPlans = async (req, res) => {
   try {
     const { page = 1, limit = 10, period, search } = req.query;
     const skip = (page - 1) * limit;
-    
-    // Build filter object
+
     const filter = {};
     if (period) {
       filter.period = period;
@@ -87,21 +83,21 @@ const listPlans = async (req, res) => {
 
     const total = await PlanTemplate.countDocuments(filter);
 
-    return res.status(200).json({ 
-      status: 200, 
-      message: 'Plans retrieved successfully', 
+    return res.status(200).json({
+      status: 200,
+      message: 'Plans retrieved successfully',
       data: {
         plans,
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / limit),
           totalItems: total,
-          itemsPerPage: parseInt(limit)
-        }
-      }
+          itemsPerPage: parseInt(limit),
+        },
+      },
     });
   } catch (error) {
-    return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
+    return res.status(400).json({ status: 400, message: 'Invalid request', data: null });
   }
 };
 
@@ -109,71 +105,62 @@ const updatePlan = async (req, res) => {
   try {
     const { id } = req.params;
     const payload = req.body || {};
-    
+
     if (!id) {
       return res.status(400).json({ status: 400, message: 'Plan ID is required', data: null });
     }
 
-    // Check if plan exists
     const existingPlan = await PlanTemplate.findById(id);
     if (!existingPlan) {
       return res.status(404).json({ status: 404, message: 'Plan not found', data: null });
     }
 
-    // console.log('Updating plan with payload:', payload);
-    // console.log('documentCosts in payload:', payload.documentCosts);
+    const validation = validatePlanPayload(payload, { isUpdate: true, existingPlan });
+    if (!validation.ok) {
+      return res.status(400).json({ status: 400, message: validation.message, data: null });
+    }
 
-    // Update the plan - ensure documentCosts is properly handled
+    const sanitized = validation.sanitized;
     const updateData = {
-      ...payload,
-      version: existingPlan.version + 1 // Increment version
+      ...sanitized,
+      version: existingPlan.version + 1,
     };
-    
-    // If documentCosts is not provided and plan has document service, set default
-    if (!updateData.documentCosts && payload.services?.includes('document')) {
+
+    if (!updateData.documentCosts && sanitized.services?.includes('document')) {
       updateData.documentCosts = { credits: 0 };
     }
 
-    // console.log('Update data:', updateData);
-
-    const updatedPlan = await PlanTemplate.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    );
-
-    // console.log('Plan updated:', updatedPlan);
+    const updatedPlan = await PlanTemplate.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
     return res.status(200).json({ status: 200, message: 'Plan updated successfully', data: updatedPlan });
   } catch (error) {
     console.error('Error updating plan:', error);
-    return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
+    return res.status(400).json({ status: 400, message: 'Invalid request', data: null });
   }
 };
 
 const deletePlan = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!id) {
       return res.status(400).json({ status: 400, message: 'Plan ID is required', data: null });
     }
 
-    // Check if plan exists
     const existingPlan = await PlanTemplate.findById(id);
     if (!existingPlan) {
       return res.status(404).json({ status: 404, message: 'Plan not found', data: null });
     }
 
-    // Delete the plan
     await PlanTemplate.findByIdAndDelete(id);
 
     return res.status(200).json({ status: 200, message: 'Plan deleted successfully', data: null });
   } catch (error) {
-    return res.status(400).json({ status: 400, message: error.message || 'Invalid request', data: null });
+    return res.status(400).json({ status: 400, message: 'Invalid request', data: null });
   }
 };
 
 module.exports = { createPlan, getPlan, listPlans, updatePlan, deletePlan };
-
-

@@ -14,6 +14,12 @@ const {getDocuments, getDocumentVersions, getDocumentComments, getDocumentWorkfl
 const { getSharedDocuments, getSharedDocumentComments } = require('../controllers/documentController');
 
 const {createPlane, getPlan, listPlans, updatePlan, deletePlan} = require('../controllers/subscriptionController');
+const {
+  planMutationLimiter,
+  creditPackageMutationLimiter,
+  templateMutationLimiter,
+  pdfToolMutationLimiter,
+} = require('../middleware/adminMutationLimiter');
 const {getUserPdfOperations, getUserServiceStats, getUserOperationHistory} = require('../controllers/userUsageController');
 const {getUserPdfOperations: getPdfOps, getUserPdfStats, getAllUsersPdfStats, getPdfOperationById, deletePdfOperation} = require('../controllers/pdfController');
 
@@ -67,15 +73,15 @@ router.get('/documents/:documentId/workflows', getDocumentWorkflows);
 // PDF Tools CRUD (Admin)
 router.get('/pdf-tools', listTools);
 router.get('/pdf-tools/:id', getTool);
-router.post('/pdf-tools', createTool);
+router.post('/pdf-tools', pdfToolMutationLimiter, createTool);
 router.put('/pdf-tools/:id', updateTool);
 router.delete('/pdf-tools/:id', deleteTool);
 
 // Subscription and Billing routes
 router.get('/plan-templates', listPlans);
-router.post('/plan-templates', createPlane);
+router.post('/plan-templates', planMutationLimiter, createPlane);
 router.get('/plan-templates/:id', getPlan);
-router.put('/plan-templates/:id', updatePlan);
+router.put('/plan-templates/:id', planMutationLimiter, updatePlan);
 router.delete('/plan-templates/:id', deletePlan);
 
 // User Usage Tracking routes
@@ -100,8 +106,8 @@ router.delete('/auth-providers/:id', deleteAuthProvider);
 
 //Credit Packages routes
 router.get('/credit-packages', listCreditPackages);
-router.post('/credit-packages', createCreditPackage);
-router.put('/credit-packages/:id', updateCreditPackage);
+router.post('/credit-packages', creditPackageMutationLimiter, createCreditPackage);
+router.put('/credit-packages/:id', creditPackageMutationLimiter, updateCreditPackage);
 router.delete('/credit-packages/:id', deleteCreditPackage);
 // Flexible credit package
 router.get('/flexible-credit-package',getFlexibleCreditPackage);
@@ -118,14 +124,14 @@ router.patch('/organization/:id/status', updateOrganizationVerificationStatus);
 
 // Template moderation routes
 router.get('/templates', listTemplates);
-router.post('/templates/generate-ai', generateAndActivateTemplate);
+router.post('/templates/generate-ai', templateMutationLimiter, generateAndActivateTemplate);
 router.put('/templates/:id', updateTemplate);
 router.delete('/templates/:id', deleteTemplate);
 router.patch('/templates/:id/approval', setApproval);
-router.post('/templates/ai/generate', generateTemplateContent);
-router.post('/templates/ai/generate-stream', generateTemplateContentStream);
+router.post('/templates/ai/generate', templateMutationLimiter, generateTemplateContent);
+router.post('/templates/ai/generate-stream', templateMutationLimiter, generateTemplateContentStream);
 router.get('/template-types', listTemplateTypes);
-router.post('/template-types', createTemplateType);
+router.post('/template-types', templateMutationLimiter, createTemplateType);
 router.put('/template-types/:id', updateTemplateType);
 router.delete('/template-types/:id', deleteTemplateType);
 

@@ -4,6 +4,7 @@ const flexibleCreditPackage = require('../models/flexibleCreditPackage');
 const Stripe = require('stripe');
 const {createInvoiceForCreditPurchase,createInvoiceForFlexiCreditPurchase} = require('../controllers/invoiceController');
 const Subscription = require('../models/Subscription');
+const { validateCreditPackagePayload } = require('../utils/billingValidation');
 
 let stripe = null;
 if (process.env.STRIPE_SECRET_KEY) {
@@ -30,11 +31,16 @@ const listCreditPackages = async (req, res) => {
 
 const createCreditPackage = async (req, res) => {
   try {
-    const creditPackage = new CreditPackage(req.body);
+    const validation = validateCreditPackagePayload(req.body || {});
+    if (!validation.ok) {
+      return res.status(400).json({ status: 400, message: validation.message, data: null });
+    }
+
+    const creditPackage = new CreditPackage(validation.sanitized);
     await creditPackage.save();
     return res.status(201).json(creditPackage);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: 'Invalid request' });
   }
 };
 
@@ -52,13 +58,22 @@ const getCreditPackage = async (req, res) => {
 
 const updateCreditPackage = async (req, res) => {
   try {
-    const creditPackage = await CreditPackage.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const validation = validateCreditPackagePayload(req.body || {}, { isUpdate: true });
+    if (!validation.ok) {
+      return res.status(400).json({ status: 400, message: validation.message, data: null });
+    }
+
+    const creditPackage = await CreditPackage.findByIdAndUpdate(
+      req.params.id,
+      validation.sanitized,
+      { new: true, runValidators: true }
+    );
     if (!creditPackage) {
       return res.status(404).json({ message: 'Credit package not found' });
     }
     return res.status(200).json(creditPackage);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: 'Invalid request' });
   }
 };
 
