@@ -4,6 +4,13 @@ import { API_ENDPOINTS, apiRequest } from '../../services/api';
 import { assertSecureApiUrl } from '../../utils/secureApiUrl';
 import { authApi } from '../../services/apiHelper';
 import { SubscriptionService, SubscriptionStorage } from '../../services/subscriptionService';
+import {
+  clearAccountContext,
+  clearLegacyAuthStorage,
+  persistAccountContext,
+  setMemoryAccessToken,
+  withAuthFetch,
+} from '../../utils/authSession';
 
 /** Gateways may wrap payloads as `{ data: { token, ... } }` — normalize for signup verify. */
 function unwrapAuthJson(raw: unknown): Record<string, any> {
@@ -74,134 +81,79 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [accountType, setAccountType] = useState<'user' | 'organization'>(() => {
-    const v = localStorage.getItem('accountType');
+    const v = sessionStorage.getItem('accountType');
     return (v === 'organization' ? 'organization' : 'user');
   });
   const [organizationId, setOrganizationId] = useState<string | null>(() => {
-    return localStorage.getItem('organizationId') || null;
+    return sessionStorage.getItem('organizationId') || null;
   });
   const [organizationDetail, setOrganizationDetail] = useState<any | null>(() => {
     try {
-      const v = localStorage.getItem('organizationDetail');
+      const v = sessionStorage.getItem('organizationDetail');
       return v ? JSON.parse(v) : null;
     } catch {
       return null;
     }
   });
 
-  // Helper to hydrate auth state from localStorage (used on mount and when extension syncs auth).
-  const hydrateFromLocalStorage = () => {
-    const token = localStorage.getItem('accessToken');
-    const userData = localStorage.getItem('userData');
-    if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
+  const mapApiUserToState = (u: Record<string, any>): User => ({
+    id: String(u.id || u._id || ''),
+    email: u.email || '',
+    fullname: u.fullname || '',
+    type: u.type || 'user',
+    plan: u.plan || 'free',
+    phone: u.phone || '',
+    address: u.address || '',
+    company: u.company || '',
+    isFirstLogin: u.isFirstLogin,
+  });
 
-        // Try to enrich missing fields from JWT payload (fullname/phone/address/company)
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          const jwtFullname = payload?.data?.fullname || payload?.fullname;
-          const jwtPhone = payload?.data?.phone || payload?.phone;
-          const jwtAddress = payload?.data?.address || payload?.address;
-          const jwtCompany = payload?.data?.company || payload?.company;
-
-          const needsFullname = !parsedUser.fullname || parsedUser.fullname === parsedUser.email?.split('@')[0];
-          const needsPhone = !parsedUser.phone && !!jwtPhone;
-          const needsAddress = !parsedUser.address && !!jwtAddress;
-          const needsCompany = !parsedUser.company && !!jwtCompany;
-
-          if ((needsFullname && jwtFullname) || needsPhone || needsAddress || needsCompany) {
-            const updatedUser = {
-              ...parsedUser,
-              fullname: needsFullname && jwtFullname ? jwtFullname : parsedUser.fullname,
-              phone: needsPhone ? jwtPhone : parsedUser.phone,
-              address: needsAddress ? jwtAddress : parsedUser.address,
-              company: needsCompany ? jwtCompany : parsedUser.company,
-            };
-            localStorage.setItem('userData', JSON.stringify(updatedUser));
-            setUser(updatedUser);
-          } else {
-            setUser(parsedUser);
-          }
-        } catch (jwtError) {
-          // If JWT cannot be decoded, just use stored user
-          console.warn('Could not decode JWT token on load:', jwtError);
-          setUser(parsedUser);
-        }
-
-        setIsAuthenticated(true);
-        // initialize accountType and organizationId from storage (if present)
-        const storedAccountType = localStorage.getItem('accountType');
-        const storedOrgId = localStorage.getItem('organizationId');
-        if (storedAccountType === 'organization') setAccountType('organization');
-        else setAccountType('user');
-        setOrganizationId(storedOrgId || null);
-        try {
-          const storedOrgDetail = localStorage.getItem('organizationDetail');
-          setOrganizationDetail(storedOrgDetail ? JSON.parse(storedOrgDetail) : null);
-        } catch {
-          setOrganizationDetail(null);
-        }
-
-        // Verify session in background
-       fetch(API_ENDPOINTS.AUTH.STATUS.replace('/status', '/me'), {
-  headers: { 'Authorization': `Bearer ${token}` },
-  cache: 'no-store'
-}).then(async (res) => {
-
-  if (res.status === 401 || res.status === 403) {
-
-    const isPublicRoute =
-      window.location.pathname.startsWith('/public-sign');
-
-    if (isPublicRoute) return;
-
-    console.warn('Session is invalid or revoked, logging out.');
-
-    window.dispatchEvent(
-      new CustomEvent('app:auth-logout')
-    );
-  }
-
-}).catch(() => {});
-
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('userData');
+  const hydrateFromSession = async () => {
+    clearLegacyAuthStorage();
+    try {
+      const res = await fetch(API_ENDPOINTS.AUTH.ME, withAuthFetch({ cache: 'no-store' }));
+      if (!res.ok) {
+        setUser(null);
+        setIsAuthenticated(false);
+        return;
       }
+      const body = await res.json();
+      const u = body?.data;
+      if (!u?.id && !u?._id) {
+        setUser(null);
+        setIsAuthenticated(false);
+        return;
+      }
+      setUser(mapApiUserToState(u));
+      setIsAuthenticated(true);
+      const storedAccountType = sessionStorage.getItem('accountType');
+      setAccountType(storedAccountType === 'organization' ? 'organization' : 'user');
+      setOrganizationId(sessionStorage.getItem('organizationId') || null);
+      try {
+        const storedOrgDetail = sessionStorage.getItem('organizationDetail');
+        setOrganizationDetail(storedOrgDetail ? JSON.parse(storedOrgDetail) : null);
+      } catch {
+        setOrganizationDetail(null);
+      }
+    } catch {
+      setUser(null);
+      setIsAuthenticated(false);
     }
   };
 
-  // Check for existing authentication on component mount, window focus, and periodically
   useEffect(() => {
-    hydrateFromLocalStorage();
-    setLoading(false);
+    hydrateFromSession().finally(() => setLoading(false));
 
     const checkSession = () => {
-      const token = localStorage.getItem('accessToken');
-      if (token && document.visibilityState === 'visible') {
-  fetch(API_ENDPOINTS.AUTH.STATUS.replace('/status', '/me'), {
-    headers: { 'Authorization': `Bearer ${token}` },
-    cache: 'no-store'
-  }).then(async (res) => {
-
-    if (res.status === 401 || res.status === 403) {
-
-      const isPublicRoute =
-        window.location.pathname.startsWith('/public-sign');
-
-      if (isPublicRoute) return;
-
-      console.warn('Session is invalid or revoked, logging out.');
-
-      window.dispatchEvent(
-        new CustomEvent('app:auth-logout')
-      );
-    }
-
-  }).catch(() => {});
-}
+      if (!isAuthenticated || document.visibilityState !== 'visible') return;
+      fetch(API_ENDPOINTS.AUTH.ME, withAuthFetch({ cache: 'no-store' })).then(async (res) => {
+        if (res.status === 401 || res.status === 403) {
+          const isPublicRoute = window.location.pathname.startsWith('/public-sign');
+          if (isPublicRoute) return;
+          console.warn('Session is invalid or revoked, logging out.');
+          window.dispatchEvent(new CustomEvent('app:auth-logout'));
+        }
+      }).catch(() => {});
     };
 
     // Check on focus and visibility change
@@ -216,9 +168,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       window.removeEventListener('focus', checkSession);
       clearInterval(intervalId);
     };
-  }, []);
+  }, [isAuthenticated]);
 
-  // Listen for global auth logout events (e.g. from 401 interceptors or session revocation)
   useEffect(() => {
     const handleGlobalLogout = () => {
       logout();
@@ -229,10 +180,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // Also hydrate again when the extension syncs auth into localStorage.
+  // Re-check session when extension signals auth sync (cookie-based).
   useEffect(() => {
     const handler = () => {
-      hydrateFromLocalStorage();
+      hydrateFromSession();
     };
     window.addEventListener('dns-extension-auth-synced', handler as EventListener);
     return () => {
@@ -247,17 +198,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (user) {
         const updatedUser = { ...user, plan: planName };
         setUser(updatedUser);
-        // Also update localStorage
-        const userData = localStorage.getItem('userData');
-        if (userData) {
-          try {
-            const parsedUser = JSON.parse(userData);
-            parsedUser.plan = planName;
-            localStorage.setItem('userData', JSON.stringify(parsedUser));
-          } catch (err) {
-            console.warn('Failed to update userData:', err);
-          }
-        }
       }
     };
 
@@ -317,51 +257,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const applyLoginPayload = async (data: any) => {
-    let fullname = '';
-    let phone = data.phone || '';
-    let address = '';
-    let company = '';
-    let email = '';
-    try {
-      const token = data.token;
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        fullname = payload.data?.fullname || payload.fullname || '';
-        phone = payload.data?.phone || payload.phone || phone;
-        address = payload.data?.address || payload.address || '';
-        company = payload.data?.company || payload.company || '';
-        email = payload.data?.email || payload.email || '';
-      }
-    } catch (jwtError) {
-      console.warn('Could not decode JWT token:', jwtError);
+    clearLegacyAuthStorage();
+    if (data?.token) {
+      setMemoryAccessToken(data.token);
     }
-    const initialUserData = {
-      id: data.user_id,
-      email: data.email || email || '',
-      fullname,
+    const initialUserData: User = {
+      id: String(data.user_id || data.id || ''),
+      email: data.email || '',
+      fullname: data.fullname || data.email?.split('@')[0] || '',
       type: data.type || 'user',
       plan: data.plan || 'free',
-      phone,
-      address: data.address || address || '',
-      company: data.company || company || '',
-      isFirstLogin: data.isFirstLogin
+      phone: data.phone || '',
+      address: data.address || '',
+      company: data.company || '',
+      isFirstLogin: data.isFirstLogin,
     };
-    localStorage.setItem('accessToken', data.token);
-    localStorage.setItem('userData', JSON.stringify(initialUserData));
-    localStorage.setItem('accountType', 'user');
-    localStorage.removeItem('organizationId');
+    persistAccountContext('user');
     localStorage.removeItem('currentSupportTicket');
     setAccountType('user');
     setOrganizationId(null);
+    setOrganizationDetail(null);
     setUser(initialUserData);
     setIsAuthenticated(true);
 
     try {
       const subscriptionPlan = await SubscriptionService.getUserPlan();
       SubscriptionStorage.savePlan(subscriptionPlan);
-      const updatedUserData = { ...initialUserData, plan: subscriptionPlan.name || subscriptionPlan.type || 'free' };
-      localStorage.setItem('userData', JSON.stringify(updatedUserData));
-      setUser(updatedUserData);
+      setUser({
+        ...initialUserData,
+        plan: subscriptionPlan.name || subscriptionPlan.type || 'free',
+      });
     } catch (error) {
       console.error('Error fetching subscription plan after verify:', error);
     }
@@ -371,11 +296,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       assertSecureApiUrl(API_ENDPOINTS.AUTH.LOGIN, 'Auth API');
       const deviceId = getOrCreateDeviceId();
-      const resp = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
+      const resp = await fetch(API_ENDPOINTS.AUTH.LOGIN, withAuthFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, deviceId, deviceLabel: 'browser', recaptchaToken }),
-      });
+      }));
 
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
@@ -407,72 +332,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         throw new Error(data?.message || 'Login failed');
       }
-      
-      // Decode JWT token to get fullname, phone, address, company
-      let fullname = email.split('@')[0]; // fallback
-      let phone: string | undefined = undefined;
-      let address: string | undefined = undefined;
-      let company: string | undefined = undefined;
-      
-      try {
-        const token = data.token;
-        if (token) {
-          // Decode JWT token (without verification for client-side)
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          fullname = payload.data?.fullname || payload.fullname || fullname;
-          phone = payload.data?.phone || payload.phone || phone;
-          address = payload.data?.address || payload.address || address;
-          company = payload.data?.company || payload.company || company;
-        }
-      } catch (jwtError) {
-        console.warn('Could not decode JWT token:', jwtError);
-        // Keep the fallback fullname
-      }
 
-      // Get address and company from API response or JWT, with fallback to empty string
-      const userAddress = data.address || address || '';
-      const userCompany = data.company || company || '';
-
-      // Store authentication data, including isFirstLogin
-      const initialUserData = {
-        id: data.user_id,
-        email: email,
-        fullname: fullname,
-        type: data.type,
-        plan: data.plan || 'free',
-        phone: data.phone || phone || '',
-        address: userAddress,
-        company: userCompany,
-        isFirstLogin: data.isFirstLogin
-      };
-
-      localStorage.setItem('accessToken', data.token);
-      localStorage.setItem('userData', JSON.stringify(initialUserData));
-      // default to user account after login
-      localStorage.setItem('accountType', 'user');
-      localStorage.removeItem('organizationId');
-      localStorage.removeItem('currentSupportTicket');
-      setAccountType('user');
-      setOrganizationId(null);
-
-      setUser(initialUserData);
-      setIsAuthenticated(true);
-
-      // Fetch and store subscription plan data right after login
-      try {
-        const subscriptionPlan = await SubscriptionService.getUserPlan();
-        SubscriptionStorage.savePlan(subscriptionPlan);
-        
-        // Update user plan in userData localStorage and state, preserving all existing fields
-        const updatedUserData = {
-          ...initialUserData,
-          plan: subscriptionPlan.name || subscriptionPlan.type || 'free'
-        };
-        localStorage.setItem('userData', JSON.stringify(updatedUserData));
-        setUser(updatedUserData);
-      } catch (error) {
-        console.error('Error fetching subscription plan after login:', error);
-      }
+      await applyLoginPayload({ ...data, email });
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -483,7 +344,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const deviceId = getOrCreateDeviceId();
       const ref = options?.referrerUserId?.trim();
-      const resp = await fetch(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, {
+      const resp = await fetch(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, withAuthFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -492,7 +353,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           deviceLabel: 'browser',
           ...(ref ? { ref } : {}),
         }),
-      });
+      }));
 
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
@@ -588,20 +449,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    // Clear authentication data
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('userData');
-    localStorage.removeItem('accountType');
-    localStorage.removeItem('organizationId');
-    localStorage.removeItem('organizationDetail');
+    fetch(API_ENDPOINTS.AUTH.LOGOUT, withAuthFetch({ method: 'POST' })).catch(() => {});
+
+    clearLegacyAuthStorage();
+    clearAccountContext();
     localStorage.removeItem('currentSupportTicket');
-    
-    // Clear subscription data
+
     SubscriptionStorage.clearPlan();
-    
+
     setUser(null);
     setIsAuthenticated(false);
     setOrganizationDetail(null);
+    setAccountType('user');
+    setOrganizationId(null);
   };
 
   const switchAccount = async (newAccountType: 'user' | 'organization', orgId?: string | null) => {
@@ -616,74 +476,65 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (resp && resp.data) {
         const d: any = resp.data;
-
-        // Set account type
         const canonicalAccountType = newAccountType;
-        localStorage.setItem('accountType', canonicalAccountType);
         setAccountType(canonicalAccountType === 'organization' ? 'organization' : 'user');
         const respOrgRoot = d?.organization || null;
 
-        let organizationDetail: any = null;
+        let nextOrganizationDetail: any = null;
         let resolvedOrgId: string | null = null;
 
         if (respOrgRoot) {
-          // Case: nested wrapper: { organization: { organization: {...}, access: {...} } }
           if (respOrgRoot.organization && typeof respOrgRoot.organization === 'object') {
-            organizationDetail = { ...respOrgRoot.organization };
-            // if access/permissions provided alongside wrapper, attach them
-            if (respOrgRoot.access) organizationDetail.access = respOrgRoot.access;
-            if (respOrgRoot.permissions) organizationDetail.permissions = respOrgRoot.permissions;
+            nextOrganizationDetail = { ...respOrgRoot.organization };
+            if (respOrgRoot.access) nextOrganizationDetail.access = respOrgRoot.access;
+            if (respOrgRoot.permissions) nextOrganizationDetail.permissions = respOrgRoot.permissions;
           } else {
-            // Case: merged shape or plain org object which may already include access/permissions
-            organizationDetail = { ...respOrgRoot };
+            nextOrganizationDetail = { ...respOrgRoot };
           }
         } else if (orgId) {
-          organizationDetail = { id: orgId };
+          nextOrganizationDetail = { id: orgId };
         }
 
-        if (organizationDetail) {
-          // Normalize id field
-          resolvedOrgId = organizationDetail._id || organizationDetail.id || null;
+        if (nextOrganizationDetail) {
+          resolvedOrgId = nextOrganizationDetail._id || nextOrganizationDetail.id || null;
           dispatchedOrgId = resolvedOrgId || dispatchedOrgId;
-          dispatchedOrgDetail = organizationDetail;
-          // Persist full organization detail (including access/permissions if present)
-          localStorage.setItem('organizationDetail', JSON.stringify(organizationDetail));
-          if (resolvedOrgId) localStorage.setItem('organizationId', resolvedOrgId);
+          dispatchedOrgDetail = nextOrganizationDetail;
+          persistAccountContext(canonicalAccountType, resolvedOrgId, nextOrganizationDetail);
           setOrganizationId(resolvedOrgId);
-          setOrganizationDetail(organizationDetail);
+          setOrganizationDetail(nextOrganizationDetail);
         } else if (canonicalAccountType === 'user') {
-          localStorage.removeItem('organizationDetail');
-          localStorage.removeItem('organizationId');
+          persistAccountContext('user');
           setOrganizationId(null);
           setOrganizationDetail(null);
         }
-        // If no organizationDetail but orgId provided, ensure orgId persisted earlier in fallback branch
       } else {
-        // Local-only switch
-        localStorage.setItem('accountType', newAccountType);
+        persistAccountContext(newAccountType, orgId || null, organizationDetail || null);
         setAccountType(newAccountType);
         if (orgId) {
-          localStorage.setItem('organizationId', orgId);
           setOrganizationId(orgId);
           dispatchedOrgId = orgId;
           dispatchedOrgDetail = organizationDetail || null;
         } else if (newAccountType === 'user') {
-          localStorage.removeItem('organizationId');
           setOrganizationId(null);
           dispatchedOrgId = null;
           dispatchedOrgDetail = null;
         }
       }
 
-      // Notify other parts of the app with resolved org info
-      try { window.dispatchEvent(new CustomEvent('account-switched', { detail: { accountType: newAccountType, organizationId: (typeof dispatchedOrgId !== 'undefined' ? dispatchedOrgId : orgId || null), organizationDetail: (typeof dispatchedOrgDetail !== 'undefined' ? dispatchedOrgDetail : null) } })); } catch {}
+      try {
+        window.dispatchEvent(new CustomEvent('account-switched', {
+          detail: {
+            accountType: newAccountType,
+            organizationId: dispatchedOrgId,
+            organizationDetail: dispatchedOrgDetail,
+          },
+        }));
+      } catch {}
     } catch (err) {
       console.error('Failed to switch account:', err);
-      // best-effort local update
-      localStorage.setItem('accountType', newAccountType);
+      persistAccountContext(newAccountType, orgId || null, organizationDetail || null);
       setAccountType(newAccountType);
       if (orgId) {
-        localStorage.setItem('organizationId', orgId);
         setOrganizationId(orgId);
       }
     }
@@ -716,7 +567,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       body: JSON.stringify({ signupToken, emailOtp: emailOtp.trim() }),
     });
     const data = unwrapAuthJson(raw);
-    if (data?.token) {
+    if (data?.user_id || data?.token) {
       await applyLoginPayload(data);
       return {
         emailVerified: true,
@@ -751,7 +602,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       body: JSON.stringify({ signupToken, phoneOtp: phoneOtp.trim() }),
     });
     const data = unwrapAuthJson(raw);
-    if (data?.token) {
+    if (data?.user_id || data?.token) {
       await applyLoginPayload(data);
       return {
         emailVerified: true,

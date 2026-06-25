@@ -1,6 +1,8 @@
 import { apiRequest } from './api';
 
 // Base URL for document service
+import { withAuthFetch } from '../utils/authSession';
+
 const DOCUMENT_API_BASE_URL = import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http://localhost:2102';
 
 export interface PDFShareRecipient {
@@ -147,15 +149,10 @@ export const pdfShareService = {
     const formData = new FormData();
     formData.append('pdf', file);
 
-    const token = localStorage.getItem('accessToken');
-    
-    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/upload`, {
+    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/upload`, withAuthFetch({
       method: 'POST',
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
       body: formData,
-    });
+    }));
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
@@ -169,15 +166,13 @@ export const pdfShareService = {
    * Create share link and send emails
    */
   async createShareAndSendEmails(request: PDFShareRequest): Promise<PDFShareResponse> {
-    const token = localStorage.getItem('accessToken');
-    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/share`, {
+    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/share`, withAuthFetch({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(request),
-    });
+    }));
 
     // Pass through detailed credit errors
     if (!response.ok) {
@@ -300,18 +295,12 @@ export const pdfShareService = {
     success: boolean;
     data: Comment[];
   }> {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      throw new Error('Authentication required for loading comments');
-    }
-
-    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/comments/${shareToken}`, {
+    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/comments/${shareToken}`, withAuthFetch({
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
-    });
+    }));
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to load comments' }));
@@ -361,19 +350,13 @@ export const pdfShareService = {
     message: string;
     data: Comment;
   }> {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      throw new Error('Authentication required for admin comments');
-    }
-
-    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/admin-comment/${shareToken}`, {
+    const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/pdf-share/admin-comment/${shareToken}`, withAuthFetch({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(comment),
-    });
+    }));
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to add admin comment' }));

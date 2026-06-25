@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/environment';
+import { getAccountContextHeaders, withAuthFetch } from '../utils/authSession';
 
 // Base API configuration for document service
 const DOCUMENT_API_BASE_URL = import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http://localhost:2102';
@@ -19,27 +20,20 @@ export const API_ENDPOINTS = {
     SIGNUP_SEND_PHONE_OTP: `${API_CONFIG.BASE_URL}/signup/send-phone-otp`,
     SIGNUP_VERIFY_PHONE_OTP: `${API_CONFIG.BASE_URL}/signup/verify-phone-otp`,
     STATUS: `${API_CONFIG.BASE_URL}/api/auth/status`,
+    ME: `${API_CONFIG.BASE_URL}/api/auth/me`,
+    LOGOUT: `${API_CONFIG.BASE_URL}/api/auth/logout`,
   },
 };
 
 export const apiRequest = async (url: string, options: RequestInit = {}) => {
-  // Use standard access token (do not auto-swap tokens on account switch)
-  const token = localStorage.getItem('accessToken');
-  
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...(localStorage.getItem('accountType') ? { 'X-Account-Type': localStorage.getItem('accountType')! } : {}),
-    ...(localStorage.getItem('organizationId') ? { 'X-Organization-Id': localStorage.getItem('organizationId')! } : {}),
-  };
-
-  const config: RequestInit = {
+  const config: RequestInit = withAuthFetch({
     ...options,
     headers: {
-      ...defaultHeaders,
-      ...options.headers,
+      'Content-Type': 'application/json',
+      ...getAccountContextHeaders(),
+      ...(options.headers || {}),
     },
-  };
+  });
 
   const response = await fetch(url, config);
   
@@ -51,55 +45,12 @@ export const apiRequest = async (url: string, options: RequestInit = {}) => {
   return response.json();
 };
 
-// Helper function to get auth token for document service
-const getDocumentAuthToken = (): string | null => {
-  const acct = localStorage.getItem('accountType');
-  const token = (acct === 'organization'
-    ? (localStorage.getItem('orgAccessToken') || localStorage.getItem('accessToken'))
-    : localStorage.getItem('accessToken')) ||
-    // localStorage.getItem('token') || // Check for generic token
-    localStorage.getItem('userData') || // Check for userToken
-    (() => {
-      
-      // Check if token is stored in userData
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        try {
-          const parsed = JSON.parse(userData);
-          return parsed.token || parsed.accessToken || parsed.userToken || null;
-        } catch (error) {
-          console.error('Error parsing userData:', error);
-          return null;
-        }
-      }
-      return null;
-    })();
-
-  if (!token) {
-    console.warn('No authentication token found. Checked locations:', [
-      'localStorage.accessToken',
-      'localStorage.token', 
-      'localStorage.userToken',
-      'localStorage.userData.token',
-      'localStorage.userData.accessToken',
-      'localStorage.userData.userToken'
-    ]);
-  }
-
-  return token;
-};
-
-// Helper function to make authenticated requests to document service
+// Document service uses httpOnly cookie auth (M14).
 const makeDocumentRequest = async (
   endpoint: string,
   options: RequestInit = {},
   isFormData: boolean = false
 ): Promise<any> => {
-  const token = getDocumentAuthToken();
-  
-  if (!token) {
-    throw new Error('Authentication token not found');
-  }
 
   // Check for document upload/share and validate credits
   const isDocumentUpload = options.method === 'POST' && endpoint.includes('/upload');
@@ -222,19 +173,15 @@ const makeDocumentRequest = async (
   }
 
   const url = `${DOCUMENT_API_BASE_URL}${endpoint}`;
-  
-  const headers: HeadersInit = {
-    'Authorization': `Bearer ${token}`,
-    ...(localStorage.getItem('accountType') ? { 'X-Account-Type': localStorage.getItem('accountType')! } : {}),
-    ...(localStorage.getItem('organizationId') ? { 'X-Organization-Id': localStorage.getItem('organizationId')! } : {}),
-    ...(!isFormData && { 'Content-Type': 'application/json' }),
-    ...options.headers,
-  };
 
-  const config: RequestInit = {
+  const config: RequestInit = withAuthFetch({
     ...options,
-    headers,
-  };
+    headers: {
+      ...getAccountContextHeaders(),
+      ...(!isFormData && { 'Content-Type': 'application/json' }),
+      ...(options.headers || {}),
+    },
+  });
 
   try {
     const response = await fetch(url, config);
@@ -389,20 +336,12 @@ export const documentAPI = {
   // Download document
   downloadDocument: async (id: string) => {
     try {
-      // Get the authentication token
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      // Make a POST request to the download endpoint
-      const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/documents/${id}/download`, {
+      const response = await fetch(`${DOCUMENT_API_BASE_URL}/api/documents/${id}/download`, withAuthFetch({
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-      });
+      }));
 
       if (!response.ok) {
         if (response.status === 404) {

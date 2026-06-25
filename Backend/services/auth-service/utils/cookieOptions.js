@@ -29,6 +29,7 @@ const getAccessTokenCookieOptions = (req, expireIn = DEFAULT_ACCESS_TOKEN_EXPIRY
   httpOnly: true,
   secure: isSecureRequest(req),
   sameSite: 'lax',
+  path: '/',
   maxAge: parseExpiryToMs(expireIn),
 });
 
@@ -36,6 +37,7 @@ const getAdminAccessTokenCookieOptions = (req, expireIn = process.env.ADMIN_ACCE
   httpOnly: true,
   secure: isSecureRequest(req),
   sameSite: 'strict',
+  path: '/',
   maxAge: parseExpiryToMs(expireIn),
 });
 

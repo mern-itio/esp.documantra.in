@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { login, googleLogin, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoverySingleAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp, sendRecoveryEmailOtp, verifyRecoveryEmailOtp, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, regenerateAuthenticatorBackupCodes, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, changePassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, getSecurityPolicy, verifyActiveSession, validateSessionEndpoint } = require('../controllers/authController');
+const { login, googleLogin, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoverySingleAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp, sendRecoveryEmailOtp, verifyRecoveryEmailOtp, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, regenerateAuthenticatorBackupCodes, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, changePassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, getSecurityPolicy, verifyActiveSession, validateSessionEndpoint, logout } = require('../controllers/authController');
 const { getMyReferral, listRewards, onFirstDocumentSentInternal } = require('../controllers/referralController');
 const {adminLogin, adminForgotPassword, adminResetPassword, adminChangePassword} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail,insertNotifications,getNotifications,markNotificationReadById,markAllNotificationAsRead } = require('../controllers/mainController');
@@ -57,6 +57,7 @@ router.post('/change-password', verifyJWT(), verifyActiveSession, changePassword
 router.get('/api/user-details/:id', userDetails);
 router.get('/api/find-user/:email', findUserByEmail);
 router.get('/api/auth/me', verifyJWT(), verifyActiveSession, getMe);
+router.post('/api/auth/logout', logout);
 router.put('/api/auth/profile', verifyJWT(), verifyActiveSession, updateProfile);
 router.post('/api/auth/profile/email/send-otp', verifyJWT(), verifyActiveSession, otpLimiter, sendProfileEmailOtp);
 router.post('/api/auth/profile/email/verify-otp', verifyJWT(), verifyActiveSession, verifyProfileEmailOtp);

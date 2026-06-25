@@ -11,7 +11,7 @@ const SIGNUP_REFERRER_STORAGE_KEY = 'signupReferrerUserId'
 type LoginStep = 'login' | 'verify'
 
 const LoginPage = () => {
-  const { login, googleLogin, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoveryAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp } = useAuth()
+  const { login, googleLogin, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoveryAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp, isAuthenticated, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
@@ -80,30 +80,13 @@ const LoginPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // If a valid token/userData already exists (e.g. synced from the Chrome extension),
-  // skip the login form and send the user to their workspace.
+  // If already authenticated (httpOnly cookie session), skip login form.
   useEffect(() => {
-    const attemptAutoRedirect = () => {
-      try {
-        const token = localStorage.getItem('accessToken')
-        const userData = localStorage.getItem('userData')
-        if (token && userData) {
-          const returnTo = (location.state as any)?.returnTo || '/dashboard'
-          navigate(returnTo)
-        }
-      } catch {
-        // ignore localStorage errors
-      }
-    }
-
-    attemptAutoRedirect()
-
-    const handler = () => attemptAutoRedirect()
-    window.addEventListener('dns-extension-auth-synced', handler as EventListener)
-    return () => {
-      window.removeEventListener('dns-extension-auth-synced', handler as EventListener)
-    }
-  }, [navigate, location.state])
+    if (authLoading) return;
+    if (!isAuthenticated) return;
+    const returnTo = (location.state as any)?.returnTo || '/dashboard';
+    navigate(returnTo);
+  }, [authLoading, isAuthenticated, navigate, location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -399,7 +382,7 @@ const LoginPage = () => {
       setEmailVerified(st.emailVerified)
       setPhoneVerified(st.phoneVerified)
       setCanSendPhoneOtp(st.canSendPhoneOtp)
-      if (st.loggedIn || localStorage.getItem('accessToken')) {
+      if (st.loggedIn) {
         const returnTo = (location.state as any)?.returnTo || '/dashboard'
         navigate(returnTo)
       }

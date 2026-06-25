@@ -11,6 +11,7 @@ const bcrypt = require('bcrypt');
 const axios = require('axios');
 const { OAuth2Client } = require('google-auth-library');
 const { getAccessTokenCookieOptions } = require('../utils/cookieOptions');
+const { extractAccessToken } = require('@draftnsign/auth-lib');
 const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/passwordHistory');
 const { enforceConcurrentSessionLimit, getMaxConcurrentSessions } = require('../utils/sessionLimits');
 const { shouldRequireTwoFaSetup, isLoginTwoFaEnforcementEnabled, getTwoFaGraceDays } = require('../utils/twoFaPolicy');
@@ -1295,7 +1296,7 @@ const switchAccount = async (req, res) => {
       //post request to organization service with userid in body and token in header
       const orgResp = await axios.get(`${process.env.ORGANIZATION_SERVICE_URL}/api/organization/details-and-permission/${organizationId}`,{
         headers: {
-          Authorization: req.headers.authorization  
+          Authorization: req.headers.authorization || (req.authToken ? `Bearer ${req.authToken}` : undefined),
         }
       });
       console.log("Organization Service Response: ",orgResp.data);
@@ -1890,8 +1891,7 @@ const validateSessionEndpoint = async (req, res) => {
   // This endpoint is meant to be called by other microservices via the auth-lib.
   // IMPORTANT: We decode the JWT locally here instead of using the auth-lib verifyJWT middleware
   // to prevent an infinite loop (where verifyJWT calls this endpoint, which uses verifyJWT, and so on).
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.split(' ')[1];
+  const token = extractAccessToken(req, 'user');
   
   if (!token) {
     return res.status(200).json({ valid: true }); // Fallback
@@ -1926,6 +1926,34 @@ const validateSessionEndpoint = async (req, res) => {
     return res.status(200).json({ valid: true });
   } catch (error) {
     return res.status(500).json({ valid: false, message: 'Server error' });
+  }
+};
+
+const logout = async (req, res) => {
+  try {
+    const token = extractAccessToken(req, 'user');
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        const userId = decoded?.data?.id || decoded?.id;
+        const sessionId = decoded?.data?.sessionId || decoded?.sessionId;
+        if (userId && sessionId) {
+          const user = await User.findById(userId);
+          if (user?.activeSessions?.length) {
+            user.activeSessions = user.activeSessions.filter((s) => s.sessionId !== sessionId);
+            await user.save();
+          }
+        }
+      } catch (tokenErr) {
+        // Cookie may be expired; still clear it below.
+      }
+    }
+    res.clearCookie('accessToken', { ...getAccessTokenCookieOptions(req), maxAge: 0 });
+    return res.status(200).json({ status: 200, message: 'Logged out successfully' });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.clearCookie('accessToken', { ...getAccessTokenCookieOptions(req), maxAge: 0 });
+    return res.status(200).json({ status: 200, message: 'Logged out successfully' });
   }
 };
 
@@ -1967,4 +1995,5 @@ module.exports = {
   getSecurityPolicy,
   verifyActiveSession,
   validateSessionEndpoint,
+  logout,
 };

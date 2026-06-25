@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../components/AuthService/AuthContext';
 import { SUPPORT_SERVICE_URL } from '../services/supportService';
+import { getMemoryAccessToken } from '../utils/authSession';
 import toast from 'react-hot-toast';
 
 interface Message {
@@ -84,7 +85,7 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
-    const token = localStorage.getItem('accessToken');
+    const token = getMemoryAccessToken();
     if (!token) return;
 
     const newSocket = io(SUPPORT_SERVICE_URL, {

@@ -8,8 +8,10 @@ import Badge from '../../components/DocumentService/ui/badge';
 import { useDocumentStore } from '../../components/common/store/documentStore';
 import PDFShareModal from '../../components/DocumentService/sharing/PDFShareModal';
 import { cn } from '../../components/common/lib/utils';
+import { useAuth } from '../../components/AuthService/AuthContext';
 
 const SharedPDFPage: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const [sharedDocuments, setSharedDocuments] = useState<SharedDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -294,10 +296,7 @@ const SharedPDFPage: React.FC = () => {
   const loadComments = async (shareToken: string) => {
     try {
       // Check if user is logged in and try authenticated API first
-      const token = localStorage.getItem('accessToken');
-
-
-      if (token) {
+      if (isAuthenticated) {
         try {
           const response = await pdfShareService.getSharedDocumentCommentsAuth(shareToken);
           if (response.success) {
@@ -326,15 +325,11 @@ const SharedPDFPage: React.FC = () => {
       const isAdmin = selectedDocument.isOwner;
 
       if (isAdmin) {
-        // Check if token exists
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-          console.error('No token found for admin comment');
+        if (!isAuthenticated) {
+          console.error('Not authenticated for admin comment');
           alert('Please log in again to add admin comments');
           return;
         }
-
-
 
         // Add admin comment
         const response = await pdfShareService.addAdminComment(selectedDocument.shareToken, {

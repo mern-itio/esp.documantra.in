@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAccountContextHeaders } from '../utils/authSession';
 import type { 
   DocumentTrackingResponse, 
   TrackedDocumentsResponse,
@@ -18,15 +19,15 @@ const API_BASE_URL = import.meta.env?.VITE_PDF_SERVICE_URL || 'http://localhost:
 // Create axios instance with interceptors
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
 });
 
-// Add request interceptor to include JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    const accountHeaders = getAccountContextHeaders();
+    Object.entries(accountHeaders).forEach(([key, value]) => {
+      config.headers[key] = value;
+    });
     return config;
   },
   (error) => {

@@ -4,6 +4,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { useNavigate } from 'react-router-dom';
 import { Crown, Edit2, X, XCircle } from 'lucide-react';
 import { authApi } from '../../services/apiHelper';
+import { setMemoryAccessToken } from '../../utils/authSession';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 
@@ -121,8 +122,7 @@ const UserProfile: React.FC = () => {
       });
       
       if (profileResp.data?.token) {
-        localStorage.setItem('accessToken', profileResp.data.token);
-        localStorage.setItem('userData', JSON.stringify({ ...user, ...profileResp.data.user }));
+        setMemoryAccessToken(profileResp.data.token);
         window.dispatchEvent(new Event('dns-extension-auth-synced'));
       }
 
@@ -161,10 +161,7 @@ const UserProfile: React.FC = () => {
       if (otpModal.type === 'email') {
         const resp = await authApi.post('/api/auth/profile/email/verify-otp', { otp: otpModal.otp });
         if (resp.data?.token) {
-          localStorage.setItem('accessToken', resp.data.token);
-          const currentUser = JSON.parse(localStorage.getItem('userData') || '{}');
-          currentUser.email = formData.email;
-          localStorage.setItem('userData', JSON.stringify(currentUser));
+          setMemoryAccessToken(resp.data.token);
           window.dispatchEvent(new Event('dns-extension-auth-synced'));
         }
         
@@ -183,10 +180,7 @@ const UserProfile: React.FC = () => {
       } else if (otpModal.type === 'phone') {
         const resp = await authApi.post('/api/auth/profile/phone/verify-otp', { otp: otpModal.otp });
         if (resp.data?.token) {
-          localStorage.setItem('accessToken', resp.data.token);
-          const currentUser = JSON.parse(localStorage.getItem('userData') || '{}');
-          currentUser.phone = formData.phone;
-          localStorage.setItem('userData', JSON.stringify(currentUser));
+          setMemoryAccessToken(resp.data.token);
           window.dispatchEvent(new Event('dns-extension-auth-synced'));
         }
         const recoveryEmailChanged = formData.recoveryEmail.trim() !== (recoveryEmail || '');

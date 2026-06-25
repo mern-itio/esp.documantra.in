@@ -1,54 +1,22 @@
+import { withAuthFetch } from '../utils/authSession';
+
 const PDF_API_BASE_URL = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:2104';
 
-// Helper function to get auth token
-const getAuthToken = (): string | null => {
-  const token = 
-    localStorage.getItem('accessToken') || 
-    (() => {
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        try {
-          const parsed = JSON.parse(userData);
-          return parsed.token || parsed.accessToken || parsed.userToken || null;
-        } catch (error) {
-          console.error('Error parsing userData:', error);
-          return null;
-        }
-      }
-      return null;
-    })();
-
-  if (!token) {
-    console.warn('No authentication token found for PDF service');
-  }
-
-  return token;
-};
-
-// Helper function to make authenticated requests to PDF service
+// Helper function to make authenticated requests to PDF service (httpOnly cookie)
 const makePDFRequest = async (
   endpoint: string,
   options: RequestInit = {},
   isFormData: boolean = false
 ): Promise<any> => {
-  const token = getAuthToken();
-  
-  if (!token) {
-    throw new Error('Authentication token not found');
-  }
-
   const url = `${PDF_API_BASE_URL}${endpoint}`;
-  
-  const headers: HeadersInit = {
-    'Authorization': `Bearer ${token}`,
-    ...(!isFormData && { 'Content-Type': 'application/json' }),
-    ...options.headers,
-  };
 
-  const config: RequestInit = {
+  const config: RequestInit = withAuthFetch({
     ...options,
-    headers,
-  };
+    headers: {
+      ...(!isFormData && { 'Content-Type': 'application/json' }),
+      ...(options.headers || {}),
+    },
+  });
 
   try {
     const response = await fetch(url, config);
@@ -237,12 +205,7 @@ export const workflowExecutionAPI = {
 
   // Download workflow execution result
   downloadWorkflowResult: async (executionId: string) => {
-    const token = localStorage.getItem('accessToken');
-    const response = await fetch(`${PDF_API_BASE_URL}/workflows/executions/${executionId}/download`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    const response = await fetch(`${PDF_API_BASE_URL}/workflows/executions/${executionId}/download`, withAuthFetch({}));
 
     if (!response.ok) {
       throw new Error('Failed to download workflow result');

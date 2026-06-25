@@ -26,8 +26,8 @@ export const useAuthInitialization = () => {
       setCurrentUser(userForStore);
       // Sync account mode into store
       try {
-        const acct = localStorage.getItem('accountType') === 'organization' ? 'organization' : 'user';
-        const orgId = localStorage.getItem('organizationId') || null;
+        const acct = sessionStorage.getItem('accountType') === 'organization' ? 'organization' : 'user';
+        const orgId = sessionStorage.getItem('organizationId') || null;
         setAccount(acct as 'user' | 'organization', orgId);
       } catch {}
     }

@@ -1,4 +1,6 @@
 const jwt = require('jsonwebtoken');
+const { extractAccessToken } = require('./tokenExtractor');
+
 /**
  * Flexible JWT verification middleware
  * @param {'user' | 'admin'} type - specify which token type to verify
@@ -6,9 +8,8 @@ const jwt = require('jsonwebtoken');
 const verifyJWT = (type = 'user') => {
   return async (req, res, next) => {
     try {
-      const authHeader = req.headers?.authorization;
-      const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-      
+      const token = extractAccessToken(req, type);
+
       if (!token) {
         return res.status(401).json({
           status: 401,
@@ -78,6 +79,7 @@ const verifyJWT = (type = 'user') => {
 
       // Attach decoded data to request object
       req.user = decoded;
+      req.authToken = token;
       req.userType = type;
 
       // Extract sessionId if it exists in the token
@@ -136,3 +138,5 @@ const verifyJWT = (type = 'user') => {
 };
 
 module.exports = verifyJWT;
+module.exports.extractAccessToken = extractAccessToken;
+module.exports.getCookieValue = require('./tokenExtractor').getCookieValue;

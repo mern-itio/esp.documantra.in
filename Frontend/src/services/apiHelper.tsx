@@ -2,60 +2,31 @@ import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import { SubscriptionStorage } from './subscriptionService';
 import { resolveServiceUrl } from '../utils/secureApiUrl';
+import { getAccountContextHeaders } from '../utils/authSession';
 
-const createApiInstance = (baseURL: string, serviceName: string, tokenKey: string = 'accessToken'): AxiosInstance => {
+const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance => {
 
   const instance = axios.create({
     baseURL,
     timeout: 60000,
+    withCredentials: true,
     headers: { 'Content-Type': 'application/json' }
   });
 
-  // Request Interceptor
+  // Request Interceptor — JWT is sent via httpOnly cookie (M14), not localStorage.
   instance.interceptors.request.use(async (config) => {
-    // Try multiple localStorage keys to maximize compatibility across auth flows
-    let token: string | null = null;
-    try {
-      const keys = [tokenKey, 'adminToken', 'accessToken', 'userToken', 'token'];
-      for (const k of keys) {
-        const v = localStorage.getItem(k);
-        if (v) { token = v; break; }
-      }
-    } catch {}
-    if (!token) {
-      // Try to read from userData payload if present
-      try {
-        const raw = localStorage.getItem('userData');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          token = parsed?.accessToken || parsed?.token || parsed?.jwt || null;
-        }
-      } catch {}
-    }
-    if (token) {
-      const requestUrl = String(config.url || '');
-      const isPublicEsignRequest =
-        requestUrl.includes('/api/e-sign/public/') ||
-        (typeof window !== 'undefined' &&
-          window.location.pathname.startsWith('/public-sign'));
-      if (!isPublicEsignRequest) {
-        (config.headers as any).Authorization = `Bearer ${token}`;
-      }
-    }
+    const requestUrl = String(config.url || '');
+    const isPublicEsignRequest =
+      requestUrl.includes('/api/e-sign/public/') ||
+      (typeof window !== 'undefined' &&
+        window.location.pathname.startsWith('/public-sign'));
 
-    // Inject account switching headers if present
-    try {
-      const acct = localStorage.getItem('accountType');
-      const orgId = localStorage.getItem('organizationId');
-      const orgDetailRaw = localStorage.getItem('organizationDetail');
-      let orgDetail: any = null;
-      if (orgDetailRaw) {
-        orgDetail = JSON.parse(orgDetailRaw);
-      }
-      if (acct) (config.headers as any)['X-Account-Type'] = acct;
-      if (orgId) (config.headers as any)['X-Organization-Id'] = orgId;
-      if (orgDetail) (config.headers as any)['X-Organization-Owner-Id'] = orgDetail?.createdBy;
-    } catch {}
+    if (!isPublicEsignRequest) {
+      const accountHeaders = getAccountContextHeaders();
+      Object.entries(accountHeaders).forEach(([key, value]) => {
+        (config.headers as any)[key] = value;
+      });
+    }
 
     // Remove Content-Type header for FormData to let browser set it with boundary
     if (config.data instanceof FormData && config.headers) {

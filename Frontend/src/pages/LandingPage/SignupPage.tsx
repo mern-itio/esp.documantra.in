@@ -198,7 +198,7 @@ const SignupPage = () => {
       setEmailVerified(st.emailVerified)
       setPhoneVerified(st.phoneVerified)
       setCanSendPhoneOtp(st.canSendPhoneOtp)
-      if (st.loggedIn || localStorage.getItem('accessToken')) {
+      if (st.loggedIn) {
         try {
           sessionStorage.removeItem(SIGNUP_REFERRER_STORAGE_KEY)
         } catch {
