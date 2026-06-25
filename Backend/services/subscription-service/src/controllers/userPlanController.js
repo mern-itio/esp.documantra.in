@@ -22,6 +22,65 @@ const getUserEmailFromRequest = (req) => {
   return decoded?.data?.email || decoded?.email || null;
 };
 
+const buildPlanResponse = (subscription, planTemplate = null) => ({
+  id: subscription._id,
+  userId: subscription.userId,
+  planTemplateId: subscription.planTemplateId || null,
+  name: planTemplate?.name || 'Free Plan',
+  description: planTemplate ? `${planTemplate.name} subscription` : 'Free plan with limited access',
+  services: planTemplate?.services || ['pdf', 'esign'],
+  type: planTemplate?.type || (planTemplate?.pricePerPeriod > 0 ? 'paid' : 'free'),
+  price: planTemplate?.pricePerPeriod || 0,
+  conversionsLimit: planTemplate?.monthlyCredits ?? 0,
+  creditsBalance: subscription.creditsBalance || 0,
+  toolCosts: planTemplate?.toolCosts || [],
+  authCosts: planTemplate?.authCosts || [],
+  documentCosts: planTemplate?.documentCosts || { credits: 0 },
+  shareCosts: planTemplate?.shareCosts || { credits: 0 },
+  pdfShareCosts: planTemplate?.pdfShareCosts || { credits: 0 },
+  status: subscription.status || 'active',
+  periodStart: subscription.periodStart || null,
+  periodEnd: subscription.periodEnd || null,
+  nextBillingAt: subscription.nextBillingAt || null,
+  isFree: !planTemplate || planTemplate.type === 'free' || planTemplate.pricePerPeriod === 0,
+  referralPerks: Array.isArray(subscription.referralPerks) ? subscription.referralPerks : [],
+});
+
+const ensureUserSubscription = async (userId) => {
+  let subscription = await Subscription.findOne({ userId });
+  if (subscription) {
+    return subscription;
+  }
+
+  const freePlanTemplate = await PlanTemplate.findOne({
+    $or: [{ type: 'free' }, { pricePerPeriod: 0 }],
+  }).lean();
+
+  if (freePlanTemplate) {
+    const now = new Date();
+    const nextBilling = freePlanTemplate.period === 'monthly'
+      ? new Date(now.getFullYear(), now.getMonth() + 1, now.getDate())
+      : new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+
+    subscription = await Subscription.create({
+      userId,
+      planTemplateId: freePlanTemplate._id,
+      creditsBalance: freePlanTemplate.monthlyCredits || 0,
+      status: 'active',
+      periodStart: now,
+      periodEnd: nextBilling,
+      nextBillingAt: nextBilling,
+    });
+    return subscription;
+  }
+
+  return Subscription.create({
+    userId,
+    creditsBalance: 0,
+    status: 'active',
+  });
+};
+
 // GET /user-plan/me
 const getMyPlan = async (req, res) => {
   try {
@@ -34,57 +93,15 @@ const getMyPlan = async (req, res) => {
     let subscription = await Subscription.findOne({ userId }).lean();
 
     if (!subscription) {
-      const freePlanTemplate = await PlanTemplate.findOne({
-        $or: [{ type: 'free' }, { pricePerPeriod: 0 }]
-      }).lean();
-
-      if (freePlanTemplate) {
-        const now = new Date();
-        const nextBilling = freePlanTemplate.period === 'monthly'
-          ? new Date(now.getFullYear(), now.getMonth() + 1, now.getDate())
-          : new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
-
-        subscription = await Subscription.create({
-          userId,
-          planTemplateId: freePlanTemplate._id,
-          creditsBalance: freePlanTemplate.monthlyCredits || 0,
-          status: 'active',
-          periodStart: now,
-          periodEnd: nextBilling,
-          nextBillingAt: nextBilling,
-        });
-      } else {
-        return res.status(404).json({ status: 404, message: 'No free plan template found', data: null });
-      }
+      const created = await ensureUserSubscription(userId);
+      subscription = created.toObject ? created.toObject() : created;
     }
 
     const planTemplate = subscription.planTemplateId
       ? await PlanTemplate.findById(subscription.planTemplateId).lean()
       : null;
 
-    const response = {
-      id: subscription._id,
-      userId: subscription.userId,
-      planTemplateId: subscription.planTemplateId || null,
-      name: planTemplate?.name || 'Free Plan',
-      description: planTemplate ? `${planTemplate.name} subscription` : 'Free plan with limited access',
-      services: planTemplate?.services || [],
-      type: planTemplate?.type || (planTemplate?.pricePerPeriod > 0 ? 'paid' : 'free'),
-      price: planTemplate?.pricePerPeriod || 0,
-      conversionsLimit: planTemplate?.monthlyCredits ?? 0,
-      creditsBalance: subscription.creditsBalance || 0,
-      toolCosts: planTemplate?.toolCosts || [],
-      authCosts: planTemplate?.authCosts || [],
-      documentCosts: planTemplate?.documentCosts || { credits: 0 },
-      shareCosts: planTemplate?.shareCosts || { credits: 0 },
-      pdfShareCosts: planTemplate?.pdfShareCosts || { credits: 0 },
-      status: subscription.status || 'active',
-      periodStart: subscription.periodStart || null,
-      periodEnd: subscription.periodEnd || null,
-      nextBillingAt: subscription.nextBillingAt || null,
-      isFree: (planTemplate?.type === 'free') || (planTemplate?.pricePerPeriod === 0),
-      referralPerks: Array.isArray(subscription.referralPerks) ? subscription.referralPerks : [],
-    };
+    const response = buildPlanResponse(subscription, planTemplate);
 
     return res.status(200).json({ status: 200, message: 'User plan fetched', data: response });
   } catch (error) {

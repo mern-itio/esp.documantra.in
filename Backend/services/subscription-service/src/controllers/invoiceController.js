@@ -121,9 +121,11 @@ const getLatestInvoice = async (req, res) => {
       .lean();
 
     if (!invoice) {
-      return res
-        .status(404)
-        .json({ status: 404, message: 'No invoices found', data: null });
+      return res.status(200).json({
+        status: 200,
+        message: 'No invoices found',
+        data: null,
+      });
     }
 
     return res.status(200).json({

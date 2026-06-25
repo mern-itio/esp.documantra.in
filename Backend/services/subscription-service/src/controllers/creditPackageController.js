@@ -129,8 +129,8 @@ const createCheckoutSession = async (req, res) => {
         },
       ],
       metadata: {
-        userId,
-        creditPackageId
+        userId: String(userId),
+        creditPackageId: String(creditPackageId),
       },
       success_url: `${frontendBase.replace(/\/$/, '')}/subscription-management?credit_session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${frontendBase.replace(/\/$/, '')}/subscription-management?canceled=true`,
@@ -238,7 +238,7 @@ const confirmCheckoutSession = async (req, res) =>{
       return res.status(400).json({ status: 400, message: 'Payment not completed', data: null });
     }
     const metadata = session.metadata || {};
-    if(metadata.userId !== userId){
+    if (metadata.userId && String(metadata.userId) !== String(userId)) {
       return res.status(403).json({ status: 403, message: 'Forbidden', data: null });
     }
     const {creditPurchased, invoice } = await applyCreditsToUser(metadata.creditPackageId, userId);
@@ -248,7 +248,9 @@ const confirmCheckoutSession = async (req, res) =>{
       data: { creditPurchased, invoice } 
     });
   }catch (error){
-    return res.status(500).json({ message: error.message });
+    console.error('confirmCheckoutSession error:', error);
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({ status: statusCode, message: error.message || 'Server error', data: null });
   }
 }
 const flexiConfirmCheckoutSession = async(req, res)=>{
@@ -275,7 +277,7 @@ const flexiConfirmCheckoutSession = async(req, res)=>{
       return res.status(400).json({ status: 400, message: 'Payment not completed', data: null });
     }
     const metadata = session.metadata || {};
-    if(metadata.userId !== userId){
+    if (metadata.userId && String(metadata.userId) !== String(userId)) {
       return res.status(403).json({ status: 403, message: 'Forbidden', data: null });
     }
     const {creditPurchased, invoice } = await applyFlexiCreditsToUser(metadata, userId);
@@ -285,18 +287,23 @@ const flexiConfirmCheckoutSession = async(req, res)=>{
       data: { creditPurchased, invoice } 
     });
   }catch (error){
-    return res.status(500).json({ message: error.message });
+    console.error('flexiConfirmCheckoutSession error:', error);
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({ status: statusCode, message: error.message || 'Server error', data: null });
   }
 }
 const applyFlexiCreditsToUser = async (metadata,userId) =>{
   const flexiPackage = await flexibleCreditPackage.findById(metadata?.creditPackageId);
   if (!flexiPackage) {
-    throw new Error('Credit package not found');
+    const error = new Error('Credit package not found');
+    error.statusCode = 404;
+    throw error;
   }
-  let subscription = await Subscription.findOne({  userId });
-  if (!subscription) {
-    throw new Error('Subscription not found for user');
-  }
+  const subscription = await Subscription.findOne({ userId }) || await Subscription.create({
+    userId,
+    creditsBalance: 0,
+    status: 'active',
+  });
   subscription.creditsBalance += Number(metadata.creditAdded);
   await subscription.save();
   const creditResponse = {
@@ -314,17 +321,20 @@ const applyFlexiCreditsToUser = async (metadata,userId) =>{
 const applyCreditsToUser = async (creditPackageId, userId) => {
   const creditPackage = await CreditPackage.findById(creditPackageId);
   if (!creditPackage) {
-    throw new Error('Credit package not found');
+    const error = new Error('Credit package not found');
+    error.statusCode = 404;
+    throw error;
   }
-  let subscription = await Subscription.findOne({  userId });
-  if (!subscription) {
-    throw new Error('Subscription not found for user');
-  }
+  const subscription = await Subscription.findOne({ userId }) || await Subscription.create({
+    userId,
+    creditsBalance: 0,
+    status: 'active',
+  });
   subscription.creditsBalance += creditPackage.credits;
   await subscription.save();
   const creditResponse = {
     creditsAdded: creditPackage.credits,
-    totalCredits: subscription.credits
+    totalCredits: subscription.creditsBalance,
   };
   let invoice = null;
   try{
