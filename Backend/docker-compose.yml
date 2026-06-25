@@ -1,10 +1,11 @@
+# L32: bind service ports to localhost only — public access via nginx (80/443).
 services:
   auth-service:
     build:
       context: .
       dockerfile: services/auth-service/Dockerfile
     ports:
-      - "2101:2101"
+      - "127.0.0.1:2101:2101"
     volumes:
     - ./services/auth-service:/app/services/auth-service:cached
     - /app/services/auth-service/node_modules
@@ -20,7 +21,7 @@ services:
       context: .
       dockerfile: services/pdf-service/Dockerfile
     ports:
-      - "2104:2104"
+      - "127.0.0.1:2104:2104"
     volumes:
     - ./services/pdf-service:/app/services/pdf-service:cached
     - /app/services/pdf-service/node_modules
@@ -50,7 +51,7 @@ services:
       context: .
       dockerfile: services/document-service/Dockerfile
     ports:
-      - "2102:2102"
+      - "127.0.0.1:2102:2102"
     volumes:
       - ./services/document-service:/app/services/document-service:cached
       - /app/services/document-service/node_modules
@@ -65,7 +66,7 @@ services:
       context: .
       dockerfile: services/e-sign-service/Dockerfile
     ports:
-      - "2103:2103"
+      - "127.0.0.1:2103:2103"
     volumes:
       - ./services/e-sign-service:/app/services/e-sign-service:cached
       - /app/services/e-sign-service/node_modules
@@ -81,7 +82,7 @@ services:
       context: .
       dockerfile: services/subscription-service/Dockerfile
     ports:
-      - "2110:2110"
+      - "127.0.0.1:2110:2110"
     volumes:
       - ./services/subscription-service:/app/services/subscription-service:cached
       - /app/services/subscription-service/node_modules
@@ -97,7 +98,7 @@ services:
       context: .
       dockerfile: services/api-service/Dockerfile
     ports:
-      - "2105:2105"
+      - "127.0.0.1:2105:2105"
     volumes:
       - ./services/api-service:/app/services/api-service:cached
       - /app/services/api-service/node_modules
@@ -113,7 +114,7 @@ services:
       context: .
       dockerfile: services/template-service/Dockerfile
     ports:
-      - "2106:2106"
+      - "127.0.0.1:2106:2106"
     volumes:
       - ./services/template-service:/app/services/template-service:cached
       - /app/services/template-service/node_modules
@@ -129,7 +130,7 @@ services:
       context: .
       dockerfile: services/admin-service/Dockerfile
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
     volumes:
       - ./services/admin-service:/app/services/admin-service:cached
       - /app/services/admin-service/node_modules
@@ -147,7 +148,7 @@ services:
       context: .
       dockerfile: services/support-service/Dockerfile
     ports:
-      - "2107:2107"
+      - "127.0.0.1:2107:2107"
     volumes:
       - ./services/support-service:/app/services/support-service:cached
       - /app/services/support-service/node_modules
@@ -165,7 +166,7 @@ services:
       context: .
       dockerfile: services/ai-assistant-service/Dockerfile
     ports:
-      - "2108:2108"
+      - "127.0.0.1:2108:2108"
     volumes:
       - ./services/ai-assistant-service:/app/services/ai-assistant-service:cached
       - /app/services/ai-assistant-service/node_modules
@@ -186,7 +187,7 @@ services:
       context: .
       dockerfile: services/organization-service/Dockerfile
     ports:
-      - "2111:2111"
+      - "127.0.0.1:2111:2111"
     volumes:
       - ./services/organization-service:/app/services/organization-service:cached
       - /app/services/organization-service/node_modules
@@ -202,7 +203,7 @@ services:
       context: .
       dockerfile: services/api-gateway/Dockerfile
     ports:
-      - "2113:2113"
+      - "127.0.0.1:2113:2113"
     volumes:
     - ./services/api-gateway:/app/services/api-gateway:cached
     - /app/services/api-gateway/node_modules
@@ -218,7 +219,7 @@ services:
       context: .
       dockerfile: services/email-service/Dockerfile
     ports:
-      - "2112:2112"
+      - "127.0.0.1:2112:2112"
     volumes:
     - ./services/email-service:/app/services/email-service:cached
     - /app/services/email-service/node_modules
@@ -234,7 +235,7 @@ services:
       context: .
       dockerfile: services/identity-service/Dockerfile
     ports:
-      - "2114:2114"
+      - "127.0.0.1:2114:2114"
     volumes:
     - ./services/identity-service:/app/services/identity-service:cached
     - /app/services/identity-service/node_modules
@@ -250,7 +251,7 @@ services:
       context: .
       dockerfile: services/pdf-java-service/Dockerfile
     ports:
-      - "2115:2115"
+      - "127.0.0.1:2115:2115"
     volumes:
       - ./services/pdf-java-service:/app/services/pdf-java-service:cached
     environment:
