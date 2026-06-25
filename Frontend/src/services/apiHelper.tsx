@@ -277,8 +277,7 @@ export const subscriptionApi = createApiInstance(
 );
 export const adminApi = createApiInstance(
   import.meta.env.VITE_ADMIN_SERVICE_URL || 'http://localhost:3100',
-  'Admin-Service',
-  'adminToken'
+  'Admin-Service'
 );
 
 export const organizationApi = createApiInstance(

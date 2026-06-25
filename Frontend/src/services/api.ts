@@ -231,14 +231,13 @@ const makeDocumentRequest = async (
             // Call consume API in background (fire and forget)
             try {
               const subscriptionServiceUrl = import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110';
-              fetch(`${subscriptionServiceUrl}/usage/consume`, {
+              fetch(`${subscriptionServiceUrl}/usage/consume`, withAuthFetch({
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ action, credits: required })
-              }).catch(() => {}); // Ignore errors in background call
+                body: JSON.stringify({ action, credits: required }),
+              })).catch(() => {});
             } catch {}
           }
         }
