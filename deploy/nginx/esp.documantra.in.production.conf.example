@@ -18,6 +18,14 @@ server {
 
     server_tokens off;
 
+    # VAPT L18/L19 — custom error pages (static files from frontend dist)
+    error_page 404 /404.html;
+    error_page 502 503 504 /502.html;
+
+    # VAPT L23/L28 — strip upstream server banners from proxied API responses
+    proxy_hide_header Server;
+    proxy_hide_header X-Powered-By;
+
     # Allow PDF uploads up to 50MB (multer limit) with headroom for multipart overhead
     client_max_body_size 100M;
 
@@ -33,7 +41,7 @@ server {
     proxy_connect_timeout 60s;
     proxy_send_timeout 300s;
 
-    # VAPT L22/L25 — security headers (SPA + API)
+    # VAPT L22/L25 — security headers (server block only; do NOT repeat HSTS in location {})
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
@@ -109,6 +117,18 @@ server {
     }
 
     location = /index.html {
+        root /var/www/draft-and-sign;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, private" always;
+    }
+
+    location = /404.html {
+        internal;
+        root /var/www/draft-and-sign;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, private" always;
+    }
+
+    location = /502.html {
+        internal;
         root /var/www/draft-and-sign;
         add_header Cache-Control "no-store, no-cache, must-revalidate, private" always;
     }

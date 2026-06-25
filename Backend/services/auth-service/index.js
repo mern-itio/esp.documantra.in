@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 dotenv.config();
 const cors = require('cors');
-const { getCorsOptions, createErrorHandler } = require('@draftnsign/validators');
+const { getCorsOptions, createErrorHandler, applySecurityHeaders } = require('@draftnsign/validators');
 const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -15,6 +15,7 @@ const app = express();
 
 app.set('trust proxy', 1);
 app.use(httpsSecurityMiddleware);
+applySecurityHeaders(app);
 
 app.use(cors(getCorsOptions()));
 

@@ -4,6 +4,11 @@ x-backend-service: &backend-defaults
     - .env.prod
   environment:
     NODE_ENV: production
+    HIDE_ERROR_DETAILS: "true"
+    # VAPT optional 2FA enforcement (enable when ready):
+    # REQUIRE_2FA_FOR_LOGIN: "true"
+    # REQUIRE_2FA_GRACE_DAYS: "30"
+    # REQUIRE_2FA_FOR_E_SIGN: "true"
   networks:
     - esp-net
 

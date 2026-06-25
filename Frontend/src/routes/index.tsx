@@ -85,6 +85,7 @@ import WorkspacePage from '../pages/LandingPage/WorkspacePage';
 import FeatureComparisonPage from '../pages/LandingPage/FeatureComparisonPage';
 import SitemapPage from '../pages/LandingPage/SitemapPage';
 import ChoosePlanPage from '../pages/LandingPage/ChoosePlanPage';
+import NotFoundPage from '../pages/LandingPage/NotFoundPage';
 
 // Dashboard Pages
 import DashboardPage from '../pages/Dashboard/DashboardPage';
@@ -976,6 +977,7 @@ const router = createBrowserRouter([
           { path: '/shared/:shareToken', element: <SharedDocument /> },
         ],
       },
+      { path: '*', element: <NotFoundPage /> },
     ]
   }
 ]);
