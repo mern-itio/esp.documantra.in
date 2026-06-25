@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const aiContentLimiter = require('../middleware/aiContentLimiter');
 const {
   generateAIContent,
   convertTextToPDF,
@@ -10,7 +11,8 @@ const {
   submitFeedback
 } = require('../controllers/aiContentController');
 
-// Public routes (no auth required)
+// Public routes (no auth required) — rate limited (VAPT L20)
+router.use(aiContentLimiter);
 router.post('/generate', generateAIContent);
 router.post('/generate-stream', generateAIContentStream);
 router.post('/convert-to-pdf', convertTextToPDF);

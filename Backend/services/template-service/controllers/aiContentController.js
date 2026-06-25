@@ -160,8 +160,7 @@ const generateAIContent = async (req, res) => {
     if (!openai || !process.env.OPENAI_API_KEY) {
       return res.status(503).json({
         success: false,
-        message: 'AI service is not configured. Please set OPENAI_API_KEY in environment variables.',
-        error: 'OpenAI API key not configured'
+        message: 'AI service is not configured.',
       });
     }
     const systemPrompt = `You are an expert legal document writer. Generate professional, legally sound content for ${templateType} documents. 
@@ -201,7 +200,6 @@ const generateAIContent = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to generate content',
-      error: error.message
     });
   }
 };
@@ -217,8 +215,7 @@ const generateAIContentStream = async (req, res) => {
     if (!openai || !process.env.OPENAI_API_KEY) {
       return res.status(503).json({
         success: false,
-        message: 'AI service is not configured. Please set OPENAI_API_KEY in environment variables.',
-        error: 'OpenAI API key not configured'
+        message: 'AI service is not configured.',
       });
     }
     res.setHeader('Content-Type', 'text/event-stream');
@@ -265,7 +262,7 @@ const generateAIContentStream = async (req, res) => {
     res.end();
   } catch (error) {
     console.error('Error streaming AI content:', error);
-    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+    res.write(`data: ${JSON.stringify({ error: 'Content generation failed' })}\n\n`);
     res.end();
   }
 };
