@@ -31,9 +31,16 @@ const getNotifications = async (req, res) => {
     const allNotifications = [];
     let unreadCount = 0;
 
+    const readServicePayload = (result) => {
+      if (result.status !== 'fulfilled') return null;
+      const payload = result.value;
+      if (!payload?.ok) return null;
+      return payload?.data?.data ?? payload?.data ?? null;
+    };
+
     // ---- ESIGN ----
-    if (results[0].status === 'fulfilled') {
-      const esignData = results[0].value.data.data;
+    const esignData = readServicePayload(results[0]);
+    if (esignData?.notifications) {
       unreadCount += esignData.unreadCount || 0;
 
       esignData.notifications.forEach(n => {
@@ -54,9 +61,8 @@ const getNotifications = async (req, res) => {
     }
 
     // ---- USER ----
-    if (results[1].status === 'fulfilled') {
-      const userData = results[1].value.data.data;
-
+    const userData = readServicePayload(results[1]);
+    if (userData?.notifications) {
       userData.notifications.forEach(n => {
         if (!n.isRead) unreadCount++;
 
@@ -74,21 +80,22 @@ const getNotifications = async (req, res) => {
     }
 
     // ---- ORGANIZATION (conditional index) ----
-    if (orgId && results[2]?.status === 'fulfilled') {
-      const orgData = results[2].value.data.data;
-
-      orgData.notifications.forEach(n => {
-        allNotifications.push({
-          id: n._id,
-          source: n?.source || 'ORG',
-          type: n.type,
-          title: n.title,
-          message: n.message,
-          isRead: false, // org notifications are usually broadcast
-          createdAt: n.createdAt,
-          metadata: n.metadata
+    if (orgId) {
+      const orgData = readServicePayload(results[2]);
+      if (orgData?.notifications) {
+        orgData.notifications.forEach(n => {
+          allNotifications.push({
+            id: n._id,
+            source: n?.source || 'ORG',
+            type: n.type,
+            title: n.title,
+            message: n.message,
+            isRead: false, // org notifications are usually broadcast
+            createdAt: n.createdAt,
+            metadata: n.metadata
+          });
         });
-      });
+      }
     }
 
     // ---- SORT DESC ----

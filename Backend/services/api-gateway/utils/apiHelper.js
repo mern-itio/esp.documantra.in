@@ -1,11 +1,9 @@
 const axios = require('axios');
+const { extractAccessToken } = require('@draftnsign/auth-lib');
 
-// Extract bearer token from request headers
-function getBearerToken(req) {
-  const authHeader = req.headers && req.headers.authorization;
-  if (!authHeader) return null;
-  if (authHeader.startsWith('Bearer ')) return authHeader.split(' ')[1];
-  return authHeader;
+// Extract bearer token from Authorization header or httpOnly auth cookie (M14).
+function getBearerToken(req, type = 'user') {
+  return extractAccessToken(req, type);
 }
 
 // Create an axios instance with default headers and baseURL

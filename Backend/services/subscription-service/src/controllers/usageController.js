@@ -46,10 +46,11 @@ const getBalance = async (req, res) => {
     }).lean();
 
     if (!subscription) {
-      return res.status(404).json({
-        status: 404,
-        message: 'Subscription not found',
-        data: null,
+      return res.status(200).json({
+        status: 200,
+        data: {
+          creditsBalance: 0,
+        },
       });
     }
 
