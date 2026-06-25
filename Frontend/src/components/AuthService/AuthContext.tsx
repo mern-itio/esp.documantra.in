@@ -7,7 +7,9 @@ import { SubscriptionService, SubscriptionStorage } from '../../services/subscri
 import {
   clearAccountContext,
   clearLegacyAuthStorage,
+  clearUserProfileSnapshot,
   persistAccountContext,
+  persistUserProfileSnapshot,
   setMemoryAccessToken,
   withAuthFetch,
 } from '../../utils/authSession';
@@ -60,6 +62,7 @@ interface AuthContextType {
   organizationId: string | null;
   organizationDetail: any | null;
   switchAccount: (accountType: 'user' | 'organization', organizationId?: string | null) => Promise<void>;
+  dismissFirstLogin: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -108,6 +111,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isFirstLogin: u.isFirstLogin,
   });
 
+  const syncUserState = (nextUser: User | null) => {
+    setUser(nextUser);
+    if (nextUser?.id) {
+      persistUserProfileSnapshot({
+        id: nextUser.id,
+        email: nextUser.email,
+        fullname: nextUser.fullname,
+        plan: nextUser.plan,
+        isFirstLogin: nextUser.isFirstLogin,
+      });
+    } else {
+      clearUserProfileSnapshot();
+    }
+  };
+
   const hydrateFromSession = async () => {
     clearLegacyAuthStorage();
     try {
@@ -124,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(false);
         return;
       }
-      setUser(mapApiUserToState(u));
+      syncUserState(mapApiUserToState(u));
       setIsAuthenticated(true);
       const storedAccountType = sessionStorage.getItem('accountType');
       setAccountType(storedAccountType === 'organization' ? 'organization' : 'user');
@@ -197,7 +215,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { planName } = event.detail;
       if (user) {
         const updatedUser = { ...user, plan: planName };
-        setUser(updatedUser);
+        syncUserState(updatedUser);
       }
     };
 
@@ -277,13 +295,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAccountType('user');
     setOrganizationId(null);
     setOrganizationDetail(null);
-    setUser(initialUserData);
+    syncUserState(initialUserData);
     setIsAuthenticated(true);
 
     try {
       const subscriptionPlan = await SubscriptionService.getUserPlan();
       SubscriptionStorage.savePlan(subscriptionPlan);
-      setUser({
+      syncUserState({
         ...initialUserData,
         plan: subscriptionPlan.name || subscriptionPlan.type || 'free',
       });
@@ -457,11 +475,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     SubscriptionStorage.clearPlan();
 
-    setUser(null);
+    syncUserState(null);
     setIsAuthenticated(false);
     setOrganizationDetail(null);
     setAccountType('user');
     setOrganizationId(null);
+  };
+
+  const dismissFirstLogin = () => {
+    if (!user) return;
+    syncUserState({ ...user, isFirstLogin: false });
   };
 
   const switchAccount = async (newAccountType: 'user' | 'organization', orgId?: string | null) => {
@@ -639,7 +662,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     accountType,
     organizationId,
     organizationDetail,
-    switchAccount
+    switchAccount,
+    dismissFirstLogin,
   };
 
   return (

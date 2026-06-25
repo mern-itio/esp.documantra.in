@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getAccountContextHeaders } from '../utils/authSession';
+import { getAccountContextHeaders, getCurrentUserId, getUserProfileSnapshot, isLoggedInSnapshot } from '../utils/authSession';
 import type { 
   DocumentTrackingResponse, 
   TrackedDocumentsResponse,
@@ -147,16 +147,12 @@ export const documentTrackingService = {
   // Get user information by ID
   async getUserInfo(userId: string): Promise<{ name: string; email: string } | null> {
     try {
-      // Try to get user info from localStorage first
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        const currentUser = JSON.parse(userData);
-        if (currentUser.id === userId) {
-          return {
-            name: currentUser.name || currentUser.email || 'Current User',
-            email: currentUser.email
-          };
-        }
+      const currentUser = getUserProfileSnapshot();
+      if (currentUser && currentUser.id === userId) {
+        return {
+          name: currentUser.fullname || currentUser.email || 'Current User',
+          email: currentUser.email || '',
+        };
       }
 
       // If not current user, try to get from auth service
@@ -179,8 +175,7 @@ export const documentTrackingService = {
   async logDocumentView(documentId: string, documentName: string, originalFilename: string, metadata?: Record<string, any>): Promise<void> {
     try {
       // Get user ID from localStorage automatically
-      const userData = localStorage.getItem('userData');
-      const currentUserId = userData ? JSON.parse(userData).id : 'anonymous';
+      const currentUserId = getCurrentUserId();
       
       await this.logEvent({
         documentId,
@@ -198,8 +193,7 @@ export const documentTrackingService = {
   async logDocumentDownload(documentId: string, documentName: string, originalFilename: string, metadata?: Record<string, any>): Promise<void> {
     try {
       // Get user ID from localStorage automatically
-      const userData = localStorage.getItem('userData');
-      const currentUserId = userData ? JSON.parse(userData).id : 'anonymous';
+      const currentUserId = getCurrentUserId();
       
       await this.logEvent({
         documentId,
@@ -217,8 +211,7 @@ export const documentTrackingService = {
   async logDocumentEdit(documentId: string, documentName: string, originalFilename: string, metadata?: Record<string, any>): Promise<void> {
     try {
       // Get user ID from localStorage automatically
-      const userData = localStorage.getItem('userData');
-      const currentUserId = userData ? JSON.parse(userData).id : 'anonymous';
+      const currentUserId = getCurrentUserId();
       
       await this.logEvent({
         documentId,
@@ -236,8 +229,7 @@ export const documentTrackingService = {
   async logDocumentPermissionSet(documentId: string, documentName: string, originalFilename: string, metadata?: Record<string, any>): Promise<void> {
     try {
       // Get user ID from localStorage automatically
-      const userData = localStorage.getItem('userData');
-      const currentUserId = userData ? JSON.parse(userData).id : 'anonymous';
+      const currentUserId = getCurrentUserId();
       
       await this.logEvent({
         documentId,
@@ -255,8 +247,7 @@ export const documentTrackingService = {
   async logDocumentMetadataRemoved(documentId: string, documentName: string, originalFilename: string, metadata?: Record<string, any>): Promise<void> {
     try {
       // Get user ID from localStorage automatically
-      const userData = localStorage.getItem('userData');
-      const currentUserId = userData ? JSON.parse(userData).id : 'anonymous';
+      const currentUserId = getCurrentUserId();
       
       await this.logEvent({
         documentId,
@@ -274,8 +265,7 @@ export const documentTrackingService = {
   async logDocumentCompressed(documentId: string, documentName: string, originalFilename: string, metadata?: Record<string, any>): Promise<void> {
     try {
       // Get user ID from localStorage automatically
-      const userData = localStorage.getItem('userData');
-      const currentUserId = userData ? JSON.parse(userData).id : 'anonymous';
+      const currentUserId = getCurrentUserId();
       
       await this.logEvent({
         documentId,
@@ -293,8 +283,7 @@ export const documentTrackingService = {
   async logDocumentOptimized(documentId: string, documentName: string, originalFilename: string, metadata?: Record<string, any>): Promise<void> {
     try {
       // Get user ID from localStorage automatically
-      const userData = localStorage.getItem('userData');
-      const currentUserId = userData ? JSON.parse(userData).id : 'anonymous';
+      const currentUserId = getCurrentUserId();
       
       await this.logEvent({
         documentId,

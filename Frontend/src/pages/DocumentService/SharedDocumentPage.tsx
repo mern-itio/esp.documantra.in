@@ -20,13 +20,11 @@ const SharedDocumentPage: React.FC = () => {
       return;
     }
 
-    // Get user ID from localStorage
-    const userData = localStorage.getItem('userData');
-    const userId = userData ? JSON.parse(userData).id : 'anonymous';
+    const userId = user?.id || 'anonymous';
 
     // Access the shared document with user ID
     accessSharedDocument(linkToken, userId);
-  }, [linkToken]);
+  }, [linkToken, user?.id]);
 
   const accessSharedDocument = async (token: string, userId: string) => {
     try {

@@ -24,6 +24,7 @@ import {
 import { Button } from '../DocumentService/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../DocumentService/ui/card';
 import { documentTrackingService } from '../../services/documentTrackingService';
+import { getCurrentUserId, getUserProfileSnapshot, isLoggedInSnapshot } from '../../utils/authSession';
 import type {
   DocumentTrackingRecord,
   TrackedDocument,
@@ -52,30 +53,14 @@ const DocumentTracking: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
-  // Helper function to get current user ID from localStorage
-  const getCurrentUserId = (): string => {
-    try {
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        const parsed = JSON.parse(userData);
-        return parsed.id || 'anonymous';
-      }
-    } catch (error) {
-      console.error('Error parsing user data from localStorage:', error);
-    }
-    return 'anonymous';
-  };
+  const getCurrentUserIdLocal = (): string => getCurrentUserId();
 
   // Helper function to get user information (ID and name)
   const getUserInfo = (userId: string): { id: string; name: string } => {
     try {
-      // If it's the current user, get from localStorage
-      const currentUserData = localStorage.getItem('userData');
-      if (currentUserData) {
-        const parsed = JSON.parse(currentUserData);
-        if (parsed.id === userId) {
-          return { id: userId, name: parsed.fullname || 'You' };
-        }
+      const currentUser = getUserProfileSnapshot();
+      if (currentUser?.id === userId) {
+        return { id: userId, name: currentUser.fullname || 'You' };
       }
 
       // For other users, we'll show their ID for now

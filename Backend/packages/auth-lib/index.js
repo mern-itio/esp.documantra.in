@@ -19,10 +19,11 @@ const verifyJWT = (type = 'user') => {
       }
 
       const adminSecret = process.env.ADMIN_ACCESS_TOKEN_SECRET;
+      const agentSecret = process.env.AGENT_ACCESS_TOKEN_SECRET;
       const userSecret = process.env.ACCESS_TOKEN_SECRET;
       const secret = type === 'admin' ? adminSecret : userSecret;
       
-      if (!secret) {
+      if (!secret && !(type === 'admin' && agentSecret)) {
         return res.status(500).json({ message: 'Server misconfiguration: missing JWT secret' });
       }
 
@@ -42,12 +43,20 @@ const verifyJWT = (type = 'user') => {
         decoded = jwt.verify(token, secret);
       } catch (e) {
         if (type !== 'admin') throw e;
-        // Fallback: try user secret if different and available
-        if (userSecret && userSecret !== adminSecret) {
-          decoded = jwt.verify(token, userSecret);
-        } else {
-          throw e;
+        const adminFallbacks = [agentSecret, userSecret].filter(
+          (candidate) => candidate && candidate !== adminSecret
+        );
+        let verified = false;
+        for (const fallbackSecret of adminFallbacks) {
+          try {
+            decoded = jwt.verify(token, fallbackSecret);
+            verified = true;
+            break;
+          } catch (_) {
+            // try next secret
+          }
         }
+        if (!verified) throw e;
       }
       if (!decoded) {
         return res.status(401).json({

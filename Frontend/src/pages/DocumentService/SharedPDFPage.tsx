@@ -9,6 +9,7 @@ import { useDocumentStore } from '../../components/common/store/documentStore';
 import PDFShareModal from '../../components/DocumentService/sharing/PDFShareModal';
 import { cn } from '../../components/common/lib/utils';
 import { useAuth } from '../../components/AuthService/AuthContext';
+import { getUserProfileSnapshot, isLoggedInSnapshot } from '../../utils/authSession';
 
 const SharedPDFPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -43,25 +44,19 @@ const SharedPDFPage: React.FC = () => {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Helper function to get user info from localStorage
   const getUserInfo = () => {
-    const userInfo = localStorage.getItem('userData');
-    if (userInfo) {
-      try {
-        const user = JSON.parse(userInfo);
-        return {
-          name: user.fullname || user.email || 'Anonymous',
-          fullname: user.fullname || user.email || 'Anonymous',
-          email: user.email || 'anonymous@example.com'
-        };
-      } catch (e) {
-        console.warn('Failed to parse user info from localStorage:', e);
-      }
+    const user = getUserProfileSnapshot();
+    if (user?.id) {
+      return {
+        name: user.fullname || user.email || 'Anonymous',
+        fullname: user.fullname || user.email || 'Anonymous',
+        email: user.email || 'anonymous@example.com',
+      };
     }
     return {
       name: 'Anonymous',
       fullname: 'Anonymous',
-      email: 'anonymous@example.com'
+      email: 'anonymous@example.com',
     };
   };
 
@@ -903,7 +898,7 @@ const renderPage = useCallback(async (pageNumber: number) => {
                       <div className="space-y-3">
                         {(() => {
                           const userInfo = getUserInfo();
-                          const isLoggedIn = localStorage.getItem('userData') !== null;
+                          const isLoggedIn = isLoggedInSnapshot();
                           const isAdmin = selectedDocument?.isOwner;
 
                           if (isAdmin) {

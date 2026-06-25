@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getUserProfileSnapshot } from '../../../utils/authSession';
 import { documentAPI, folderAPI } from '../../../services/api';
 import { generateId } from '../lib/utils';
 import type { Document, Folder, SearchFilters, SortBy, SortOrder, UploadProgress, User, UserRole, ViewMode } from '../types';
@@ -69,21 +70,20 @@ interface DocumentState {
 
 }
 
-// Helper function to get user data from localStorage
+// Helper function to get user data from session snapshot (M15 — no localStorage).
 const getUserFromStorage = (): User | null => {
   try {
-    const userData = localStorage.getItem('userData');
-    if (userData) {
-      const parsed = JSON.parse(userData);
+    const parsed = getUserProfileSnapshot();
+    if (parsed?.id) {
       return {
         id: parsed.id,
-        email: parsed.email,
-        name: parsed.fullname || parsed.name,
-        role: parsed.type || 'regular'
+        email: parsed.email || '',
+        name: parsed.fullname || parsed.email || '',
+        role: 'regular',
       };
     }
   } catch (error) {
-    console.error('Error parsing user data from localStorage:', error);
+    console.error('Error reading user profile snapshot:', error);
   }
   return null;
 };
@@ -133,10 +133,10 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   // Initial state
   currentUser: null,
   userPermissions: getUserPermissions('regular'),
-  accountType: localStorage.getItem('accountType') === 'organization' ? 'organization' : 'user',
-  organizationId: localStorage.getItem('organizationId') || null,
+  accountType: sessionStorage.getItem('accountType') === 'organization' ? 'organization' : 'user',
+  organizationId: sessionStorage.getItem('organizationId') || null,
   organizationDetail: (() => {
-    try { const d = localStorage.getItem('organizationDetail'); return d ? JSON.parse(d) : null; } catch { return null; }
+    try { const d = sessionStorage.getItem('organizationDetail'); return d ? JSON.parse(d) : null; } catch { return null; }
   })(),
   documents: [],
   folders: [],
@@ -166,19 +166,19 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   },
   setAccount: (accountType: 'user' | 'organization', organizationId?: string | null, organizationDetail?: any | null) => {
     try {
-      localStorage.setItem('accountType', accountType);
-      if (organizationId) localStorage.setItem('organizationId', organizationId);
-      else localStorage.removeItem('organizationId');
-      if (organizationDetail) localStorage.setItem('organizationDetail', JSON.stringify(organizationDetail));
-      else if (accountType === 'user') localStorage.removeItem('organizationDetail');
+      sessionStorage.setItem('accountType', accountType);
+      if (organizationId) sessionStorage.setItem('organizationId', organizationId);
+      else sessionStorage.removeItem('organizationId');
+      if (organizationDetail) sessionStorage.setItem('organizationDetail', JSON.stringify(organizationDetail));
+      else if (accountType === 'user') sessionStorage.removeItem('organizationDetail');
     } catch {}
     set({ accountType, organizationId: organizationId || null, organizationDetail: organizationDetail || null });
   },
   loadAccountFromStorage: () => {
-    const acct = localStorage.getItem('accountType');
-    const org = localStorage.getItem('organizationId');
+    const acct = sessionStorage.getItem('accountType');
+    const org = sessionStorage.getItem('organizationId');
     let orgDetail = null;
-    try { const d = localStorage.getItem('organizationDetail'); orgDetail = d ? JSON.parse(d) : null; } catch {}
+    try { const d = sessionStorage.getItem('organizationDetail'); orgDetail = d ? JSON.parse(d) : null; } catch {}
     set({ accountType: acct === 'organization' ? 'organization' : 'user', organizationId: org || null, organizationDetail: orgDetail });
   },
 

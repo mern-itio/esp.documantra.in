@@ -99,21 +99,12 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       setUserPlan(upgradedPlan);
       SubscriptionStorage.savePlan(upgradedPlan);
       
-      // Update user plan in localStorage (userData) so it persists after re-login
       try {
-        const userData = localStorage.getItem('userData');
-        if (userData) {
-          const parsedUser = JSON.parse(userData);
-          parsedUser.plan = upgradedPlan.name || upgradedPlan.type || 'free';
-          localStorage.setItem('userData', JSON.stringify(parsedUser));
-          
-          // Dispatch custom event to notify AuthContext to update user state
-          window.dispatchEvent(new CustomEvent('subscription-updated', { 
-            detail: { planName: parsedUser.plan } 
-          }));
-        }
+        window.dispatchEvent(new CustomEvent('subscription-updated', { 
+          detail: { planName: upgradedPlan.name || upgradedPlan.type || 'free' } 
+        }));
       } catch (err) {
-        console.warn('Failed to update userData in localStorage:', err);
+        console.warn('Failed to dispatch subscription-updated event:', err);
       }
       
       return { plan: upgradedPlan, invoice };

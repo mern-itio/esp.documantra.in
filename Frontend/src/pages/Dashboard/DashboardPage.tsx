@@ -20,7 +20,7 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Ba
 import AIAuditInsights from '../../components/ESign/AIAuditInsights';
 
 const DashboardPage: React.FC = () => {
-  const { user, accountType } = useAuth();
+  const { user, accountType, dismissFirstLogin } = useAuth();
   const [showTutorial, setShowTutorial] = useState(false);
   const navigate = useNavigate();
 
@@ -32,28 +32,12 @@ const DashboardPage: React.FC = () => {
 
   const handleCloseTutorial = () => {
     setShowTutorial(false);
-    // Update localStorage so it doesn't show again
-    try {
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        const parsed = JSON.parse(userData);
-        parsed.isFirstLogin = false;
-        localStorage.setItem('userData', JSON.stringify(parsed));
-      }
-    } catch { }
+    dismissFirstLogin();
   };
 
   const handleFeatureClick = (feature: string) => {
     setShowTutorial(false);
-    // Optionally update localStorage as well
-    try {
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        const parsed = JSON.parse(userData);
-        parsed.isFirstLogin = false;
-        localStorage.setItem('userData', JSON.stringify(parsed));
-      }
-    } catch { }
+    dismissFirstLogin();
     // Navigate to the selected feature
     if (feature === 'esign') navigate('/e-sign/dashboard');
     else if (feature === 'pdf') navigate('/pdf-tools');

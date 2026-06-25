@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const { getAdminAccessTokenCookieOptions } = require('../utils/cookieOptions');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/passwordHistory');
+const { extractAccessToken } = require('@draftnsign/auth-lib');
 
 const adminLogin = async (req, res) => {
   try {
@@ -46,7 +47,6 @@ const adminLogin = async (req, res) => {
         status: 200,
         message: "Admin logged in successfully",
         admin_id: admin._id,
-        token: token,
         type: 'admin',
         admin: {
           id: admin._id,
@@ -254,7 +254,6 @@ let agent = null;
         message: "Agent logged in successfully",
         admin_id: finalSupportServiceAgentId,  
         agent_id: finalSupportServiceAgentId,  
-        token: token,
         type: 'agent',
         agent: {
           id: finalSupportServiceAgentId,  
@@ -468,4 +467,74 @@ const adminChangePassword = async (req, res) => {
   }
 };
 
-module.exports = { adminLogin, adminForgotPassword, adminResetPassword, adminChangePassword };
+const getAdminMe = async (req, res) => {
+  try {
+    const principal = req.user || {};
+    const id = principal?.id || principal?._id || principal?.data?.id;
+    if (!id) {
+      return res.status(401).json({ status: 401, message: 'Not authenticated', data: null });
+    }
+
+    const principalType = String(principal?.type || principal?.data?.type || '').toLowerCase();
+    if (principalType === 'agent') {
+      return res.status(200).json({
+        status: 200,
+        message: 'Agent session active',
+        data: {
+          type: 'agent',
+          id: String(id),
+          email: principal.email || '',
+          fullname: principal.fullname || 'Agent',
+          role: principal.role || 'agent',
+        },
+      });
+    }
+
+    const admin = await AdminUser.findById(id).select('-password -passwordHistory');
+    if (!admin || admin.status === false) {
+      return res.status(401).json({ status: 401, message: 'Not authenticated', data: null });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: 'Admin session active',
+      data: {
+        type: 'admin',
+        id: String(admin._id),
+        email: admin.email,
+        fullname: admin.fullname || '',
+        role: admin.role || 'admin',
+        permissions: Array.isArray(admin.permissions) ? admin.permissions : [],
+      },
+    });
+  } catch (error) {
+    console.error('getAdminMe error:', error);
+    return res.status(500).json({ status: 500, message: 'Server error', data: null });
+  }
+};
+
+const adminLogout = async (req, res) => {
+  try {
+    res.clearCookie('adminAccessToken', { ...getAdminAccessTokenCookieOptions(req), maxAge: 0 });
+    return res.status(200).json({ status: 200, message: 'Logged out successfully', data: null });
+  } catch (error) {
+    console.error('adminLogout error:', error);
+    res.clearCookie('adminAccessToken', { ...getAdminAccessTokenCookieOptions(req), maxAge: 0 });
+    return res.status(200).json({ status: 200, message: 'Logged out successfully', data: null });
+  }
+};
+
+/** Short-lived token for WebSocket handshakes — read from httpOnly cookie, never store in localStorage. */
+const getAdminSocketToken = async (req, res) => {
+  const token = extractAccessToken(req, 'admin');
+  if (!token) {
+    return res.status(401).json({ status: 401, message: 'Not authenticated', data: null });
+  }
+  return res.status(200).json({
+    status: 200,
+    message: 'Socket token issued',
+    data: { token },
+  });
+};
+
+module.exports = { adminLogin, adminForgotPassword, adminResetPassword, adminChangePassword, getAdminMe, adminLogout, getAdminSocketToken };

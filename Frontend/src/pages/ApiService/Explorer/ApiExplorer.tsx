@@ -26,7 +26,7 @@ export default function APIExplorer() {
           <div>{selectedApi.description}</div>
         </div>
          {/* CurlPreview just below description */}
-        <CurlPreview api={selectedApi} sandboxKey={sandboxKey} authToken={localStorage.getItem("accessToken") || ""} body={body} />
+        <CurlPreview api={selectedApi} sandboxKey={sandboxKey} authToken="" body={body} />
         
          <APIRequestForm selectedApi={selectedApi} onResponse={(endpoint, resp) => setResponseMap(prev => ({ ...prev, [endpoint]: resp }))} setSandboxKey={setSandboxKey}  setBody={setBody} />
         <APIResponseViewer response={responseMap[selectedApi.endpoint]} />

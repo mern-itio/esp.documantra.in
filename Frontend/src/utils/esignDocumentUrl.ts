@@ -1,4 +1,5 @@
 import { eSignApi } from '../services/apiHelper';
+import { getMemoryAccessToken } from './authSession';
 
 type EsignDocRef = {
   id?: string;
@@ -9,23 +10,7 @@ type EsignDocRef = {
   name?: string;
 };
 
-const getAccessToken = (): string | null => {
-  try {
-    const keys = ['accessToken', 'adminToken', 'userToken', 'token'];
-    for (const key of keys) {
-      const value = localStorage.getItem(key);
-      if (value) return value;
-    }
-    const raw = localStorage.getItem('userData');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return parsed?.accessToken || parsed?.token || parsed?.jwt || null;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
-};
+const getAccessToken = (): string | null => getMemoryAccessToken();
 
 const getEsignBaseUrl = (): string =>
   String(import.meta.env.VITE_ESIGN_SERVICE_URL || 'https://esp.documantra.in/esign').replace(
@@ -111,6 +96,7 @@ export const resolveEsignDocumentFileProp = (
       if (token) {
         return { url, httpHeaders: { Authorization: `Bearer ${token}` } };
       }
+      return { url, withCredentials: true };
     }
 
     return url;

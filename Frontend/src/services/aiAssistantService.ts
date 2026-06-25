@@ -1,34 +1,23 @@
 import axios from 'axios';
+import { getAccountContextHeaders, getMemoryAccessToken } from '../utils/authSession';
 
 const createApiInstance = (baseURL: string) => {
   const instance = axios.create({
     baseURL,
-    timeout: 300000, // 5 minutes for AI operations (file uploads, envelope creation, etc.)
+    timeout: 300000,
+    withCredentials: true,
     headers: { 'Content-Type': 'application/json' }
   });
 
-  // Request Interceptor
   instance.interceptors.request.use(async (config) => {
-    let token: string | null = null;
-    try {
-      const keys = ['accessToken', 'adminToken', 'userToken', 'token'];
-      for (const k of keys) {
-        const v = localStorage.getItem(k);
-        if (v) { token = v; break; }
-      }
-    } catch {}
-    if (!token) {
-      try {
-        const raw = localStorage.getItem('userData');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          token = parsed?.accessToken || parsed?.token || parsed?.jwt || null;
-        }
-      } catch {}
-    }
+    const token = getMemoryAccessToken();
     if (token) {
       (config.headers as any).Authorization = `Bearer ${token}`;
     }
+    const accountHeaders = getAccountContextHeaders();
+    Object.entries(accountHeaders).forEach(([key, value]) => {
+      (config.headers as any)[key] = value;
+    });
     return config;
   });
 

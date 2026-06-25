@@ -10,6 +10,8 @@ import { supportAgentApi, supportAdminApi } from '../../services/supportService'
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
 import { SUPPORT_SERVICE_URL } from '../../services/supportService';
+import { getMemoryAccessToken, getMemoryAdminAccessToken } from '../../utils/authSession';
+import { resolveServiceUrl } from '../../utils/secureApiUrl';
 
 interface Ticket {
   _id: string;
@@ -155,8 +157,23 @@ const SupportDashboard: React.FC = () => {
 
   const initializeSocket = async () => {
     try {
-      // First login as agent
-      const token = localStorage.getItem('agentToken') || localStorage.getItem('adminToken') || localStorage.getItem('accessToken');
+      let token = getMemoryAdminAccessToken() || getMemoryAccessToken();
+
+      if (!token) {
+        const authBase = resolveServiceUrl(import.meta.env.VITE_API_BASE_URL, {
+          productionPath: '/auth',
+          localUrl: 'http://localhost:2101',
+        });
+        const sessionRes = await fetch(`${authBase}/admin/socket-token`, {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        if (sessionRes.ok) {
+          const body = await sessionRes.json().catch(() => ({}));
+          token = body?.data?.token || body?.token || null;
+        }
+      }
+
       if (!token) {
         toast.error('Authentication required. Please log in as agent/admin.');
         return;

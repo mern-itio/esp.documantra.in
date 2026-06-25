@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
 import { Alert } from '../ui/alert';
+import { getUserProfileSnapshot, isLoggedInSnapshot } from '../../../utils/authSession';
 
 interface SharedDocumentViewerProps {
   shareToken: string;
@@ -50,25 +51,19 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Helper function to get user info from localStorage
   const getUserInfo = () => {
-    const userInfo = localStorage.getItem('userData');
-    if (userInfo) {
-      try {
-        const user = JSON.parse(userInfo);
-        return {
-          name: user.fullname || user.email || 'Anonymous',
-          fullname: user.fullname || user.email || 'Anonymous',
-          email: user.email || 'anonymous@example.com'
-        };
-      } catch (e) {
-        console.warn('Failed to parse user info from localStorage:', e);
-      }
+    const user = getUserProfileSnapshot();
+    if (user?.id) {
+      return {
+        name: user.fullname || user.email || 'Anonymous',
+        fullname: user.fullname || user.email || 'Anonymous',
+        email: user.email || 'anonymous@example.com',
+      };
     }
     return {
       name: 'Anonymous',
       fullname: 'Anonymous',
-      email: 'anonymous@example.com'
+      email: 'anonymous@example.com',
     };
   };
 
@@ -225,7 +220,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
     if (!newComment.trim()) return;
 
     // Check if user is logged in
-    const isLoggedIn = localStorage.getItem('userData') !== null;
+    const isLoggedIn = isLoggedInSnapshot();
 
     // If not logged in, validate that name and email are provided
     if (!isLoggedIn && (!commentAuthor.trim() || !commentEmail.trim())) {
@@ -662,7 +657,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                   <div className="space-y-3">
                     {(() => {
                       const userInfo = getUserInfo();
-                      const isLoggedIn = localStorage.getItem('userData') !== null;
+                      const isLoggedIn = isLoggedInSnapshot();
 
                       return isLoggedIn ? (
                         <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
@@ -698,7 +693,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
                     />
                     <Button
                       onClick={handleAddComment}
-                      disabled={!newComment.trim() || (!localStorage.getItem('userData') && (!commentAuthor.trim() || !commentEmail.trim()))}
+                      disabled={!newComment.trim() || (!isLoggedInSnapshot() && (!commentAuthor.trim() || !commentEmail.trim()))}
                       size="sm"
                       className="w-full"
                     >
@@ -796,7 +791,7 @@ const SharedDocumentViewer: React.FC<SharedDocumentViewerProps> = ({ shareToken 
               <div className="space-y-3">
                 {(() => {
                   const userInfo = getUserInfo();
-                  const isLoggedIn = localStorage.getItem('userData') !== null;
+                  const isLoggedIn = isLoggedInSnapshot();
 
                   return isLoggedIn ? (
                     <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">

@@ -1,24 +1,18 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
+import { getMemoryAdminAccessToken } from '../utils/authSession';
 
 const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance => {
   const instance = axios.create({
     baseURL,
     timeout: 30000,
+    withCredentials: true,
     headers: { 'Content-Type': 'application/json' }
   });
 
-  // Request Interceptor
+  // Request Interceptor — admin/agent JWT via httpOnly cookie; memory token for WS only.
   instance.interceptors.request.use(async (config) => {
-    let token: string | null = null;
-    try {
-      const keys = ['accessToken', 'agentToken', 'adminToken'];
-      for (const k of keys) {
-        const v = localStorage.getItem(k);
-        if (v) { token = v; break; }
-      }
-    } catch {}
-    
+    const token = getMemoryAdminAccessToken();
     if (token) {
       (config.headers as any).Authorization = `Bearer ${token}`;
     }

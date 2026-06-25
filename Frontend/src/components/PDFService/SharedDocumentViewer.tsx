@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getUserProfileSnapshot } from '../../utils/authSession';
 import {
   MessageSquare,
   Plus,
@@ -54,24 +55,16 @@ const SharedDocumentViewer: React.FC = () => {
 
   const loadUserInfo = () => {
     try {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const parsedUser = JSON.parse(userData);
+      const parsedUser = getUserProfileSnapshot();
+      if (parsedUser?.id) {
         setUserInfo({
-          name: parsedUser.fullname || parsedUser.name || 'Anonymous',
+          name: parsedUser.fullname || 'Anonymous',
           email: parsedUser.email || '',
-          id: parsedUser.id || 'anonymous'
+          id: parsedUser.id,
         });
-        console.log('Loaded user info from localStorage:', {
-          name: parsedUser.fullname || parsedUser.name || 'Anonymous',
-          email: parsedUser.email || '',
-          id: parsedUser.id || 'anonymous'
-        });
-      } else {
-        console.log('No user data found in localStorage, using anonymous');
       }
     } catch (error) {
-      console.error('Error loading user info from localStorage:', error);
+      console.error('Error loading user profile snapshot:', error);
     }
   };
 
