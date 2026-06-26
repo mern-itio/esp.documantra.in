@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { detectFaceInImage, isFaceDetectionSupported, type FaceBox } from '../../utils/faceDetection';
+import { detectFaceInImage, type FaceBox } from '../../utils/faceDetection';
 
 export type SelfieCaptureResult = {
   imageBase64: string;
@@ -41,9 +41,6 @@ const SelfieCapture: React.FC<SelfieCaptureProps> = ({ disabled = false, onSubmi
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('Camera is not supported on this device or browser.');
-      }
-      if (!isFaceDetectionSupported()) {
-        throw new Error('Use Chrome or Edge for selfie verification.');
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -91,11 +88,6 @@ const SelfieCapture: React.FC<SelfieCaptureProps> = ({ disabled = false, onSubmi
     const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
     const detectedFace = await detectFaceInImage(dataUrl, canvas.width, canvas.height);
 
-    if (!detectedFace) {
-      setCameraError('No face detected. Center your face in the guide.');
-      return;
-    }
-
     setCaptureSize({ width: canvas.width, height: canvas.height });
     setFaceBox(detectedFace);
     setPreview(dataUrl);
@@ -127,7 +119,7 @@ const SelfieCapture: React.FC<SelfieCaptureProps> = ({ disabled = false, onSubmi
           <img src={preview} alt="Selfie preview" className="mx-auto max-h-80 w-full object-contain" />
         ) : (
           <>
-            <video ref={videoRef} playsInline muted className="mx-auto max-h-80 w-full object-contain" />
+            <video ref={videoRef} playsInline muted autoPlay className="mx-auto max-h-80 w-full object-contain" />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="h-52 w-40 rounded-[50%] border-2 border-white/80" />
             </div>

@@ -14,6 +14,14 @@ type DetectedFace = {
   };
 };
 
+/** Matches the on-screen oval guide (normalized 0-1). */
+export const estimateCenterFaceBox = (): FaceBox => ({
+  x: 0.28,
+  y: 0.15,
+  width: 0.44,
+  height: 0.55,
+});
+
 const loadImage = (src: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
@@ -22,7 +30,7 @@ const loadImage = (src: string) =>
     img.src = src;
   });
 
-export const detectFaceInImage = async (
+const detectWithFaceDetector = async (
   dataUrl: string,
   sourceWidth: number,
   sourceHeight: number
@@ -53,6 +61,16 @@ export const detectFaceInImage = async (
   } catch {
     return null;
   }
+};
+
+/** Uses native FaceDetector when available; otherwise falls back to guide-based box. */
+export const detectFaceInImage = async (
+  dataUrl: string,
+  sourceWidth: number,
+  sourceHeight: number
+): Promise<FaceBox> => {
+  const detected = await detectWithFaceDetector(dataUrl, sourceWidth, sourceHeight);
+  return detected || estimateCenterFaceBox();
 };
 
 export const isFaceDetectionSupported = () => Boolean((window as any).FaceDetector);

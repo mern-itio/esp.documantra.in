@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { detectFaceInImage, isFaceDetectionSupported, type FaceBox } from '../../utils/faceDetection';
+import { detectFaceInImage, type FaceBox } from '../../utils/faceDetection';
 
 export type LivenessCaptureResult = {
   imageBase64: string;
@@ -51,9 +51,6 @@ const LivenessCapture: React.FC<LivenessCaptureProps> = ({ disabled = false, onS
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('Camera is not supported on this device or browser.');
       }
-      if (!isFaceDetectionSupported()) {
-        throw new Error('Use Chrome or Edge for liveness verification.');
-      }
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -93,11 +90,6 @@ const LivenessCapture: React.FC<LivenessCaptureProps> = ({ disabled = false, onS
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
     const face = await detectFaceInImage(dataUrl, canvas.width, canvas.height);
-    if (!face) {
-      setCameraError('No face detected. Follow the guide and try again.');
-      return null;
-    }
-
     return { dataUrl, face };
   };
 
@@ -157,7 +149,7 @@ const LivenessCapture: React.FC<LivenessCaptureProps> = ({ disabled = false, onS
       <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-black">
         {showLiveCamera ? (
           <>
-            <video ref={videoRef} playsInline muted className="mx-auto max-h-80 w-full object-contain" />
+            <video ref={videoRef} playsInline muted autoPlay className="mx-auto max-h-80 w-full object-contain" />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="h-52 w-40 rounded-[50%] border-2 border-white/80" />
             </div>

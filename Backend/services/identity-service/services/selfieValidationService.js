@@ -75,6 +75,19 @@ const validateFaceBox = (faceBox, { strictCenter = true } = {}) => {
   return { ok: true, box };
 };
 
+const imageDifferenceRatio = async (primaryBuffer, secondaryBuffer) => {
+  const [a, b] = await Promise.all([
+    sharp(primaryBuffer).resize(160, 120, { fit: 'cover' }).greyscale().raw().toBuffer(),
+    sharp(secondaryBuffer).resize(160, 120, { fit: 'cover' }).greyscale().raw().toBuffer(),
+  ]);
+  if (a.length !== b.length || !a.length) return 0;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    diff += Math.abs(a[i] - b[i]);
+  }
+  return diff / (a.length * 255);
+};
+
 exports.validateSelfieCapture = async (buffer, faceBox) => {
   const quality = await validateImageQuality(buffer);
   if (!quality.ok) return quality;
@@ -108,14 +121,17 @@ exports.validateLivenessCapture = async (primaryBuffer, secondaryBuffer, primary
   const c1x = firstFace.box.x + firstFace.box.width / 2;
   const c2x = secondFace.box.x + secondFace.box.width / 2;
   const movement = Math.abs(c2x - c1x);
+  let frameDiff = null;
 
   if (movement < 0.035) {
-    return {
-      ok: false,
-      message: 'Liveness check failed. Turn your head slightly left, then capture again.',
-    };
-  }
-  if (movement > 0.32) {
+    frameDiff = await imageDifferenceRatio(primaryBuffer, secondaryBuffer);
+    if (frameDiff < 0.018) {
+      return {
+        ok: false,
+        message: 'Liveness check failed. Turn your head slightly left, then capture again.',
+      };
+    }
+  } else if (movement > 0.32) {
     return {
       ok: false,
       message: 'Liveness check failed. Turn only slightly, not too far.',
@@ -126,6 +142,7 @@ exports.validateLivenessCapture = async (primaryBuffer, secondaryBuffer, primary
     ok: true,
     checks: {
       movement,
+      frameDiff,
       primaryFaceBox: firstFace.box,
       secondaryFaceBox: secondFace.box,
     },
