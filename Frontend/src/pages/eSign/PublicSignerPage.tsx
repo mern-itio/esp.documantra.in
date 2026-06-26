@@ -1910,7 +1910,7 @@ const EnvelopeDetails: React.FC = () => {
                       </div>
 
                       <SelfieCapture
-                        disabled={isVerifying || authStatus === "verifying"}
+                        disabled={isVerifying}
                         onSubmit={handleSelfieSubmit}
                       />
 
