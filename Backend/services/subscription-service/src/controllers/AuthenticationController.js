@@ -96,6 +96,24 @@ const initiateAuth = async (req, res) => {
             });
           }
 
+        case "selfie_capture": {
+          const selfieResponse = await authProviderServices.initiateSelfieVerification(providerId, recipientData);
+          if (!selfieResponse.success) {
+            return res.status(500).json({
+              message: selfieResponse.error || 'Failed to initiate selfie verification',
+            });
+          }
+          return res.status(200).json({
+            status: 'pending',
+            message: selfieResponse.message,
+            action: 'CAPTURE_SELFIE',
+            verificationId: selfieResponse.verificationId,
+            metadata: {
+              captureMode: 'camera',
+              maxAttempts: provider?.constraints?.maxAttempts || 3,
+            },
+          });
+        }
 
         // Other Cases like sms, totp etc can be handled here in future
       default:
@@ -154,4 +172,75 @@ const verifyOtp = async (req, res) => {
 };
 
 
-module.exports = {initiateAuth, verifyOtp };
+const verifySelfie = async (req, res) => {
+  try {
+    const { providerId, recipientId, verificationId, envelopeId, imageBase64 } = req.body;
+
+    if (!providerId || !recipientId || !verificationId || !envelopeId || !imageBase64) {
+      return res.status(400).json({
+        message: 'Missing required fields: providerId, recipientId, verificationId, envelopeId, or imageBase64',
+      });
+    }
+
+    const sessionCheck = await authProviderServices.verifySelfieSession(providerId, recipientId, verificationId);
+    if (!sessionCheck.success) {
+      return res.status(400).json({
+        success: false,
+        message: sessionCheck.message,
+      });
+    }
+
+    const identityBase = (process.env.IDENTITY_SERVICE_URL || '').replace(/\/+$/, '');
+    if (!identityBase) {
+      return res.status(500).json({
+        success: false,
+        message: 'Identity service is not configured',
+      });
+    }
+
+    const storeResponse = await axios.post(`${identityBase}/api/identity/selfie/store`, {
+      userId: recipientId,
+      authProviderId: providerId,
+      envelopeId,
+      verificationId,
+      imageBase64,
+    });
+
+    if (!storeResponse.data?.success) {
+      return res.status(500).json({
+        success: false,
+        message: storeResponse.data?.message || 'Failed to store selfie',
+      });
+    }
+
+    try {
+      await axios.post(process.env.ESING_SERVICE_URL + '/api/e-sign/public/recipients/update-verification-status', {
+        recipientId,
+        providerId,
+        envelopeId,
+        verificationStatus: 'completed',
+      });
+    } catch (err) {
+      console.error('Failed to update recipient record after selfie verification:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Selfie stored but failed to update signing status',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Selfie verified successfully',
+      data: storeResponse.data?.data || null,
+    });
+  } catch (err) {
+    console.error('Selfie verification failed:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Selfie verification failed',
+      error: err.message,
+    });
+  }
+};
+
+module.exports = {initiateAuth, verifyOtp, verifySelfie };

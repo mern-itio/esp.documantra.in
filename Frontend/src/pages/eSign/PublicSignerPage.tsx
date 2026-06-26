@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { eSignApi, subscriptionApi } from "../../services/apiHelper";
 import DocumentViewer from "../../components/ESign/DocumentViewer";
+import SelfieCapture from "../../components/ESign/SelfieCapture";
 import DocumentSignatureBackground from "../../components/common/DocumentSignatureBackground";
 import * as Icons from "lucide-react";
 import {
@@ -612,6 +613,12 @@ const EnvelopeDetails: React.FC = () => {
           setVerificationMessage(
             'Verification URL has been generated. You will be redirected in a few seconds.'
           );
+        } else if (action === 'CAPTURE_SELFIE') {
+          setCurrentAction('CAPTURE_SELFIE');
+          setAuthStatus('pending');
+          setVerificationMessage(
+            serverMessage || 'Please capture a clear selfie to verify your identity.'
+          );
         } else {
           console.log(message || 'Verification initiated.');
         }
@@ -657,6 +664,35 @@ const EnvelopeDetails: React.FC = () => {
 
     return () => window.clearTimeout(timer);
   }, [currentAction, verificationUrl, redirectCountdown]);
+
+  const handleSelfieSubmit = async (imageBase64: string) => {
+    if (!verificationId) {
+      alert('Selfie session expired. Please try again.');
+      setCurrentAction('');
+      return;
+    }
+
+    setAuthStatus('verifying');
+    try {
+      const currentAuthMethod = authMethods[currentAuthIndex];
+      const response = await subscriptionApi.post(`/api/authproviders/verify/selfie`, {
+        providerId: currentAuthMethod.id,
+        recipientId: currentRecipient.id,
+        envelopeId: id,
+        verificationId,
+        imageBase64,
+      });
+
+      if (response.status === 200 && response.data?.success) {
+        handleAuthSuccess();
+      } else {
+        handleAuthFailure();
+      }
+    } catch (error) {
+      console.error('Error verifying selfie:', error);
+      handleAuthFailure();
+    }
+  };
 
   const handleOTPSubmit = async () => {
     if (otpCode.length !== otpLength) {
@@ -1861,6 +1897,44 @@ const EnvelopeDetails: React.FC = () => {
                           className="inline-flex items-center justify-center rounded-xl bg-[#260559] px-4 py-2 text-sm font-semibold text-white hover:bg-[#260559]/90 disabled:opacity-50"
                         >
                           {isVerifying ? "Verifying…" : "Verify"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentAction === "CAPTURE_SELFIE" && (
+                    <div className="space-y-4">
+                      <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                        {verificationMessage ||
+                          "Capture a selfie to complete identity verification."}
+                      </div>
+
+                      <SelfieCapture
+                        disabled={isVerifying || authStatus === "verifying"}
+                        onSubmit={handleSelfieSubmit}
+                      />
+
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentAction("");
+                            setVerificationMessage("");
+                          }}
+                          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-[#F7F3EE] px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-[#F5F2EE]"
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            requestSkipAuthMethod(
+                              "You chose to skip this verification method."
+                            )
+                          }
+                          className="inline-flex items-center justify-center rounded-lg border border-[#260559]/40 bg-[#F7F3EE] px-4 py-2.5 text-sm font-medium text-[#260559] hover:bg-[#260559]/5"
+                        >
+                          Skip
                         </button>
                       </div>
                     </div>

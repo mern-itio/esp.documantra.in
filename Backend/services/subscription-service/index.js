@@ -20,7 +20,7 @@ const app = express();
 
 applySecurityHeaders(app);
 app.use(cors(getCorsOptions()));
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 connectDB();
 
 // Admin routes (protected)

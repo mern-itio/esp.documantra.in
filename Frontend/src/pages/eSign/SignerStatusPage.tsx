@@ -267,7 +267,7 @@ export default function SignerStatusPage() {
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
-    return blob.includes("didit") || blob.includes("video") || blob.includes("liveness") || blob.includes("kyc");
+    return blob.includes("didit") || blob.includes("video") || blob.includes("liveness") || blob.includes("kyc") || blob.includes("selfie");
   };
 
   const normRecipientId = (x: any) => {

@@ -93,5 +93,40 @@ const verifyOtp = async (providerId, recipientId, otp, verificationId) => {
 
 }
 
+const initiateSelfieVerification = async (providerId, recipientData) => {
+    const sessionToken = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const expiryTime = new Date(Date.now() + 15 * 60 * 1000);
+    const verificationCode = new VerificationCode({
+        authenticationProviderId: providerId,
+        type: 'selfie',
+        verificationData: sessionToken,
+        recipientId: recipientData.id,
+        expiryTime,
+    });
+    await verificationCode.save();
 
-module.exports = { initiateSmsOtpVerification, getProviderById, initiateEmailOtpVerification, verifyOtp };
+    return {
+        success: true,
+        message: 'Selfie verification session created. Please capture your selfie to continue.',
+        verificationId: verificationCode._id,
+    };
+};
+
+const verifySelfieSession = async (providerId, recipientId, verificationId) => {
+    const record = await VerificationCode.findOne({
+        _id: verificationId,
+        authenticationProviderId: providerId,
+        recipientId: recipientId,
+        type: 'selfie',
+        expiryTime: { $gt: new Date() },
+    });
+
+    if (!record) {
+        return { success: false, message: 'Invalid or expired selfie verification session' };
+    }
+
+    return { success: true, message: 'Selfie verification session is valid', sessionToken: record.verificationData };
+};
+
+
+module.exports = { initiateSmsOtpVerification, getProviderById, initiateEmailOtpVerification, verifyOtp, initiateSelfieVerification, verifySelfieSession };
