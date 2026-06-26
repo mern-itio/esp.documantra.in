@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "seed:selfie-auth": "node scripts/seed-selfie-auth-provider.js"
   },
   "dependencies": {
     "stripe": "^16.5.0",

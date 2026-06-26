@@ -2,20 +2,18 @@
  * Create/update Selfie Verification auth provider and attach it to plan templates at 2 credits.
  * Safe to run multiple times (idempotent).
  *
- * Usage:
- *   node scripts/seed-selfie-auth-provider.js
+ * Usage (host or Docker):
+ *   npm run seed:selfie-auth
  *   node scripts/seed-selfie-auth-provider.js --credits=2
  */
 const path = require('path');
 
-const subRoot = path.join(__dirname, '../services/subscription-service');
-module.paths.unshift(path.join(subRoot, 'node_modules'));
+const serviceRoot = path.join(__dirname, '..');
+require('dotenv').config({ path: path.join(serviceRoot, '.env') });
 
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const mongoose = require('mongoose');
-
-const AuthProvider = require(path.join(subRoot, 'src/models/AuthProvider'));
-const PlanTemplate = require(path.join(subRoot, 'src/models/PlanTemplate'));
+const AuthProvider = require(path.join(serviceRoot, 'src/models/AuthProvider'));
+const PlanTemplate = require(path.join(serviceRoot, 'src/models/PlanTemplate'));
 
 const parseArg = (name, fallback) => {
   const prefix = `--${name}=`;
@@ -115,7 +113,7 @@ async function attachToPlans(providerId) {
 async function main() {
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) {
-    console.error('MONGO_URI missing in Backend/.env');
+    console.error('MONGO_URI missing in services/subscription-service/.env');
     process.exit(1);
   }
 
