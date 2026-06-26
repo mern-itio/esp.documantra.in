@@ -43,7 +43,12 @@ export const resolveEsignDocumentUrl = (
 
 const buildDocumentViewUrl = (
   docId: string,
-  options?: { envelopeId?: string; isPublicFlow?: boolean; filePath?: string | null }
+  options?: {
+    envelopeId?: string;
+    recipientId?: string;
+    isPublicFlow?: boolean;
+    filePath?: string | null;
+  }
 ): string => {
   const base = getEsignBaseUrl();
   const path = options?.isPublicFlow
@@ -53,6 +58,7 @@ const buildDocumentViewUrl = (
   if (options?.isPublicFlow) {
     const params = new URLSearchParams();
     if (options.envelopeId) params.set('envelopeId', options.envelopeId);
+    if (options.recipientId) params.set('recipientId', options.recipientId);
     if (options.filePath) {
       try {
         const parsed = new URL(options.filePath, window.location.origin);
@@ -78,7 +84,7 @@ const buildDocumentViewUrl = (
  */
 export const resolveEsignDocumentFileProp = (
   doc: EsignDocRef,
-  options?: { envelopeId?: string; isPublicFlow?: boolean }
+  options?: { envelopeId?: string; recipientId?: string; isPublicFlow?: boolean }
 ): string | File | { url: string; httpHeaders?: Record<string, string> } => {
   if (doc.file) {
     return doc.file;
@@ -87,6 +93,7 @@ export const resolveEsignDocumentFileProp = (
   if (doc.id) {
     const url = buildDocumentViewUrl(doc.id, {
       envelopeId: options?.envelopeId,
+      recipientId: options?.recipientId,
       isPublicFlow: options?.isPublicFlow,
       filePath: doc.filePath,
     });
@@ -111,7 +118,7 @@ export const resolveEsignDocumentFileProp = (
  */
 export const fetchEsignDocumentData = async (
   doc: EsignDocRef,
-  options?: { envelopeId?: string; isPublicFlow?: boolean }
+  options?: { envelopeId?: string; recipientId?: string; isPublicFlow?: boolean }
 ): Promise<ArrayBuffer> => {
   if (doc.file) {
     return doc.file.arrayBuffer();
@@ -125,6 +132,7 @@ export const fetchEsignDocumentData = async (
     const params: Record<string, string> = {};
     if (options?.isPublicFlow) {
       if (options.envelopeId) params.envelopeId = options.envelopeId;
+      if (options.recipientId) params.recipientId = options.recipientId;
       if (doc.filePath) {
         try {
           const parsed = new URL(doc.filePath, window.location.origin);

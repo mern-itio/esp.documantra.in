@@ -1200,6 +1200,7 @@ const EnvelopeDetails: React.FC = () => {
                 signatureFields={signatureFields}
                 currentUserId={isPreviewMode ? "" : (recipientId || "")}
                 envelopeID={id || ""}
+                isPublicFlow
                 onClose={() => setActiveDocument(null)}
                 onSignatureSave={handleSignatureSave}
                 cycleId={cycleId || ""}

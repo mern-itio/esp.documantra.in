@@ -160,6 +160,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
+    const isPublicSignerRoute = window.location.pathname.includes('/e-sign/signer/');
+    if (isPublicSignerRoute) {
+      setLoading(false);
+      return;
+    }
+
     hydrateFromSession().finally(() => setLoading(false));
 
     const checkSession = () => {

@@ -29,6 +29,8 @@ interface Props {
   onRecipientComplete?: () => void;
   /** Opens the terms/conditions modal (with the same options dropdown) */
   onRequestActions?: () => void;
+  /** Public signer link — use unauthenticated document view API */
+  isPublicFlow?: boolean;
   signatureProvider:string
   signatureMethod:string
 }
@@ -86,6 +88,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   isViewOnly = false,
   onRecipientComplete,
   onRequestActions,
+  isPublicFlow = false,
   signatureProvider,
   signatureMethod
 }) => {
@@ -1555,6 +1558,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     isUserTypingRef: React.MutableRefObject<boolean>;
     activeInputRef: React.MutableRefObject<HTMLInputElement | null>;
     activeInputIdRef: React.MutableRefObject<string | null>;
+    envelopeID?: string;
+    isPublicFlow?: boolean;
   };
 
   const SingleDoc = useMemo(() => {
@@ -1595,6 +1600,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         isUserTypingRef,
         activeInputRef,
         activeInputIdRef,
+        envelopeID,
+        isPublicFlow = false,
       } = props;
       const [numPages, setNumPages] = useState<number>(0);
 
@@ -1606,7 +1613,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
       return (
         <Document
-          file={resolveEsignDocumentFileProp(doc, { envelopeId: envelopeID })}
+          file={resolveEsignDocumentFileProp(doc, {
+            envelopeId: envelopeID,
+            recipientId: currentUserId,
+            isPublicFlow,
+          })}
           onLoadSuccess={({ numPages: n }) => setNumPages(n)}
         >
           {Array.from({ length: numPages }, (_, i) => {
@@ -2532,6 +2543,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 isUserTypingRef={isUserTypingRef}
                 activeInputRef={activeInputRef}
                 activeInputIdRef={activeInputIdRef}
+                envelopeID={envelopeID}
+                isPublicFlow={isPublicFlow}
               />
 
               {/* separator between documents with next document name */}
@@ -3058,7 +3071,8 @@ const DocumentViewer: React.FC<Props> = React.memo(
       prevProps.envelopeID === nextProps.envelopeID &&
       prevProps.cycleId === nextProps.cycleId &&
       prevProps.allRecipients === nextProps.allRecipients &&
-      prevProps.isViewOnly === nextProps.isViewOnly
+      prevProps.isViewOnly === nextProps.isViewOnly &&
+      prevProps.isPublicFlow === nextProps.isPublicFlow
     );
   }
 );
