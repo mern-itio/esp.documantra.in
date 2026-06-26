@@ -55,6 +55,40 @@ function normalizePem(pem) {
   return pem.toString().replace(/\r/g, '\n').replace(/\n+/g, '\n').trim() + '\n';
 }
 
+function resolveUploadFilePath(filePath) {
+  if (!filePath) {
+    throw new Error('Document file path missing');
+  }
+
+  const normalized = String(filePath).trim();
+  if (path.isAbsolute(normalized) && fs.existsSync(normalized)) {
+    return normalized;
+  }
+
+  let relative = normalized;
+  if (relative.includes('/uploads/')) {
+    relative = decodeURIComponent(relative.split('/uploads/').pop() || '');
+  } else if (relative.startsWith('uploads/')) {
+    relative = relative.slice('uploads/'.length);
+  } else if (relative.startsWith('/uploads/')) {
+    relative = relative.slice('/uploads/'.length);
+  }
+
+  const candidates = [
+    path.join(process.cwd(), 'uploads', relative),
+    path.join(process.cwd(), relative),
+    path.join('/app/services/e-sign-service/uploads', relative),
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`Original document file missing: ${filePath}`);
+}
+
 function createP12FromPem(privateKeyPem, certPem, password = 'changeit') {
   const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
   const cert = forge.pki.certificateFromPem(certPem);
@@ -171,17 +205,11 @@ async function prepareDocumentForFinalSigning(
 ) {
   const docRecord = await Document.findById(documentId);
   if (!docRecord) throw new Error('Document not found');
-  const localPath = decodeURIComponent(docRecord.filePath.split('/uploads/')[1] || '');
 
-const actualPath = `/app/services/e-sign-service/uploads/${localPath}`;
+  const actualPath = resolveUploadFilePath(docRecord.filePath);
+  console.log('Checking actual path:', actualPath);
 
-console.log('Checking actual path:', actualPath);
-
-if (!fs.existsSync(actualPath)) {
-    throw new Error('Original document file missing');
-}
-
-docRecord.filePath = actualPath;
+  docRecord.filePath = actualPath;
 
   const pdfBuffer = fs.readFileSync(docRecord.filePath);
   const pdfDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
