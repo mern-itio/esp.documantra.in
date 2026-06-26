@@ -20,6 +20,17 @@ const email = parseArg('email', 'sahil.bhingare@secunatix.com').trim().toLowerCa
 const password = parseArg('password', 'Secunatix@123');
 const fullname = parseArg('name', 'Sahil Bhingare');
 
+const seedPhoneForEmail = (emailValue) => {
+  let hash = 0;
+  const normalized = String(emailValue).trim().toLowerCase();
+  for (let i = 0; i < normalized.length; i += 1) {
+    hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0;
+  }
+  return `+91${String(hash % 1_000_000_000).padStart(9, '0')}`;
+};
+
+const phone = parseArg('phone', seedPhoneForEmail(email));
+
 async function main() {
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) {
@@ -61,7 +72,7 @@ async function main() {
     user.plan = user.plan || 'free';
     user.isFirstLogin = false;
     if (!user.phone) {
-      user.phone = undefined;
+      user.phone = phone;
     }
     await user.save();
     console.log('Updated existing user:', email);
@@ -71,6 +82,7 @@ async function main() {
       email,
       password,
       company: 'Secunatix',
+      phone,
       plan: 'free',
       emailVerified: true,
       phoneVerified: false,
@@ -83,6 +95,7 @@ async function main() {
   console.log('\n--- Login credentials (same email, same password) ---');
   console.log('Email:   ', email);
   console.log('Password:', password);
+  console.log('Phone:   ', user.phone || phone);
   console.log('User app:  https://esp.documantra.in/login');
   console.log('Admin app: https://esp.documantra.in/admin/login');
 }
