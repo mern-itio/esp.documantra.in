@@ -1,4 +1,4 @@
-import { Check, X, ArrowRight, Zap, DollarSign, Users, FileText, Clock, Award } from 'lucide-react';
+import { brandText } from '../../config/brand';
 import { Link } from 'react-router-dom';
 
 const DocuSignerVsHelloSignPage = () => {
@@ -527,7 +527,7 @@ const DocuSignerVsHelloSignPage = () => {
                     </svg>
                   ))}
                 </div>
-                <p className="text-gray-700 italic mb-4">"{testimonial.quote}"</p>
+                <p className="text-gray-700 italic mb-4">"{brandText(testimonial.quote)}"</p>
                 <div>
                   <p className="font-semibold text-gray-900">{testimonial.author}</p>
                   <p className="text-sm text-gray-600">{testimonial.position}, {testimonial.company}</p>

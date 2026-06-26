@@ -876,7 +876,7 @@ const setupAuthenticatorTwoFa = async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   const accountLabel = user.email || user.fullname || `user-${user._id}`;
-  const issuer = process.env.APP_NAME || 'DraftAndSign';
+  const issuer = process.env.APP_NAME || 'Documantra';
   const otpauthUrl = authenticator.keyuri(accountLabel, issuer, tempSecret);
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(otpauthUrl)}`;
 

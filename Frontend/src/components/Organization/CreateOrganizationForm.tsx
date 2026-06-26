@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { APP_NAME } from '../constants/appConfig';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -158,7 +158,7 @@ export const CreateOrganizationForm: React.FC<CreateOrganizationFormProps> = ({ 
               <div className="w-10 h-10 rounded-xl bg-[#F7F3EE]/15 flex items-center justify-center backdrop-blur-sm border border-white/20">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
-              <span className="text-white font-bold text-lg tracking-tight">DraftAndSign</span>
+              <span className="text-white font-bold text-lg tracking-tight">{APP_NAME}</span>
             </div>
 
             {/* Headline */}

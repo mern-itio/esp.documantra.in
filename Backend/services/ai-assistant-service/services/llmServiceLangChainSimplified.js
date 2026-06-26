@@ -66,7 +66,7 @@ class LLMServiceLangChainSimplified {
     const kbString = JSON.stringify(kb, null, 2).replace(/\{/g, '{{').replace(/\}/g, '}}');
     
     // Simplified, natural prompt with few-shot examples
-    const systemPrompt = `You are a helpful AI assistant for Draft and Sign, a document management and e-signature platform.
+    const systemPrompt = `You are a helpful AI assistant for Documantra, a document management and e-signature platform.
 
 Your role is to understand what users want and convert their requests into structured actions. Be conversational and helpful, just like ChatGPT.
 

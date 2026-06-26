@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { brandText } from '../../config/brand';
 import { 
   Brain, Scan, FileSearch, PenTool, Zap, ArrowRight, 
   CheckCircle, MessageSquare, Sparkles,
@@ -531,7 +531,7 @@ const AIPoweredFeaturesPage = () => {
                     </svg>
                   ))}
                 </div>
-                <p className="text-gray-700 italic mb-6">"{testimonial.quote}"</p>
+                <p className="text-gray-700 italic mb-6">"{brandText(testimonial.quote)}"</p>
                 <div>
                   <p className="font-semibold text-gray-900">{testimonial.author}</p>
                   <p className="text-sm text-gray-600">{testimonial.position}, {testimonial.company}</p>

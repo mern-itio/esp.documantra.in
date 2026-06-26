@@ -49,7 +49,7 @@ import type { AxiosProgressEvent } from 'axios';
 import { Card } from '../../components/DocumentService/ui/card';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../components/AuthService/AuthContext';
-import { APP_NAME } from '../../components/constants/appConfig';
+import { BRAND, formatEnvelopeSubject } from '../../config/brand';
 type Party = {
   id: string;                 // e.g. "slot_1"
   name: string;               // display label, e.g. "Party A"
@@ -198,11 +198,11 @@ const PowerFormCreate: React.FC = () => {
     setFiles(files);
     if (!files) return;
 
-    const subjectWasAuto = (envelopeData.subject || '').trim().startsWith('Complete with Esign:');
+    const subjectWasAuto = (envelopeData.subject || '').trim().startsWith(`Complete with ${BRAND.name}:`);
     if (!envelopeData.subject || envelopeData.subject.trim() === '' || subjectWasAuto) {
       const names = Array.from(files).map(f => f.name).filter(Boolean);
       if (names.length > 0) {
-        setEnvelopeData(prev => ({ ...prev, subject: `Complete with Esign: ${names.join(', ')}` }));
+        setEnvelopeData(prev => ({ ...prev, subject: formatEnvelopeSubject(names.join(', ')) }));
       }
     }
 
@@ -257,9 +257,9 @@ const PowerFormCreate: React.FC = () => {
     if (validDocs.length > 0) {
       const allDocNames = [...(documents || []).map(d => d.name), ...validDocs.map(d => d.name)].filter(Boolean);
       setDocuments((prev) => [...prev, ...validDocs]);
-      const subjectWasAuto = (envelopeData.subject || '').trim().startsWith('Complete with Esign:');
+      const subjectWasAuto = (envelopeData.subject || '').trim().startsWith(`Complete with ${BRAND.name}:`);
       if (!envelopeData.subject || envelopeData.subject.trim() === '' || subjectWasAuto) {
-        setEnvelopeData(prev => ({ ...prev, subject: `Complete with Esign: ${allDocNames.join(', ')}` }));
+        setEnvelopeData(prev => ({ ...prev, subject: formatEnvelopeSubject(allDocNames.join(', ')) }));
       }
     }
   };
@@ -1888,7 +1888,7 @@ const PowerFormCreate: React.FC = () => {
                     value={envelopeData.subject}
                     onChange={(e) => setEnvelopeData(prev => ({ ...prev, subject: e.target.value }))}
                     className="w-full px-3 py-2 mb-8 border border-black-100 rounded-sm placeholder-gray-900"
-                    placeholder="Complete with Esign:"
+                    placeholder={`Complete with ${BRAND.name}:`}
                     data-tour="ec-subject-input"
                   />
                 </div>
@@ -2433,7 +2433,7 @@ const PowerFormCreate: React.FC = () => {
 
               <h1 className="text-base font-medium text-gray-900">
                 {documents?.length > 0
-                  ? `Complete with {BRAND.name}: ${documents?.[0]?.name || 'Document'}`
+                  ? formatEnvelopeSubject(documents?.[0]?.name || 'Document')
                   : 'Upload a Document and Add Envelope Recipients'}
               </h1>
             </div>

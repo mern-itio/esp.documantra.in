@@ -74,7 +74,7 @@ const AboutPage: React.FC = () => {
     {
       year: '2020',
       title: 'The Beginning',
-      description: 'Draft and Sign was founded with a vision to revolutionize document management and e-signatures.',
+      description: 'Documantra was founded with a vision to revolutionize document management and e-signatures.',
       icon: Rocket,
     },
     {
@@ -136,7 +136,7 @@ const AboutPage: React.FC = () => {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-[#F7F3EE]/20 rounded-full mb-6">
               <Building className="w-10 h-10" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">About Draft and Sign</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">About Documantra</h1>
             <p className="text-xl text-blue-100 mb-8">
               Empowering businesses worldwide with secure, intelligent document management and e-signature solutions
             </p>
@@ -205,13 +205,13 @@ const AboutPage: React.FC = () => {
             </div>
             <div className="w-full">
               <p className="text-gray-600 leading-relaxed mb-4 text-base">
-                Draft and Sign was born from a simple observation: businesses were struggling with fragmented document workflows, juggling multiple tools for PDF editing, document creation, and e-signatures. This complexity was costing them time, money, and efficiency.
+                Documantra was born from a simple observation: businesses were struggling with fragmented document workflows, juggling multiple tools for PDF editing, document creation, and e-signatures. This complexity was costing them time, money, and efficiency.
               </p>
               <p className="text-gray-600 leading-relaxed mb-4 text-base">
                 We set out to create an all-in-one platform that would eliminate these pain points. Our journey began with a focus on making e-signatures accessible and legally compliant across multiple jurisdictions. As we grew, we recognized that signing documents was just one part of the document lifecycle.
               </p>
               <p className="text-gray-600 leading-relaxed mb-4 text-base">
-                Today, Draft and Sign offers a comprehensive suite of tools including 30+ PDF manipulation tools, 45+ legal document templates, AI-powered document generation, and enterprise-grade security—all in one integrated platform. We've helped over 50,000 businesses streamline their document workflows and process over 500,000 documents.
+                Today, Documantra offers a comprehensive suite of tools including 30+ PDF manipulation tools, 45+ legal document templates, AI-powered document generation, and enterprise-grade security—all in one integrated platform. We've helped over 50,000 businesses streamline their document workflows and process over 500,000 documents.
               </p>
               <p className="text-gray-600 leading-relaxed text-base">
                 Our commitment to innovation, security, and user experience continues to drive us forward as we build the future of document management.
@@ -302,7 +302,7 @@ const AboutPage: React.FC = () => {
           {/* Why Choose Us */}
           <section className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-8 border border-emerald-200">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Draft and Sign?</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Documantra?</h2>
             </div>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="bg-[#F7F3EE] rounded-lg p-6">
@@ -380,7 +380,7 @@ const AboutPage: React.FC = () => {
           <section className="bg-gradient-to-r from-[#260559] to-blue-700 rounded-xl p-8 text-white text-center">
             <h2 className="text-3xl font-bold mb-4">Join Us on Our Journey</h2>
             <p className="text-xl text-blue-100 mb-6">
-              Experience the future of document management with Draft and Sign
+              Experience the future of document management with Documantra
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link

@@ -6,9 +6,9 @@ import App from './App.tsx'
 import './App.css'
 import './style.css'
 
-(globalThis as any).BRAND = {
-  name: "Documantra"
-};
+import { BRAND } from './config/brand'
+
+;(globalThis as typeof globalThis & { BRAND: typeof BRAND }).BRAND = BRAND
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

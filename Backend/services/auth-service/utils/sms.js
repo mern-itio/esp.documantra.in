@@ -38,7 +38,7 @@ async function sendVerificationOtpSms(phone, otpCode) {
       const twilio = require('twilio');
       const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
       await client.messages.create({
-        body: `Your ${process.env.APP_NAME || 'Draft and Sign'} verification code is: ${otpCode}. Valid for 10 minutes.`,
+        body: `Your ${process.env.APP_NAME || 'Documantra'} verification code is: ${otpCode}. Valid for 10 minutes.`,
         from: fromNumber,
         to: toNumber,
       });

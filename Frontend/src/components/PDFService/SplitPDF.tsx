@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { BRAND } from '../../config/brand';
 import {  
   Scissors, 
   FileText, 
@@ -533,7 +534,7 @@ const SplitPDF: React.FC<SplitPDFProps> = ({ onSplitComplete }) => {
                     <div className="text-2xl text-muted-foreground font-bold">D</div>
                   </div>
                   <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs px-1 py-0.5 rounded-full font-medium">
-                    D&S
+                    {BRAND.shortName}
                   </div>
                 </>
               )}

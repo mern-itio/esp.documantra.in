@@ -36,10 +36,10 @@ const BlogPage: React.FC = () => {
   const blogSections = [
     {
       id: 'introduction',
-      title: 'Introduction to Draft and Sign',
+      title: 'Introduction to Documantra',
       icon: Rocket,
       content: {
-        overview: 'Draft and Sign is a comprehensive all-in-one document management and electronic signature platform designed to streamline your document workflows. Whether you need to create, edit, sign, or manage documents, our platform provides everything you need in one place.',
+        overview: 'Documantra is a comprehensive all-in-one document management and electronic signature platform designed to streamline your document workflows. Whether you need to create, edit, sign, or manage documents, our platform provides everything you need in one place.',
         keyPoints: [
           'Legally binding electronic signatures compliant across 40+ countries',
           '30+ free PDF manipulation tools',
@@ -488,7 +488,7 @@ const BlogPage: React.FC = () => {
       title: 'Use Cases',
       icon: Target,
       content: {
-        overview: 'Draft and Sign serves businesses and individuals across various industries and use cases.',
+        overview: 'Documantra serves businesses and individuals across various industries and use cases.',
         cases: [
           {
             industry: 'Legal',
@@ -602,7 +602,7 @@ const BlogPage: React.FC = () => {
       title: 'Getting Started',
       icon: Rocket,
       content: {
-        overview: 'Start using Draft and Sign in minutes with our simple onboarding process.',
+        overview: 'Start using Documantra in minutes with our simple onboarding process.',
         steps: [
           {
             step: 1,
@@ -717,7 +717,7 @@ const BlogPage: React.FC = () => {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-[#F7F3EE]/20 rounded-full mb-6">
               <BookOpen className="w-10 h-10" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Draft and Sign Blog</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">Documantra Blog</h1>
             <p className="text-xl text-blue-100 mb-8">
               Everything you need to know about our comprehensive document management and e-signature platform
             </p>
@@ -1096,7 +1096,7 @@ const BlogPage: React.FC = () => {
           <div className="mt-16 bg-gradient-to-r from-[#260559] to-blue-700 rounded-xl p-8 text-white text-center">
             <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
             <p className="text-xl text-blue-100 mb-6">
-              Join thousands of users who trust Draft and Sign for their document management needs
+              Join thousands of users who trust Documantra for their document management needs
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link

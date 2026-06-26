@@ -91,6 +91,7 @@ import 'react-phone-input-2/lib/style.css';
 import "react-datepicker/dist/react-datepicker.css";
 import { toTitleCase } from '../../utils/formatName';
 import { APP_NAME } from '../../components/constants/appConfig';
+import { BRAND, formatEnvelopeSubject } from '../../config/brand';
 
 /** Match saved recipient rows by name, email, company, title, or phone (digits normalized). */
 function recipientListRowMatchesQuery(
@@ -221,7 +222,7 @@ const isPublicFlow =
           setDocuments([newDocument]);
           setEnvelopeData(prev => ({
             ...prev,
-            subject: prev.subject || `Complete with {BRAND.name}: ${file.name}`
+            subject: prev.subject || formatEnvelopeSubject(file.name)
           }));
 
           navigate(location.pathname, { replace: true, state: null });
@@ -269,7 +270,7 @@ const isPublicFlow =
                 setDocuments([newDocument]);
                 setEnvelopeData(prev => ({
                   ...prev,
-                  subject: prev.subject || `Complete with {BRAND.name}: ${file.name}`
+                  subject: prev.subject || formatEnvelopeSubject(file.name)
                 }));
 
                 localStorage.removeItem('pendingDocumentId');
@@ -290,7 +291,7 @@ const isPublicFlow =
 
   useEffect(() => {
     if (documents?.length > 0 && !documentTitle) {
-      const defaultTitle = `Complete with {BRAND.name}: ${documents[0]?.name || 'Document'}`;
+      const defaultTitle = formatEnvelopeSubject(documents[0]?.name || 'Document');
       setDocumentTitle(defaultTitle);
       setTitleInput(defaultTitle);
       if (!envelopeData.subject) {
@@ -1364,11 +1365,11 @@ const isPublicFlow =
     setFiles(files);
     if (!files) return;
 
-    const subjectWasAuto = (envelopeData.subject || '').trim().startsWith('Complete with Esign:');
+    const subjectWasAuto = (envelopeData.subject || '').trim().startsWith(`Complete with ${BRAND.name}:`);
     if (!envelopeData.subject || envelopeData.subject.trim() === '' || subjectWasAuto) {
       const names = Array.from(files).map(f => f.name).filter(Boolean);
       if (names.length > 0) {
-        setEnvelopeData(prev => ({ ...prev, subject: `Complete with Esign: ${names.join(', ')}` }));
+        setEnvelopeData(prev => ({ ...prev, subject: formatEnvelopeSubject(names.join(', ')) }));
       }
     }
 
@@ -1483,9 +1484,9 @@ const isPublicFlow =
       // Pre-compute the full list of document names (existing + new) with extensions
       const allDocNames = [...(documents || []).map(d => d.name), ...validDocs.map(d => d.name)].filter(Boolean);
       setDocuments((prev) => [...prev, ...validDocs]);
-      const subjectWasAuto = (envelopeData.subject || '').trim().startsWith('Complete with Esign:');
+      const subjectWasAuto = (envelopeData.subject || '').trim().startsWith(`Complete with ${BRAND.name}:`);
       if (!envelopeData.subject || envelopeData.subject.trim() === '' || subjectWasAuto) {
-        setEnvelopeData(prev => ({ ...prev, subject: `Complete with Esign: ${allDocNames.join(', ')}` }));
+        setEnvelopeData(prev => ({ ...prev, subject: formatEnvelopeSubject(allDocNames.join(', ')) }));
       }
     }
   };
@@ -5831,7 +5832,7 @@ if (isPublicFlow) {
                     value={envelopeData.subject}
                     onChange={(e) => setEnvelopeData(prev => ({ ...prev, subject: e.target.value }))}
                     className="w-full px-3 py-2 mb-8 border border-black-100 rounded-sm placeholder-foreground"
-                    placeholder="Complete with Esign:"
+                    placeholder={`Complete with ${BRAND.name}:`}
                     data-tour="ec-subject-input"
                   />
                 </div>
@@ -6367,7 +6368,7 @@ if (isPublicFlow) {
                       if (e.key === 'Enter') {
                         e.currentTarget.blur();
                       } else if (e.key === 'Escape') {
-                        setTitleInput(documentTitle || `Complete with {BRAND.name}: ${documents?.[0]?.name || 'Document'}`);
+                        setTitleInput(documentTitle || formatEnvelopeSubject(documents?.[0]?.name || 'Document'));
                         setIsEditingTitle(false);
                       }
                     }}
@@ -6379,14 +6380,14 @@ if (isPublicFlow) {
                 <div className="flex items-center space-x-2">
                   <h1 className="text-base font-medium text-foreground">
                     {documents?.length > 0
-                      ? (documentTitle || `Complete with {BRAND.name}: ${documents?.[0]?.name || 'Document'}`)
+                      ? (documentTitle || formatEnvelopeSubject(documents?.[0]?.name || 'Document'))
                       : 'Upload a Document and Add Envelope Recipients'}
                   </h1>
                   {documents?.length > 0 && (
                     <button
                       data-tour="ec-edit-title"
                       onClick={() => {
-                        const currentTitle = documentTitle || `Complete with {BRAND.name}: ${documents?.[0]?.name || 'Document'}`;
+                        const currentTitle = documentTitle || formatEnvelopeSubject(documents?.[0]?.name || 'Document');
                         setTitleInput(currentTitle);
                         setIsEditingTitle(true);
                         setTimeout(() => titleInputRef.current?.focus(), 0);

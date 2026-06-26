@@ -361,6 +361,8 @@ const {
 // ============================================================================
 // EXPORTS
 // ============================================================================
+const brandConfig = require('./brandConfig');
+
 module.exports = {
   ValidationResult,
   PATTERNS,
@@ -394,4 +396,7 @@ module.exports = {
   getMulterLimits,
   validateUploadedFile,
   createMulterErrorHandler,
+  BRAND_NAME: brandConfig.BRAND_NAME,
+  getBrandName: brandConfig.getBrandName,
+  formatEnvelopeSubject: brandConfig.formatEnvelopeSubject,
 };

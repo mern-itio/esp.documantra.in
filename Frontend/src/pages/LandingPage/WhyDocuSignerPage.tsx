@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { brandText } from '../../config/brand';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Layers, Shield, Zap, Globe, Code, Award, Heart,
@@ -192,7 +192,7 @@ const WhyDocuSignerPage = () => {
                   <feature.icon className="h-8 w-8 text-[#260559]" />
                 </div>
                 <h3 className="text-2xl font-semibold text-gray-900 mb-4">{feature.title}</h3>
-                <p className="text-gray-600 mb-6">{feature.description}</p>
+                <p className="text-gray-600 mb-6">{brandText(feature.description)}</p>
                 <div className="space-y-3">
                   {feature.benefits.map((benefit, i) => (
                     <div key={i} className="flex items-start gap-3">
@@ -278,7 +278,7 @@ const WhyDocuSignerPage = () => {
                     </svg>
                   ))}
                 </div>
-                <p className="text-gray-700 italic mb-6">"{testimonial.quote}"</p>
+                <p className="text-gray-700 italic mb-6">"{brandText(testimonial.quote)}"</p>
                 <div>
                   <p className="font-semibold text-gray-900">{testimonial.author}</p>
                   <p className="text-sm text-gray-600">{testimonial.position}, {testimonial.company}</p>
