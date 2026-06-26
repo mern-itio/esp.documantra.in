@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../../services/apiHelper';
 import { useAuth } from '../../components/AuthService/AuthContext';
+import { setMemoryAccessToken } from '../../utils/authSession';
 import { ArrowLeft, Mail, Phone, ShieldCheck, KeyRound, Smartphone, Loader2, Copy, CheckCircle2, QrCode, HelpCircle, X, Edit, Plus, Eye, EyeOff } from 'lucide-react';
 
 type AuthMethod = 'email' | 'sms' | 'authenticator';
@@ -247,6 +248,9 @@ const AuthMethodsPage: React.FC = () => {
         || resolvedRecoveryQuestions.filter((q) => String(q || '').trim().length > 0).length >= 3
       );
       setMessage('Authentication method updated successfully.');
+      if (resp.data?.token) {
+        setMemoryAccessToken(resp.data.token);
+      }
     } catch (e: unknown) {
       const apiError = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(apiError || 'Failed to update authentication method.');
@@ -421,6 +425,9 @@ const AuthMethodsPage: React.FC = () => {
       setMessage(
         'Authenticator app is now active. Save your backup codes below — they are shown only once and work if you lose your phone.'
       );
+      if (resp.data?.token) {
+        setMemoryAccessToken(resp.data.token);
+      }
     } catch (e: unknown) {
       setAuthenticatorSetup((prev) => ({ ...prev, verifying: false }));
       const apiError = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;

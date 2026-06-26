@@ -5,6 +5,7 @@ const { getMyReferral, listRewards, onFirstDocumentSentInternal } = require('../
 const {adminLogin, adminForgotPassword, adminResetPassword, adminChangePassword, getAdminMe, adminLogout, getAdminSocketToken} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail,insertNotifications,getNotifications,markNotificationReadById,markAllNotificationAsRead } = require('../controllers/mainController');
 const verifyJWT  = require('@draftnsign/auth-lib');
+const { blockTwoFaSetupOnlySession } = require('../middleware/blockTwoFaSetupOnlySession');
 const router = express.Router();
 
 // Rate limiters
@@ -56,18 +57,18 @@ router.post('/signup/send-phone-otp', otpLimiter, sendSignupPhoneOtp);
 router.post('/signup/verify-phone-otp', verifySignupPhoneOtp);
 router.post('/forgot-password', otpLimiter, forgotPassword);
 router.post('/reset-password', resetPasswordLimiter, resetPassword);
-router.post('/change-password', verifyJWT(), verifyActiveSession, changePassword);
+router.post('/change-password', verifyJWT(), blockTwoFaSetupOnlySession, verifyActiveSession, changePassword);
 router.get('/api/user-details/:id', userDetails);
 router.get('/api/find-user/:email', findUserByEmail);
 router.get('/api/auth/me', verifyJWT(), verifyActiveSession, getMe);
 router.post('/api/auth/logout', logout);
-router.put('/api/auth/profile', verifyJWT(), verifyActiveSession, updateProfile);
-router.post('/api/auth/profile/email/send-otp', verifyJWT(), verifyActiveSession, otpLimiter, sendProfileEmailOtp);
-router.post('/api/auth/profile/email/verify-otp', verifyJWT(), verifyActiveSession, verifyProfileEmailOtp);
-router.post('/api/auth/profile/phone/send-otp', verifyJWT(), verifyActiveSession, otpLimiter, sendProfilePhoneOtp);
-router.post('/api/auth/profile/phone/verify-otp', verifyJWT(), verifyActiveSession, verifyProfilePhoneOtp);
-router.get('/api/auth/sessions', verifyJWT(), verifyActiveSession, getSessions);
-router.post('/api/auth/sessions/revoke', verifyJWT(), verifyActiveSession, revokeSession);
+router.put('/api/auth/profile', verifyJWT(), blockTwoFaSetupOnlySession, verifyActiveSession, updateProfile);
+router.post('/api/auth/profile/email/send-otp', verifyJWT(), blockTwoFaSetupOnlySession, verifyActiveSession, otpLimiter, sendProfileEmailOtp);
+router.post('/api/auth/profile/email/verify-otp', verifyJWT(), blockTwoFaSetupOnlySession, verifyActiveSession, verifyProfileEmailOtp);
+router.post('/api/auth/profile/phone/send-otp', verifyJWT(), blockTwoFaSetupOnlySession, verifyActiveSession, otpLimiter, sendProfilePhoneOtp);
+router.post('/api/auth/profile/phone/verify-otp', verifyJWT(), blockTwoFaSetupOnlySession, verifyActiveSession, verifyProfilePhoneOtp);
+router.get('/api/auth/sessions', verifyJWT(), blockTwoFaSetupOnlySession, verifyActiveSession, getSessions);
+router.post('/api/auth/sessions/revoke', verifyJWT(), blockTwoFaSetupOnlySession, verifyActiveSession, revokeSession);
 router.get('/api/auth/validate-session', validateSessionEndpoint);
 router.get('/api/auth/2fa', verifyJWT(), getTwoFaSettings);
 router.post('/api/auth/2fa', verifyJWT(), updateTwoFaSettings);
@@ -76,14 +77,14 @@ router.post('/api/auth/2fa/recovery-email/verify-otp', verifyJWT(), verifyActive
 router.get('/api/auth/2fa/authenticator/setup', verifyJWT(), verifyActiveSession, setupAuthenticatorTwoFa);
 router.post('/api/auth/2fa/authenticator/verify-setup', verifyJWT(), verifyActiveSession, verifyAuthenticatorTwoFaSetup);
 router.post('/api/auth/2fa/authenticator/regenerate-backup-codes', verifyJWT(), verifyActiveSession, regenerateAuthenticatorBackupCodes);
-router.get('/api/auth/switch-account/:accType', verifyJWT(), switchAccount);
-router.get('/api/users-list', verifyJWT(), getUsersList);
-router.post('/api/notifications/create', verifyJWT(),insertNotifications);
-router.post('/api/notifications/:id/read', verifyJWT(),markNotificationReadById);
-router.post('/api/notifications/mark-all-read', verifyJWT(),markAllNotificationAsRead);
+router.get('/api/auth/switch-account/:accType', verifyJWT(), blockTwoFaSetupOnlySession, switchAccount);
+router.get('/api/users-list', verifyJWT(), blockTwoFaSetupOnlySession, getUsersList);
+router.post('/api/notifications/create', verifyJWT(), blockTwoFaSetupOnlySession, insertNotifications);
+router.post('/api/notifications/:id/read', verifyJWT(), blockTwoFaSetupOnlySession, markNotificationReadById);
+router.post('/api/notifications/mark-all-read', verifyJWT(), blockTwoFaSetupOnlySession, markAllNotificationAsRead);
 
-router.get('/api/user/notifications', verifyJWT(), getNotifications);
-router.get('/api/referrals/me', verifyJWT(), verifyActiveSession, getMyReferral);
-router.get('/api/rewards', verifyJWT(), verifyActiveSession, listRewards);
+router.get('/api/user/notifications', verifyJWT(), blockTwoFaSetupOnlySession, getNotifications);
+router.get('/api/referrals/me', verifyJWT(), blockTwoFaSetupOnlySession, verifyActiveSession, getMyReferral);
+router.get('/api/rewards', verifyJWT(), blockTwoFaSetupOnlySession, verifyActiveSession, listRewards);
 router.post('/api/internal/referrals/first-document-sent', onFirstDocumentSentInternal);
 module.exports = router;

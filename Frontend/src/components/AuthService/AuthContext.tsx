@@ -274,7 +274,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const applyLoginPayload = async (data: any) => {
+  const applyLoginPayload = async (data: any, options?: { setupOnly?: boolean }) => {
     clearLegacyAuthStorage();
     if (data?.token) {
       setMemoryAccessToken(data.token);
@@ -297,6 +297,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setOrganizationDetail(null);
     syncUserState(initialUserData);
     setIsAuthenticated(true);
+
+    if (options?.setupOnly) return;
 
     try {
       const subscriptionPlan = await SubscriptionService.getUserPlan();
@@ -341,6 +343,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           );
         }
         if (resp.status === 403 && data?.code === 'TWO_FA_SETUP_REQUIRED') {
+          if (data?.token) {
+            await applyLoginPayload({ ...data, email }, { setupOnly: true });
+          }
           const setupError = new Error(
             data?.message || 'Two-factor authentication is required for your account.'
           );
@@ -375,6 +380,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
+        if (resp.status === 403 && data?.code === 'TWO_FA_SETUP_REQUIRED') {
+          if (data?.token) {
+            await applyLoginPayload({ ...data, email: data.email || '' }, { setupOnly: true });
+          }
+          const setupError = new Error(
+            data?.message || 'Two-factor authentication is required for your account.'
+          );
+          setupError.name = 'TwoFaSetupRequiredError';
+          (setupError as any).setupPath = data?.setupPath || '/account/security';
+          throw setupError;
+        }
         throw new Error(data?.message || 'Google Login failed');
       }
 

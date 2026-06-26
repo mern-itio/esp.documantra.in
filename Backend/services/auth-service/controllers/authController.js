@@ -22,6 +22,7 @@ const OTP_EXPIRY_MINUTES = 10;
 const SIGNUP_TOKEN_EXPIRY = '15m';
 const TWO_FA_TOKEN_EXPIRY = '10m';
 const TWO_FA_RECOVERY_TOKEN_EXPIRY = '10m';
+const TWO_FA_SETUP_TOKEN_EXPIRY = process.env.TWO_FA_SETUP_TOKEN_EXPIRY || '30m';
 const MIN_RECOVERY_QUESTIONS = 3;
 
 authenticator.options = {
@@ -345,13 +346,7 @@ const login = async (req, res) => {
   }
 
   if (shouldRequireTwoFaSetup(user)) {
-    return res.status(403).json({
-      status: 403,
-      code: 'TWO_FA_SETUP_REQUIRED',
-      message: 'Two-factor authentication is required for your account. Enable it in Account Security settings.',
-      setupPath: '/account/security',
-      data: null,
-    });
+    return respondTwoFaSetupRequired(req, res, user);
   }
 
   // Optional 2FA: if enabled and device is not trusted, require OTP
@@ -786,6 +781,10 @@ const updateTwoFaSettings = async (req, res) => {
   user.twoFaMethod = nextMethod;
   await user.save({ validateBeforeSave: false });
 
+  const upgradedToken = nextEnabled
+    ? await upgradeSessionAfterTwoFaEnabled(req, res, user)
+    : null;
+
   return res.status(200).json({
     message: '2FA settings updated',
     twoFaEnabled: !!user.twoFaEnabled,
@@ -797,6 +796,7 @@ const updateTwoFaSettings = async (req, res) => {
     pendingRecoveryEmailMasked: user.pendingRecoveryEmail ? maskEmail(user.pendingRecoveryEmail) : '',
     hasRecoveryQuestions: Array.isArray(user.twoFaRecoveryQuestions) && user.twoFaRecoveryQuestions.length >= MIN_RECOVERY_QUESTIONS,
     recoveryQuestionsLocked: Array.isArray(user.twoFaRecoveryQuestions) && user.twoFaRecoveryQuestions.length >= MIN_RECOVERY_QUESTIONS,
+    ...(upgradedToken ? { token: upgradedToken } : {}),
   });
 };
 
@@ -916,6 +916,8 @@ const verifyAuthenticatorTwoFaSetup = async (req, res) => {
   user.twoFaBackupCodeHashes = plainBackupCodes.map((c) => hashBackupCode(normalizeBackupCode(c)));
   await user.save({ validateBeforeSave: false });
 
+  const upgradedToken = await upgradeSessionAfterTwoFaEnabled(req, res, user);
+
   return res.status(200).json({
     message: 'Authenticator app enabled successfully.',
     twoFaEnabled: !!user.twoFaEnabled,
@@ -923,6 +925,7 @@ const verifyAuthenticatorTwoFaSetup = async (req, res) => {
     authenticatorConfigured: true,
     backupCodes: plainBackupCodes,
     backupCodesRemaining: user.twoFaBackupCodeHashes.length,
+    ...(upgradedToken ? { token: upgradedToken } : {}),
   });
 };
 
@@ -1141,8 +1144,38 @@ const verifySignupPhoneOtp = async (req, res) => {
   return res.status(200).json({ message: 'Phone verified', ...verificationState(user) });
 };
 
+async function respondTwoFaSetupRequired(req, res, user) {
+  const setupToken = await generateAccessTokenUser(user, TWO_FA_SETUP_TOKEN_EXPIRY, req, null, {
+    twoFaSetupOnly: true,
+  });
+  return res
+    .cookie('accessToken', setupToken, getAccessTokenCookieOptions(req, TWO_FA_SETUP_TOKEN_EXPIRY))
+    .status(403)
+    .json({
+      status: 403,
+      code: 'TWO_FA_SETUP_REQUIRED',
+      message: 'Two-factor authentication is required for your account. Enable it in Account Security settings.',
+      setupPath: '/account/security',
+      twoFaSetupOnly: true,
+      user_id: user._id,
+      email: user.email,
+      token: setupToken,
+      type: 'user',
+      data: null,
+    });
+}
+
+async function upgradeSessionAfterTwoFaEnabled(req, res, user) {
+  if (!req.user?.twoFaSetupOnly) return null;
+  const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
+  const sessionId = req.user?.data?.sessionId || req.user?.sessionId || null;
+  const token = await generateAccessTokenUser(user, expireIn, req, sessionId);
+  res.cookie('accessToken', token, getAccessTokenCookieOptions(req, expireIn));
+  return token;
+}
+
 // Access Token Generator
-async function generateAccessTokenUser(user, expireIn, req, keepSessionId = null) {
+async function generateAccessTokenUser(user, expireIn, req, keepSessionId = null, tokenOptions = {}) {
   let sessionId = keepSessionId || crypto.randomBytes(16).toString('hex');
   let ipAddress = 'Unknown IP';
   let deviceInfo = 'Unknown Device';
@@ -1211,11 +1244,14 @@ async function generateAccessTokenUser(user, expireIn, req, keepSessionId = null
     sessionId
   };
 
+  const payload = { data: dataSend };
+  if (tokenOptions.twoFaSetupOnly) {
+    payload.twoFaSetupOnly = true;
+  }
+
   try {
     return jwt.sign(
-      {
-        data: dataSend
-      },
+      payload,
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: expireIn }
     );
@@ -1529,13 +1565,7 @@ const googleLogin = async (req, res) => {
     }
 
     if (shouldRequireTwoFaSetup(user)) {
-      return res.status(403).json({
-        status: 403,
-        code: 'TWO_FA_SETUP_REQUIRED',
-        message: 'Two-factor authentication is required for your account. Enable it in Account Security settings.',
-        setupPath: '/account/security',
-        data: null,
-      });
+      return respondTwoFaSetupRequired(req, res, user);
     }
 
     const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';

@@ -1,0 +1,8 @@
+# Copy to Backend/services/auth-service/.env on production (not committed).
+# VAPT optional 2FA enforcement — enable via deploy/scripts/enable-vapt-production.sh
+
+REQUIRE_2FA_FOR_LOGIN=false
+REQUIRE_2FA_GRACE_DAYS=30
+REQUIRE_2FA_FOR_E_SIGN=false
+HIDE_ERROR_DETAILS=true
+TWO_FA_SETUP_TOKEN_EXPIRY=30m
