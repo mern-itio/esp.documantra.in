@@ -35,14 +35,14 @@ const resetPasswordLimiter = rateLimit({
 
 router.get('/status', (_, res) => res.send('Auth Service is running and changing'));
 router.get('/api/auth/security-policy', getSecurityPolicy);
-router.post('/login', loginLimiter, login);
+router.post('/login', login);
 router.post('/google-login', loginLimiter, googleLogin);
 router.post('/2fa/verify-login', loginLimiter, verifyTwoFaLogin);
 router.post('/2fa/recovery/questions', loginLimiter, getTwoFaRecoveryQuestions);
 router.post('/2fa/recovery/verify-answer', loginLimiter, verifyTwoFaRecoverySingleAnswer);
 router.post('/2fa/recovery/verify-answers', loginLimiter, verifyTwoFaRecoveryAnswers);
 router.post('/2fa/recovery/verify-otp', loginLimiter, verifyTwoFaRecoveryOtp);
-router.post('/admin/login', loginLimiter, adminLogin);
+router.post('/admin/login', adminLogin);
 router.get('/admin/me', verifyJWT('admin'), getAdminMe);
 router.get('/admin/socket-token', verifyJWT('admin'), getAdminSocketToken);
 router.post('/admin/logout', adminLogout);
