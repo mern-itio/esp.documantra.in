@@ -1,4 +1,5 @@
 import { brandText } from '../../config/brand';
+import { Check, X, ArrowRight, Zap, DollarSign, Users, FileText, Clock, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const DocuSignerVsDocuSignPage = () => {

@@ -1,4 +1,5 @@
 import { brandText } from '../../config/brand';
+import { Link } from 'react-router-dom';
 import { 
   Brain, Scan, FileSearch, PenTool, Zap, ArrowRight, 
   CheckCircle, MessageSquare, Sparkles,

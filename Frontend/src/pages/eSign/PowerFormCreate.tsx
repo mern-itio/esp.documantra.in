@@ -49,7 +49,7 @@ import type { AxiosProgressEvent } from 'axios';
 import { Card } from '../../components/DocumentService/ui/card';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../components/AuthService/AuthContext';
-import { BRAND, formatEnvelopeSubject } from '../../config/brand';
+import { BRAND, formatEnvelopeSubject, APP_NAME } from '../../config/brand';
 type Party = {
   id: string;                 // e.g. "slot_1"
   name: string;               // display label, e.g. "Party A"
