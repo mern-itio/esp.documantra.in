@@ -2,3 +2,7 @@
 node_modules/
 # Ignore package-lock.json
 package-lock.json
+.local-mongo/
+.live-db-dump.archive.gz
+services/*/.env
+.env

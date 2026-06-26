@@ -4,3 +4,7 @@ node_modules/
 dist/
 build/
 uploads/
+
+# Admin UI lives in a separate repo (Draft-and-Sign-Admin-Frontend), not this monorepo.
+Admin/
+.tmp-admin-frontend/

@@ -1,0 +1,16 @@
+{
+  "name": "draftnsign-backend-local",
+  "private": true,
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap-local-env.js",
+    "install:packages": "npm install --prefix packages/validators && npm install --prefix packages/auth-lib && npm install --prefix packages/email-lib",
+    "install:services": "npm install --prefix services/auth-service && npm install --prefix services/document-service && npm install --prefix services/e-sign-service && npm install --prefix services/pdf-service && npm install --prefix services/api-service && npm install --prefix services/template-service && npm install --prefix services/support-service && npm install --prefix services/ai-assistant-service && npm install --prefix services/subscription-service && npm install --prefix services/organization-service && npm install --prefix services/email-service && npm install --prefix services/api-gateway && npm install --prefix services/identity-service && npm install --prefix services/admin-service",
+    "install:all": "npm run install:packages && npm run install:services",
+    "seed:admin": "npm run bootstrap && node services/auth-service/scripts/seedAdmin.js",
+    "dev:core": "node scripts/start-local-core.js",
+    "dev": "npm run bootstrap && concurrently -k -n auth,doc,esign,pdf,api,tpl,support,ai,sub,org,email,gw,id,admin -c blue,green,yellow,magenta,cyan,white,gray,red,brightBlue,brightGreen,brightYellow,brightMagenta,brightCyan \"npm run dev --prefix services/auth-service\" \"npm run dev --prefix services/document-service\" \"npm run dev --prefix services/e-sign-service\" \"npm run dev --prefix services/pdf-service\" \"npm run dev --prefix services/api-service\" \"npm run dev --prefix services/template-service\" \"npm run dev --prefix services/support-service\" \"npm run dev --prefix services/ai-assistant-service\" \"npm run dev --prefix services/subscription-service\" \"npm run dev --prefix services/organization-service\" \"npm run dev --prefix services/email-service\" \"npm run dev --prefix services/api-gateway\" \"npm run dev --prefix services/identity-service\" \"npm run dev --prefix services/admin-service\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

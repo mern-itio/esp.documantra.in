@@ -2,7 +2,7 @@
  * Seed default admin user
  * Run this once: node scripts/seedAdmin.js
  */
-require('dotenv').config(); // Loads environment variables
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const AdminUser = require('../models/Admin');

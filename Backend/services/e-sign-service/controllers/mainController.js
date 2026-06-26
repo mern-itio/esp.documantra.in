@@ -1251,25 +1251,38 @@ const addSignature = async (req, res) => {
 
         break;
       case "Recipient":
-        try{
-            const data = {
-              envelopeId,
-              documentId, 
-              recipientId,
-              fieldId,
-              signatureImageBase64,
-            };
-          result = await signingServices[signatureProvider][signatureMethod](data);
-        }catch (err){
-          console.log(err);
+        if (signatureMethod === "Digital_Signature") {
+          result = await addDigitalSignatureForRecipient({
+            envelopeId,
+            documentId,
+            recipientId,
+          });
+        } else {
+          const providerKey = signatureProvider === "draftnSign" ? "draftAndSign" : signatureProvider;
+          const provider = signingServices[providerKey];
+          if (!provider || typeof provider[signatureMethod] !== "function") {
+            return res.status(400).json({
+              message: `Unsupported signature provider/method: ${signatureProvider}/${signatureMethod}`,
+            });
+          }
+          const data = {
+            envelopeId,
+            documentId,
+            recipientId,
+            fieldId,
+            signatureImageBase64,
+          };
+          result = await provider[signatureMethod](data);
         }
         break;
       default:
         console.log("Invalid signing mode");
         return res.status(400).json({ message: 'Invalid signing mode' });
     }
-    console.log("Signature Process Result:", result);
-    return res.status(result?.status).json(result?.response);
+    if (!result || typeof result.status !== "number") {
+      return res.status(500).json({ message: "Failed to complete signature" });
+    }
+    return res.status(result.status).json(result.response);
 
   } catch (err) {
     console.error('addSignature error:', err);

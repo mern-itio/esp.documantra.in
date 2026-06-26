@@ -49,6 +49,18 @@ const buildPlanResponse = (subscription, planTemplate = null) => ({
 const ensureUserSubscription = async (userId) => {
   let subscription = await Subscription.findOne({ userId });
   if (subscription) {
+    if (!subscription.planTemplateId) {
+      const freePlanTemplate = await PlanTemplate.findOne({
+        $or: [{ type: 'free' }, { pricePerPeriod: 0 }],
+      });
+      if (freePlanTemplate) {
+        subscription.planTemplateId = freePlanTemplate._id;
+        if (!subscription.creditsBalance && freePlanTemplate.monthlyCredits) {
+          subscription.creditsBalance = freePlanTemplate.monthlyCredits;
+        }
+        await subscription.save();
+      }
+    }
     return subscription;
   }
 
@@ -119,18 +131,13 @@ const createFreePlanForUser = async (req, res) => {
       return res.status(400).json({ status: 400, message: 'userId is required', data: null });
     }
 
-    let subscription = await Subscription.findOne({ userId });
-    if (subscription) {
+    const existing = await Subscription.findOne({ userId });
+    if (existing) {
+      const subscription = await ensureUserSubscription(userId);
       return res.status(200).json({ status: 200, message: 'Subscription already exists', data: subscription });
     }
 
-    subscription = await Subscription.create({
-      userId,
-      creditsBalance: 0,
-      creditReserved: 0,
-      status: 'active'
-    });
-
+    const subscription = await ensureUserSubscription(userId);
     return res.status(201).json({ status: 201, message: 'Free subscription created', data: subscription });
   } catch (error) {
     console.error('createFreePlanForUser error:', error);
@@ -462,5 +469,7 @@ module.exports = {
   upgradePlan,
   createCheckoutSession,
   confirmCheckoutSession,
+  getUserIdFromRequest,
+  ensureUserSubscription,
 };
 

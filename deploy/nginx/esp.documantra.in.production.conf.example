@@ -100,9 +100,21 @@ server {
         proxy_pass http://127.0.0.1:2113/api/;
     }
 
-    location /admin/ {
+    location /service/admin/ {
         add_header Cache-Control "no-store, no-cache, must-revalidate, private" always;
         proxy_pass http://127.0.0.1:3100/;
+    }
+
+    # Admin SPA — separate repo (Draft-and-Sign-Admin-Frontend), build → /var/www/admin-esp
+    location /admin/ {
+        alias /var/www/admin-esp/;
+        try_files $uri $uri/ /admin/index.html;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, private" always;
+    }
+
+    location = /admin/index.html {
+        alias /var/www/admin-esp/index.html;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, private" always;
     }
 
     # RFC 9116 security contact (VAPT LOW)

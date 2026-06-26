@@ -1,6 +1,22 @@
 const AuthProvider = require('../models/AuthProvider');
-const Subscription = require('../models/Subscription');
-const planTemplate = require('../models/PlanTemplate');
+const PlanTemplate = require('../models/PlanTemplate');
+const { getUserIdFromRequest, ensureUserSubscription } = require('./userPlanController');
+
+const formatAuthMethods = (providers, authCosts = []) => {
+  const costMap = Object.fromEntries(authCosts.map((a) => [String(a.authId), a.credits]));
+  return providers.map((p) => ({
+    id: p._id,
+    name: p.name,
+    description: p.description,
+    securityLevel: p.uiSchema?.securityLevel?.toLowerCase() || 'medium',
+    estimatedTime: p.uiSchema?.estimatedTime || 'N/A',
+    icon: p.uiSchema?.icon || 'Shield',
+    cost: costMap[p._id.toString()] ?? p.defaultCredits,
+    compliance: p.uiSchema?.compliance || [],
+    available: true,
+    isRecommended: p.isRecommended || false,
+  }));
+};
 
 const addAuthProvider = async (req, res) => {
     const payload = req.body || {};
@@ -191,46 +207,34 @@ const deleteAuthProvider = async (req, res) => {
   }
 };
 const availableAuthMethods = async (req, res) => {
-  const userId = req.user?.data?.id;
-  console.log('availableAuthMethods called for userId:', userId);
+  const userId = getUserIdFromRequest(req);
   if (!userId) {
     return res.status(401).json({
       status: 401,
-      message: 'Unauthorized: missing user information....',
-      data: null
+      message: 'Unauthorized: missing user information',
+      data: null,
     });
   }
   try {
-    // Fetch active subscription + plan
-    const sub = await Subscription.findOne({ userId, status: 'active' })
-      .populate('planTemplateId');
-    if (!sub || !sub.planTemplateId){
-      console.log('No active subscription found for userId:', userId);
-      return res.status(404).json({ status: 404, message: 'No active subscription found' });
+    const subscription = await ensureUserSubscription(userId);
+    let plan = null;
+
+    if (subscription.planTemplateId) {
+      plan = await PlanTemplate.findById(subscription.planTemplateId).lean();
     }
-    const plan = sub.planTemplateId;
-    const authCosts = plan.authCosts || [];
-    // Get IDs of providers listed in plan
-    const authIds = authCosts.map(a => a.authId);
-    // Fetch only those providers that match plan’s authIds and are enabled
-    const providers = await AuthProvider.find({ _id: { $in: authIds }, enabled: true });
-    // Map costs from plan for quick lookup
-    const costMap = Object.fromEntries(authCosts.map(a => [String(a.authId), a.credits]));
-    // Build formatted response
-    const methods = providers.map(p => ({
-      id: p._id,
-      name: p.name,
-      description: p.description,
-      securityLevel: p.uiSchema?.securityLevel?.toLowerCase() || 'medium',
-      estimatedTime: p.uiSchema?.estimatedTime || 'N/A',
-      icon: p.uiSchema?.icon || 'Shield',
-      cost: costMap[p._id.toString()] ?? p.defaultCredits,
-      compliance: p.uiSchema?.compliance || [],
-      available: true,
-      isRecommended: p.isRecommended || false
-    }));
+
+    const authCosts = plan?.authCosts || [];
+    let providers;
+
+    if (authCosts.length > 0) {
+      const authIds = authCosts.map((a) => a.authId);
+      providers = await AuthProvider.find({ _id: { $in: authIds }, enabled: true });
+    } else {
+      providers = await AuthProvider.find({ enabled: true });
+    }
+
+    const methods = formatAuthMethods(providers, authCosts);
     return res.json({ status: 200, message: 'OK', data: { methods } });
-    
   } catch (error) {
     console.error('Error fetching available authentication methods:', error);
     return res.status(500).json({

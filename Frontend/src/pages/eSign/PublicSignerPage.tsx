@@ -108,7 +108,7 @@ const EnvelopeDetails: React.FC = () => {
   const [showSigningDoneModal, setShowSigningDoneModal] = useState(false);
   const initialCompletionRedirectRef = useRef(true);
   const [sessionIp, setSessionIp] = useState<string>(""); // best-effort
-  const [signatureProvider, setSignatureProvider] = useState<string>("draftnSign");
+  const [signatureProvider, setSignatureProvider] = useState<string>("draftAndSign");
   const [signatureMethod, setSignatureMethod] = useState<string>("Digital_Signature");
 
   useEffect(() => {
@@ -190,7 +190,7 @@ const EnvelopeDetails: React.FC = () => {
         setEnvelope(response.data.data);
         const docs = response.data.data.documents || [];
         setAllDocuments(docs);
-        setSignatureProvider("draftnSign");
+        setSignatureProvider("draftAndSign");
         setSignatureMethod("Digital_Signature");
         const recipients = response.data.data.recipients || [];
         setAllRecipients(recipients);
