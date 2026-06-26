@@ -1,14 +1,20 @@
 /**
  * Create or update a user + admin with the same email (separate collections).
- *
- * Usage (Docker):
- *   docker compose exec auth-service npm run seed:user-admin
- *   docker compose exec auth-service node scripts/seed-user-admin.js --email=user@example.com --password=Secret@123 --name="Full Name"
+ * Usage:
+ *   node scripts/seed-user-admin.js
+ *   node scripts/seed-user-admin.js --email=user@example.com --password=Secret@123 --name="Full Name"
  */
-require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+const path = require('path');
+
+const authRoot = path.join(__dirname, '../services/auth-service');
+
+module.paths.unshift(path.join(authRoot, 'node_modules'));
+
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const mongoose = require('mongoose');
-const AdminUser = require('../models/Admin');
-const User = require('../models/User');
+
+const AdminUser = require(path.join(authRoot, 'models/Admin'));
+const User = require(path.join(authRoot, 'models/User'));
 
 const parseArg = (name, fallback) => {
   const prefix = `--${name}=`;
@@ -23,7 +29,7 @@ const fullname = parseArg('name', 'Sahil Bhingare');
 async function main() {
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) {
-    console.error('MONGO_URI missing in services/auth-service/.env');
+    console.error('MONGO_URI missing in Backend/.env');
     process.exit(1);
   }
 
@@ -83,8 +89,8 @@ async function main() {
   console.log('\n--- Login credentials (same email, same password) ---');
   console.log('Email:   ', email);
   console.log('Password:', password);
-  console.log('User app:  https://esp.documantra.in/login');
-  console.log('Admin app: https://esp.documantra.in/admin/login');
+  console.log('User app:  http://localhost:5173');
+  console.log('Admin app: http://localhost:5174/admin/login');
 }
 
 main()
