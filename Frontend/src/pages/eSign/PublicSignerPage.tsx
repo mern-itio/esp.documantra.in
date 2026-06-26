@@ -3,6 +3,7 @@ import { useLocation, useParams } from "react-router-dom";
 import { eSignApi, subscriptionApi } from "../../services/apiHelper";
 import DocumentViewer from "../../components/ESign/DocumentViewer";
 import SelfieCapture from "../../components/ESign/SelfieCapture";
+import LivenessCapture from "../../components/ESign/LivenessCapture";
 import DocumentSignatureBackground from "../../components/common/DocumentSignatureBackground";
 import * as Icons from "lucide-react";
 import {
@@ -164,6 +165,7 @@ const EnvelopeDetails: React.FC = () => {
   const [otpLength, setOtpLength] = useState<number>(6); // Track OTP length from backend
   const [verificationId, setVerificationId] = useState<string>(''); // For any code-based verification if needed
   const [verificationMessage, setVerificationMessage] = useState<string>(''); // To display any messages from backend during verification
+  const [biometricError, setBiometricError] = useState<string>('');
   const [verificationUrl, setVerificationUrl] = useState<string>(''); // For redirects to external identity verification
   const isPreviewMode = useMemo(() => {
     try {
@@ -616,9 +618,11 @@ const EnvelopeDetails: React.FC = () => {
         } else if (action === 'CAPTURE_SELFIE') {
           setCurrentAction('CAPTURE_SELFIE');
           setAuthStatus('pending');
-          setVerificationMessage(
-            serverMessage || 'Please capture a clear selfie to verify your identity.'
-          );
+          setBiometricError('');
+        } else if (action === 'CAPTURE_LIVENESS') {
+          setCurrentAction('CAPTURE_LIVENESS');
+          setAuthStatus('pending');
+          setBiometricError('');
         } else {
           console.log(message || 'Verification initiated.');
         }
@@ -665,14 +669,29 @@ const EnvelopeDetails: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [currentAction, verificationUrl, redirectCountdown]);
 
-  const handleSelfieSubmit = async (imageBase64: string) => {
+  const handleBiometricValidationFailure = (message?: string, maxAttemptsReached?: boolean) => {
+    if (maxAttemptsReached) {
+      setAuthStatus('failed');
+      setBiometricError(message || 'Maximum verification attempts reached.');
+      alert(message || 'Maximum verification attempts reached for this method.');
+      setShowAuthModal(false);
+      return;
+    }
+
+    setAuthStatus('pending');
+    setBiometricError(message || 'Verification failed. Please try again.');
+    setCurrentAction(currentAction);
+  };
+
+  const handleSelfieSubmit = async (payload: { imageBase64: string; faceBox: { x: number; y: number; width: number; height: number } }) => {
     if (!verificationId) {
-      alert('Selfie session expired. Please try again.');
+      setBiometricError('Session expired. Please start again.');
       setCurrentAction('');
       return;
     }
 
     setAuthStatus('verifying');
+    setBiometricError('');
     try {
       const currentAuthMethod = authMethods[currentAuthIndex];
       const response = await subscriptionApi.post(`/api/authproviders/verify/selfie`, {
@@ -680,17 +699,62 @@ const EnvelopeDetails: React.FC = () => {
         recipientId: currentRecipient.id,
         envelopeId: id,
         verificationId,
-        imageBase64,
+        imageBase64: payload.imageBase64,
+        faceBox: payload.faceBox,
       });
 
       if (response.status === 200 && response.data?.success) {
         handleAuthSuccess();
       } else {
-        handleAuthFailure();
+        handleBiometricValidationFailure(response.data?.message, response.data?.maxAttemptsReached);
       }
-    } catch (error) {
-      console.error('Error verifying selfie:', error);
-      handleAuthFailure();
+    } catch (error: any) {
+      const data = error?.response?.data;
+      handleBiometricValidationFailure(
+        data?.message || 'Selfie verification failed.',
+        data?.maxAttemptsReached
+      );
+    }
+  };
+
+  const handleLivenessSubmit = async (payload: {
+    imageBase64: string;
+    secondaryImageBase64: string;
+    faceBox: { x: number; y: number; width: number; height: number };
+    secondaryFaceBox: { x: number; y: number; width: number; height: number };
+  }) => {
+    if (!verificationId) {
+      setBiometricError('Session expired. Please start again.');
+      setCurrentAction('');
+      return;
+    }
+
+    setAuthStatus('verifying');
+    setBiometricError('');
+    try {
+      const currentAuthMethod = authMethods[currentAuthIndex];
+      const response = await subscriptionApi.post(`/api/authproviders/verify/liveness`, {
+        providerId: currentAuthMethod.id,
+        recipientId: currentRecipient.id,
+        envelopeId: id,
+        verificationId,
+        imageBase64: payload.imageBase64,
+        secondaryImageBase64: payload.secondaryImageBase64,
+        faceBox: payload.faceBox,
+        secondaryFaceBox: payload.secondaryFaceBox,
+      });
+
+      if (response.status === 200 && response.data?.success) {
+        handleAuthSuccess();
+      } else {
+        handleBiometricValidationFailure(response.data?.message, response.data?.maxAttemptsReached);
+      }
+    } catch (error: any) {
+      const data = error?.response?.data;
+      handleBiometricValidationFailure(
+        data?.message || 'Liveness verification failed.',
+        data?.maxAttemptsReached
+      );
     }
   };
 
@@ -1904,22 +1968,58 @@ const EnvelopeDetails: React.FC = () => {
 
                   {currentAction === "CAPTURE_SELFIE" && (
                     <div className="space-y-4">
-                      <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-                        {verificationMessage ||
-                          "Capture a selfie to complete identity verification."}
-                      </div>
-
+                      {biometricError && (
+                        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                          {biometricError}
+                        </div>
+                      )}
                       <SelfieCapture
                         disabled={isVerifying}
                         onSubmit={handleSelfieSubmit}
                       />
-
                       <div className="flex items-center justify-end gap-3">
                         <button
                           type="button"
                           onClick={() => {
                             setCurrentAction("");
-                            setVerificationMessage("");
+                            setBiometricError("");
+                          }}
+                          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-[#F7F3EE] px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-[#F5F2EE]"
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            requestSkipAuthMethod(
+                              "You chose to skip this verification method."
+                            )
+                          }
+                          className="inline-flex items-center justify-center rounded-lg border border-[#260559]/40 bg-[#F7F3EE] px-4 py-2.5 text-sm font-medium text-[#260559] hover:bg-[#260559]/5"
+                        >
+                          Skip
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentAction === "CAPTURE_LIVENESS" && (
+                    <div className="space-y-4">
+                      {biometricError && (
+                        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                          {biometricError}
+                        </div>
+                      )}
+                      <LivenessCapture
+                        disabled={isVerifying}
+                        onSubmit={handleLivenessSubmit}
+                      />
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentAction("");
+                            setBiometricError("");
                           }}
                           className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-[#F7F3EE] px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-[#F5F2EE]"
                         >

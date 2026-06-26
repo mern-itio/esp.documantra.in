@@ -107,26 +107,92 @@ const initiateSelfieVerification = async (providerId, recipientData) => {
 
     return {
         success: true,
-        message: 'Selfie verification session created. Please capture your selfie to continue.',
+        message: 'Capture your selfie to continue.',
         verificationId: verificationCode._id,
     };
 };
 
-const verifySelfieSession = async (providerId, recipientId, verificationId) => {
+const initiateLivenessVerification = async (providerId, recipientData) => {
+    const sessionToken = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const expiryTime = new Date(Date.now() + 15 * 60 * 1000);
+    const verificationCode = new VerificationCode({
+        authenticationProviderId: providerId,
+        type: 'liveness',
+        verificationData: sessionToken,
+        recipientId: recipientData.id,
+        expiryTime,
+    });
+    await verificationCode.save();
+
+    return {
+        success: true,
+        message: 'Complete the liveness check to continue.',
+        verificationId: verificationCode._id,
+    };
+};
+
+const verifyBiometricSession = async (providerId, recipientId, verificationId, sessionType) => {
     const record = await VerificationCode.findOne({
         _id: verificationId,
         authenticationProviderId: providerId,
         recipientId: recipientId,
-        type: 'selfie',
+        type: sessionType,
         expiryTime: { $gt: new Date() },
     });
 
     if (!record) {
-        return { success: false, message: 'Invalid or expired selfie verification session' };
+        return { success: false, message: 'Invalid or expired verification session' };
     }
 
-    return { success: true, message: 'Selfie verification session is valid', sessionToken: record.verificationData };
+    return {
+        success: true,
+        message: 'Verification session is valid',
+        sessionToken: record.verificationData,
+        attempts: record.attempts || 0,
+        record,
+    };
 };
 
+const recordBiometricFailure = async (verificationId, maxAttempts = 3) => {
+    const record = await VerificationCode.findByIdAndUpdate(
+        verificationId,
+        { $inc: { attempts: 1 } },
+        { new: true }
+    );
 
-module.exports = { initiateSmsOtpVerification, getProviderById, initiateEmailOtpVerification, verifyOtp, initiateSelfieVerification, verifySelfieSession };
+    if (!record) {
+        return { success: false, message: 'Invalid verification session' };
+    }
+
+    if ((record.attempts || 0) >= maxAttempts) {
+        return {
+            success: false,
+            message: 'Maximum verification attempts reached. This method cannot be used further.',
+            maxAttemptsReached: true,
+            attempts: record.attempts,
+        };
+    }
+
+    return {
+        success: false,
+        message: 'Verification failed',
+        attempts: record.attempts,
+        attemptsRemaining: Math.max(0, maxAttempts - record.attempts),
+    };
+};
+
+const verifySelfieSession = async (providerId, recipientId, verificationId) =>
+    verifyBiometricSession(providerId, recipientId, verificationId, 'selfie');
+
+
+module.exports = {
+    initiateSmsOtpVerification,
+    getProviderById,
+    initiateEmailOtpVerification,
+    verifyOtp,
+    initiateSelfieVerification,
+    initiateLivenessVerification,
+    verifySelfieSession,
+    verifyBiometricSession,
+    recordBiometricFailure,
+};

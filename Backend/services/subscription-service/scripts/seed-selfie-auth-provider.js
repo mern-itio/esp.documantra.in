@@ -1,10 +1,9 @@
 /**
- * Create/update Selfie Verification auth provider and attach it to plan templates at 2 credits.
- * Safe to run multiple times (idempotent).
+ * Create/update biometric auth providers and attach them to plan templates.
  *
- * Usage (host or Docker):
+ * Usage:
  *   npm run seed:selfie-auth
- *   node scripts/seed-selfie-auth-provider.js --credits=2
+ *   node scripts/seed-selfie-auth-provider.js --selfie-credits=2 --liveness-credits=2
  */
 const path = require('path');
 
@@ -21,70 +20,101 @@ const parseArg = (name, fallback) => {
   return hit ? hit.slice(prefix.length) : fallback;
 };
 
-const credits = Math.max(1, Number(parseArg('credits', '2')) || 2);
+const selfieCredits = Math.max(1, Number(parseArg('selfie-credits', parseArg('credits', '2'))) || 2);
+const livenessCredits = Math.max(1, Number(parseArg('liveness-credits', '2')) || 2);
 
-const SELFIE_PROVIDER = {
-  name: 'Selfie Verification',
-  description: 'In-app selfie capture for signer identity verification (KYC-style liveness check).',
-  defaultCredits: credits,
-  enabled: true,
-  isRecommended: false,
-  config: {
-    providerType: 'selfie_capture',
-    apiKeyRef: '',
-    requiredFields: [],
-    callbackUrl: '',
-    extraFields: {},
+const PROVIDERS = [
+  {
+    lookupType: 'selfie_capture',
+    fallbackName: /selfie/i,
+    payload: {
+      name: 'Selfie Verification',
+      description: 'Camera selfie with face and image quality validation.',
+      defaultCredits: selfieCredits,
+      enabled: true,
+      isRecommended: false,
+      config: {
+        providerType: 'selfie_capture',
+        apiKeyRef: '',
+        requiredFields: [],
+        callbackUrl: '',
+        extraFields: {},
+      },
+      uiSchema: {
+        securityLevel: 'High',
+        estimatedTime: '1 min',
+        costInfo: `${selfieCredits} credits`,
+        compliance: ['ESIGN', 'UETA'],
+        icon: 'Camera',
+        extraFields: {},
+      },
+      constraints: { country: ['IN', 'US'], maxAttempts: 3 },
+    },
+    credits: selfieCredits,
   },
-  uiSchema: {
-    securityLevel: 'High',
-    estimatedTime: '1 min',
-    costInfo: `${credits} credits`,
-    compliance: ['ESIGN', 'UETA'],
-    icon: 'Camera',
-    extraFields: {},
+  {
+    lookupType: 'liveness_check',
+    fallbackName: /liveness/i,
+    payload: {
+      name: 'Liveness Check',
+      description: 'Two-step head movement liveness verification with fail validation.',
+      defaultCredits: livenessCredits,
+      enabled: true,
+      isRecommended: false,
+      config: {
+        providerType: 'liveness_check',
+        apiKeyRef: '',
+        requiredFields: [],
+        callbackUrl: '',
+        extraFields: {},
+      },
+      uiSchema: {
+        securityLevel: 'Maximum',
+        estimatedTime: '2 min',
+        costInfo: `${livenessCredits} credits`,
+        compliance: ['KYC', 'LIVENESS'],
+        icon: 'ScanFace',
+        extraFields: {},
+      },
+      constraints: { country: ['IN', 'US'], maxAttempts: 3 },
+    },
+    credits: livenessCredits,
   },
-  constraints: {
-    country: ['IN', 'US'],
-    maxAttempts: 3,
-  },
-};
+];
 
-async function upsertSelfieProvider() {
-  let provider = await AuthProvider.findOne({ 'config.providerType': 'selfie_capture' });
+async function upsertProvider(definition) {
+  let provider = await AuthProvider.findOne({ 'config.providerType': definition.lookupType });
   if (!provider) {
-    provider = await AuthProvider.findOne({
-      name: { $regex: /selfie/i },
-    });
+    provider = await AuthProvider.findOne({ name: { $regex: definition.fallbackName } });
   }
 
   if (provider) {
-    provider.name = SELFIE_PROVIDER.name;
-    provider.description = SELFIE_PROVIDER.description;
-    provider.defaultCredits = credits;
-    provider.enabled = true;
-    provider.config = { ...(provider.config || {}), ...SELFIE_PROVIDER.config };
-    provider.uiSchema = { ...(provider.uiSchema || {}), ...SELFIE_PROVIDER.uiSchema };
-    provider.constraints = { ...(provider.constraints || {}), ...SELFIE_PROVIDER.constraints };
+    Object.assign(provider, {
+      name: definition.payload.name,
+      description: definition.payload.description,
+      defaultCredits: definition.payload.defaultCredits,
+      enabled: true,
+      config: { ...(provider.config || {}), ...definition.payload.config },
+      uiSchema: { ...(provider.uiSchema || {}), ...definition.payload.uiSchema },
+      constraints: { ...(provider.constraints || {}), ...definition.payload.constraints },
+    });
     await provider.save();
-    console.log('Updated existing selfie provider:', provider._id.toString());
+    console.log(`Updated provider (${definition.lookupType}):`, provider._id.toString());
   } else {
-    provider = await AuthProvider.create(SELFIE_PROVIDER);
-    console.log('Created selfie provider:', provider._id.toString());
+    provider = await AuthProvider.create(definition.payload);
+    console.log(`Created provider (${definition.lookupType}):`, provider._id.toString());
   }
 
   return provider;
 }
 
-async function attachToPlans(providerId) {
+async function attachToPlans(providerId, credits) {
   const plans = await PlanTemplate.find({});
   let updatedCount = 0;
 
   for (const plan of plans) {
     const services = plan.services || [];
-    if (!services.includes('esign') && !services.includes('auth')) {
-      continue;
-    }
+    if (!services.includes('esign') && !services.includes('auth')) continue;
 
     const authCosts = Array.isArray(plan.authCosts) ? [...plan.authCosts] : [];
     const idx = authCosts.findIndex((item) => String(item.authId) === String(providerId));
@@ -95,7 +125,6 @@ async function attachToPlans(providerId) {
         plan.authCosts = authCosts;
         await plan.save();
         updatedCount += 1;
-        console.log(`Updated plan "${plan.name}" selfie cost -> ${credits}`);
       }
       continue;
     }
@@ -104,7 +133,6 @@ async function attachToPlans(providerId) {
     plan.authCosts = authCosts;
     await plan.save();
     updatedCount += 1;
-    console.log(`Added selfie provider to plan "${plan.name}" at ${credits} credits`);
   }
 
   return updatedCount;
@@ -120,13 +148,13 @@ async function main() {
   await mongoose.connect(mongoUri);
   console.log('Connected to MongoDB');
 
-  const provider = await upsertSelfieProvider();
-  const planUpdates = await attachToPlans(provider._id);
+  for (const definition of PROVIDERS) {
+    const provider = await upsertProvider(definition);
+    const planUpdates = await attachToPlans(provider._id, definition.credits);
+    console.log(`Plan templates updated for ${definition.lookupType}:`, planUpdates);
+  }
 
-  console.log('\n--- Selfie auth provider seed complete ---');
-  console.log('Provider ID:', provider._id.toString());
-  console.log('Plan templates updated:', planUpdates);
-  console.log('Credits per use:', credits);
+  console.log('\n--- Biometric auth provider seed complete ---');
 }
 
 main()

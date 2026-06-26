@@ -2,26 +2,35 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { detectFaceInImage, isFaceDetectionSupported, type FaceBox } from '../../utils/faceDetection';
 
-export type SelfieCaptureResult = {
+export type LivenessCaptureResult = {
   imageBase64: string;
+  secondaryImageBase64: string;
   faceBox: FaceBox;
+  secondaryFaceBox: FaceBox;
 };
 
-type SelfieCaptureProps = {
+type LivenessCaptureProps = {
   disabled?: boolean;
-  onSubmit: (payload: SelfieCaptureResult) => Promise<void> | void;
+  onSubmit: (payload: LivenessCaptureResult) => Promise<void> | void;
 };
 
-const SelfieCapture: React.FC<SelfieCaptureProps> = ({ disabled = false, onSubmit }) => {
+const STEPS = [
+  { id: 'center', label: 'Step 1: Look straight' },
+  { id: 'turn_left', label: 'Step 2: Turn head slightly left' },
+] as const;
+
+const LivenessCapture: React.FC<LivenessCaptureProps> = ({ disabled = false, onSubmit }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [preview, setPreview] = useState<string>('');
-  const [faceBox, setFaceBox] = useState<FaceBox | null>(null);
-  const [cameraError, setCameraError] = useState<string>('');
+  const [stepIndex, setStepIndex] = useState(0);
+  const [primaryPreview, setPrimaryPreview] = useState('');
+  const [primaryFaceBox, setPrimaryFaceBox] = useState<FaceBox | null>(null);
+  const [secondaryPreview, setSecondaryPreview] = useState('');
+  const [secondaryFaceBox, setSecondaryFaceBox] = useState<FaceBox | null>(null);
+  const [cameraError, setCameraError] = useState('');
   const [isStartingCamera, setIsStartingCamera] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [captureSize, setCaptureSize] = useState({ width: 0, height: 0 });
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -43,15 +52,11 @@ const SelfieCapture: React.FC<SelfieCaptureProps> = ({ disabled = false, onSubmi
         throw new Error('Camera is not supported on this device or browser.');
       }
       if (!isFaceDetectionSupported()) {
-        throw new Error('Use Chrome or Edge for selfie verification.');
+        throw new Error('Use Chrome or Edge for liveness verification.');
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
 
@@ -60,8 +65,6 @@ const SelfieCapture: React.FC<SelfieCaptureProps> = ({ disabled = false, onSubmi
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      setPreview('');
-      setFaceBox(null);
     } catch (err: any) {
       setCameraError(err?.message || 'Unable to access camera.');
     } finally {
@@ -74,64 +77,93 @@ const SelfieCapture: React.FC<SelfieCaptureProps> = ({ disabled = false, onSubmi
     return () => stopCamera();
   }, [startCamera, stopCamera]);
 
-  const captureSelfie = async () => {
+  const captureFrame = async () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || !video.videoHeight) {
       setCameraError('Camera is not ready yet.');
-      return;
+      return null;
     }
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return null;
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-    const detectedFace = await detectFaceInImage(dataUrl, canvas.width, canvas.height);
+    const face = await detectFaceInImage(dataUrl, canvas.width, canvas.height);
+    if (!face) {
+      setCameraError('No face detected. Follow the guide and try again.');
+      return null;
+    }
 
-    if (!detectedFace) {
-      setCameraError('No face detected. Center your face in the guide.');
+    return { dataUrl, face };
+  };
+
+  const handleCapture = async () => {
+    const captured = await captureFrame();
+    if (!captured) return;
+
+    setCameraError('');
+    if (stepIndex === 0) {
+      setPrimaryPreview(captured.dataUrl);
+      setPrimaryFaceBox(captured.face);
+      setStepIndex(1);
+      await startCamera();
       return;
     }
 
-    setCaptureSize({ width: canvas.width, height: canvas.height });
-    setFaceBox(detectedFace);
-    setPreview(dataUrl);
-    setCameraError('');
+    setSecondaryPreview(captured.dataUrl);
+    setSecondaryFaceBox(captured.face);
     stopCamera();
   };
 
   const handleSubmit = async () => {
-    if (!preview || !faceBox || disabled || isSubmitting) return;
+    if (!primaryPreview || !secondaryPreview || !primaryFaceBox || !secondaryFaceBox || disabled || isSubmitting) {
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await onSubmit({ imageBase64: preview, faceBox });
+      await onSubmit({
+        imageBase64: primaryPreview,
+        secondaryImageBase64: secondaryPreview,
+        faceBox: primaryFaceBox,
+        secondaryFaceBox,
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleRetake = async () => {
-    setPreview('');
-    setFaceBox(null);
+  const handleRestart = async () => {
+    setStepIndex(0);
+    setPrimaryPreview('');
+    setPrimaryFaceBox(null);
+    setSecondaryPreview('');
+    setSecondaryFaceBox(null);
     setCameraError('');
     await startCamera();
   };
 
+  const currentPreview = stepIndex === 1 && secondaryPreview ? secondaryPreview : primaryPreview;
+  const showLiveCamera = !currentPreview || (stepIndex === 1 && !secondaryPreview);
+
   return (
     <div className="space-y-3">
+      <div className="text-sm font-medium text-gray-900">{STEPS[stepIndex].label}</div>
+
       <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-black">
-        {preview ? (
-          <img src={preview} alt="Selfie preview" className="mx-auto max-h-80 w-full object-contain" />
-        ) : (
+        {showLiveCamera ? (
           <>
             <video ref={videoRef} playsInline muted className="mx-auto max-h-80 w-full object-contain" />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="h-52 w-40 rounded-[50%] border-2 border-white/80" />
             </div>
           </>
+        ) : (
+          <img src={currentPreview} alt="Liveness preview" className="mx-auto max-h-80 w-full object-contain" />
         )}
       </div>
 
@@ -142,35 +174,25 @@ const SelfieCapture: React.FC<SelfieCaptureProps> = ({ disabled = false, onSubmi
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        {!preview ? (
+        {stepIndex < 2 && !secondaryPreview && (
+          <button
+            type="button"
+            onClick={handleCapture}
+            disabled={disabled || isStartingCamera}
+            className="inline-flex items-center justify-center rounded-lg bg-[#260559] px-4 py-2 text-sm font-semibold text-white hover:bg-[#260559]/90 disabled:opacity-50"
+          >
+            {isStartingCamera ? 'Starting…' : 'Capture'}
+          </button>
+        )}
+        {secondaryPreview && (
           <>
             <button
               type="button"
-              onClick={captureSelfie}
-              disabled={disabled || isStartingCamera}
-              className="inline-flex items-center justify-center rounded-lg bg-[#260559] px-4 py-2 text-sm font-semibold text-white hover:bg-[#260559]/90 disabled:opacity-50"
-            >
-              {isStartingCamera ? 'Starting…' : 'Capture'}
-            </button>
-            <button
-              type="button"
-              onClick={startCamera}
-              disabled={disabled || isStartingCamera}
-              className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Restart
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={handleRetake}
+              onClick={handleRestart}
               disabled={disabled || isSubmitting}
               className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
-              Retake
+              Restart
             </button>
             <button
               type="button"
@@ -182,12 +204,20 @@ const SelfieCapture: React.FC<SelfieCaptureProps> = ({ disabled = false, onSubmi
             </button>
           </>
         )}
+        {!secondaryPreview && (
+          <button
+            type="button"
+            onClick={startCamera}
+            disabled={disabled || isStartingCamera}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Restart camera
+          </button>
+        )}
       </div>
-      {captureSize.width > 0 && faceBox && (
-        <span className="sr-only">Captured frame {captureSize.width}x{captureSize.height}</span>
-      )}
     </div>
   );
 };
 
-export default SelfieCapture;
+export default LivenessCapture;

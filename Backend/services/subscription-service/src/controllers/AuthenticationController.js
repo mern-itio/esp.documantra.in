@@ -115,6 +115,25 @@ const initiateAuth = async (req, res) => {
           });
         }
 
+        case "liveness_check": {
+          const livenessResponse = await authProviderServices.initiateLivenessVerification(providerId, recipientData);
+          if (!livenessResponse.success) {
+            return res.status(500).json({
+              message: livenessResponse.error || 'Failed to initiate liveness verification',
+            });
+          }
+          return res.status(200).json({
+            status: 'pending',
+            message: livenessResponse.message,
+            action: 'CAPTURE_LIVENESS',
+            verificationId: livenessResponse.verificationId,
+            metadata: {
+              steps: ['center', 'turn_left'],
+              maxAttempts: provider?.constraints?.maxAttempts || 3,
+            },
+          });
+        }
+
         // Other Cases like sms, totp etc can be handled here in future
       default:
         return res.status(400).json({
@@ -174,7 +193,7 @@ const verifyOtp = async (req, res) => {
 
 const verifySelfie = async (req, res) => {
   try {
-    const { providerId, recipientId, verificationId, envelopeId, imageBase64 } = req.body;
+    const { providerId, recipientId, verificationId, envelopeId, imageBase64, faceBox } = req.body;
 
     if (!providerId || !recipientId || !verificationId || !envelopeId || !imageBase64) {
       return res.status(400).json({
@@ -182,7 +201,15 @@ const verifySelfie = async (req, res) => {
       });
     }
 
-    const sessionCheck = await authProviderServices.verifySelfieSession(providerId, recipientId, verificationId);
+    const provider = await authProviderServices.getProviderById(providerId);
+    const maxAttempts = provider?.constraints?.maxAttempts || 3;
+
+    const sessionCheck = await authProviderServices.verifyBiometricSession(
+      providerId,
+      recipientId,
+      verificationId,
+      'selfie'
+    );
     if (!sessionCheck.success) {
       return res.status(400).json({
         success: false,
@@ -198,18 +225,40 @@ const verifySelfie = async (req, res) => {
       });
     }
 
-    const storeResponse = await axios.post(`${identityBase}/api/identity/selfie/store`, {
-      userId: recipientId,
-      authProviderId: providerId,
-      envelopeId,
-      verificationId,
-      imageBase64,
-    });
+    let storeResponse;
+    try {
+      storeResponse = await axios.post(`${identityBase}/api/identity/selfie/store`, {
+        userId: recipientId,
+        authProviderId: providerId,
+        envelopeId,
+        verificationId,
+        imageBase64,
+        faceBox,
+      });
+    } catch (err) {
+      const status = err.response?.status;
+      const data = err.response?.data;
+      if (status === 400 && data?.validationFailed) {
+        const failure = await authProviderServices.recordBiometricFailure(verificationId, maxAttempts);
+        return res.status(400).json({
+          success: false,
+          message: data.message || failure.message,
+          validationFailed: true,
+          attemptsRemaining: failure.attemptsRemaining,
+          maxAttemptsReached: failure.maxAttemptsReached || false,
+        });
+      }
+      throw err;
+    }
 
     if (!storeResponse.data?.success) {
-      return res.status(500).json({
+      const failure = await authProviderServices.recordBiometricFailure(verificationId, maxAttempts);
+      return res.status(400).json({
         success: false,
-        message: storeResponse.data?.message || 'Failed to store selfie',
+        message: storeResponse.data?.message || failure.message,
+        validationFailed: true,
+        attemptsRemaining: failure.attemptsRemaining,
+        maxAttemptsReached: failure.maxAttemptsReached || false,
       });
     }
 
@@ -243,4 +292,117 @@ const verifySelfie = async (req, res) => {
   }
 };
 
-module.exports = {initiateAuth, verifyOtp, verifySelfie };
+const verifyLiveness = async (req, res) => {
+  try {
+    const {
+      providerId,
+      recipientId,
+      verificationId,
+      envelopeId,
+      imageBase64,
+      secondaryImageBase64,
+      faceBox,
+      secondaryFaceBox,
+    } = req.body;
+
+    if (!providerId || !recipientId || !verificationId || !envelopeId || !imageBase64 || !secondaryImageBase64) {
+      return res.status(400).json({
+        message:
+          'Missing required fields: providerId, recipientId, verificationId, envelopeId, imageBase64, or secondaryImageBase64',
+      });
+    }
+
+    const provider = await authProviderServices.getProviderById(providerId);
+    const maxAttempts = provider?.constraints?.maxAttempts || 3;
+
+    const sessionCheck = await authProviderServices.verifyBiometricSession(
+      providerId,
+      recipientId,
+      verificationId,
+      'liveness'
+    );
+    if (!sessionCheck.success) {
+      return res.status(400).json({
+        success: false,
+        message: sessionCheck.message,
+      });
+    }
+
+    const identityBase = (process.env.IDENTITY_SERVICE_URL || '').replace(/\/+$/, '');
+    if (!identityBase) {
+      return res.status(500).json({
+        success: false,
+        message: 'Identity service is not configured',
+      });
+    }
+
+    let storeResponse;
+    try {
+      storeResponse = await axios.post(`${identityBase}/api/identity/liveness/store`, {
+        userId: recipientId,
+        authProviderId: providerId,
+        envelopeId,
+        verificationId,
+        imageBase64,
+        secondaryImageBase64,
+        faceBox,
+        secondaryFaceBox,
+      });
+    } catch (err) {
+      const status = err.response?.status;
+      const data = err.response?.data;
+      if (status === 400 && data?.validationFailed) {
+        const failure = await authProviderServices.recordBiometricFailure(verificationId, maxAttempts);
+        return res.status(400).json({
+          success: false,
+          message: data.message || failure.message,
+          validationFailed: true,
+          attemptsRemaining: failure.attemptsRemaining,
+          maxAttemptsReached: failure.maxAttemptsReached || false,
+        });
+      }
+      throw err;
+    }
+
+    if (!storeResponse.data?.success) {
+      const failure = await authProviderServices.recordBiometricFailure(verificationId, maxAttempts);
+      return res.status(400).json({
+        success: false,
+        message: storeResponse.data?.message || failure.message,
+        validationFailed: true,
+        attemptsRemaining: failure.attemptsRemaining,
+        maxAttemptsReached: failure.maxAttemptsReached || false,
+      });
+    }
+
+    try {
+      await axios.post(process.env.ESING_SERVICE_URL + '/api/e-sign/public/recipients/update-verification-status', {
+        recipientId,
+        providerId,
+        envelopeId,
+        verificationStatus: 'completed',
+      });
+    } catch (err) {
+      console.error('Failed to update recipient record after liveness verification:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Liveness stored but failed to update signing status',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Liveness verified successfully',
+      data: storeResponse.data?.data || null,
+    });
+  } catch (err) {
+    console.error('Liveness verification failed:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Liveness verification failed',
+      error: err.message,
+    });
+  }
+};
+
+module.exports = {initiateAuth, verifyOtp, verifySelfie, verifyLiveness };

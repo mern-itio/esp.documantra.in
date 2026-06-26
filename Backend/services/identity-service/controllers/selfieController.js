@@ -1,6 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const SelfieVerification = require('../models/selfieVerification');
+const {
+  validateSelfieCapture,
+  validateLivenessCapture,
+} = require('../services/selfieValidationService');
 
 const SELFIE_DIR = path.join(__dirname, '..', 'uploads', 'selfies');
 
@@ -28,9 +32,16 @@ const parseBase64Image = (imageBase64) => {
   };
 };
 
+const saveImage = (verificationId, label, parsed) => {
+  const fileName = `${verificationId}-${label}-${Date.now()}.${parsed.ext}`;
+  const absolutePath = path.join(SELFIE_DIR, fileName);
+  fs.writeFileSync(absolutePath, parsed.buffer);
+  return path.posix.join('selfies', fileName);
+};
+
 exports.storeSelfie = async (req, res) => {
   try {
-    const { userId, envelopeId, authProviderId, verificationId, imageBase64 } = req.body || {};
+    const { userId, envelopeId, authProviderId, verificationId, imageBase64, faceBox } = req.body || {};
 
     if (!userId || !authProviderId || !verificationId || !imageBase64) {
       return res.status(400).json({
@@ -48,13 +59,17 @@ exports.storeSelfie = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Selfie image is too large (max 8MB)' });
     }
 
+    const validation = await validateSelfieCapture(parsed.buffer, faceBox);
+    if (!validation.ok) {
+      return res.status(400).json({
+        success: false,
+        message: validation.message,
+        validationFailed: true,
+      });
+    }
+
     ensureSelfieDir();
-
-    const fileName = `${verificationId}-${Date.now()}.${parsed.ext}`;
-    const absolutePath = path.join(SELFIE_DIR, fileName);
-    fs.writeFileSync(absolutePath, parsed.buffer);
-
-    const relativePath = path.posix.join('selfies', fileName);
+    const relativePath = saveImage(verificationId, 'selfie', parsed);
 
     const record = await SelfieVerification.findOneAndUpdate(
       { verificationId },
@@ -65,13 +80,17 @@ exports.storeSelfie = async (req, res) => {
         verificationId: String(verificationId),
         imagePath: relativePath,
         status: 'completed',
+        metadata: {
+          mode: 'selfie_capture',
+          checks: validation.checks,
+        },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
     return res.status(200).json({
       success: true,
-      message: 'Selfie stored successfully',
+      message: 'Selfie verified successfully',
       data: {
         id: record._id,
         imagePath: record.imagePath,
@@ -80,7 +99,84 @@ exports.storeSelfie = async (req, res) => {
     });
   } catch (err) {
     console.error('storeSelfie error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to store selfie' });
+    return res.status(500).json({ success: false, message: 'Failed to validate selfie' });
+  }
+};
+
+exports.storeLiveness = async (req, res) => {
+  try {
+    const {
+      userId,
+      envelopeId,
+      authProviderId,
+      verificationId,
+      imageBase64,
+      secondaryImageBase64,
+      faceBox,
+      secondaryFaceBox,
+    } = req.body || {};
+
+    if (!userId || !authProviderId || !verificationId || !imageBase64 || !secondaryImageBase64) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId, authProviderId, verificationId, imageBase64, and secondaryImageBase64 are required',
+      });
+    }
+
+    const primary = parseBase64Image(imageBase64);
+    const secondary = parseBase64Image(secondaryImageBase64);
+    if (!primary?.buffer?.length || !secondary?.buffer?.length) {
+      return res.status(400).json({ success: false, message: 'Invalid liveness image data' });
+    }
+
+    const validation = await validateLivenessCapture(
+      primary.buffer,
+      secondary.buffer,
+      faceBox,
+      secondaryFaceBox
+    );
+    if (!validation.ok) {
+      return res.status(400).json({
+        success: false,
+        message: validation.message,
+        validationFailed: true,
+      });
+    }
+
+    ensureSelfieDir();
+    const primaryPath = saveImage(verificationId, 'liveness-primary', primary);
+    const secondaryPath = saveImage(verificationId, 'liveness-secondary', secondary);
+
+    const record = await SelfieVerification.findOneAndUpdate(
+      { verificationId },
+      {
+        userId: String(userId),
+        envelopeId: envelopeId ? String(envelopeId) : null,
+        authProviderId: String(authProviderId),
+        verificationId: String(verificationId),
+        imagePath: primaryPath,
+        status: 'completed',
+        metadata: {
+          mode: 'liveness_check',
+          secondaryImagePath: secondaryPath,
+          checks: validation.checks,
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Liveness verified successfully',
+      data: {
+        id: record._id,
+        imagePath: record.imagePath,
+        secondaryImagePath: secondaryPath,
+      },
+    });
+  } catch (err) {
+    console.error('storeLiveness error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to validate liveness' });
   }
 };
 

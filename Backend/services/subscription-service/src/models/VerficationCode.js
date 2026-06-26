@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const verificationCodeSchema = new mongoose.Schema({
     authenticationProviderId: { type: mongoose.Schema.Types.ObjectId, ref: 'AuthProvider', required: true },
-    type: { type: String, enum:['otp','link','selfie'], required: true },
+    type: { type: String, enum:['otp','link','selfie','liveness'], required: true },
     verificationData: { type: String, required: true },// e.g. OTP code or unique link token
     otpLength: { type: Number }, // applicable if type is OTP
     recipientId: { type: String, required: true },
