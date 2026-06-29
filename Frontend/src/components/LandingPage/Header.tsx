@@ -6,6 +6,7 @@ import { useAuth } from '../AuthService/AuthContext'
 import UseCases from './headerTab/useCases'
 import ProductSection from './headerTab/product'
 import ResourceTab from './headerTab/ResourceTab'
+import { BRAND } from '../../config/brand'
 
 const Header = () => {
   const { isAuthenticated, user } = useAuth()
@@ -253,7 +254,7 @@ const Header = () => {
             <div className="lg:hidden bg-[#F7F3EE] border-t">
               <div className="px-2 pt-2 pb-3 space-y-1">
                 <button onClick={() => scrollToSection('pdf-tools')} className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600">PDF Tools</button>
-                <button className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600">Why DraftnSign</button>
+                <button className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600">Why {BRAND.name}</button>
                 <button className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600">Use Cases</button>
                 <button className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600">Resources</button>
                 <button className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600">Developer</button>

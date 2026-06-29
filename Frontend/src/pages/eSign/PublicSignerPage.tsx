@@ -5,6 +5,8 @@ import DocumentViewer from "../../components/ESign/DocumentViewer";
 import SelfieCapture from "../../components/ESign/SelfieCapture";
 import LivenessCapture from "../../components/ESign/LivenessCapture";
 import DocumentSignatureBackground from "../../components/common/DocumentSignatureBackground";
+import { BRAND } from "../../config/brand";
+import { resolveEsignDocumentFileProp } from "../../utils/esignDocumentUrl";
 import * as Icons from "lucide-react";
 import {
   FileText,
@@ -20,7 +22,10 @@ import {
   Link2,
   Bell,
   Copy,
-  Layers
+  Layers,
+  Printer,
+  Download,
+  Share2,
 } from "lucide-react";
 
 interface UISchema {
@@ -89,6 +94,7 @@ const EnvelopeDetails: React.FC = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
   const [showOtherOptions, setShowOtherOptions] = useState(false);
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
   const otherOptionsRef = useRef<HTMLDivElement | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignName, setAssignName] = useState("");
@@ -312,12 +318,8 @@ const EnvelopeDetails: React.FC = () => {
     return `esign:termsAccepted:${TERMS_VERSION}:${envId}:${rid}`;
   }, [id, recipientId]);
 
-  /* ---------- condition logic (added) ----------
-     Flow: Terms first -> then Auth -> then DocumentViewer
-     Condition 1: Envelope incomplete + terms not accepted -> show terms modal only
-     Condition 1b: Envelope incomplete + terms accepted + auth pending -> show auth modal
-     Condition 2: Envelope incomplete + terms accepted + auth completed -> show DocumentViewer
-     Condition 3: Envelope completed -> show Download modal only
+  /* ---------- condition logic ----------
+     Flow: Terms -> Document review (read/print/download/share) -> Auth -> Signing
   */
   useEffect(() => {
     // only run when envelope & recipient available
@@ -401,7 +403,7 @@ const EnvelopeDetails: React.FC = () => {
         termsAcceptedStored = false;
       }
       if (termsAcceptedStored) {
-        setShowAuthModal(true);
+        setShowAuthModal(false);
         setShowTermsModal(false);
         setIsAuthenticated(false);
       } else {
@@ -469,19 +471,8 @@ const EnvelopeDetails: React.FC = () => {
             setTermsAccepted(true);
             setShowTermsModal(false);
             setShowOtherOptions(false);
-            // After accepting terms, show auth modal if auth is still pending
-            if (currentRecipient && envelope && (envelope.status || "").toString().toLowerCase() !== "completed") {
-              try {
-                const authList: AuthList[] = JSON.parse(currentRecipient.authentication);
-                const authCompleted = authList.every((a: AuthList) => a.status === "completed");
-                if (!authCompleted) setShowAuthModal(true);
-              } catch {
-                console.log('Catch Block Exicuted');
-                // ignore parse errors
-              }
-            }else{
-              console.log('Else Block Exicuted');
-            }
+            // After terms: let signer review the document first; auth opens on demand.
+            setShowAuthModal(false);
         }
     } catch {
       // ignore storage failures; keep in-memory acceptance for this session
@@ -1079,11 +1070,131 @@ const EnvelopeDetails: React.FC = () => {
 
   const isEnvelopeCompleted =
     (envelope?.status || "").toString().toLowerCase() === "completed";
-  // In preview mode allow normal scrolling/navigation, but keep fields non-signable via isViewOnly.
-  const canInteractWithDocument = isPreviewMode || (isAuthenticated && termsAccepted);
+  const canBrowseDocument = isPreviewMode || termsAccepted;
+  const canSignDocument = isPreviewMode || (termsAccepted && isAuthenticated);
+  const authStillPending = !isPreviewMode && termsAccepted && !isAuthenticated;
+  const inDocumentReviewPhase = authStillPending && !showAuthModal;
+
   const shouldRenderDocumentInBackground =
     (isPreviewMode || !isEnvelopeCompleted || showSigningDoneModal) &&
-    (isPreviewMode || isAuthenticated || showAuthModal || showTermsModal || showSigningDoneModal);
+    (isPreviewMode || canBrowseDocument || showAuthModal || showTermsModal || showSigningDoneModal);
+
+  const openDocumentDownload = (doc: any) => {
+    const fileProp = resolveEsignDocumentFileProp(doc, {
+      envelopeId: String(id ?? ""),
+      recipientId: String(recipientId ?? ""),
+      isPublicFlow: true,
+    });
+    const url = typeof fileProp === "string" ? fileProp : fileProp?.url;
+    if (!url) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handlePrintDocument = () => {
+    if (!canBrowseDocument) return;
+    setShowOtherOptions(false);
+    window.print();
+  };
+
+  const handleDownloadDocument = () => {
+    if (!canBrowseDocument) return;
+    setShowOtherOptions(false);
+    const doc = allDocuments[0];
+    if (!doc) return;
+    openDocumentDownload(doc);
+  };
+
+  const handleShareSigningLink = async () => {
+    setShowOtherOptions(false);
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShareLinkCopied(true);
+      window.setTimeout(() => setShareLinkCopied(false), 2500);
+    } catch {
+      window.prompt("Copy this link:", window.location.href);
+    }
+  };
+
+  const beginIdentityVerification = () => {
+    if (!authMethods.length) {
+      setIsAuthenticated(true);
+      return;
+    }
+    setShowAuthModal(true);
+    setShowOtherOptions(false);
+  };
+
+  const renderSignerActionsMenu = () => (
+    <div className="w-56 overflow-auto rounded-md border border-gray-200 bg-[#F7F3EE] shadow-lg max-h-80">
+      <button
+        type="button"
+        onClick={handlePrintDocument}
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+      >
+        <Printer className="h-4 w-4" />
+        Print
+      </button>
+      <button
+        type="button"
+        onClick={handleDownloadDocument}
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+      >
+        <Download className="h-4 w-4" />
+        Download
+      </button>
+      <button
+        type="button"
+        onClick={handleShareSigningLink}
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+      >
+        <Share2 className="h-4 w-4" />
+        {shareLinkCopied ? "Link copied" : "Share link"}
+      </button>
+      <div className="my-1 border-t border-gray-200" />
+      <button
+        type="button"
+        onClick={() => {
+          setShowOtherOptions(false);
+          setShowAssignModal(true);
+        }}
+        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+      >
+        Reassign Document
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setShowOtherOptions(false);
+          setShowDeclineModal(true);
+        }}
+        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+      >
+        Reject Request
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setShowOtherOptions(false);
+          setShowSessionInfoModal(true);
+        }}
+        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+      >
+        Session Details
+      </button>
+      {inDocumentReviewPhase && (
+        <>
+          <div className="my-1 border-t border-gray-200" />
+          <button
+            type="button"
+            onClick={beginIdentityVerification}
+            className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-[#260559] hover:bg-[#F5F2EE]"
+          >
+            Verify identity to sign
+          </button>
+        </>
+      )}
+    </div>
+  );
 
   const emailCandidate = assignEmail.trim();
   const isAssignEmailValid =
@@ -1286,11 +1397,11 @@ const EnvelopeDetails: React.FC = () => {
           {shouldRenderDocumentInBackground && (
             <div
               className={
-                canInteractWithDocument
+                canBrowseDocument
                   ? ""
                   : "pointer-events-none select-none"
               }
-              aria-hidden={!canInteractWithDocument}
+              aria-hidden={!canBrowseDocument}
             >
               <DocumentViewer
                 documents={allDocuments}
@@ -1305,14 +1416,21 @@ const EnvelopeDetails: React.FC = () => {
                 onSignatureSave={handleSignatureSave}
                 cycleId={cycleId || ""}
                 setSignatureFields={setSignatureFields}
-                isViewOnly={isViewOnly}
+                isViewOnly={isViewOnly || !canSignDocument}
+                showActionsMenu={!isPreviewMode && canBrowseDocument}
+                headerTitle={
+                  inDocumentReviewPhase
+                    ? "Review document before signing"
+                    : canSignDocument
+                      ? "Review and complete"
+                      : "View document"
+                }
                 onRecipientComplete={() => {
                   if (isInPerson) handleRecipientComplete();
                   handleSigningCompleted();
                 }}
                 onRequestActions={() => {
                   if (isPreviewMode) return;
-                  // Show the same dropdown options that are normally on the Terms modal
                   setShowOtherOptions((v) => !v);
                   setShowTermsModal(false);
                 }}
@@ -1322,36 +1440,25 @@ const EnvelopeDetails: React.FC = () => {
 
           {showOtherOptions && !showTermsModal && (
             <div ref={otherOptionsRef} className="fixed right-4 top-10 z-50">
-              <div className="w-56 overflow-auto rounded-md border border-gray-200 bg-[#F7F3EE] shadow-lg max-h-64">
+              {renderSignerActionsMenu()}
+            </div>
+          )}
+
+          {inDocumentReviewPhase && (
+            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] flex justify-center px-4 pb-4">
+              <div className="pointer-events-auto flex w-full max-w-3xl flex-col gap-3 rounded-xl border border-[#260559]/15 bg-[#F7F3EE] px-4 py-4 shadow-lg sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Review the document first</p>
+                  <p className="mt-1 text-xs text-gray-600">
+                    Read, print, download, or share using Actions. Verify your identity before signing.
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowOtherOptions(false);
-                    setShowAssignModal(true);
-                  }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+                  onClick={beginIdentityVerification}
+                  className="inline-flex items-center justify-center rounded-lg bg-[#260559] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#260559]/90"
                 >
-                  Reassign Document
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowOtherOptions(false);
-                    setShowDeclineModal(true);
-                  }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
-                >
-                  Reject Request
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowOtherOptions(false);
-                    setShowSessionInfoModal(true);
-                  }}
-                  className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
-                >
-                  Session Details
+                  Continue to verification
                 </button>
               </div>
             </div>
@@ -1372,7 +1479,7 @@ const EnvelopeDetails: React.FC = () => {
             <div className="px-8 pt-7">
               <div className="flex items-center gap-2 border-b border-gray-400 pb-2">
                 <span className="mx-auto">
-                  <img src="/Logo.png" alt="docusign" className="h-15 w-auto " />
+                  <img src={BRAND.logo} alt={BRAND.name} className="h-15 w-auto " />
                 </span>
 
               </div>
@@ -1458,37 +1565,8 @@ const EnvelopeDetails: React.FC = () => {
                   </button>
 
                   {showOtherOptions && (
-                    <div className="absolute right-0 top-full mt-2 z-50 w-56 overflow-auto rounded-md border border-gray-200 bg-[#F7F3EE] shadow-lg max-h-64">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowOtherOptions(false);
-                          setShowAssignModal(true);
-                        }}
-                        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
-                      >
-                        Reassign Document
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowOtherOptions(false);
-                          setShowDeclineModal(true);
-                        }}
-                        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
-                      >
-                        Reject Request
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowOtherOptions(false);
-                          setShowSessionInfoModal(true);
-                        }}
-                        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
-                      >
-                        Session Details
-                      </button>
+                    <div className="absolute right-0 top-full mt-2 z-50">
+                      {renderSignerActionsMenu()}
                     </div>
                   )}
 
@@ -1777,7 +1855,7 @@ const EnvelopeDetails: React.FC = () => {
                       </span>
                     </div>
                     <p className="mt-1 text-sm text-gray-600">
-                      Complete verification to continue signing.
+                      Complete verification after reviewing the document to continue signing.
                     </p>
                   </div>
                 </div>

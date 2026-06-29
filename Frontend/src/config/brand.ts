@@ -4,9 +4,15 @@ export const BRAND = {
   shortName: 'Documantra',
   domain: 'esp.documantra.in',
   supportEmail: 'support@documantra.in',
+  salesEmail: 'sales@documantra.in',
+  privacyEmail: 'privacy@documantra.in',
   logo: '/Logo.png',
   website: 'https://esp.documantra.in',
+  themeStorageKey: 'documantra-theme',
 } as const;
+
+/** @deprecated internal package scope — not user-facing brand */
+export const LEGACY_PACKAGE_SCOPE = '@draftnsign';
 
 export const APP_NAME = BRAND.name;
 export const COMPANY_NAME = BRAND.name;

@@ -1,5 +1,6 @@
 import { Mail, Linkedin, Github} from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { BRAND } from '../../config/brand'
 
 const Footer = () => {
  
@@ -329,7 +330,7 @@ const Footer = () => {
             
             <div className="flex items-center gap-4">
               <span className="text-gray-400 text-xs">
-                © {new Date().getFullYear()} DraftnSign All rights reserved.
+                © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
               </span>
             
             </div>

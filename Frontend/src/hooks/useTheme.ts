@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { BRAND } from '../config/brand';
 
-export const THEME_STORAGE_KEY = 'draft-and-sign-theme';
+export const THEME_STORAGE_KEY = BRAND.themeStorageKey;
 
 export type ThemeMode = 'light' | 'dark';
 

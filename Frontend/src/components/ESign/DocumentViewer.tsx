@@ -29,6 +29,10 @@ interface Props {
   onRecipientComplete?: () => void;
   /** Opens the terms/conditions modal (with the same options dropdown) */
   onRequestActions?: () => void;
+  /** Show header Actions menu even in view-only / pre-verification review */
+  showActionsMenu?: boolean;
+  /** Override header title in the signer toolbar */
+  headerTitle?: string;
   /** Public signer link — use unauthenticated document view API */
   isPublicFlow?: boolean;
   signatureProvider:string
@@ -88,11 +92,14 @@ const DocumentViewerContent: React.FC<Props> = ({
   isViewOnly = false,
   onRecipientComplete,
   onRequestActions,
+  showActionsMenu,
+  headerTitle,
   isPublicFlow = false,
   signatureProvider,
   signatureMethod
 }) => {
-  const navigate = useNavigate();
+  const actionsMenuVisible = showActionsMenu ?? !isViewOnly;
+  const toolbarTitle = headerTitle || (isViewOnly ? "View only" : "Review and complete");
   const urlParams = new URLSearchParams(window.location.search);
   const selfValue = urlParams.get("self");
   const mode: SigningMode = (selfValue === MODE.SELF_SIGNER ? MODE.SELF_SIGNER : MODE.RECIPIENT) as SigningMode;
@@ -2423,11 +2430,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         <div className="pointer-events-auto fixed top-0 left-0 right-0 z-[60] flex h-12 items-center bg-[#1b0c3e] px-4 text-white">
           <div className="w-full flex items-center justify-between">
             <div className="text-sm font-medium">
-              {isViewOnly ? "View only" : "Review and complete"}
+              {toolbarTitle}
             </div>
 
             <div className="flex items-center gap-2">
-              {!isViewOnly && onRequestActions && (
+              {actionsMenuVisible && onRequestActions && (
                 <button
                   type="button"
                   onMouseDown={(e) => e.stopPropagation()}
@@ -3072,6 +3079,8 @@ const DocumentViewer: React.FC<Props> = React.memo(
       prevProps.cycleId === nextProps.cycleId &&
       prevProps.allRecipients === nextProps.allRecipients &&
       prevProps.isViewOnly === nextProps.isViewOnly &&
+      prevProps.showActionsMenu === nextProps.showActionsMenu &&
+      prevProps.headerTitle === nextProps.headerTitle &&
       prevProps.isPublicFlow === nextProps.isPublicFlow
     );
   }

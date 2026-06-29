@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { FileText, CheckCircle, Clock, User, ArrowRight, ArrowLeft, Eye, FileSignature as Signature, Type, Check, AlertCircle, Lock } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import SignatureCanvas from 'react-signature-canvas';
+import { BRAND } from '../../config/brand';
 
 const SigningPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -471,7 +472,7 @@ const SigningPage: React.FC = () => {
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">DraftnSign</h1>
+              <h1 className="text-xl font-bold text-gray-900">{BRAND.name}</h1>
               <p className="text-sm text-gray-600">Secure Document Signing</p>
             </div>
           </div>
