@@ -879,7 +879,7 @@ const LoginPage = () => {
                     </form>
                   )
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
                     <div className="flex justify-center w-full mb-4">
                       <GoogleLogin
                         onSuccess={handleGoogleSuccess}
@@ -909,7 +909,7 @@ const LoginPage = () => {
                           type="email"
                           id="email"
                           name="email"
-                          autoComplete="username"
+                          autoComplete="off"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
@@ -929,7 +929,7 @@ const LoginPage = () => {
                           type={showPassword ? 'text' : 'password'}
                           id="password"
                           name="password"
-                          autoComplete="current-password"
+                          autoComplete="off"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 pr-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"

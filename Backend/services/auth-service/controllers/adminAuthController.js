@@ -393,6 +393,7 @@ const adminResetPassword = async (req, res) => {
     admin.password = newPassword;
     admin.resetPasswordToken = undefined;
     admin.resetPasswordExpires = undefined;
+    admin.passwordChangedAt = new Date();
     await admin.save();
 
     return res.status(200).json({
@@ -450,6 +451,7 @@ const adminChangePassword = async (req, res) => {
     admin.password = newPassword;
     admin.resetPasswordToken = undefined;
     admin.resetPasswordExpires = undefined;
+    admin.passwordChangedAt = new Date();
     await admin.save();
 
     res.clearCookie('adminAccessToken', getAdminAccessTokenCookieOptions(req));
@@ -497,6 +499,18 @@ const getAdminMe = async (req, res) => {
       return res.status(401).json({ status: 401, message: 'Not authenticated', data: null });
     }
 
+    const tokenIssuedAtSec = principal?.iat;
+    if (admin.passwordChangedAt && tokenIssuedAtSec) {
+      const tokenIssuedAtMs = tokenIssuedAtSec * 1000;
+      if (tokenIssuedAtMs < admin.passwordChangedAt.getTime()) {
+        return res.status(401).json({
+          status: 401,
+          message: 'Session invalidated due to password change',
+          data: null,
+        });
+      }
+    }
+
     return res.status(200).json({
       status: 200,
       message: 'Admin session active',
@@ -512,6 +526,47 @@ const getAdminMe = async (req, res) => {
   } catch (error) {
     console.error('getAdminMe error:', error);
     return res.status(500).json({ status: 500, message: 'Server error', data: null });
+  }
+};
+
+/** Called by auth-lib from other microservices to reject stale admin JWTs after password change. */
+const validateAdminSessionEndpoint = async (req, res) => {
+  const token = extractAccessToken(req, 'admin');
+  if (!token) {
+    return res.status(401).json({ valid: false, message: 'Missing token' });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.ADMIN_ACCESS_TOKEN_SECRET);
+  } catch (err) {
+    return res.status(401).json({ valid: false, message: 'Invalid token' });
+  }
+
+  const adminId = decoded?.id || decoded?.data?.id;
+  if (!adminId) {
+    return res.status(200).json({ valid: true });
+  }
+
+  try {
+    const admin = await AdminUser.findById(adminId).select('status passwordChangedAt');
+    if (!admin || admin.status === false) {
+      return res.status(401).json({ valid: false, message: 'Admin suspended or not found' });
+    }
+
+    if (admin.passwordChangedAt && decoded?.iat) {
+      const tokenIssuedAtMs = decoded.iat * 1000;
+      if (tokenIssuedAtMs < admin.passwordChangedAt.getTime()) {
+        return res.status(401).json({
+          valid: false,
+          message: 'Session invalidated due to password change',
+        });
+      }
+    }
+
+    return res.status(200).json({ valid: true });
+  } catch (error) {
+    return res.status(500).json({ valid: false, message: 'Server error' });
   }
 };
 
@@ -539,4 +594,4 @@ const getAdminSocketToken = async (req, res) => {
   });
 };
 
-module.exports = { adminLogin, adminForgotPassword, adminResetPassword, adminChangePassword, getAdminMe, adminLogout, getAdminSocketToken };
+module.exports = { adminLogin, adminForgotPassword, adminResetPassword, adminChangePassword, getAdminMe, adminLogout, getAdminSocketToken, validateAdminSessionEndpoint };

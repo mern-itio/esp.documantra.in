@@ -12,14 +12,25 @@ const mongoose = require('mongoose');
 const axios = require('axios');
 const { validateLogoUrl } = require('../utils/logoUrl');
 
+const resolveLogoInput = (payload) => {
+    const logo = payload?.logo;
+    const logoUrl = payload?.logoUrl;
+    if (logo != null && logo !== '' && logoUrl != null && logoUrl !== '' && String(logo).trim() !== String(logoUrl).trim()) {
+        throw new Error('Conflicting logo fields');
+    }
+    const raw = logo ?? logoUrl;
+    return raw != null && String(raw).trim() !== '' ? String(raw).trim() : undefined;
+};
+
 const createOrganization = async (payload, userId) => {
-    const { name, logo, website, gst } = payload;
+    const { name, website, gst } = payload;
+    const logoInput = resolveLogoInput(payload);
 
     if (!name?.trim()) {
         throw new Error('Organization name is required');
     }
 
-    const normalizedLogo = logo ? await validateLogoUrl(logo) : undefined;
+    const normalizedLogo = logoInput ? await validateLogoUrl(logoInput) : undefined;
 
     const normalizedWebsite = website
         ? String(website).trim().toLowerCase()
@@ -77,11 +88,12 @@ const getOrganizationDetails = async (orgId) => {
     return result;
 }
 const updateOrganizationDetails = async (orgId,payload) => {
-    const { name, logo, website, gst } = payload;
+    const { name, website, gst } = payload;
+    const logoInput = resolveLogoInput(payload);
 
     let normalizedLogo;
-    if (logo !== undefined) {
-        normalizedLogo = logo ? await validateLogoUrl(logo) : undefined;
+    if (payload.logo !== undefined || payload.logoUrl !== undefined) {
+        normalizedLogo = logoInput ? await validateLogoUrl(logoInput) : undefined;
     }
 
     // Normalize website and GST for duplicate checking

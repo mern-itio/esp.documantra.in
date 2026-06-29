@@ -132,6 +132,34 @@ const verifyJWT = (type = 'user') => {
           // If it's auth-service, it shouldn't need a network call! 
           // But it uses verifyActiveSession separately in its routes anyway.
         }
+      } else if (type === 'admin' && process.env.SKIP_ADMIN_TOKEN_REVOCATION_CHECK !== 'true') {
+        try {
+          const axios = require('axios');
+          const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://127.0.0.1:2101';
+          const resp = await axios.get(`${authServiceUrl}/admin/validate-session`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Cookie: req.headers?.cookie || '',
+            },
+            timeout: 3000,
+          });
+
+          if (!resp.data?.valid) {
+            return res.status(401).json({
+              status: 401,
+              message: resp.data?.message || 'Session revoked or expired',
+              data: null,
+            });
+          }
+        } catch (err) {
+          if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+            return res.status(401).json({
+              status: 401,
+              message: err.response?.data?.message || 'Session revoked or expired',
+              data: null,
+            });
+          }
+        }
       }
 
       next();

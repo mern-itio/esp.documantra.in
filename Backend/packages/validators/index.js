@@ -283,6 +283,41 @@ function getPasswordPolicyError(password) {
   }
   return null;
 }
+
+const PLAIN_TEXT_DISALLOWED_RE = /<[^>]*>|javascript:|data:text\/html|on\w+\s*=/i;
+
+function getPlainTextFieldError(value, fieldName, { maxLength = 120, required = false } = {}) {
+  if (value === undefined || value === null || value === '') {
+    return required ? `${fieldName} is required` : null;
+  }
+
+  const str = String(value).trim();
+  if (!str) {
+    return required ? `${fieldName} is required` : null;
+  }
+  if (str.length > maxLength) {
+    return `${fieldName} must be at most ${maxLength} characters`;
+  }
+  if (PLAIN_TEXT_DISALLOWED_RE.test(str)) {
+    return `${fieldName} contains disallowed characters`;
+  }
+  return null;
+}
+
+function sanitizePlainTextField(value, { maxLength = 120 } = {}) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  const str = String(value).trim();
+  if (!str) {
+    return '';
+  }
+  const error = getPlainTextFieldError(str, 'Value', { maxLength });
+  if (error) {
+    throw new Error(error);
+  }
+  return str;
+}
 function isPhoneValid(phone) {
   return PATTERNS.PHONE.test(phone);
 }
@@ -378,6 +413,8 @@ module.exports = {
   isPasswordValid,
   getPasswordPolicyError,
   PASSWORD_POLICY_MESSAGE,
+  getPlainTextFieldError,
+  sanitizePlainTextField,
   isPhoneValid,
   isUrlValid,
   isDateValid,

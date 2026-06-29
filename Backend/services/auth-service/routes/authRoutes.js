@@ -2,7 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { login, googleLogin, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoverySingleAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp, sendRecoveryEmailOtp, verifyRecoveryEmailOtp, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, regenerateAuthenticatorBackupCodes, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, changePassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, getSecurityPolicy, verifyActiveSession, validateSessionEndpoint, logout } = require('../controllers/authController');
 const { getMyReferral, listRewards, onFirstDocumentSentInternal } = require('../controllers/referralController');
-const {adminLogin, adminForgotPassword, adminResetPassword, adminChangePassword, getAdminMe, adminLogout, getAdminSocketToken} = require('../controllers/adminAuthController');
+const {adminLogin, adminForgotPassword, adminResetPassword, adminChangePassword, getAdminMe, adminLogout, getAdminSocketToken, validateAdminSessionEndpoint} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail,insertNotifications,getNotifications,markNotificationReadById,markAllNotificationAsRead } = require('../controllers/mainController');
 const verifyJWT  = require('@draftnsign/auth-lib');
 const { blockTwoFaSetupOnlySession } = require('../middleware/blockTwoFaSetupOnlySession');
@@ -44,6 +44,7 @@ router.post('/2fa/recovery/verify-answers', loginLimiter, verifyTwoFaRecoveryAns
 router.post('/2fa/recovery/verify-otp', loginLimiter, verifyTwoFaRecoveryOtp);
 router.post('/admin/login', adminLogin);
 router.get('/admin/me', verifyJWT('admin'), getAdminMe);
+router.get('/admin/validate-session', validateAdminSessionEndpoint);
 router.get('/admin/socket-token', verifyJWT('admin'), getAdminSocketToken);
 router.post('/admin/logout', adminLogout);
 router.post('/admin-forgot-password', otpLimiter, adminForgotPassword);

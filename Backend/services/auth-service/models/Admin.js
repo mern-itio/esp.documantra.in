@@ -15,6 +15,7 @@ const adminUserSchema = new mongoose.Schema({
   resetPasswordToken: { type: String, default: null },
   resetPasswordExpires: { type: Date, default: null },
   resetPasswordRequestLog: [{ requestedAt: { type: Date, required: true } }],
+  passwordChangedAt: { type: Date, default: null },
   passwordHistory: [{
     hash: { type: String, required: true },
     changedAt: { type: Date, default: Date.now },

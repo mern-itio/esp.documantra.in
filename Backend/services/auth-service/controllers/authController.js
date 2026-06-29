@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const { authenticator } = require('otplib');
 const User  = require('../models/User');
 const { attachReferralOnSignup } = require('./referralController');
-const { isEmailValid, getPasswordPolicyError } = require('@draftnsign/validators');
+const { isEmailValid, getPasswordPolicyError, getPlainTextFieldError } = require('@draftnsign/validators');
 const { sendPasswordResetEmail, sendVerificationOtpEmail, sendNewLoginAlertEmail } = require('../utils/email');
 const { sendVerificationOtpSms } = require('../utils/sms');
 // const { verifyJWT } = require('@draftnsign/auth-lib');
@@ -977,6 +977,23 @@ const register = async (req, res) => {
     return res.status(400).json({ message: 'Full name, email and password are required' });
   }
 
+  const fullnameError = getPlainTextFieldError(normalizedFullname, 'Full name', { maxLength: 80, required: true });
+  if (fullnameError) {
+    return res.status(400).json({ message: fullnameError });
+  }
+  const companyError = company != null && company !== ''
+    ? getPlainTextFieldError(company, 'Company', { maxLength: 120 })
+    : null;
+  if (companyError) {
+    return res.status(400).json({ message: companyError });
+  }
+  const addressError = address != null && address !== ''
+    ? getPlainTextFieldError(address, 'Address', { maxLength: 240 })
+    : null;
+  if (addressError) {
+    return res.status(400).json({ message: addressError });
+  }
+
   if (!isEmailValid(normalizedEmail)) {
     return res.status(400).json({ message: 'Invalid email format' });
   }
@@ -996,8 +1013,8 @@ const register = async (req, res) => {
       email: normalizedEmail,
       phone: normalizedPhone || '',
       password,
-      company: company || '',
-      address: address || '',
+      company: company ? String(company).trim() : '',
+      address: address ? String(address).trim() : '',
       plan: 'free',
       emailVerified: false,
       phoneVerified: false,
@@ -1597,9 +1614,27 @@ const updateProfile = async (req, res) => {
   const user = await User.findById(userId);
   if (!user) return res.status(404).json({ message: 'User not found' });
   
-  if (fullname !== undefined) user.fullname = fullname;
-  if (company !== undefined) user.company = company;
-  if (address !== undefined) user.address = address;
+  if (fullname !== undefined) {
+    const fullnameError = getPlainTextFieldError(fullname, 'Full name', { maxLength: 80, required: true });
+    if (fullnameError) {
+      return res.status(400).json({ message: fullnameError });
+    }
+    user.fullname = String(fullname).trim();
+  }
+  if (company !== undefined) {
+    const companyError = getPlainTextFieldError(company, 'Company', { maxLength: 120 });
+    if (companyError) {
+      return res.status(400).json({ message: companyError });
+    }
+    user.company = company ? String(company).trim() : '';
+  }
+  if (address !== undefined) {
+    const addressError = getPlainTextFieldError(address, 'Address', { maxLength: 240 });
+    if (addressError) {
+      return res.status(400).json({ message: addressError });
+    }
+    user.address = address ? String(address).trim() : '';
+  }
   
   await user.save({ validateBeforeSave: false });
   
@@ -1837,12 +1872,27 @@ const getSessions = async (req, res) => {
 };
 
 const getSecurityPolicy = (_req, res) => {
+  const requireTwoFa = isLoginTwoFaEnforcementEnabled();
   return res.status(200).json({
-    requireTwoFaForLogin: isLoginTwoFaEnforcementEnabled(),
+    requireTwoFaForLogin: requireTwoFa,
+    twoFactorAuthenticationAvailable: true,
     requireTwoFaForESign:
       String(process.env.REQUIRE_2FA_FOR_E_SIGN || '').toLowerCase() === 'true',
     requireTwoFaGraceDays: getTwoFaGraceDays(),
     maxConcurrentSessions: getMaxConcurrentSessions(),
+    sessionIdleTimeoutHours: Math.round(
+      Number(process.env.SESSION_IDLE_TIMEOUT_MS || 8 * 60 * 60 * 1000) / (60 * 60 * 1000)
+    ),
+    transportSecurity: 'https-required',
+    passwordPolicy: {
+      minLength: 8,
+      requiresUppercase: true,
+      requiresLowercase: true,
+      requiresNumber: true,
+      requiresSpecialCharacter: true,
+    },
+    adminTwoFactorNote:
+      'User accounts support TOTP 2FA under Account → Security. Enable REQUIRE_2FA_FOR_LOGIN for mandatory rollout.',
   });
 };
 

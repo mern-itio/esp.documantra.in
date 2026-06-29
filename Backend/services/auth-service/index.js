@@ -9,6 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const verifyJWT = require('@draftnsign/auth-lib');
 const { httpsSecurityMiddleware } = require('./middleware/httpsSecurity');
+const { optionsGuard } = require('./middleware/optionsGuard');
 
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(cors(getCorsOptions()));
 
 connectDB();
 
+app.use(optionsGuard);
 app.use(express.json());
 app.use('/api-admin', verifyJWT('admin'));
 app.use('/', authRoutes);

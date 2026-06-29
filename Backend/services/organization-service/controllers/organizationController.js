@@ -27,7 +27,8 @@ const getOrganizationErrorStatus = (err) => {
         message.includes('must use') ||
         message.includes('could not be resolved') ||
         message.includes('hostname') ||
-        message.includes('too long')
+        message.includes('too long') ||
+        message.includes('conflicting logo')
     ) {
         return 400;
     }
@@ -43,7 +44,8 @@ const getOrganizationErrorMessage = (err) => {
         lower.includes('not allowed') ||
         lower.includes('disallowed') ||
         lower.includes('hostname') ||
-        lower.includes('must use https')
+        lower.includes('must use https') ||
+        lower.includes('conflicting logo')
     ) {
         return 'Invalid or disallowed logo URL';
     }

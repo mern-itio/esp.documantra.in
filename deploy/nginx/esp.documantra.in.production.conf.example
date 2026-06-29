@@ -55,6 +55,19 @@ server {
         proxy_pass http://127.0.0.1:2101/;
     }
 
+    # Surepass DigiLocker webhook (identity-service) — do not remove
+    location ^~ /webhook/surepass-digilocker {
+        proxy_pass http://127.0.0.1:2114/webhook/surepass-digilocker;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /identity/ {
+        proxy_pass http://127.0.0.1:2114/;
+    }
+
     location /document/ {
         proxy_pass http://127.0.0.1:2102/;
     }
@@ -107,14 +120,24 @@ server {
 
     # Admin SPA — separate repo (Draft-and-Sign-Admin-Frontend), build → /var/www/admin-esp
     location /admin/ {
+        if ($request_method = OPTIONS) { return 405; }
         alias /var/www/admin-esp/;
         try_files $uri $uri/ /admin/index.html;
         add_header Cache-Control "no-store, no-cache, must-revalidate, private" always;
+        include /etc/nginx/snippets/vapt-admin-spa-headers.conf;
     }
 
     location = /admin/index.html {
+        if ($request_method = OPTIONS) { return 405; }
         alias /var/www/admin-esp/index.html;
         add_header Cache-Control "no-store, no-cache, must-revalidate, private" always;
+        include /etc/nginx/snippets/vapt-admin-spa-headers.conf;
+    }
+
+    # Legacy / scanner paths → SPA (no OPTIONS enumeration)
+    location = /auth-login {
+        if ($request_method = OPTIONS) { return 405; }
+        return 301 /login;
     }
 
     # RFC 9116 security contact (VAPT LOW)
@@ -129,8 +152,10 @@ server {
     }
 
     location = /index.html {
+        if ($request_method = OPTIONS) { return 405; }
         root /var/www/draft-and-sign;
         add_header Cache-Control "no-store, no-cache, must-revalidate, private" always;
+        include /etc/nginx/snippets/vapt-user-spa-headers.conf;
     }
 
     location = /404.html {
@@ -146,7 +171,9 @@ server {
     }
 
     location / {
+        if ($request_method = OPTIONS) { return 405; }
         root /var/www/draft-and-sign;
         try_files $uri $uri/ /index.html;
+        include /etc/nginx/snippets/vapt-user-spa-headers.conf;
     }
 }
