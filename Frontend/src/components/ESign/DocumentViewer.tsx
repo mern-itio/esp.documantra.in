@@ -98,6 +98,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   signatureProvider,
   signatureMethod
 }) => {
+  const navigate = useNavigate();
   const actionsMenuVisible = showActionsMenu ?? !isViewOnly;
   const toolbarTitle = headerTitle || (isViewOnly ? "View only" : "Review and complete");
   const urlParams = new URLSearchParams(window.location.search);

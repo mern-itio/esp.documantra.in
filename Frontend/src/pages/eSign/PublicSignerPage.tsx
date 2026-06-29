@@ -1085,7 +1085,12 @@ const EnvelopeDetails: React.FC = () => {
       recipientId: String(recipientId ?? ""),
       isPublicFlow: true,
     });
-    const url = typeof fileProp === "string" ? fileProp : fileProp?.url;
+    let url: string | undefined;
+    if (typeof fileProp === "string") {
+      url = fileProp;
+    } else if (fileProp && typeof fileProp === "object" && "url" in fileProp) {
+      url = fileProp.url;
+    }
     if (!url) return;
     window.open(url, "_blank", "noopener,noreferrer");
   };
