@@ -24,9 +24,35 @@ function shouldRequireTwoFaSetup(user) {
   return true;
 }
 
+const isAdminLoginTwoFaEnforcementEnabled = () =>
+  String(process.env.REQUIRE_2FA_FOR_ADMIN_LOGIN || '').toLowerCase() === 'true';
+
+const getAdminTwoFaGraceDays = () => {
+  const parsed = Number(process.env.REQUIRE_2FA_ADMIN_GRACE_DAYS ?? process.env.REQUIRE_2FA_GRACE_DAYS ?? 90);
+  if (!Number.isFinite(parsed) || parsed < 0) return 90;
+  return Math.min(Math.floor(parsed), 365);
+};
+
+function shouldRequireAdminTwoFaSetup(admin) {
+  if (!isAdminLoginTwoFaEnforcementEnabled()) return false;
+  if (!admin || admin.twoFaEnabled) return false;
+
+  const graceDays = getAdminTwoFaGraceDays();
+  if (graceDays > 0 && admin.createdAt) {
+    const graceMs = graceDays * 24 * 60 * 60 * 1000;
+    const accountAgeMs = Date.now() - new Date(admin.createdAt).getTime();
+    if (accountAgeMs < graceMs) return false;
+  }
+
+  return true;
+}
+
 module.exports = {
   isLoginTwoFaEnforcementEnabled,
   isEsignTwoFaEnforcementEnabled,
   getTwoFaGraceDays,
   shouldRequireTwoFaSetup,
+  isAdminLoginTwoFaEnforcementEnabled,
+  getAdminTwoFaGraceDays,
+  shouldRequireAdminTwoFaSetup,
 };

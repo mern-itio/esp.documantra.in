@@ -16,6 +16,11 @@ const adminUserSchema = new mongoose.Schema({
   resetPasswordExpires: { type: Date, default: null },
   resetPasswordRequestLog: [{ requestedAt: { type: Date, required: true } }],
   passwordChangedAt: { type: Date, default: null },
+  twoFaEnabled: { type: Boolean, default: false },
+  twoFaAuthenticatorSecret: { type: String, default: null },
+  twoFaAuthenticatorTempSecret: { type: String, default: null },
+  twoFaAuthenticatorVerifiedAt: { type: Date, default: null },
+  twoFaBackupCodeHashes: [{ type: String }],
   passwordHistory: [{
     hash: { type: String, required: true },
     changedAt: { type: Date, default: Date.now },

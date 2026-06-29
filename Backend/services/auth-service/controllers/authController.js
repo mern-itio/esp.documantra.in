@@ -14,7 +14,7 @@ const { getAccessTokenCookieOptions } = require('../utils/cookieOptions');
 const { extractAccessToken } = require('@draftnsign/auth-lib');
 const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/passwordHistory');
 const { enforceConcurrentSessionLimit, getMaxConcurrentSessions } = require('../utils/sessionLimits');
-const { shouldRequireTwoFaSetup, isLoginTwoFaEnforcementEnabled, getTwoFaGraceDays } = require('../utils/twoFaPolicy');
+const { shouldRequireTwoFaSetup, isLoginTwoFaEnforcementEnabled, getTwoFaGraceDays, isAdminLoginTwoFaEnforcementEnabled, getAdminTwoFaGraceDays } = require('../utils/twoFaPolicy');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -1891,8 +1891,11 @@ const getSecurityPolicy = (_req, res) => {
       requiresNumber: true,
       requiresSpecialCharacter: true,
     },
+    adminTwoFactorAuthenticationAvailable: true,
+    requireTwoFaForAdminLogin: isAdminLoginTwoFaEnforcementEnabled(),
+    requireTwoFaAdminGraceDays: getAdminTwoFaGraceDays(),
     adminTwoFactorNote:
-      'User accounts support TOTP 2FA under Account → Security. Enable REQUIRE_2FA_FOR_LOGIN for mandatory rollout.',
+      'Admin accounts support TOTP 2FA under Admin → Security. Enable REQUIRE_2FA_FOR_ADMIN_LOGIN for mandatory rollout.',
   });
 };
 

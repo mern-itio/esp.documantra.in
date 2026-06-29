@@ -8,6 +8,76 @@ const { getAdminAccessTokenCookieOptions } = require('../utils/cookieOptions');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/passwordHistory');
 const { extractAccessToken } = require('@draftnsign/auth-lib');
+const {
+  shouldRequireAdminTwoFaSetup,
+  isAdminLoginTwoFaEnforcementEnabled,
+  getAdminTwoFaGraceDays,
+} = require('../utils/twoFaPolicy');
+const {
+  issueAdminTwoFaToken,
+  decodeAdminTwoFaToken,
+  verifyAdminAuthenticatorCode,
+  buildAdminAuthenticatorSetup,
+  generateBackupCodes,
+  normalizeOtpCode,
+  normalizeBackupCode,
+  hashBackupCode,
+  authenticator,
+  ADMIN_BRAND,
+} = require('../utils/adminTwoFa');
+
+function generateAdminAccessToken(admin, expireIn) {
+  return jwt.sign(
+    {
+      id: admin._id,
+      role: admin.role || 'admin',
+      email: admin.email,
+      fullname: admin.fullname || '',
+      permissions: Array.isArray(admin.permissions) ? admin.permissions : []
+    },
+    process.env.ADMIN_ACCESS_TOKEN_SECRET,
+    { expiresIn: expireIn }
+  );
+}
+
+function buildAdminLoginPayload(admin, token) {
+  return {
+    status: 200,
+    message: 'Admin logged in successfully',
+    admin_id: admin._id,
+    token,
+    type: 'admin',
+    admin: {
+      id: admin._id,
+      fullname: admin.fullname || '',
+      email: admin.email,
+      role: admin.role || 'admin',
+      status: admin.status,
+      permissions: Array.isArray(admin.permissions) ? admin.permissions : [],
+      twoFaEnabled: !!admin.twoFaEnabled,
+    },
+  };
+}
+
+function completeAdminLogin(req, res, admin) {
+  const expireIn = process.env.ADMIN_ACCESS_TOKEN_EXPIRY || '8h';
+  const token = generateAdminAccessToken(admin, expireIn);
+  return res
+    .cookie('adminAccessToken', token, getAdminAccessTokenCookieOptions(req, expireIn))
+    .status(200)
+    .json(buildAdminLoginPayload(admin, token));
+}
+
+function respondAdminTwoFaRequired(res, admin) {
+  const twoFaToken = issueAdminTwoFaToken(admin._id);
+  return res.status(403).json({
+    status: 403,
+    code: 'TWO_FA_REQUIRED',
+    message: 'Enter the code from your authenticator app',
+    method: 'authenticator',
+    twoFaToken,
+  });
+}
 
 const adminLogin = async (req, res) => {
   try {
@@ -40,24 +110,21 @@ const adminLogin = async (req, res) => {
         });
       }
 
+      if (admin.twoFaEnabled) {
+        return respondAdminTwoFaRequired(res, admin);
+      }
+
       const expireIn = process.env.ADMIN_ACCESS_TOKEN_EXPIRY || '8h';
       const token = generateAdminAccessToken(admin, expireIn);
-
-      return res.cookie('adminAccessToken', token, getAdminAccessTokenCookieOptions(req, expireIn)).status(200).json({
-        status: 200,
-        message: "Admin logged in successfully",
-        admin_id: admin._id,
-        token,
-        type: 'admin',
-        admin: {
-          id: admin._id,
-          fullname: admin.fullname || '',
-          email: admin.email,
-          role: admin.role || 'admin',
-          status: admin.status,
-          permissions: Array.isArray(admin.permissions) ? admin.permissions : []
-        }
-      });
+      const payload = buildAdminLoginPayload(admin, token);
+      if (shouldRequireAdminTwoFaSetup(admin)) {
+        payload.twoFaSetupRequired = true;
+        payload.message = 'Login successful. Enable two-factor authentication under Security to continue meeting admin policy.';
+      }
+      return res
+        .cookie('adminAccessToken', token, getAdminAccessTokenCookieOptions(req, expireIn))
+        .status(200)
+        .json(payload);
     }
 let agent = null;
     let supportServiceAgentId = null;
@@ -276,19 +343,127 @@ let agent = null;
   }
 };
 
-function generateAdminAccessToken(admin, expireIn) {
-  return jwt.sign(
-    {
-      id: admin._id,
-      role: admin.role || 'admin',
-      email: admin.email,
-      fullname: admin.fullname || '',
-      permissions: Array.isArray(admin.permissions) ? admin.permissions : []
-    },
-    process.env.ADMIN_ACCESS_TOKEN_SECRET,
-    { expiresIn: expireIn }
-  );
-}
+const adminVerifyTwoFaLogin = async (req, res) => {
+  try {
+    const { twoFaToken, otp } = req.body;
+    if (!twoFaToken || !otp) {
+      return res.status(400).json({ message: '2FA token and OTP are required' });
+    }
+
+    let decoded;
+    try {
+      decoded = decodeAdminTwoFaToken(twoFaToken);
+    } catch {
+      return res.status(400).json({ message: 'Invalid or expired 2FA session. Please login again.' });
+    }
+
+    const admin = await AdminUser.findById(decoded.adminId);
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+    if (!admin.twoFaEnabled) {
+      return res.status(400).json({ message: '2FA is not enabled for this admin account' });
+    }
+
+    const verification = verifyAdminAuthenticatorCode(admin, otp);
+    if (!verification.valid) {
+      return res.status(400).json({ message: verification.message || 'Invalid authenticator code' });
+    }
+
+    if (verification.usedBackupCode) {
+      await admin.save({ validateBeforeSave: false });
+    }
+
+    return completeAdminLogin(req, res, admin);
+  } catch (error) {
+    console.error('adminVerifyTwoFaLogin error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const getAdminTwoFaSettings = async (req, res) => {
+  try {
+    const adminId = req.user?.id || req.user?.data?.id;
+    if (!adminId) return res.status(401).json({ message: 'Not authenticated' });
+
+    const admin = await AdminUser.findById(adminId).select(
+      'twoFaEnabled twoFaAuthenticatorSecret twoFaBackupCodeHashes email fullname'
+    );
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+
+    return res.status(200).json({
+      twoFaEnabled: !!admin.twoFaEnabled,
+      twoFaMethod: 'authenticator',
+      authenticatorConfigured: !!admin.twoFaAuthenticatorSecret,
+      backupCodesRemaining: Array.isArray(admin.twoFaBackupCodeHashes) ? admin.twoFaBackupCodeHashes.length : 0,
+      enforcementEnabled: isAdminLoginTwoFaEnforcementEnabled(),
+      graceDays: getAdminTwoFaGraceDays(),
+      setupRequired: shouldRequireAdminTwoFaSetup(admin),
+    });
+  } catch (error) {
+    console.error('getAdminTwoFaSettings error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const setupAdminAuthenticatorTwoFa = async (req, res) => {
+  try {
+    const adminId = req.user?.id || req.user?.data?.id;
+    if (!adminId) return res.status(401).json({ message: 'Not authenticated' });
+
+    const admin = await AdminUser.findById(adminId);
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+
+    const { tempSecret, otpauthUrl } = buildAdminAuthenticatorSetup(admin);
+    admin.twoFaAuthenticatorTempSecret = tempSecret;
+    await admin.save({ validateBeforeSave: false });
+
+    return res.status(200).json({
+      otpauthUrl,
+      secret: tempSecret,
+      issuer: `${ADMIN_BRAND} Admin`,
+    });
+  } catch (error) {
+    console.error('setupAdminAuthenticatorTwoFa error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const verifyAdminAuthenticatorTwoFaSetup = async (req, res) => {
+  try {
+    const adminId = req.user?.id || req.user?.data?.id;
+    const { code } = req.body;
+    if (!adminId) return res.status(401).json({ message: 'Not authenticated' });
+    if (!code) return res.status(400).json({ message: 'Authenticator code is required' });
+
+    const admin = await AdminUser.findById(adminId);
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+    if (!admin.twoFaAuthenticatorTempSecret) {
+      return res.status(400).json({ message: 'Start authenticator setup before verification.' });
+    }
+
+    const normalized = normalizeOtpCode(code);
+    if (!authenticator.check(normalized, admin.twoFaAuthenticatorTempSecret)) {
+      return res.status(400).json({ message: 'Invalid authenticator code' });
+    }
+
+    const plainBackupCodes = generateBackupCodes();
+    admin.twoFaAuthenticatorSecret = admin.twoFaAuthenticatorTempSecret;
+    admin.twoFaAuthenticatorTempSecret = null;
+    admin.twoFaEnabled = true;
+    admin.twoFaAuthenticatorVerifiedAt = new Date();
+    admin.twoFaBackupCodeHashes = plainBackupCodes.map((c) => hashBackupCode(normalizeBackupCode(c)));
+    await admin.save({ validateBeforeSave: false });
+
+    return res.status(200).json({
+      message: 'Authenticator enabled for admin account',
+      twoFaEnabled: true,
+      backupCodes: plainBackupCodes,
+      backupCodesRemaining: admin.twoFaBackupCodeHashes.length,
+    });
+  } catch (error) {
+    console.error('verifyAdminAuthenticatorTwoFaSetup error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
 
 const adminForgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -594,4 +769,17 @@ const getAdminSocketToken = async (req, res) => {
   });
 };
 
-module.exports = { adminLogin, adminForgotPassword, adminResetPassword, adminChangePassword, getAdminMe, adminLogout, getAdminSocketToken, validateAdminSessionEndpoint };
+module.exports = {
+  adminLogin,
+  adminVerifyTwoFaLogin,
+  getAdminTwoFaSettings,
+  setupAdminAuthenticatorTwoFa,
+  verifyAdminAuthenticatorTwoFaSetup,
+  adminForgotPassword,
+  adminResetPassword,
+  adminChangePassword,
+  getAdminMe,
+  adminLogout,
+  getAdminSocketToken,
+  validateAdminSessionEndpoint,
+};
