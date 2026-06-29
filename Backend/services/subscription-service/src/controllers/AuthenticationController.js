@@ -96,6 +96,41 @@ const initiateAuth = async (req, res) => {
             });
           }
 
+        case "digilocker_link": {
+          const digiExtra = provider?.config?.extraFields;
+          const digilockerResponse = await axios.post(
+            `${process.env.IDENTITY_SERVICE_URL}/api/identity/digilocker/start`,
+            {
+              userId: recipientData.id,
+              authProviderId: providerId,
+              apiKey: provider.config.apiKeyRef,
+              envelopeId,
+              webhookUrl: provider?.config?.callbackUrl,
+              apiBaseUrl: digiExtra?.get('SUREPASS_API_BASE_URL'),
+              authType: digiExtra?.get('AUTH_TYPE') || 'link',
+              logoUrl: digiExtra?.get('LOGO_URL'),
+              skipMainScreen: digiExtra?.get('SKIP_MAIN_SCREEN'),
+              initializePath: digiExtra?.get('INITIALIZE_PATH'),
+            }
+          );
+
+          if (digilockerResponse.data?.success && digilockerResponse.data?.url) {
+            return res.status(200).json({
+              status: 'pending',
+              message: 'DigiLocker verification initiated. You will be redirected to complete Aadhaar verification.',
+              action: 'COMPLETE_IDENTITY_VERIFICATION',
+              verificationUrl: digilockerResponse.data.url,
+              metadata: {
+                clientId: digilockerResponse.data.clientId,
+              },
+            });
+          }
+
+          return res.status(500).json({
+            message: digilockerResponse.data?.message || 'Failed to initiate DigiLocker verification',
+          });
+        }
+
         case "selfie_capture": {
           const selfieResponse = await authProviderServices.initiateSelfieVerification(providerId, recipientData);
           if (!selfieResponse.success) {

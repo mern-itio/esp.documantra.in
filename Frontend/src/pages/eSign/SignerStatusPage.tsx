@@ -229,9 +229,12 @@ export default function SignerStatusPage() {
       raw.includes("liveness") ||
       raw.includes("kyc") ||
       raw.includes("didit") ||
+      raw.includes("digilocker") ||
+      raw.includes("surepass") ||
       authBlob.includes("video") ||
       authBlob.includes("liveness") ||
-      authBlob.includes("didit")
+      authBlob.includes("didit") ||
+      authBlob.includes("digilocker")
     );
   };
 
@@ -267,7 +270,7 @@ export default function SignerStatusPage() {
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
-    return blob.includes("didit") || blob.includes("video") || blob.includes("liveness") || blob.includes("kyc") || blob.includes("selfie");
+    return blob.includes("didit") || blob.includes("digilocker") || blob.includes("surepass") || blob.includes("video") || blob.includes("liveness") || blob.includes("kyc") || blob.includes("selfie");
   };
 
   const normRecipientId = (x: any) => {

@@ -6,6 +6,7 @@ const controller = require('../controllers/identityController');
 const selfieController = require('../controllers/selfieController');
 
 router.post('/start', controller.startIdentity);
+router.post('/digilocker/start', controller.startDigilocker);
 router.post('/selfie/store', selfieController.storeSelfie);
 router.post('/liveness/store', selfieController.storeLiveness);
 router.get('/selfie/status/:verificationId', selfieController.getSelfieStatus);

@@ -7,6 +7,7 @@ const verifyJWT = require('@draftnsign/auth-lib');
 const { getCorsOptions, applySecurityHeaders, createErrorHandler } = require('@draftnsign/validators');
 const identityRoute = require('./routes/identityRoute');
 const diditWebhook = require('./webhooks/diditWebhook');
+const surepassDigilockerWebhook = require('./webhooks/surepassDigilockerWebhook');
 const app = express();
 
 applySecurityHeaders(app);
@@ -23,6 +24,7 @@ app.use(express.json());
 // app.use('/api', verifyJWT());
 app.use('/api/identity', identityRoute);
 app.use('/webhook/didit', diditWebhook);
+app.use('/webhook/surepass-digilocker', surepassDigilockerWebhook);
 
 app.use(createErrorHandler('Identity'));
 
