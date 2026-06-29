@@ -56,25 +56,39 @@ exports.initializeSession = async ({
   const body = {
     data: {
       signup_flow: signupFlow,
-      auth_type: authType,
       skip_main_screen: skipMainScreen,
     },
   };
+
+  // Surepass only accepts auth_type "app" for SDK. Via-link flow omits auth_type.
+  if (authType && authType !== 'link') {
+    body.data.auth_type = authType;
+  }
 
   if (webhookUrl) body.data.webhook_url = webhookUrl;
   if (redirectUrl) body.data.redirect_url = redirectUrl;
   if (logoUrl) body.data.logo_url = logoUrl;
 
-  const res = await axios.post(endpoint, body, {
-    headers: {
-      Authorization: `Bearer ${bearerToken}`,
-      'Content-Type': 'application/json',
-    },
-    timeout: 15000,
-    httpsAgent: new https.Agent({ keepAlive: false }),
-  });
+  try {
+    const res = await axios.post(endpoint, body, {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 15000,
+      httpsAgent: new https.Agent({ keepAlive: false }),
+    });
 
-  return res.data;
+    return res.data;
+  } catch (err) {
+    const surepassMessage = err.response?.data?.message
+      || err.response?.data?.error
+      || err.message;
+    const wrapped = new Error(surepassMessage);
+    wrapped.code = err.code;
+    wrapped.response = err.response;
+    throw wrapped;
+  }
 };
 
 exports.extractVerificationUrl = extractVerificationUrl;

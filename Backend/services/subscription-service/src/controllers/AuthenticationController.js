@@ -1,6 +1,12 @@
 const { verify } = require('jsonwebtoken');
 const authProviderServices = require('../services/authProviderServices');
 const axios = require('axios');
+const getConfigExtra = (extraFields, key) => {
+  if (!extraFields || !key) return undefined;
+  if (typeof extraFields.get === 'function') return extraFields.get(key);
+  return extraFields[key];
+};
+
 const initiateAuth = async (req, res) => {
   try {
     const { providerId, recipientData, envelopeId } = req.body;
@@ -98,21 +104,32 @@ const initiateAuth = async (req, res) => {
 
         case "digilocker_link": {
           const digiExtra = provider?.config?.extraFields;
-          const digilockerResponse = await axios.post(
-            `${process.env.IDENTITY_SERVICE_URL}/api/identity/digilocker/start`,
-            {
-              userId: recipientData.id,
-              authProviderId: providerId,
-              apiKey: provider.config.apiKeyRef,
-              envelopeId,
-              webhookUrl: provider?.config?.callbackUrl,
-              apiBaseUrl: digiExtra?.get('SUREPASS_API_BASE_URL'),
-              authType: digiExtra?.get('AUTH_TYPE') || 'link',
-              logoUrl: digiExtra?.get('LOGO_URL'),
-              skipMainScreen: digiExtra?.get('SKIP_MAIN_SCREEN'),
-              initializePath: digiExtra?.get('INITIALIZE_PATH'),
-            }
-          );
+          let digilockerResponse;
+          try {
+            digilockerResponse = await axios.post(
+              `${process.env.IDENTITY_SERVICE_URL}/api/identity/digilocker/start`,
+              {
+                userId: recipientData.id,
+                authProviderId: providerId,
+                apiKey: provider.config.apiKeyRef,
+                envelopeId,
+                webhookUrl: provider?.config?.callbackUrl,
+                apiBaseUrl: getConfigExtra(digiExtra, 'SUREPASS_API_BASE_URL'),
+                authType: getConfigExtra(digiExtra, 'AUTH_TYPE') || 'link',
+                logoUrl: getConfigExtra(digiExtra, 'LOGO_URL'),
+                skipMainScreen: getConfigExtra(digiExtra, 'SKIP_MAIN_SCREEN'),
+                initializePath: getConfigExtra(digiExtra, 'INITIALIZE_PATH'),
+              }
+            );
+          } catch (identityErr) {
+            const detail = identityErr.response?.data?.message
+              || identityErr.response?.data?.error
+              || identityErr.message;
+            console.error('DigiLocker identity-service error:', identityErr.response?.data || identityErr.message);
+            return res.status(identityErr.response?.status || 500).json({
+              message: detail || 'Failed to reach identity service for DigiLocker',
+            });
+          }
 
           if (digilockerResponse.data?.success && digilockerResponse.data?.url) {
             return res.status(200).json({

@@ -38,7 +38,7 @@ const PROVIDER = {
       callbackUrl: '',
       extraFields: {
         SUREPASS_API_BASE_URL: 'https://sandbox.surepass.app',
-        AUTH_TYPE: 'link',
+        AUTH_TYPE: '',
         INITIALIZE_PATH: '/api/v1/digilocker/initialize',
       },
     },
