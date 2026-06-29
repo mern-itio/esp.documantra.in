@@ -8,7 +8,25 @@ const BLOCKED_HOSTNAMES = new Set([
   'metadata.google.internal',
   'metadata.google',
   'instance-data',
+  'metadata',
+  'aws.amazon.com',
 ]);
+
+const BLOCKED_HOST_SUFFIXES = [
+  '.localhost',
+  '.local',
+  '.internal',
+  '.nip.io',
+  '.xip.io',
+  '.sslip.io',
+  '.burpcollaborator.net',
+  '.oastify.com',
+  '.interact.sh',
+  '.svc',
+  '.cluster.local',
+];
+
+const DOMAIN_LABEL_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 
 const isPrivateOrReservedIp = (ip) => {
   if (net.isIPv4(ip)) {
@@ -20,6 +38,7 @@ const isPrivateOrReservedIp = (ip) => {
     if (a === 172 && b >= 16 && b <= 31) return true;
     if (a === 192 && b === 168) return true;
     if (a === 100 && b >= 64 && b <= 127) return true;
+    if (a === 192 && b === 0) return true;
     return false;
   }
 
@@ -28,10 +47,41 @@ const isPrivateOrReservedIp = (ip) => {
     if (lower === '::1' || lower === '::') return true;
     if (lower.startsWith('fc') || lower.startsWith('fd')) return true;
     if (lower.startsWith('fe80')) return true;
+    if (lower.startsWith('::ffff:')) {
+      const mapped = lower.slice('::ffff:'.length);
+      if (net.isIPv4(mapped)) {
+        return isPrivateOrReservedIp(mapped);
+      }
+    }
     return false;
   }
 
   return true;
+};
+
+const isBlockedHostname = (hostname) => {
+  const host = String(hostname || '').toLowerCase().replace(/\.$/, '');
+  if (!host) return true;
+  if (BLOCKED_HOSTNAMES.has(host)) return true;
+  if (host.endsWith('.localhost') || host === 'localhost') return true;
+  if (BLOCKED_HOST_SUFFIXES.some((suffix) => host === suffix.slice(1) || host.endsWith(suffix))) {
+    return true;
+  }
+  if (/^\d+$/.test(host)) return true;
+  if (net.isIP(host)) return true;
+  return false;
+};
+
+const assertValidDomainHostname = (hostname) => {
+  const labels = hostname.split('.').filter(Boolean);
+  if (labels.length < 2) {
+    throw new Error('Logo URL must use a fully qualified domain name');
+  }
+  for (const label of labels) {
+    if (!DOMAIN_LABEL_RE.test(label)) {
+      throw new Error('Logo URL hostname contains invalid characters');
+    }
+  }
 };
 
 const hostnameMatchesAllowlist = (hostname) => {
@@ -66,6 +116,9 @@ const assertSafeExternalHttpsUrl = async (rawUrl) => {
   if (trimmed.length > 2048) {
     throw new Error('Logo URL is too long');
   }
+  if (/[\u0000-\u001F\u007F\s]/.test(trimmed)) {
+    throw new Error('Invalid logo URL format');
+  }
 
   let parsed;
   try {
@@ -83,19 +136,16 @@ const assertSafeExternalHttpsUrl = async (rawUrl) => {
   if (!parsed.hostname) {
     throw new Error('Invalid logo URL hostname');
   }
+  if (parsed.port && parsed.port !== '443') {
+    throw new Error('Logo URL must use the default HTTPS port');
+  }
 
   const hostname = parsed.hostname.toLowerCase().replace(/\.$/, '');
-  if (
-    BLOCKED_HOSTNAMES.has(hostname) ||
-    hostname.endsWith('.localhost') ||
-    hostname.endsWith('.local')
-  ) {
+  if (isBlockedHostname(hostname)) {
     throw new Error('Logo URL hostname is not allowed');
   }
 
-  if (net.isIP(hostname)) {
-    throw new Error('Logo URL must be a domain name, not an IP address');
-  }
+  assertValidDomainHostname(hostname);
 
   if (!hostnameMatchesAllowlist(hostname)) {
     throw new Error('Logo URL domain is not allowed');
@@ -118,4 +168,5 @@ const assertSafeExternalHttpsUrl = async (rawUrl) => {
 module.exports = {
   assertSafeExternalHttpsUrl,
   isPrivateOrReservedIp,
+  isBlockedHostname,
 };

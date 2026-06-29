@@ -123,11 +123,22 @@ const updateOrganizationDetails = async (orgId,payload) => {
         }
     }
 
-    // If gst or website is being changed, reset verification status and remark
-    const updatePayload = { ...payload };
-    if (logo !== undefined) {
-        updatePayload.logo = normalizedLogo;
+    const updatePayload = {};
+    if (name !== undefined) updatePayload.name = name;
+    if (logo !== undefined) updatePayload.logo = normalizedLogo;
+    if (website !== undefined) updatePayload.website = normalizedWebsite;
+    if (gst !== undefined) updatePayload.gst = normalizedGst;
+
+    if (payload.status !== undefined) updatePayload.status = payload.status;
+    if (payload.remark !== undefined) updatePayload.remark = payload.remark;
+    if (payload.isVerified !== undefined) updatePayload.isVerified = payload.isVerified;
+    if (payload.isverifcationRequested !== undefined) {
+        updatePayload.isverifcationRequested = payload.isverifcationRequested;
     }
+    if (payload.verificationStatus !== undefined) {
+        updatePayload.verificationStatus = payload.verificationStatus;
+    }
+    if (payload.$push) updatePayload.$push = payload.$push;
     if (website !== undefined || gst !== undefined) {
         updatePayload.isVerified = false;
         updatePayload.verificationStatus = 'PENDING';

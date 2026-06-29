@@ -21,12 +21,33 @@ const getOrganizationErrorStatus = (err) => {
         message.includes('already in use') ||
         message.includes('conflict') ||
         message.includes('logo url') ||
+        message.includes('invalid logo') ||
         message.includes('not allowed') ||
-        message.includes('invalid logo')
+        message.includes('disallowed') ||
+        message.includes('must use') ||
+        message.includes('could not be resolved') ||
+        message.includes('hostname') ||
+        message.includes('too long')
     ) {
         return 400;
     }
     return 500;
+};
+
+const getOrganizationErrorMessage = (err) => {
+    const message = String(err?.message || '');
+    const lower = message.toLowerCase();
+    if (
+        lower.includes('logo url') ||
+        lower.includes('invalid logo') ||
+        lower.includes('not allowed') ||
+        lower.includes('disallowed') ||
+        lower.includes('hostname') ||
+        lower.includes('must use https')
+    ) {
+        return 'Invalid or disallowed logo URL';
+    }
+    return message || 'Internal server error';
 };
 
 const createOrganization = async (req, res) => {
@@ -42,7 +63,7 @@ const createOrganization = async (req, res) => {
     } catch (err) {
         return res.status(getOrganizationErrorStatus(err)).json({
             success: false,
-            message: err.message || "Internal server error"
+            message: getOrganizationErrorMessage(err)
         });
     }
 }
@@ -74,9 +95,9 @@ const verificationOrganization = async (req, res) => {
             data: result
         });
     }catch(err){
-        return res.status(500).json({
+        return res.status(getOrganizationErrorStatus(err)).json({
             success: false,
-            message: err.message || "Internal server error"
+            message: getOrganizationErrorMessage(err)
         });
     }
 }
@@ -118,9 +139,9 @@ const getOrganizationDetails = async (req, res) => {
             data: result
         });
     }catch(err){
-        return res.status(500).json({
+        return res.status(getOrganizationErrorStatus(err)).json({
             success: false,
-            message: err.message || "Internal server error"
+            message: getOrganizationErrorMessage(err)
         });
     }
 }
@@ -137,7 +158,7 @@ const updateOrganizationDetails = async (req, res) => {
     }catch(err){
         return res.status(getOrganizationErrorStatus(err)).json({
             success: false,
-            message: err.message || "Internal server error"
+            message: getOrganizationErrorMessage(err)
         });
     }
 }
