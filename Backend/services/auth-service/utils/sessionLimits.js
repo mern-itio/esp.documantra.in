@@ -1,8 +1,4 @@
-const getMaxConcurrentSessions = () => {
-  const parsed = Number(process.env.MAX_CONCURRENT_SESSIONS || 5);
-  if (!Number.isFinite(parsed) || parsed < 1) return 5;
-  return Math.min(Math.floor(parsed), 20);
-};
+const { getMaxConcurrentSessions } = require('./sessionPolicy');
 
 const getSessionActivityTime = (session) =>
   new Date(session?.lastActive || session?.createdAt || 0).getTime();

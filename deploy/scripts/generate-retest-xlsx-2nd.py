@@ -72,9 +72,9 @@ UPDATES = {
     ),
     14: (
         "CLOSED",
-        "Session idle timeout enforced server-side. Proof (30-Jun-2026): "
-        "GET /auth/api/auth/security-policy → sessionIdleTimeoutHours: 8; "
-        "auth-service .env SESSION_IDLE_TIMEOUT_MS=28800000 (8 hours). "
+        "Session idle timeout enforced server-side and configurable from Admin → Sessions. "
+        "Proof: GET /auth/api/auth/security-policy → sessionIdleTimeoutHours; "
+        "Admin dashboard Sessions page saves policy (idle timeout hours + max concurrent sessions). "
         "Idle sessions invalidated via lastActive check on validateSession.",
     ),
     15: (

@@ -5,6 +5,7 @@ dotenv.config();
 const cors = require('cors');
 const { getCorsOptions, createErrorHandler, applySecurityHeaders } = require('@draftnsign/validators');
 const { connectDB } = require('./config/db');
+const { refreshSessionPolicyCache } = require('./utils/sessionPolicy');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const verifyJWT = require('@draftnsign/auth-lib');
@@ -20,7 +21,7 @@ applySecurityHeaders(app);
 
 app.use(cors(getCorsOptions()));
 
-connectDB();
+connectDB().then(() => refreshSessionPolicyCache());
 
 app.use(optionsGuard);
 app.use(express.json());

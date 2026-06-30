@@ -14,6 +14,7 @@ const { getAccessTokenCookieOptions } = require('../utils/cookieOptions');
 const { extractAccessToken } = require('@draftnsign/auth-lib');
 const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/passwordHistory');
 const { enforceConcurrentSessionLimit, getMaxConcurrentSessions } = require('../utils/sessionLimits');
+const { getSessionIdleTimeoutMs, getSessionIdleTimeoutHours } = require('../utils/sessionPolicy');
 const { shouldRequireTwoFaSetup, isLoginTwoFaEnforcementEnabled, getTwoFaGraceDays, isAdminLoginTwoFaEnforcementEnabled, getAdminTwoFaGraceDays } = require('../utils/twoFaPolicy');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -1777,9 +1778,6 @@ const verifyProfilePhoneOtp = async (req, res) => {
   return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({ message: 'Phone updated successfully', token: generateToken });
 };
 
-const getSessionIdleTimeoutMs = () =>
-  Number(process.env.SESSION_IDLE_TIMEOUT_MS || 8 * 60 * 60 * 1000);
-
 const validateAndTouchSession = async (user, sessionId, tokenIssuedAtSec) => {
   const session = (user.activeSessions || []).find((s) => s.sessionId === sessionId);
   if (!session) {
@@ -1880,9 +1878,7 @@ const getSecurityPolicy = (_req, res) => {
       String(process.env.REQUIRE_2FA_FOR_E_SIGN || '').toLowerCase() === 'true',
     requireTwoFaGraceDays: getTwoFaGraceDays(),
     maxConcurrentSessions: getMaxConcurrentSessions(),
-    sessionIdleTimeoutHours: Math.round(
-      Number(process.env.SESSION_IDLE_TIMEOUT_MS || 8 * 60 * 60 * 1000) / (60 * 60 * 1000)
-    ),
+    sessionIdleTimeoutHours: getSessionIdleTimeoutHours(),
     transportSecurity: 'https-required',
     passwordPolicy: {
       minLength: 8,
