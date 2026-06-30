@@ -5,7 +5,6 @@ import { eSignApi } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
 import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
 import { useAuth } from '../../components/AuthService/AuthContext';
-import { getUserProfileSnapshot } from '../../utils/authSession';
 
 interface Agreement {
   id: string;
@@ -821,13 +820,12 @@ const AgreementPage: React.FC = () => {
   }, [location.search, navigate, location.pathname]);
 
   useEffect(() => {
-    const snapshot = getUserProfileSnapshot();
-    if (snapshot?.fullname) {
-      setCurrentUserName(snapshot.fullname);
-    } else if (snapshot?.email) {
-      setCurrentUserName(snapshot.email);
+    if (user?.fullname) {
+      setCurrentUserName(user.fullname);
+    } else if (user?.email) {
+      setCurrentUserName(user.email);
     }
-  }, []);
+  }, [user?.fullname, user?.email]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

@@ -116,9 +116,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (nextUser?.id) {
       persistUserProfileSnapshot({
         id: nextUser.id,
-        email: nextUser.email,
-        fullname: nextUser.fullname,
-        plan: nextUser.plan,
         isFirstLogin: nextUser.isFirstLogin,
       });
     } else {

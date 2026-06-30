@@ -1,0 +1,7 @@
+{
+  "message": "Document signed successfully",
+  "signatureId": "665f1a2b3c4d5e6f7a8b9c11",
+  "signedDocumentId": "665f1a2b3c4d5e6f7a8b9c12",
+  "pdfHash": "sha256:REDACTED",
+  "tsaAttached": true
+}

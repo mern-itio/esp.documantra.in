@@ -3516,6 +3516,12 @@ const fetchCurrentRecipient = async (req, res) =>{
 }
 const validateRecipient = async (req, res) =>{
   const {signatureMethod, currentUserId, selfValue} = req.body;
+  if (!signatureMethod || !currentUserId) {
+    return res.status(400).json({
+      success: false,
+      message: 'signatureMethod and currentUserId are required',
+    });
+  }
   let mode= "";
   if(selfValue === "1" || selfValue === 1){
     mode = "Self_Signer";
@@ -3525,21 +3531,36 @@ const validateRecipient = async (req, res) =>{
   let result;
   switch (mode){
     case "Self_Signer" :
-
-      break;
+      return res.status(400).json({
+        success: false,
+        message: 'Self-signer validation is not supported on this endpoint',
+      });
     case "Recipient" :
       const data = {
         recipientId:currentUserId
       }
       try{
-        result  = await signingServices.validate[signatureMethod](data);
+        const validator = signingServices.validate?.[signatureMethod];
+        if (typeof validator !== 'function') {
+          return res.status(400).json({
+            success: false,
+            message: `Unsupported signature method: ${signatureMethod}`,
+          });
+        }
+        result  = await validator(data);
         return res.status(200).json({
           success: true,
           data: result
         });
       }catch (err){
         console.log(err);
+        return res.status(400).json({
+          success: false,
+          message: err?.message || 'Recipient validation failed',
+        });
       }
+    default:
+      return res.status(400).json({ success: false, message: 'Invalid validation mode' });
   }
 }
 async function payloadForPreparePDF(AllFields,withSignatureFlag,documentPath){

@@ -1,9 +1,11 @@
 /** M14: httpOnly cookie auth — do not persist JWT in localStorage. */
 
 const USER_PROFILE_SNAPSHOT_KEY = 'userProfileSnapshot';
+const LEGACY_PROFILE_KEYS = [USER_PROFILE_SNAPSHOT_KEY, 'userData', 'accessToken'];
 
 export type UserProfileSnapshot = {
   id: string;
+  /** In-memory only — never written to sessionStorage/localStorage. */
   email?: string;
   fullname?: string;
   plan?: string;
@@ -11,6 +13,7 @@ export type UserProfileSnapshot = {
 };
 
 let memoryAccessToken: string | null = null;
+let memoryUserProfile: UserProfileSnapshot | null = null;
 
 /** Short-lived in-memory token for WebSocket handshakes only (not localStorage). */
 export const setMemoryAccessToken = (token: string | null) => {
@@ -23,33 +26,52 @@ export const AUTH_FETCH_INIT: RequestInit = {
   credentials: 'include',
 };
 
-export const persistUserProfileSnapshot = (user: UserProfileSnapshot) => {
+const purgeLegacyProfileStorage = () => {
   try {
-    if (!user?.id) return;
-    sessionStorage.setItem(USER_PROFILE_SNAPSHOT_KEY, JSON.stringify(user));
+    for (const key of LEGACY_PROFILE_KEYS) {
+      sessionStorage.removeItem(key);
+      localStorage.removeItem(key);
+    }
   } catch {
     // ignore
   }
 };
 
+/** Persist only non-sensitive session hint in memory (no browser storage). */
+export const persistUserProfileSnapshot = (user: UserProfileSnapshot) => {
+  if (!user?.id) return;
+  memoryUserProfile = {
+    id: user.id,
+    isFirstLogin: user.isFirstLogin,
+  };
+  purgeLegacyProfileStorage();
+};
+
 export const getUserProfileSnapshot = (): UserProfileSnapshot | null => {
+  if (memoryUserProfile?.id) return memoryUserProfile;
+
+  // One-time migration: read legacy key, keep id only, then delete.
   try {
     const raw = sessionStorage.getItem(USER_PROFILE_SNAPSHOT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed?.id) return null;
-    return parsed as UserProfileSnapshot;
+    sessionStorage.removeItem(USER_PROFILE_SNAPSHOT_KEY);
+    if (parsed?.id) {
+      memoryUserProfile = {
+        id: String(parsed.id),
+        isFirstLogin: parsed.isFirstLogin,
+      };
+      return memoryUserProfile;
+    }
   } catch {
-    return null;
+    purgeLegacyProfileStorage();
   }
+  return null;
 };
 
 export const clearUserProfileSnapshot = () => {
-  try {
-    sessionStorage.removeItem(USER_PROFILE_SNAPSHOT_KEY);
-  } catch {
-    // ignore
-  }
+  memoryUserProfile = null;
+  purgeLegacyProfileStorage();
 };
 
 export const getCurrentUserId = (): string =>
@@ -60,10 +82,9 @@ export const isLoggedInSnapshot = (): boolean =>
 
 export const clearLegacyAuthStorage = () => {
   memoryAccessToken = null;
-  clearUserProfileSnapshot();
+  memoryUserProfile = null;
+  purgeLegacyProfileStorage();
   try {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('userData');
     localStorage.removeItem('orgAccessToken');
     localStorage.removeItem('token');
     localStorage.removeItem('userToken');
@@ -136,3 +157,5 @@ export const withAuthFetch = (init: RequestInit = {}): RequestInit => ({
     ...(init.headers || {}),
   },
 });
+
+purgeLegacyProfileStorage();

@@ -1,0 +1,14 @@
+{
+  "_id": "665f1a2b3c4d5e6f7a8b9c20",
+  "envelopeId": "665f1a2b3c4d5e6f7a8b9c0d",
+  "recipientId": "665f1a2b3c4d5e6f7a8b9c0f",
+  "action": "DOC_SIGNED",
+  "details": {
+    "documentId": "665f1a2b3c4d5e6f7a8b9c0e",
+    "method": "Digital_Signature"
+  },
+  "docHash": "sha256:REDACTED",
+  "ip": "203.0.113.10",
+  "userAgent": "Mozilla/5.0",
+  "timestamp": "2026-06-15T10:31:22.000Z"
+}

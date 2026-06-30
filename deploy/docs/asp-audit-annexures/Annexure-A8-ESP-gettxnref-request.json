@@ -1,0 +1,18 @@
+{
+  "endpoint": "POST {UTILITY_URL}/gettxnrefv4_1",
+  "description": "Standard ESP transaction initiation (redacted)",
+  "body": {
+    "aspId": "IIPLUAT001",
+    "txn": "REDACTED_TXN",
+    "responseUrl": "https://esp.documantra.in/esign/api/e-sign/public/v-sign/response",
+    "ver": "21",
+    "AuthMode": "1",
+    "signingAlgorithm": "RSA",
+    "pdfdetails": [
+      {
+        "docInfo": "sample-contract.pdf",
+        "signaturedetailsString": "1-120,450,250,60"
+      }
+    ]
+  }
+}

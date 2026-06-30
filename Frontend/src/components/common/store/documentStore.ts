@@ -77,8 +77,8 @@ const getUserFromStorage = (): User | null => {
     if (parsed?.id) {
       return {
         id: parsed.id,
-        email: parsed.email || '',
-        name: parsed.fullname || parsed.email || '',
+        email: '',
+        name: 'User',
         role: 'regular',
       };
     }

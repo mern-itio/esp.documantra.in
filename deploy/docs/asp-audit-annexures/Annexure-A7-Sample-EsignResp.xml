@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EsignResp errCode="NA" errMsg="NA" status="1" ts="2026-06-15T10:30:00+05:30" txn="REDACTED_TXN_001" resCode="NA">
+  <UserX509Certificate>MIID...REDACTED...</UserX509Certificate>
+  <Signatures>
+    <DocSignature error="" id="1" sigHashAlgorithm="SHA256" sigType="PKCS7">
+      <Signature>REDACTED_BASE64_SIGNATURE</Signature>
+    </DocSignature>
+  </Signatures>
+</EsignResp>

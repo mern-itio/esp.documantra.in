@@ -1,0 +1,17 @@
+{
+  "endpoint": "POST /esign/api/e-sign/public/add-signature",
+  "description": "Initiate recipient signature (redacted sample)",
+  "headers": {
+    "Authorization": "Bearer <JWT_REDACTED>",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "envelopeId": "665f1a2b3c4d5e6f7a8b9c0d",
+    "documentId": "665f1a2b3c4d5e6f7a8b9c0e",
+    "recipientId": "665f1a2b3c4d5e6f7a8b9c0f",
+    "fieldId": "665f1a2b3c4d5e6f7a8b9c10",
+    "signatureMethod": "Digital_Signature",
+    "signatureImageBase64": "<BASE64_REDACTED>",
+    "mode": "Recipient"
+  }
+}
