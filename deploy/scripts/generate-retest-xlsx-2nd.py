@@ -91,10 +91,9 @@ UPDATES = {
         "Legacy keys purged on load (userProfileSnapshot, userData, accessToken).",
     ),
     17: (
-        "CLOSED",
-        "Fixed 30-Jun-2026: nodemailer upgraded to ^9.0.3 across email-lib, email-service, "
-        "document-service, e-sign-service; removed unused nodemailer from auth-service. "
-        "Proof: npm audit auth-service → 0 vulnerabilities; npm audit email-service/document-service → nodemailer cleared.",
+        "OPEN",
+        "Deferred — nodemailer upgrade planned for a later release. "
+        "Current state: auth-service npm audit may report nodemailer HIGH until upgraded.",
     ),
     18: (
         "CLOSED",
