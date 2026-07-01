@@ -4,6 +4,10 @@ import { eSignApi } from '../../services/apiHelper';
 import { BRAND } from '../../config/brand';
 import { isPublicSignOnlyApp } from '../../config/appMode';
 import {
+  PublicSignFooter,
+  PublicSignHeader,
+} from './PublicSignMarketingChrome';
+import {
   getEsignMaxUploadLabel,
   getEsignUploadErrorMessage,
   isFileTooLargeForEsign,
@@ -274,8 +278,10 @@ export default function PublicWizard() {
     ) : null;
 
   return (
-    <div className="min-h-screen bg-white px-4 py-10 md:py-14">
-      <div className="mx-auto flex max-w-4xl flex-col items-center">
+    <div className="min-h-screen bg-white">
+      <PublicSignHeader />
+      <main className="px-4 py-10 md:py-14">
+        <div className="mx-auto flex max-w-4xl flex-col items-center">
         {step > 1 && renderStepIndicator()}
 
         {step === 1 && (
@@ -644,7 +650,9 @@ export default function PublicWizard() {
             )}
           </div>
         )}
-      </div>
+        </div>
+      </main>
+      <PublicSignFooter />
     </div>
   );
 }
