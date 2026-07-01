@@ -33,11 +33,10 @@ UPDATES = {
     ),
     6: (
         "CLOSED",
-        "All credential traffic over HTTPS only. Proof (30-Jun-2026 server curl): "
-        "curl -sI http://esp.documantra.in/login → HTTP 301 Moved Permanently to HTTPS; "
-        "curl -sI https://esp.documantra.in/login → strict-transport-security: max-age=31536000; includeSubDomains; "
-        "GET /auth/api/auth/security-policy → transportSecurity: https-required. "
-        "Login POST only on https:// — no cleartext transmission.",
+        "Credentials encrypted in login POST body (RSA-OAEP-256 + AES-256-GCM). "
+        "Proof: Burp POST /auth/login shows only {v,key,iv,data,tag} — no plaintext email/password; "
+        "GET /auth/login/public-key returns server public key; plain JSON rejected when REQUIRE_ENCRYPTED_LOGIN=true. "
+        "All traffic remains HTTPS-only with HSTS.",
     ),
     7: (
         "CLOSED",

@@ -1,12 +1,12 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { login, googleLogin, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoverySingleAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp, sendRecoveryEmailOtp, verifyRecoveryEmailOtp, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, regenerateAuthenticatorBackupCodes, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, changePassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, getSecurityPolicy, verifyActiveSession, validateSessionEndpoint, logout } = require('../controllers/authController');
+const { login, getLoginPublicKey, googleLogin, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoverySingleAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp, sendRecoveryEmailOtp, verifyRecoveryEmailOtp, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, regenerateAuthenticatorBackupCodes, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, changePassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, getSecurityPolicy, verifyActiveSession, validateSessionEndpoint, logout } = require('../controllers/authController');
 const { getMyReferral, listRewards, onFirstDocumentSentInternal } = require('../controllers/referralController');
 const {adminLogin, adminVerifyTwoFaLogin, getAdminTwoFaSettings, setupAdminAuthenticatorTwoFa, verifyAdminAuthenticatorTwoFaSetup, adminForgotPassword, adminResetPassword, adminChangePassword, getAdminMe, adminLogout, getAdminSocketToken, validateAdminSessionEndpoint} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail,insertNotifications,getNotifications,markNotificationReadById,markAllNotificationAsRead } = require('../controllers/mainController');
 const verifyJWT  = require('@draftnsign/auth-lib');
 const { blockTwoFaSetupOnlySession } = require('../middleware/blockTwoFaSetupOnlySession');
-const router = express.Router();
+const { decryptLoginBodyMiddleware } = require('../middleware/decryptLoginBody');
 
 // Rate limiters
 const loginLimiter = rateLimit({
@@ -34,15 +34,16 @@ const resetPasswordLimiter = rateLimit({
 });
 
 router.get('/status', (_, res) => res.send('Auth Service is running and changing'));
+router.get('/login/public-key', getLoginPublicKey);
 router.get('/api/auth/security-policy', getSecurityPolicy);
-router.post('/login', login);
+router.post('/login', decryptLoginBodyMiddleware, login);
 router.post('/google-login', loginLimiter, googleLogin);
 router.post('/2fa/verify-login', loginLimiter, verifyTwoFaLogin);
 router.post('/2fa/recovery/questions', loginLimiter, getTwoFaRecoveryQuestions);
 router.post('/2fa/recovery/verify-answer', loginLimiter, verifyTwoFaRecoverySingleAnswer);
 router.post('/2fa/recovery/verify-answers', loginLimiter, verifyTwoFaRecoveryAnswers);
 router.post('/2fa/recovery/verify-otp', loginLimiter, verifyTwoFaRecoveryOtp);
-router.post('/admin/login', adminLogin);
+router.post('/admin/login', decryptLoginBodyMiddleware, adminLogin);
 router.post('/admin/2fa/verify-login', loginLimiter, adminVerifyTwoFaLogin);
 router.get('/admin/2fa/settings', verifyJWT('admin'), getAdminTwoFaSettings);
 router.get('/admin/2fa/authenticator/setup', verifyJWT('admin'), setupAdminAuthenticatorTwoFa);

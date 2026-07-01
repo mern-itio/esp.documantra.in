@@ -8,6 +8,7 @@ const DOCUMENT_API_BASE_URL = import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: `${API_CONFIG.BASE_URL}/login`,
+    LOGIN_PUBLIC_KEY: `${API_CONFIG.BASE_URL}/login/public-key`,
     GOOGLE_LOGIN: `${API_CONFIG.BASE_URL}/google-login`,
     VERIFY_2FA_LOGIN: `${API_CONFIG.BASE_URL}/2fa/verify-login`,
     GET_2FA_RECOVERY_QUESTIONS: `${API_CONFIG.BASE_URL}/2fa/recovery/questions`,

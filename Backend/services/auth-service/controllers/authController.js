@@ -261,6 +261,18 @@ async function maybeIssueAccessTokenIfVerified(user, res, req) {
     ...verificationState(user),
   };
 }
+const { getLoginPublicKeyPem } = require('../utils/loginPayloadCrypto');
+
+const getLoginPublicKey = (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  return res.status(200).json({
+    v: 1,
+    alg: 'RSA-OAEP-256',
+    enc: 'aes-256-gcm',
+    publicKey: getLoginPublicKeyPem(),
+  });
+};
+
 // Login Controller
 const login = async (req, res) => {
   const { email, password, deviceId, deviceLabel, recaptchaToken } = req.body;
@@ -2038,6 +2050,7 @@ const logout = async (req, res) => {
 
 // Export functions
 module.exports = {
+  getLoginPublicKey,
   login,
   verifyTwoFaLogin,
   getTwoFaRecoveryQuestions,

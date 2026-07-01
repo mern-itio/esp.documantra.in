@@ -58,7 +58,11 @@ upsert_env "$AUTH_ENV" "ACCESS_TOKEN_EXPIRY" "8h"
 upsert_env "$AUTH_ENV" "ADMIN_ACCESS_TOKEN_EXPIRY" "8h"
 upsert_env "$AUTH_ENV" "REQUIRE_2FA_FOR_ADMIN_LOGIN" "$ENABLE_2FA_LOGIN"
 upsert_env "$AUTH_ENV" "REQUIRE_2FA_ADMIN_GRACE_DAYS" "$REQUIRE_2FA_GRACE_DAYS"
+upsert_env "$AUTH_ENV" "REQUIRE_ENCRYPTED_LOGIN" "true"
 upsert_env "$AUTH_ENV" "AUTH_SERVICE_URL" "http://auth-service:2101"
+if ! grep -q '^LOGIN_RSA_PRIVATE_KEY_PEM=' "$AUTH_ENV" 2>/dev/null; then
+  echo "WARN: LOGIN_RSA_PRIVATE_KEY_PEM missing in $AUTH_ENV — run deploy/scripts/generate-login-rsa-key.sh and add to .env before production deploy."
+fi
 
 echo "==> [3/8] Rebuild & restart backend services"
 cd "$BACKEND"

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { API_ENDPOINTS, apiRequest } from '../../services/api';
 import { assertSecureApiUrl } from '../../utils/secureApiUrl';
+import { encryptLoginPayload, fetchLoginPublicKey } from '../../utils/loginPayloadCrypto';
 import { authApi } from '../../services/apiHelper';
 import { SubscriptionService, SubscriptionStorage } from '../../services/subscriptionService';
 import {
@@ -319,10 +320,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       assertSecureApiUrl(API_ENDPOINTS.AUTH.LOGIN, 'Auth API');
       const deviceId = getOrCreateDeviceId();
+      const publicKey = await fetchLoginPublicKey(API_ENDPOINTS.AUTH.LOGIN_PUBLIC_KEY);
+      const encryptedBody = await encryptLoginPayload(
+        { email, password, deviceId, deviceLabel: 'browser', recaptchaToken },
+        publicKey,
+      );
       const resp = await fetch(API_ENDPOINTS.AUTH.LOGIN, withAuthFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, deviceId, deviceLabel: 'browser', recaptchaToken }),
+        body: JSON.stringify(encryptedBody),
       }));
 
       const data = await resp.json().catch(() => ({}));
