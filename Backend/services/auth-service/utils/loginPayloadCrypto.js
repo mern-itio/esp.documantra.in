@@ -10,7 +10,9 @@ let keyPair = null;
 const loadKeyPair = () => {
   if (keyPair) return keyPair;
 
-  const privatePem = String(process.env.LOGIN_RSA_PRIVATE_KEY_PEM || '').trim();
+  const privatePem = String(process.env.LOGIN_RSA_PRIVATE_KEY_PEM || '')
+    .replace(/\\n/g, '\n')
+    .trim();
   if (privatePem) {
     const privateKey = crypto.createPrivateKey(privatePem);
     const publicKey = crypto.createPublicKey(privateKey);
