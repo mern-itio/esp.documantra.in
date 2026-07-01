@@ -1,6 +1,12 @@
 # Public sign only — https://esign.documantra.in
 # DNS: A record esign.documantra.in → server IP
-# SSL: certbot -d esign.documantra.in
+#
+# FIRST-TIME SSL (cert does not exist yet):
+#   1. cp deploy/nginx/esign.documantra.in.bootstrap.conf.example /etc/nginx/sites-enabled/esign.documantra.in
+#   2. nginx -t && systemctl reload nginx
+#   3. certbot certonly --webroot -w /var/www/esign-public -d esign.documantra.in
+#   4. cp this file to /etc/nginx/sites-enabled/esign.documantra.in
+#   5. nginx -t && systemctl reload nginx
 
 server {
     listen 80;
