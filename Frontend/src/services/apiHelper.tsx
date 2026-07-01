@@ -2,6 +2,7 @@ import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import { SubscriptionStorage } from './subscriptionService';
 import { resolveServiceUrl } from '../utils/secureApiUrl';
+import { isPublicSignOnlyApp } from '../config/appMode';
 import { getAccountContextHeaders } from '../utils/authSession';
 
 const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance => {
@@ -18,8 +19,10 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
     const requestUrl = String(config.url || '');
     const isPublicEsignRequest =
       requestUrl.includes('/api/e-sign/public/') ||
+      isPublicSignOnlyApp() ||
       (typeof window !== 'undefined' &&
-        window.location.pathname.startsWith('/public-sign'));
+        (window.location.pathname.startsWith('/public-sign') ||
+          window.location.pathname.startsWith('/e-sign/signer')));
 
     if (!isPublicEsignRequest) {
       const accountHeaders = getAccountContextHeaders();
@@ -45,7 +48,9 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
   const path = window.location.pathname;
 
   const isPublicRoute =
-    path.startsWith('/public-sign');
+    path.startsWith('/public-sign') ||
+    path.startsWith('/e-sign/signer') ||
+    isPublicSignOnlyApp();
 
   if (!isPublicRoute) {
     try {

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import router from "./routes/index";
+import publicSignRouter from "./routes/publicSignRouter";
+import { isPublicSignOnlyApp } from "./config/appMode";
 import ThemeConfig from "./theme/index";
 import { SidebarProvider } from "./context/SidebarContext";
 import { AuthProvider } from "./components/AuthService/AuthContext";
@@ -74,6 +76,8 @@ const ConditionalWidgets: React.FC = () => {
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
+  const publicSignOnly = isPublicSignOnlyApp();
+  const activeRouter = publicSignOnly ? publicSignRouter : router;
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 2000);
@@ -90,15 +94,19 @@ const App: React.FC = () => {
             <AppProvider>
               <SidebarProvider>
                 <ThemeConfig>
-                  <RouterProvider router={router} />
+                  <RouterProvider router={activeRouter} />
                   <Toaster
                     containerStyle={{ zIndex: 10100 }}
                     toastOptions={{
                       style: { zIndex: 10100 },
                     }}
                   />
-                  <GlobalPlansModalPortal />
-                  <ConditionalWidgets />
+                  {!publicSignOnly && (
+                    <>
+                      <GlobalPlansModalPortal />
+                      <ConditionalWidgets />
+                    </>
+                  )}
                 </ThemeConfig>
               </SidebarProvider>
             </AppProvider>

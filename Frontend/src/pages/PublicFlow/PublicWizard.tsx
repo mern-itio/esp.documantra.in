@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { FileText, Info, Plus, ShieldCheck, Star } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
 import { BRAND } from '../../config/brand';
+import { isPublicSignOnlyApp } from '../../config/appMode';
 import {
   getEsignMaxUploadLabel,
   getEsignUploadErrorMessage,
@@ -391,9 +391,12 @@ export default function PublicWizard() {
 
             <p className="mt-8 max-w-xl text-center text-sm text-gray-500">
               Learn more about{' '}
-              <Link to="/login" className="text-blue-600 hover:underline">
+              <a
+                href={isPublicSignOnlyApp() ? `${BRAND.website}/login` : '/login'}
+                className="text-blue-600 hover:underline"
+              >
                 why {BRAND.name} is free
-              </Link>
+              </a>
               . Still have questions?{' '}
               <a
                 href={`mailto:${BRAND.supportEmail}`}
