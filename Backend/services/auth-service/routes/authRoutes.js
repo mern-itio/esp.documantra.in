@@ -8,6 +8,8 @@ const verifyJWT  = require('@draftnsign/auth-lib');
 const { blockTwoFaSetupOnlySession } = require('../middleware/blockTwoFaSetupOnlySession');
 const { decryptLoginBodyMiddleware } = require('../middleware/decryptLoginBody');
 
+const router = express.Router();
+
 // Rate limiters
 const loginLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
