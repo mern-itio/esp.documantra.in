@@ -19,11 +19,12 @@ app.set('trust proxy', 1);
 app.use(httpsSecurityMiddleware);
 applySecurityHeaders(app);
 
+// OPTIONS guard before cors — blocks /login enumeration (VAPT CWE-346)
+app.use(optionsGuard);
 app.use(cors(getCorsOptions()));
 
 connectDB().then(() => refreshSessionPolicyCache());
 
-app.use(optionsGuard);
 app.use(express.json());
 app.use('/api-admin', verifyJWT('admin'));
 app.use('/', authRoutes);

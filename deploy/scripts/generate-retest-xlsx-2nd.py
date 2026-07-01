@@ -116,11 +116,11 @@ UPDATES = {
     ),
     22: (
         "CLOSED",
-        "OPTIONS blocked on sensitive routes. Proof (30-Jun-2026 server curl): "
+        "OPTIONS blocked on sensitive routes including login API. Proof: "
+        "curl -sI -X OPTIONS https://esp.documantra.in/auth/login -H 'Origin: https://esp.documantra.in' → HTTP/2 405; "
         "curl -sI -X OPTIONS https://esp.documantra.in/auth-login → HTTP/2 405; "
         "curl -sI -X OPTIONS https://esp.documantra.in/login → HTTP/2 405; "
-        "curl -sI -X OPTIONS https://esp.documantra.in/dashboard/ → HTTP/2 405; "
-        "curl -sI -X OPTIONS https://esp.documantra.in/ → HTTP/2 405 (nginx location = / fix).",
+        "auth-service optionsGuard runs before cors on /login and /api/auth/*.",
     ),
     23: (
         "CLOSED",
@@ -130,8 +130,10 @@ UPDATES = {
     ),
     24: (
         "CLOSED",
-        "nginx server_tokens off; proxy_hide_header Server on API routes. "
-        "Verified unchanged — re-checked 30-Jun-2026.",
+        "Server banner removed on API responses. Proof: "
+        "curl -sI -X POST https://esp.documantra.in/auth/login → no Server: nginx header "
+        "(nginx server_tokens off + proxy_hide_header Server + more_clear_headers Server). "
+        "Run deploy/scripts/apply-nginx-hide-server-header.sh on server.",
     ),
     25: (
         "CLOSED",
