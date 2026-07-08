@@ -81,6 +81,12 @@ function getRecipientBorderStyle(idx: number) {
   return RECIPIENT_BORDER_STYLES[idx % RECIPIENT_BORDER_STYLES.length];
 }
 
+function getDefaultFieldSize(type: FieldType) {
+  if (type === "signature") return { width: 240, height: 34 };
+  if (type === "initial") return { width: 120, height: 30 };
+  return { width: 200, height: 20 };
+}
+
 function hexToRgba(hex: string | undefined | null, alpha: number) {
   // Safety check: if hex is undefined, null, or empty, use default color
   if (!hex || typeof hex !== 'string') {
@@ -557,8 +563,7 @@ export default function SigningEditorStep({
         const pageRect = pageEl?.getBoundingClientRect();
         if (!pageRect) return;
 
-        const width = 200;
-        const height = 20;
+        const { width, height } = getDefaultFieldSize("signature");
         const left = (pageRect.width - width) / 2;
         const top = (pageRect.height - height) / 2;
 
@@ -992,8 +997,8 @@ export default function SigningEditorStep({
     const { pageNum, rect } = pageInfo;
     setCurrentPage(pageNum);
 
-    // base width/height (kept constant - you can replace with ratio later)
-    const width = 200, height = 20;
+    // base width/height by field type
+    const { width, height } = getDefaultFieldSize(draggedField.type);
     let left = e.clientX - rect.left - width / 2;
     let top = e.clientY - rect.top - height / 2;
 
@@ -2497,10 +2502,10 @@ export default function SigningEditorStep({
                         <div
                           style={{
                             position: "absolute",
-                            left: dropPreview.x - 60,
-                            top: dropPreview.y - 20,
-                            width: 120,
-                            height: 40,
+                            left: dropPreview.x - getDefaultFieldSize(draggedField?.type || "text").width / 2,
+                            top: dropPreview.y - getDefaultFieldSize(draggedField?.type || "text").height / 2,
+                            width: getDefaultFieldSize(draggedField?.type || "text").width,
+                            height: getDefaultFieldSize(draggedField?.type || "text").height,
                             borderStyle: recipientBorderStyleMap[activeAssigneeId ?? ""] || "dashed",
                             borderWidth: (recipientBorderStyleMap[activeAssigneeId ?? ""] === "double" || 
                                           recipientBorderStyleMap[activeAssigneeId ?? ""] === "inset" || 

@@ -1,5 +1,5 @@
 import { Document, Page, pdfjs } from "react-pdf";
-import React, { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState, useMemo, useCallback } from "react";
 import Modal from "react-modal";
 import SignPad from "./SignPad";
 import { eSignApi } from "../../services/apiHelper";
@@ -313,6 +313,8 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [_aadhaarSaved, setAadhaarSaved] = useState(false);
   const [aadhaarSaving, setAadhaarSaving] = useState(false);
   const [pendingField, setPendingField] = useState<any>(null);
+  const [applySignToAllPages, setApplySignToAllPages] = useState(true);
+  const [signBatchProgress, setSignBatchProgress] = useState<string | null>(null);
 
   const openAuditTrailModal = async () => {
     if (!isViewOnly) return;
@@ -508,6 +510,49 @@ const DocumentViewerContent: React.FC<Props> = ({
       field?.pageNo ??
       0
     );
+
+  const isSignApplyType = (type: string) => type === 'signature' || type === 'initial';
+
+  const canSignFieldNow = (field: any): boolean => {
+    if (!isFieldForCurrentUser(field)) return false;
+    if (isSignatureFieldCompleted(field)) return false;
+    switch (mode) {
+      case MODE.SELF_SIGNER:
+        return areAllNonSignatureFieldsFilledForSlot(field.slotId);
+      case MODE.RECIPIENT:
+        return areAllNonSignatureFieldsFilledForRecipient(field.recipientId);
+      default:
+        return false;
+    }
+  };
+
+  /** Pending sign/initial fields at the same position (apply-to-all-pages from editor). */
+  const getFieldsForApplyAll = useCallback(
+    (sourceField: any) => {
+      if (!sourceField || !isSignApplyType(sourceField.type)) return [sourceField].filter(Boolean);
+
+      const docId = normalizeMongoId(sourceField.documentId || sourceField.docId);
+      const sx = toNumber(sourceField.x);
+      const sy = toNumber(sourceField.y);
+      const sw = toNumber(sourceField.width);
+      const sh = toNumber(sourceField.height);
+      const tolerance = 2;
+
+      return signatureFields
+        .filter((f) => {
+          if (f.type !== sourceField.type) return false;
+          if (!canSignFieldNow(f)) return false;
+          if (normalizeMongoId(f.documentId || f.docId) !== docId) return false;
+          if (Math.abs(toNumber(f.x) - sx) > tolerance) return false;
+          if (Math.abs(toNumber(f.y) - sy) > tolerance) return false;
+          if (Math.abs(toNumber(f.width) - sw) > tolerance) return false;
+          if (Math.abs(toNumber(f.height) - sh) > tolerance) return false;
+          return true;
+        })
+        .sort((a, b) => normalizePage(a) - normalizePage(b));
+    },
+    [signatureFields, mode, currentUserId, selfSigner, allRecipients, localFieldValues],
+  );
   // returns whether one non-signature field is considered filled
 const isFieldFilled = (f: any): boolean => {
   const key = f._id || f.fieldId;
@@ -702,6 +747,17 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   const currentNavFieldKey = currentNavField
     ? currentNavField._id || currentNavField.fieldId
     : null;
+
+  const applyAllSignFieldCount = useMemo(() => {
+    if (!currentNavField || !isSignApplyType(currentNavField.type)) return 0;
+    return getFieldsForApplyAll(currentNavField).length;
+  }, [currentNavField, getFieldsForApplyAll]);
+
+  const showApplyToAllOption =
+    !isViewOnly &&
+    !!recipientSignature &&
+    applyAllSignFieldCount > 1 &&
+    signatureMethod !== 'aadhaarSignature';
 
   // Auto-scroll to first actionable field on load (only once) - but don't open sign pad
   useEffect(() => {
@@ -1095,22 +1151,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     }
     // If nextIndex is null, all fields are completed - do nothing
   };
-  // Do Signature
-  const doSign = async (field:any) =>{
-    if(!recipientSignature){
-      alert("Please save a signature before submitting!");
-      return;
-    }
-    if(signatureMethod=="aadhaarSignature"){
-      console.log(signatureMethod);
-      console.log("Checking if recipient require details");
-      const response = await checkRecipientRequireDetails(currentUserId);
-      if(response?.status==200 && response?.data?.data?.flag === false){
-        setPendingField(field);
-        setShowAadhaarModal(true);
-        return;
-      }
-    }
+  // Do Signature (single field — used by batch and direct sign)
+  const signSingleField = async (
+    field: any,
+    options?: { suppressNavigation?: boolean; suppressConfetti?: boolean; batchLabel?: string },
+  ) => {
     const fieldKeyRaw = field?._id || field?.fieldId;
     const fieldKey = normalizeMongoId(fieldKeyRaw);
     if (fieldKey) setSigningFieldIds((prev) => ({ ...prev, [fieldKey]: true }));
@@ -1123,16 +1168,23 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       });
     };
 
-    // Keep the user engaged for long-running finalize (stamp/image embedding + emails + certificate)
-    setSigningStatusText("Finalizing document...");
+    if (options?.batchLabel) {
+      setSigningStatusText(options.batchLabel);
+    } else {
+      setSigningStatusText('Finalizing document...');
+    }
     const startedAt = Date.now();
     const statusTicker = window.setInterval(() => {
       const elapsed = Date.now() - startedAt;
-      if (elapsed < 4000) setSigningStatusText("Validating your details...");
-      else if (elapsed < 12000) setSigningStatusText("Applying your signature...");
-      else if (elapsed < 25000) setSigningStatusText("Finalizing document...");
-      else if (elapsed < 60000) setSigningStatusText("Finalizing and sending emails...");
-      else setSigningStatusText("Still working… almost done.");
+      if (options?.batchLabel) {
+        setSigningStatusText(options.batchLabel);
+        return;
+      }
+      if (elapsed < 4000) setSigningStatusText('Validating your details...');
+      else if (elapsed < 12000) setSigningStatusText('Applying your signature...');
+      else if (elapsed < 25000) setSigningStatusText('Finalizing document...');
+      else if (elapsed < 60000) setSigningStatusText('Finalizing and sending emails...');
+      else setSigningStatusText('Still working… almost done.');
     }, 1200);
 
     const waitForCompletion = async (maxMs = 120000) => {
@@ -1149,77 +1201,123 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       }
       return false;
     };
-    try{
-      console.log(field);
+
+    try {
       const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
-      
-      // Get initials from recipient or selfSigner based on mode
-      let initialsValue = "";
-      let signerName = "John Doe"; // default name
+
+      let initialsValue = '';
+      let signerName = 'John Doe';
       switch (mode) {
         case MODE.SELF_SIGNER: {
           const matchedSigner = selfSigner.find(
-            (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.()
+            (s: any) => s && s._id?.toString?.() === currentUserId?.toString?.(),
           );
           if (matchedSigner) {
-            initialsValue = (matchedSigner as any).initials || "";
-            signerName = (matchedSigner as any)?.data?.name || "John Doe";
-            console.log(signerName);
+            initialsValue = (matchedSigner as any).initials || '';
+            signerName = (matchedSigner as any)?.data?.name || 'John Doe';
           }
           break;
         }
         case MODE.RECIPIENT: {
-          const recipient = allRecipients?.find(r => r.id === currentUserId);
+          const recipient = allRecipients?.find((r) => r.id === currentUserId);
           if (recipient) {
-            initialsValue = recipient.initials || "";
+            initialsValue = recipient.initials || '';
           }
           break;
         }
       }
-      
+
       const payload = {
         fieldId: fieldKey,
         signatureImageBase64: recipientSignature,
-        envelopeId: envelopeID || "",
-        documentId:field?.documentId,
+        envelopeId: envelopeID || '',
+        documentId: field?.documentId,
         recipientId: currentUserId,
-        certificateId, 
-        signerName: signerName,
-        selfValue: selfValue || "",
-        cycleId:cycleId || "",
+        certificateId,
+        signerName,
+        selfValue: selfValue || '',
+        cycleId: cycleId || '',
         initials: initialsValue || undefined,
         mode,
         signatureMethod,
-        signatureProvider
+        signatureProvider,
       };
-      // Allow long finalize (stamp embedding + certificate + emails)
-      const response = await eSignApi.post("/api/e-sign/public/add-signature", payload, { timeout: 180000 });
+
+      const response = await eSignApi.post('/api/e-sign/public/add-signature', payload, {
+        timeout: 180000,
+      });
       if (response?.status === 200) {
-        if(response?.data?.signMethod == "V_Sign"){
+        if (response?.data?.signMethod == 'V_Sign') {
           await postRedirect(response?.data?.authUrl, response?.data?.txnRef);
-        }else{
-          await handleSuccess(response,fieldKey);
+        } else {
+          await handleSuccess(response, fieldKey, {
+            suppressNavigation: options?.suppressNavigation,
+            suppressConfetti: options?.suppressConfetti,
+          });
         }
-      }else{
-        console.error("submit response:", response);
-        // If server responded oddly, verify completion before showing error
+      } else {
         const completed = await waitForCompletion(45000);
-        if (!completed) {
-          if (isMountedRef.current) alert("Failed to submit signature. Please try again.");
+        if (!completed && isMountedRef.current) {
+          alert('Failed to submit signature. Please try again.');
         }
       }
-    }catch (err){
-      console.error("submit error:", err);
-      // If request timed out / disconnected but backend completed, don't show error.
+    } catch (err) {
+      console.error('submit error:', err);
       const completed = await waitForCompletion(60000);
-      if (!completed) {
-        if (isMountedRef.current) alert("An error occurred while submitting the signature.");
+      if (!completed && isMountedRef.current) {
+        alert('An error occurred while submitting the signature.');
       }
     } finally {
       window.clearInterval(statusTicker);
-      if (isMountedRef.current) setSigningStatusText("Finalizing document...");
+      if (isMountedRef.current && !options?.batchLabel) {
+        setSigningStatusText('Finalizing document...');
+      }
       clearSigningState();
     }
+  };
+
+  const doSign = async (field: any) => {
+    if (!recipientSignature) {
+      alert('Please save a signature before submitting!');
+      return;
+    }
+    if (signatureMethod == 'aadhaarSignature') {
+      const response = await checkRecipientRequireDetails(currentUserId);
+      if (response?.status == 200 && response?.data?.data?.flag === false) {
+        setPendingField(field);
+        setShowAadhaarModal(true);
+        return;
+      }
+    }
+
+    const useApplyAll = applySignToAllPages && applyAllSignFieldCount > 1;
+    const fieldsToSign = useApplyAll ? getFieldsForApplyAll(field) : [field];
+
+    if (fieldsToSign.length === 0) return;
+
+    if (useApplyAll && fieldsToSign.length > 1) {
+      setSignBatchProgress(`0 / ${fieldsToSign.length}`);
+    }
+
+    for (let i = 0; i < fieldsToSign.length; i += 1) {
+      const batchField = fieldsToSign[i];
+      const isLast = i === fieldsToSign.length - 1;
+      const pageNum = normalizePage(batchField);
+      await signSingleField(batchField, {
+        suppressNavigation: !isLast,
+        suppressConfetti: !isLast,
+        batchLabel:
+          fieldsToSign.length > 1
+            ? `Signing page ${pageNum} (${i + 1} of ${fieldsToSign.length})...`
+            : undefined,
+      });
+      setSignBatchProgress(
+        fieldsToSign.length > 1 ? `${i + 1} / ${fieldsToSign.length}` : null,
+      );
+    }
+
+    setSignBatchProgress(null);
+    setSigningStatusText('Finalizing document...');
   };
   async function checkRecipientRequireDetails(currentUserId:any){
     const response = await eSignApi.post('/api/e-sign/public/recipients/validate',{
@@ -1492,11 +1590,18 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       origin: { x: 0.5, y: 0.35 },
     });
   };
-  async function handleSuccess(response:any,fieldKey:any){
+  async function handleSuccess(
+    response: any,
+    fieldKey: any,
+    options?: { suppressNavigation?: boolean; suppressConfetti?: boolean },
+  ) {
     const key = fieldKey;
         setLocalSignedMap((p) => ({ ...(p || {}), [key]: recipientSignature }));
-        triggerConfetti();
+        if (!options?.suppressConfetti) {
+          triggerConfetti();
+        }
         
+        if (!options?.suppressNavigation) {
         // Handle post-signature navigation based on mode
         switch (mode) {
           case MODE.SELF_SIGNER: {
@@ -1519,6 +1624,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             }, 300);
             break;
           }
+        }
         }
 
         if (response?.data?.fieldRemmaining === false || response?.data?.fieldRemmaning == false) {
@@ -2662,57 +2768,77 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         const navBorderRadius = Math.max(5, Math.min(12, 6 + (navScale - 0.4) * 10));
         const navShadow = navScale <= 0.6 ? "0 3px 8px rgba(0,0,0,0.12)" : "0 6px 16px rgba(0,0,0,0.15)";
 
-        // For "Start" button, use fixed positioning
-        if (!hasStarted) {
-          return (
-            <button
-              onClick={goToNext}
-              disabled={!hasNextField}
-              className="fixed z-30 font-medium shadow disabled:opacity-50"
-              style={{ 
-                backgroundColor: '#ffc107', 
-                color: '#1a1a1a', 
-                padding: `${navPaddingY}px ${navPaddingX}px`,
-                border: 'none',
-                borderRadius: `${navBorderRadius}px`,
-                fontSize: `${navFontSize}px`,
-                top: navScale <= 0.6 ? '48px' : '56px',
-                left: navScale <= 0.6 ? '20px' : '64px',
-                cursor: 'pointer',
-                boxShadow: navShadow,
-              }}
-              aria-label="Start"
-            >
-              {buttonText}
-            </button>
-          );
-        }
-
-        // For navigation button, position relative to current field
         return (
-          <button
-            onClick={goToNext}
-            disabled={!hasNextField || actionableFields.length === 0}
-            className="absolute z-30 font-medium shadow disabled:opacity-50"
-            style={{ 
-              backgroundColor: '#ffc107', 
-              color: '#1a1a1a', 
-              padding: `${navPaddingY}px ${navPaddingX + navTailWidth * 0.4}px ${navPaddingY}px ${navPaddingX}px`,
-              border: 'none',
-              borderRadius: `${navBorderRadius}px`,
-              borderTopRightRadius: 0,
-              borderBottomRightRadius: 0,
-              clipPath: `polygon(0 0, calc(100% - ${navTailWidth}px) 0, 100% 50%, calc(100% - ${navTailWidth}px) 100%, 0 100%)`,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              fontSize: `${navFontSize}px`,
-              boxShadow: navShadow,
-              ...buttonStyle,
-            }}
-            aria-label={fieldTypeDisplay}
-          >
-            {buttonText}
-          </button>
+          <>
+            {showApplyToAllOption && (
+              <label
+                className="fixed z-40 flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 shadow-md cursor-pointer"
+                style={{
+                  top: navScale <= 0.6 ? '88px' : '96px',
+                  right: navScale <= 0.6 ? '12px' : '24px',
+                  maxWidth: '280px',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={applySignToAllPages}
+                  onChange={(e) => setApplySignToAllPages(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
+                />
+                <span className="text-xs sm:text-sm text-gray-800 leading-snug">
+                  Apply signature to all {applyAllSignFieldCount} pages
+                  {signBatchProgress ? ` (${signBatchProgress})` : ''}
+                </span>
+              </label>
+            )}
+
+            {!hasStarted ? (
+              <button
+                onClick={goToNext}
+                disabled={!hasNextField}
+                className="fixed z-30 font-medium shadow disabled:opacity-50"
+                style={{
+                  backgroundColor: '#ffc107',
+                  color: '#1a1a1a',
+                  padding: `${navPaddingY}px ${navPaddingX}px`,
+                  border: 'none',
+                  borderRadius: `${navBorderRadius}px`,
+                  fontSize: `${navFontSize}px`,
+                  top: navScale <= 0.6 ? '48px' : '56px',
+                  left: navScale <= 0.6 ? '20px' : '64px',
+                  cursor: 'pointer',
+                  boxShadow: navShadow,
+                }}
+                aria-label="Start"
+              >
+                {buttonText}
+              </button>
+            ) : (
+              <button
+                onClick={goToNext}
+                disabled={!hasNextField || actionableFields.length === 0}
+                className="absolute z-30 font-medium shadow disabled:opacity-50"
+                style={{
+                  backgroundColor: '#ffc107',
+                  color: '#1a1a1a',
+                  padding: `${navPaddingY}px ${navPaddingX + navTailWidth * 0.4}px ${navPaddingY}px ${navPaddingX}px`,
+                  border: 'none',
+                  borderRadius: `${navBorderRadius}px`,
+                  borderTopRightRadius: 0,
+                  borderBottomRightRadius: 0,
+                  clipPath: `polygon(0 0, calc(100% - ${navTailWidth}px) 0, 100% 50%, calc(100% - ${navTailWidth}px) 100%, 0 100%)`,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  fontSize: `${navFontSize}px`,
+                  boxShadow: navShadow,
+                  ...buttonStyle,
+                }}
+                aria-label={fieldTypeDisplay}
+              >
+                {buttonText}
+              </button>
+            )}
+          </>
         );
       })()}
       </div>
