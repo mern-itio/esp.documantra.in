@@ -21,6 +21,11 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { APP_NAME } from '../../components/constants/appConfig';
+import {
+  ESIGN_UPLOAD_ACCEPT,
+  ESIGN_UPLOAD_FORMAT_LABEL,
+  isEsignUploadFile,
+} from '../../config/esignUploadFormats';
 import DigitaCertificate from '../../components/LandingPage/DigitaCertificate';
 
 type UploadFile = {
@@ -55,7 +60,7 @@ const FAQ_ITEMS: {
     scenario: 'signing',
     question: 'Which file types are supported and is it secure?',
     answer:
-      'We support PDF only. Files are protected with encryption in transit and at rest, and signing links are sent only to the people you designate.',
+      'We support PDF, images (PNG, JPG, and more), Word, and text files. Non-PDF uploads are converted to PDF for signing. Files are protected with encryption in transit and at rest.',
   },
   {
     id: 'signature-look',
@@ -146,11 +151,7 @@ const UploadDocumentPage: React.FC = () => {
 
     Array.from(fileList).forEach((file) => {
       processedCount += 1;
-      // Only allow PDF files (by MIME type or .pdf extension)
-      const isPdf =
-        file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
-
-      if (!isPdf) {
+      if (!isEsignUploadFile(file)) {
         invalidCount += 1;
         return;
       }
@@ -169,8 +170,8 @@ const UploadDocumentPage: React.FC = () => {
     if (invalidCount > 0) {
       setUploadError(
         next.length === 0
-          ? 'Only PDF files can be uploaded. Please select a PDF document.'
-          : `${invalidCount} non-PDF file(s) were skipped. Only PDF files are supported.`,
+          ? `Only supported files can be uploaded (${ESIGN_UPLOAD_FORMAT_LABEL}).`
+          : `${invalidCount} unsupported file(s) were skipped. Supported: ${ESIGN_UPLOAD_FORMAT_LABEL}.`,
       );
     }
 
@@ -303,7 +304,7 @@ const UploadDocumentPage: React.FC = () => {
                     <span>Browse files</span>
                     <input
                       type="file"
-                      accept=".pdf"
+                      accept={ESIGN_UPLOAD_ACCEPT}
                       multiple
                       onChange={handleInputChange}
                       className="hidden"
@@ -311,7 +312,7 @@ const UploadDocumentPage: React.FC = () => {
                   </label>
 
                   <p className="mt-2 text-[10px] text-slate-500">
-                    You can upload multiple files. <br /> Supported formats: PDF only.
+                    You can upload multiple files. <br /> Supported: {ESIGN_UPLOAD_FORMAT_LABEL}.
 
                   </p>
 

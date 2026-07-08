@@ -1,4 +1,5 @@
 const PlatformEmailConfig = require('../models/PlatformEmailConfig');
+const { getBrandName, normalizeBrandName } = require('@draftnsign/validators/brandConfig');
 
 let cachedConfig = null;
 let cacheExpiresAt = 0;
@@ -52,7 +53,8 @@ function resolveDmFromEmail(doc) {
 }
 
 function resolveDmFromName(doc) {
-  return doc?.dmFromName || process.env.EMAIL_FROM_NAME || process.env.APP_NAME || 'DocuMantra';
+  const raw = doc?.dmFromName || process.env.EMAIL_FROM_NAME || process.env.APP_NAME || '';
+  return raw ? normalizeBrandName(raw) : getBrandName();
 }
 
 function buildMailgunEnv(doc) {

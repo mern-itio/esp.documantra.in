@@ -4,17 +4,8 @@ const Customer = require('../models/Customer');
 const SupportAgent = require('../models/SupportAgent');
 const { routeTicketToAgent, removeTicketFromAgent } = require('../utils/ticketRouter');
 const mongoose = require('mongoose');
-let sendEmail = null;
-try {
-  ({ sendEmail } = require('@draftnsign/email-lib'));
-} catch {
-  try {
-    // Fallback for some local/dev setups where package linking is not applied.
-    ({ sendEmail } = require('../../../packages/email-lib'));
-  } catch {
-    sendEmail = null;
-  }
-}
+const axios = require('axios');
+const { getBrandName } = require('@draftnsign/validators/brandConfig');
 
 const normalizePublicCategory = (category) => {
   const c = String(category || '').toLowerCase().trim();
@@ -59,7 +50,7 @@ function getSupportQueryEmailHtml({
   createdAt,
   content,
 }) {
-  const appName = process.env.APP_NAME || 'DocuMantra';
+  const appName = getBrandName();
   const fmt = (v) => String(v ?? '-').replace(/[<>]/g, '');
   const safeTicket = fmt(ticketNumber);
   const safeSubject = fmt(subject);
@@ -127,8 +118,9 @@ function getSupportQueryEmailHtml({
 
 async function notifyAdminSupportQuery({ ticket, customer, content, source }) {
   try {
-    if (!sendEmail) {
-      console.warn('Support admin notification skipped: email-lib not available in support-service runtime');
+    const emailServiceUrl = String(process.env.EMAIL_SERVICE_URL || '').trim().replace(/\/$/, '');
+    if (!emailServiceUrl) {
+      console.warn('Support admin notification skipped: EMAIL_SERVICE_URL not configured');
       return;
     }
     const adminTo =
@@ -138,8 +130,6 @@ async function notifyAdminSupportQuery({ ticket, customer, content, source }) {
       process.env.SUPPORT_EMAIL ||
       process.env.HELP_SUPPORT_EMAIL ||
       process.env.EMAIL_TO ||
-      process.env.EMAIL_USER ||
-      process.env.EMAIL_FROM ||
       '';
     if (!adminTo) {
       console.warn('Support admin notification skipped: no recipient configured (SUPPORT_ADMIN_EMAIL/ADMIN_EMAIL/etc)');
@@ -154,21 +144,6 @@ async function notifyAdminSupportQuery({ ticket, customer, content, source }) {
     const priority = ticket?.priority || 'medium';
     const createdAt = ticket?.createdAt ? new Date(ticket.createdAt).toISOString() : new Date().toISOString();
 
-    const text = [
-      'A new support query has been received.',
-      '',
-      `Ticket: ${ticketNumber}`,
-      `Subject: ${ticket?.subject || '-'}`,
-      `Customer: ${customerName}`,
-      `Customer Email: ${customerEmail}`,
-      `Category: ${category}`,
-      `Priority: ${priority}`,
-      `Source: ${source || 'support'}`,
-      `Created At: ${createdAt}`,
-      '',
-      'Message:',
-      content || '-',
-    ].join('\n');
     const html = getSupportQueryEmailHtml({
       ticketNumber,
       subject: ticket?.subject || '-',
@@ -181,22 +156,18 @@ async function notifyAdminSupportQuery({ ticket, customer, content, source }) {
       content: content || '-',
     });
 
-    const emailResult = await sendEmail({
-      to: adminTo,
-      subject,
-      text,
-      html,
-      replyTo: customerEmail !== 'Unknown' ? customerEmail : undefined,
-    });
-    if (emailResult?.skipped) {
+    const response = await axios.post(
+      `${emailServiceUrl}/mail/send-by-system`,
+      { to: adminTo, subject, html, senderMode: 'dm' },
+      { timeout: 15000 }
+    );
+    if (!response.data?.success) {
       console.warn(
-        `Support admin notification skipped for ticket ${ticketNumber}: ${emailResult.reason || 'provider not configured'}`
+        `Support admin notification skipped for ticket ${ticketNumber}: ${response.data?.message || 'email service failure'}`
       );
       return;
     }
-    console.log(
-      `Support admin notification sent for ticket ${ticketNumber} -> ${adminTo} (messageId: ${emailResult?.id || 'n/a'})`
-    );
+    console.log(`Support admin notification sent for ticket ${ticketNumber} -> ${adminTo}`);
   } catch (err) {
     console.error('Support admin notification email failed:', err?.message || err);
   }

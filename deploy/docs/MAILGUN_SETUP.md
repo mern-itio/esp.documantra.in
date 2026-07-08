@@ -36,7 +36,8 @@ Users configure their identity at **Account → Email Configuration** (`/account
 | e-sign-service | Calls email-service for envelope notifications |
 | organization-service | Calls email-service for invites |
 | subscription-service | Calls email-service for auth OTP |
-| auth-service | Uses `@draftnsign/email-lib` (env Mailgun or separate auth emails) |
+| auth-service | Calls email-service (`/mail/send-by-system`) for OTP, password reset, login alerts |
+| support-service | Calls email-service for admin support notifications |
 
 After saving admin settings, restart:
 
@@ -51,7 +52,18 @@ If admin Mailgun is not enabled, the system falls back to:
 1. `MAILGUN_*` environment variables on the service
 2. Per-user SMTP (if **Allow user SMTP fallback** is enabled)
 
-**Do not** rely on hardcoded Gmail — configure Mailgun in admin or env for production.
+**Do not** use `draftnsign@gmail.com` or Gmail SMTP — configure Mailgun in admin or env for production.
+
+### auth-service / support-service
+
+Set on each service `.env`:
+
+```env
+EMAIL_SERVICE_URL=http://email-service:2112/email
+APP_NAME=DocuMantra
+```
+
+Remove legacy Gmail vars (`EMAIL_USER`, `EMAIL_PASS`, `EMAIL_PROVIDER=smtp`) from auth-service so nothing falls back to Gmail.
 
 ## Mailgun checklist
 

@@ -5,6 +5,29 @@ const nodemailer = require('nodemailer');
 function isNonEmptyString(v) {
   return typeof v === 'string' && v.trim().length > 0;
 }
+
+const BLOCKED_SENDER_ADDRESSES = new Set(['draftnsign@gmail.com']);
+
+function extractEmailAddress(value) {
+  if (!isNonEmptyString(value)) return '';
+  const match = String(value).match(/<([^>]+)>/);
+  return (match ? match[1] : value).trim().toLowerCase();
+}
+
+function isBlockedSenderAddress(value) {
+  return BLOCKED_SENDER_ADDRESSES.has(extractEmailAddress(value));
+}
+
+function assertSenderAllowed(fromValue, env = process.env) {
+  const candidates = [fromValue, env.EMAIL_FROM, env.EMAIL_USER, env.MAILGUN_FROM].filter(isNonEmptyString);
+  for (const candidate of candidates) {
+    if (isBlockedSenderAddress(candidate)) {
+      throw new Error(
+        `Sending from ${extractEmailAddress(candidate)} is disabled. Configure Mailgun in Admin → Platform Email.`
+      );
+    }
+  }
+}
 function getEmailProvider(env = process.env) {
   const provider = String(env.EMAIL_PROVIDER || 'mailgun').toLowerCase();
   if (provider === 'brevo' || provider === 'sendinblue') {
@@ -170,6 +193,9 @@ function getSmtpConfig(env = process.env) {
 
 function isSmtpConfigured(env = process.env) {
   const cfg = getSmtpConfig(env);
+  if (isBlockedSenderAddress(cfg.user) || isBlockedSenderAddress(cfg.fromEmail)) {
+    return false;
+  }
   return !cfg.disabled && isNonEmptyString(cfg.user) && isNonEmptyString(cfg.pass);
 }
 
@@ -198,9 +224,12 @@ async function sendWithMailgun(options, env = process.env) {
   if (!to || (Array.isArray(to) && to.length === 0)) throw new Error('to is required');
   if (!isNonEmptyString(text) && !isNonEmptyString(html)) throw new Error('Either text or html is required');
 
+  const resolvedFrom = isNonEmptyString(from) ? from : cfg.from;
+  assertSenderAllowed(resolvedFrom, env);
+
   const mg = createMailgunClient(env);
   const message = {
-    from: isNonEmptyString(from) ? from : cfg.from,
+    from: resolvedFrom,
     to,
     subject,
     text: isNonEmptyString(text) ? text : undefined,
@@ -340,6 +369,8 @@ async function sendEmail(options, env = process.env) {
     if (!isNonEmptyString(text) && !isNonEmptyString(html)) throw new Error('Either text or html is required');
 
     const cfg = getSmtpConfig(env);
+    assertSenderAllowed(from, env);
+
     const transport = createSmtpTransport(env);
 
     const fromEmail = (() => {

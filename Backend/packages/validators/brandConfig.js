@@ -1,4 +1,11 @@
-const BRAND_NAME = String(process.env.APP_NAME || process.env.BRAND_NAME || 'DocuMantra').trim();
+function normalizeBrandName(name) {
+  const trimmed = String(name || '').trim();
+  if (!trimmed) return 'DocuMantra';
+  if (/^documantra$/i.test(trimmed)) return 'DocuMantra';
+  return trimmed;
+}
+
+const BRAND_NAME = normalizeBrandName(process.env.APP_NAME || process.env.BRAND_NAME || 'DocuMantra');
 
 const DEFAULT_SUPABASE_URL = String(
   process.env.DOCUMANTRA_SUPABASE_URL || 'https://tgkqdagmnbgmrtjpymbz.supabase.co',
@@ -124,6 +131,7 @@ setInterval(() => {
 module.exports = {
   BRAND_NAME,
   getBrandName: () => BRAND_NAME,
+  normalizeBrandName,
   formatEnvelopeSubject,
   getBrandLogoUrl,
   getBrandFaviconUrl,

@@ -319,7 +319,7 @@ const sendMail = async (req, res) =>{
   }
 }
 const sendMailBySystem = async (req, res) =>{
-const {to, subject, html, attachments} = req.body;
+const {to, subject, html, attachments, senderMode} = req.body;
   try{
     if(!to || !subject || !html){
       return res.status(400).json({
@@ -327,7 +327,7 @@ const {to, subject, html, attachments} = req.body;
         message: 'toEmail, subject and html are required fields'
       });
     }
-    const response = await email.sendEmailBySystem({ to, subject, html, attachments });
+    const response = await email.sendEmailBySystem({ to, subject, html, attachments, senderMode: senderMode || 'dm' });
       console.log(response);
       return res.json({   
         success: true,

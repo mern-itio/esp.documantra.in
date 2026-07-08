@@ -1,4 +1,5 @@
 import type { AxiosError } from 'axios';
+import { ESIGN_UPLOAD_FORMAT_LABEL } from '../config/esignUploadFormats';
 
 const MB = 1024 * 1024;
 
@@ -26,7 +27,7 @@ export const formatUploadFileSize = (bytes: number): string => {
 };
 
 export const getEsignUploadLimitHint = (): string =>
-  `PDF only · Max ${getEsignMaxUploadLabel()} per file`;
+  `${ESIGN_UPLOAD_FORMAT_LABEL} · Max ${getEsignMaxUploadLabel()} per file`;
 
 export const getEsignUploadErrorMessage = (
   error: unknown,
@@ -40,7 +41,7 @@ export const getEsignUploadErrorMessage = (
   const serverMessage = axiosErr?.response?.data?.message;
 
   if (status === 413) {
-    return `${prefix} is too large. Please upload a PDF smaller than ${limit}.`;
+    return `${prefix} is too large. Please upload a file smaller than ${limit}.`;
   }
   if (status === 400 && serverMessage) {
     return serverMessage;
@@ -52,5 +53,5 @@ export const getEsignUploadErrorMessage = (
     return 'Your session expired. Please sign in again and retry the upload.';
   }
 
-  return `Upload failed. Please use a PDF under ${limit} and try again.`;
+  return `Upload failed. Please use ${ESIGN_UPLOAD_FORMAT_LABEL} under ${limit} and try again.`;
 };

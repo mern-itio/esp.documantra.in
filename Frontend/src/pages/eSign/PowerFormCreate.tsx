@@ -36,6 +36,11 @@ import {
   getEsignUploadErrorMessage,
   isFileTooLargeForEsign,
 } from '../../utils/uploadErrorMessage';
+import {
+  ESIGN_UPLOAD_ACCEPT,
+  ESIGN_UPLOAD_FORMAT_LABEL,
+  isEsignUploadFile,
+} from '../../config/esignUploadFormats';
 import { resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
 import SigningEditorStep from '../../components/ESign/SigningEditorStep';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
@@ -216,9 +221,9 @@ const PowerFormCreate: React.FC = () => {
     const maxLabel = getEsignMaxUploadLabel();
 
     files.forEach((file) => {
-      if (file.type !== "application/pdf") {
+      if (!isEsignUploadFile(file)) {
         invalidFiles.push(file);
-        return; 
+        return;
       }
 
       if (isFileTooLargeForEsign(file)) {
@@ -240,7 +245,7 @@ const PowerFormCreate: React.FC = () => {
 
     if (invalidFiles.length > 0) {
       alert(
-        `Only PDF files are allowed. The following files are invalid:\n\n${invalidFiles
+        `Only supported files are allowed (${ESIGN_UPLOAD_FORMAT_LABEL}). The following files are invalid:\n\n${invalidFiles
           .map((f) => f.name)
           .join("\n")}`
       );
@@ -302,13 +307,15 @@ const PowerFormCreate: React.FC = () => {
       return false;
     }
     if (!documents || documents.length === 0) return;
-    const invalidFiles = documents.filter(
-      (doc) => !doc.type || !doc.type.toLowerCase().includes('pdf')
-    );
+    const invalidFiles = documents.filter((doc) => {
+      const file = doc.file;
+      const candidate = file || ({ name: doc.name, type: doc.type || '' } as File);
+      return !isEsignUploadFile(candidate);
+    });
 
     if (invalidFiles.length > 0) {
       alert(
-        `Only PDF files are allowed. The following files are invalid:\n\n${invalidFiles
+        `Only supported files are allowed (${ESIGN_UPLOAD_FORMAT_LABEL}). The following files are invalid:\n\n${invalidFiles
           .map((f) => f.name)
           .join('\n')}`
       );
@@ -1438,7 +1445,7 @@ const PowerFormCreate: React.FC = () => {
                         className={`bg-gray-100 transition-colors ${isDragOver ? 'border-2 border-blue-400 bg-blue-50' : 'border border-gray-200'} p-6 ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''}`}
                       >
                         {/* Hidden file input */}
-                        <input ref={fileInputRef} type="file" multiple accept=".pdf" onChange={handleFileUpload} className="hidden" />
+                        <input ref={fileInputRef} type="file" multiple accept={ESIGN_UPLOAD_ACCEPT} onChange={handleFileUpload} className="hidden" />
                         <div
                           onClick={() => fileInputRef.current?.click()}
                           className="flex flex-col items-center justify-center h-full cursor-pointer text-gray-500 hover:text-gray-700"
@@ -1664,7 +1671,7 @@ const PowerFormCreate: React.FC = () => {
                           ref={fileInputRef}
                           type="file"
                           multiple
-                          accept=".pdf"
+                          accept={ESIGN_UPLOAD_ACCEPT}
                           onChange={handleFileUpload}
                           className="hidden"
                         />

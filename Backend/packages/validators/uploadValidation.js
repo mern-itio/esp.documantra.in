@@ -145,10 +145,20 @@ const createMulterFileFilter = (options = {}) => {
 
     if (allowedMimeTypes.length > 0) {
       const mime = String(file.mimetype || '').toLowerCase();
+      const ext = getFileExtension(original).replace(/^\./, '');
+      const genericMime =
+        !mime ||
+        mime === 'application/octet-stream' ||
+        mime === 'binary/octet-stream';
+
       if (!mime && !allowEmptyMime) {
         return cb(new Error('File type could not be determined'));
       }
-      if (mime && !allowedMimeTypes.includes(mime)) {
+      if (
+        mime &&
+        !allowedMimeTypes.includes(mime) &&
+        !(genericMime && ext && normalizedExtensions.includes(ext))
+      ) {
         return cb(new Error('File type not allowed'));
       }
     }
@@ -179,8 +189,16 @@ const validateUploadedFile = (file, preset) => {
   if (preset.allowedExtensions?.length && ext && !preset.allowedExtensions.includes(ext)) {
     return { valid: false, message: 'File extension not allowed' };
   }
-  if (preset.allowedMimeTypes?.length && file.mimetype && !preset.allowedMimeTypes.includes(file.mimetype)) {
-    return { valid: false, message: 'File type not allowed' };
+  if (preset.allowedMimeTypes?.length && file.mimetype) {
+    const mime = String(file.mimetype).toLowerCase();
+    const genericMime =
+      mime === 'application/octet-stream' || mime === 'binary/octet-stream';
+    if (
+      !preset.allowedMimeTypes.includes(mime) &&
+      !(genericMime && ext && preset.allowedExtensions?.includes(ext))
+    ) {
+      return { valid: false, message: 'File type not allowed' };
+    }
   }
   return { valid: true };
 };

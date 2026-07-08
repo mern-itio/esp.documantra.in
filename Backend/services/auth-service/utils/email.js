@@ -1,10 +1,4 @@
-const {
-  sendEmail: globalSendEmail,
-  getEmailProvider,
-  isMailgunConfigured,
-  isBrevoConfigured,
-  isSmtpConfigured,
-} = require('@draftnsign/email-lib');
+const axios = require('axios');
 
 const { getBrandName, renderEmailLogoHeader } = require('@draftnsign/validators/brandConfig');
 
@@ -28,41 +22,34 @@ function isValidEmailAddress(value) {
   return s.includes('@') && s.indexOf('@') > 0 && s.indexOf('@') < s.length - 1;
 }
 
-function getFromDisplayName() {
-  return (process.env.EMAIL_FROM_NAME || APP_NAME).trim().replace(/"/g, '');
+function getEmailServiceUrl() {
+  return String(process.env.EMAIL_SERVICE_URL || '').trim().replace(/\/$/, '');
 }
 
 function isEmailConfigured() {
-  const provider = getEmailProvider(process.env);
-  if (provider === 'smtp') {
-    return isSmtpConfigured(process.env);
-  }
-  if (provider === 'brevo') {
-    return isBrevoConfigured(process.env);
-  }
-  return isMailgunConfigured(process.env);
+  return Boolean(getEmailServiceUrl());
 }
 
 async function sendEmail({ to, subject, html }) {
-  if (!isEmailConfigured()) {
-    console.warn('Email not sent: email provider configuration is missing');
+  const emailServiceUrl = getEmailServiceUrl();
+  if (!emailServiceUrl) {
+    console.warn('Email not sent: EMAIL_SERVICE_URL is not configured');
     return false;
   }
 
   try {
-    const fromEmail = process.env.EMAIL_FROM || undefined;
-    const fromName = getFromDisplayName();
-    const from = fromEmail ? `${fromName} <${fromEmail}>` : undefined;
-
-    await globalSendEmail({
-      to,
-      subject,
-      html,
-      from,
-    });
-    return true;
+    const response = await axios.post(
+      `${emailServiceUrl}/mail/send-by-system`,
+      { to, subject, html, senderMode: 'dm' },
+      { timeout: 15000 }
+    );
+    if (response.data?.success) {
+      return true;
+    }
+    console.error('Email service returned failure:', response.data);
+    return false;
   } catch (err) {
-    console.error('Global email send error:', err);
+    console.error('Email service send error:', err?.response?.data?.message || err.message);
     return false;
   }
 }
@@ -123,8 +110,7 @@ async function sendVerificationOtpEmail(toEmail, otpCode, recipientName = null, 
     return false;
   }
   if (!isEmailConfigured()) {
-    // Development fallback: log OTP so local signup flow can continue without SMTP
-    console.warn('Verification OTP email not sent: SMTP/email not configured');
+    console.warn('Verification OTP email not sent: EMAIL_SERVICE_URL not configured');
     console.log(`[EMAIL OTP fallback] To ${toEmail}: Your verification code is ${otpCode}`);
     return true;
   }
@@ -144,11 +130,11 @@ async function sendVerificationOtpEmail(toEmail, otpCode, recipientName = null, 
 }
 
 /**
- * Send password reset email. Resolves to true if sent, false if skipped (e.g. no SMTP config).
+ * Send password reset email. Resolves to true if sent, false if skipped.
  */
 async function sendPasswordResetEmail(toEmail, resetLink, recipientName = null) {
   if (!isEmailConfigured()) {
-    console.warn('Password reset email skipped: SMTP/email not configured');
+    console.warn('Password reset email skipped: EMAIL_SERVICE_URL not configured');
     return false;
   }
 
@@ -174,7 +160,6 @@ async function sendPasswordResetEmail(toEmail, resetLink, recipientName = null) 
 async function resolveTimezoneFromIp(ip) {
   if (!ip || ip === 'Unknown IP') return 'Asia/Kolkata';
 
-  // Unwrap IPv4-mapped IPv6 addresses (e.g. ::ffff:49.36.179.233 → 49.36.179.233)
   const normalised = ip.replace(/^::ffff:/i, '').trim();
 
   const privateRanges = [
@@ -186,12 +171,10 @@ async function resolveTimezoneFromIp(ip) {
     /^localhost$/i,
   ];
   if (privateRanges.some((re) => re.test(normalised))) {
-    // Private / loopback — default to IST as the app is India-based
     return 'Asia/Kolkata';
   }
 
   try {
-    const axios = require('axios');
     const { data } = await axios.get(
       `http://ip-api.com/json/${normalised}?fields=status,timezone`,
       { timeout: 3000 }
@@ -205,7 +188,6 @@ async function resolveTimezoneFromIp(ip) {
 
 /**
  * Format a Date in the given IANA timezone with a human-readable layout.
- * Example output: "25 March 2026, 06:24 PM IST"
  */
 function formatTimeInZone(date, timezone) {
   try {
@@ -220,18 +202,12 @@ function formatTimeInZone(date, timezone) {
       timeZoneName: 'short',
     });
   } catch {
-    // Intl may not recognise unusual timezone strings on some Node versions
     return new Date(date).toUTCString();
   }
 }
 
 /**
  * Build HTML body for New Login Alert email.
- * @param {string} recipientName
- * @param {string} deviceInfo
- * @param {string} ipAddress
- * @param {Date|string} time
- * @param {string} [userTimezone='UTC']  IANA timezone resolved from the user's IP
  */
 function getNewLoginAlertHtml(recipientName, deviceInfo, ipAddress, time, userTimezone = 'UTC') {
   const formattedTime = formatTimeInZone(time, userTimezone);
@@ -257,14 +233,13 @@ async function sendNewLoginAlertEmail(toEmail, fullname, deviceInfo, ipAddress, 
     return false;
   }
   if (!isEmailConfigured()) {
-    console.warn('New login alert email skipped: SMTP/email not configured');
+    console.warn('New login alert email skipped: EMAIL_SERVICE_URL not configured');
     return false;
   }
 
-  // Resolve user's timezone from their IP before building the email
   const userTimezone = await resolveTimezoneFromIp(ipAddress);
   const html = getNewLoginAlertHtml(fullname, deviceInfo, ipAddress, time, userTimezone);
-  
+
   try {
     await sendEmail({
       to: toEmail,

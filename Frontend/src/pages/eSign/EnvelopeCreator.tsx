@@ -47,6 +47,12 @@ import {
   getEsignUploadLimitHint,
   isFileTooLargeForEsign,
 } from '../../utils/uploadErrorMessage';
+import {
+  ESIGN_UPLOAD_ACCEPT,
+  ESIGN_UPLOAD_FORMAT_LABEL,
+  isEsignUploadFile,
+  isPdfUploadFile,
+} from '../../config/esignUploadFormats';
 import { fetchEsignDocumentData, resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
 import { isAuthMethodFreeViaReferralPerk } from '../../utils/referralAuthPerks';
 import toast from 'react-hot-toast';
@@ -1440,10 +1446,9 @@ const isPublicFlow =
     const maxLabel = getEsignMaxUploadLabel();
 
     for (const file of files) {
-      // Only accept PDF files
-      if (file.type !== "application/pdf") {
+      if (!isEsignUploadFile(file)) {
         invalidFiles.push(file);
-        continue; // skip adding invalid file
+        continue;
       }
 
       if (isFileTooLargeForEsign(file)) {
@@ -1451,14 +1456,16 @@ const isPublicFlow =
         continue;
       }
 
-      // Get actual page count from PDF
-      const pageCount = await getPDFPageCount(file);
+      let pageCount = 1;
+      if (isPdfUploadFile(file)) {
+        pageCount = await getPDFPageCount(file);
+      }
 
       const newDocument: ESDocument = {
         id: `doc_${Date.now()}_${Math.random()}`,
         name: file.name,
         size: file.size,
-        pages: pageCount, // Actual page count from PDF
+        pages: pageCount,
         type: file.type,
         url: URL.createObjectURL(file),
         file: file,
@@ -1469,7 +1476,7 @@ const isPublicFlow =
     // Show alert if any invalid files
     if (invalidFiles.length > 0) {
       alert(
-        `Only PDF files are allowed. The following files are invalid:\n\n${invalidFiles
+        `Only supported files are allowed (${ESIGN_UPLOAD_FORMAT_LABEL}). The following files are invalid:\n\n${invalidFiles
           .map((f) => f.name)
           .join("\n")}`
       );
@@ -1479,7 +1486,7 @@ const isPublicFlow =
       await Swal.fire({
         icon: 'error',
         title: 'File too large',
-        html: `Maximum upload size is <b>${maxLabel}</b> per PDF.<br/><br/>${oversizedFiles
+        html: `Maximum upload size is <b>${maxLabel}</b> per file.<br/><br/>${oversizedFiles
           .map((f) => `• ${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`)
           .join('<br/>')}`,
       });
@@ -1544,13 +1551,15 @@ const isPublicFlow =
     if (!documents || documents.length === 0) return;
 
     // Validate file types before upload
-    const invalidFiles = documents.filter(
-      (doc) => !doc.type || !doc.type.toLowerCase().includes('pdf')
-    );
+    const invalidFiles = documents.filter((doc) => {
+      const file = doc.file;
+      const candidate = file || ({ name: doc.name, type: doc.type || '' } as File);
+      return !isEsignUploadFile(candidate);
+    });
 
     if (invalidFiles.length > 0) {
       alert(
-        `Only PDF files are allowed. The following files are invalid:\n\n${invalidFiles
+        `Only supported files are allowed (${ESIGN_UPLOAD_FORMAT_LABEL}). The following files are invalid:\n\n${invalidFiles
           .map((f) => f.name)
           .join('\n')}`
       );
@@ -3900,7 +3909,7 @@ if (isPublicFlow) {
                           ref={fileInputRef}
                           type="file"
                           multiple
-                          accept=".pdf"
+                          accept={ESIGN_UPLOAD_ACCEPT}
                           onChange={handleFileUpload}
                           className="hidden"
                         />
@@ -4076,7 +4085,7 @@ if (isPublicFlow) {
                               ref={fileInputRef}
                               type="file"
                               multiple
-                              accept=".pdf"
+                              accept={ESIGN_UPLOAD_ACCEPT}
                               onChange={handleFileUpload}
                               className="hidden"
                             />

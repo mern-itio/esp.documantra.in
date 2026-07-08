@@ -5,6 +5,7 @@ const Recipient = require('../models/Recipient');
 const RecipientPermission = require('../models/RecipientPermission');
 const SignatureField = require('../models/SignatureFields');
 const { logActivity } = require("../services/activityLogService");
+const { normalizeUploadToPdf } = require('../services/convertUploadToPdf');
 const mongoose = require('mongoose');
 const axios = require('axios');
 
@@ -158,15 +159,27 @@ const userId = req.user?.data?.id;
       // Log envelope creation
       await logActivity(envelope._id.toString(), "ENVELOPE_CREATED", "Sender", { senderId: userId });
     }
-    // Step 2: Create document records
+    // Step 2: Create document records (convert images/docs to PDF when needed)
+    const normalizedFiles = [];
+    for (const file of files) {
+      try {
+        normalizedFiles.push(await normalizeUploadToPdf(file));
+      } catch (conversionErr) {
+        console.error('Upload conversion failed:', conversionErr);
+        return res.status(400).json({
+          message: conversionErr.message || 'Failed to prepare document for signing',
+        });
+      }
+    }
+
     const docs = await Promise.all(
-      files.map(async (file) => {
+      normalizedFiles.map(async (file) => {
         const doc = new Document({
           envelopeId: envelope._id,
-          fileName: file.filename,
-          mimeType: file.mimetype,
-          filePath: `uploads/${file.filename}`,          
-          fileSize: file.size
+          fileName: file.fileName,
+          mimeType: file.mimeType,
+          filePath: `uploads/${file.fileName}`,
+          fileSize: file.size,
         });
         await doc.save();
 
@@ -174,7 +187,9 @@ const userId = req.user?.data?.id;
         await logActivity(envelope._id.toString(), "DOCUMENT_UPLOADED", "Sender", {
           senderId: userId,
           documentId: doc._id,
-          fileName: file.filename,
+          fileName: file.fileName,
+          originalFileName: file.originalName,
+          convertedToPdf: Boolean(file.converted),
         });
 
         return doc._id;

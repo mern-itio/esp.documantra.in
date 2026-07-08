@@ -14,6 +14,11 @@ import {
   getEsignUploadLimitHint,
   isFileTooLargeForEsign,
 } from '../../utils/uploadErrorMessage';
+import {
+  ESIGN_UPLOAD_ACCEPT,
+  ESIGN_UPLOAD_FORMAT_LABEL,
+  isEsignUploadFile,
+} from '../../config/esignUploadFormats';
 
 type Recipient = {
   name: string;
@@ -100,11 +105,8 @@ export default function PublicWizard() {
 
   const handleFileSelect = (selected: File | null) => {
     if (!selected) return;
-    const isPdf =
-      selected.type === 'application/pdf' ||
-      /\.pdf$/i.test(selected.name);
-    if (!isPdf) {
-      alert('Please upload a PDF file');
+    if (!isEsignUploadFile(selected)) {
+      alert(`Please upload a supported file (${ESIGN_UPLOAD_FORMAT_LABEL})`);
       return;
     }
     if (isFileTooLargeForEsign(selected)) {
@@ -143,7 +145,7 @@ export default function PublicWizard() {
 
   const uploadDocument = async () => {
     if (!file) {
-      alert('Please select a PDF');
+      alert('Please select a document');
       return;
     }
 
@@ -341,7 +343,7 @@ export default function PublicWizard() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,application/pdf"
+                  accept={ESIGN_UPLOAD_ACCEPT}
                   className="hidden"
                   onChange={(e) =>
                     handleFileSelect(e.target.files?.[0] ?? null)
@@ -356,7 +358,7 @@ export default function PublicWizard() {
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1B7A4B] text-white">
                     <Plus className="h-5 w-5" strokeWidth={2.5} />
                   </span>
-                  Select PDF File
+                  Select Document
                 </button>
 
                 <p className="mt-5 text-base text-gray-700">

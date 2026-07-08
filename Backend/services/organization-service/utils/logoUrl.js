@@ -62,7 +62,7 @@ const verifyLogoUrlAccessible = async (safeUrl) => {
     headers: {
       Accept: 'image/*',
       Host: hostname,
-      'User-Agent': 'Documantra-LogoValidator/1.0',
+      'User-Agent': 'DocuMantra-LogoValidator/1.0',
     },
   });
 
