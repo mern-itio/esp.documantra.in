@@ -150,10 +150,21 @@ async function initiateRecipientSignature({fieldId, envelopeId, documentId, reci
       await sField.save();
       await AuditTrail.create({ envelopeId, recipientId, action: 'VISUAL_SIGNATURE_SAVED', details: { signaturePresent: true } }).catch(() => {});
     }
-    const rp = await RecipientPermission.findOne({ envelopeId, recipientId });
-    if (rp) {
-      rp.status = 'completed';
-      await rp.save();
+    // Only mark the recipient completed once ALL their fields are signed.
+    // Marking after the first field made assertSignerTurn return 403
+    // ("already completed") for the remaining fields in multi-page /
+    // apply-to-all signing batches.
+    const remainingPendingFields = await SignatureFields.countDocuments({
+      envelopeId,
+      recipientId,
+      status: 'pending',
+    });
+    if (remainingPendingFields === 0) {
+      const rp = await RecipientPermission.findOne({ envelopeId, recipientId });
+      if (rp) {
+        rp.status = 'completed';
+        await rp.save();
+      }
     }
   }else{
     if (signatureImageBase64) {
@@ -524,11 +535,17 @@ async function finalizeSigning(envelopeId, documentId,cycleId=null, isSelfSign =
         field.status = 'completed';
         await field.save();
 
-        // update recipient permission
-        const rp = await RecipientPermission.findOne({ envelopeId, recipientId: field.recipientId });
-        if (rp) {
-          rp.status = 'completed';
-          await rp.save();
+        const remainingPendingFields = await SignatureFields.countDocuments({
+          envelopeId,
+          recipientId: field.recipientId,
+          status: 'pending',
+        });
+        if (remainingPendingFields === 0) {
+          const rp = await RecipientPermission.findOne({ envelopeId, recipientId: field.recipientId });
+          if (rp) {
+            rp.status = 'completed';
+            await rp.save();
+          }
         }
       }
       await AuditTrail.create({ envelopeId, recipientId: recipientIdToUse, action: 'DOC_SIGNED', details: { signatureId: sigRecord._id, savedPath: archiveSaved?.filePath, pdfHash: signedHash } }).catch(() => {});

@@ -1385,10 +1385,20 @@ const completeSignature = async(req, res)=>{
     case "Recipient":
       const recipientId = currentUserId;
       const turnCheck = await signatureOperationServices.assertSignerTurn(envelopeId, recipientId);
-      if (!turnCheck.ok) {
+      // ALREADY_COMPLETED is allowed here: the recipient gets marked completed when
+      // their last field is signed (add-signature), but signature-complete must still
+      // run to record evidence, notify the next signer, or finalize the envelope.
+      if (!turnCheck.ok && turnCheck.code !== 'ALREADY_COMPLETED') {
         return res.status(turnCheck.status || 403).json({
           message: turnCheck.message,
           code: turnCheck.code || 'SIGNING_NOT_ALLOWED',
+        });
+      }
+      if (String(envelope.status || '').toLowerCase() === 'completed') {
+        return res.status(200).json({
+          success: true,
+          message: 'Envelope completed',
+          remainingRecipent: false,
         });
       }
       const recipient = await Recipient.findById(recipientId);

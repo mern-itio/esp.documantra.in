@@ -8,8 +8,10 @@ import {
   PublicSignHeader,
 } from './PublicSignMarketingChrome';
 import {
+  formatUploadFileSize,
   getEsignMaxUploadLabel,
   getEsignUploadErrorMessage,
+  getEsignUploadLimitHint,
   isFileTooLargeForEsign,
 } from '../../utils/uploadErrorMessage';
 
@@ -361,10 +363,19 @@ export default function PublicWizard() {
                   Or drop it here.
                 </p>
 
+                <p className="mt-3 text-sm text-gray-500">
+                  {getEsignUploadLimitHint()}
+                </p>
+
                 {file && (
-                  <p className="mt-4 text-sm font-medium text-[#1B7A4B]">
-                    Selected: {file.name}
-                  </p>
+                  <div className="mt-4 rounded-lg border border-[#4CAF7A]/30 bg-white/80 px-4 py-3 text-sm text-[#1B7A4B]">
+                    <p className="font-medium truncate" title={file.name}>
+                      {file.name}
+                    </p>
+                    <p className="mt-1 text-gray-600">
+                      {formatUploadFileSize(file.size)} · Max {getEsignMaxUploadLabel()} allowed
+                    </p>
+                  </div>
                 )}
               </div>
 

@@ -18,6 +18,16 @@ export const getEsignMaxUploadLabel = (): string => {
 export const isFileTooLargeForEsign = (file: File): boolean =>
   file.size > getEsignMaxUploadBytes();
 
+export const formatUploadFileSize = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < MB) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / MB).toFixed(2)} MB`;
+};
+
+export const getEsignUploadLimitHint = (): string =>
+  `PDF only · Max ${getEsignMaxUploadLabel()} per file`;
+
 export const getEsignUploadErrorMessage = (
   error: unknown,
   fileName?: string

@@ -41,8 +41,10 @@ import {
 import Swal from 'sweetalert2';
 import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
 import {
+  formatUploadFileSize,
   getEsignMaxUploadLabel,
   getEsignUploadErrorMessage,
+  getEsignUploadLimitHint,
   isFileTooLargeForEsign,
 } from '../../utils/uploadErrorMessage';
 import { fetchEsignDocumentData, resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
@@ -1426,6 +1428,10 @@ const isPublicFlow =
       }
     });
   };
+
+  const formatFileSize = formatUploadFileSize;
+  const totalUploadedBytes = (documents || []).reduce((sum, doc) => sum + (doc.size || 0), 0);
+  const uploadLimitHint = getEsignUploadLimitHint();
 
   const processFiles = async (files: File[]) => {
     const validDocs: ESDocument[] = [];
@@ -3696,6 +3702,21 @@ if (isPublicFlow) {
 
             {showDocuments && (
               <div className="space-y-6 overflow-visible">
+                <div className="flex flex-col gap-1 rounded-lg border border-border bg-muted/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Upload limit:</span> {uploadLimitHint}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {documents.length > 0 ? (
+                      <>
+                        <span className="font-medium text-foreground">{documents.length}</span> file{documents.length !== 1 ? 's' : ''} ·{' '}
+                        <span className="font-medium text-foreground">{formatFileSize(totalUploadedBytes)}</span> total
+                      </>
+                    ) : (
+                      'No files uploaded yet'
+                    )}
+                  </p>
+                </div>
                 {/* Stacked layout for 4+ documents OR grid layout for 0-3 documents */}
                 {documents && documents.length > 3 ? (
                   <div className="flex gap-4 items-stretch py-1 overflow-visible">
@@ -3811,7 +3832,7 @@ if (isPublicFlow) {
                                       </p>
                                       <div className="flex items-center justify-between">
                                         <p className="text-xs font-medium" style={{ color: absPosition === 0 ? cardColor.accent : 'var(--muted-foreground)' }}>
-                                          {doc.pages} page{doc.pages !== 1 ? 's' : ''}
+                                          {doc.pages} page{doc.pages !== 1 ? 's' : ''} • {formatFileSize(doc.size)}
                                         </p>
                                       </div>
                                     </div>
@@ -3899,6 +3920,7 @@ if (isPublicFlow) {
                               <span>Upload</span>
                               <Triangle className="w-3 h-2 fill-white rotate-180" />
                             </button>
+                            <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
                           </div>
                         ) : (
                           <div
@@ -3920,6 +3942,7 @@ if (isPublicFlow) {
                                 <span>Upload</span>
                                 <ArrowDown className="w-4 h-4 text-white" />
                               </button>
+                              <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
                             </div>
                           </div>
                         )}
@@ -3995,7 +4018,7 @@ if (isPublicFlow) {
                                   </p>
                                   <div className="flex items-center justify-between">
                                     <p className="text-xs text-muted-foreground">
-                                      {doc.pages} page{doc.pages !== 1 ? 's' : ''}
+                                      {doc.pages} page{doc.pages !== 1 ? 's' : ''} • {formatFileSize(doc.size)}
                                     </p>
                                   </div>
 
@@ -4092,6 +4115,7 @@ if (isPublicFlow) {
                                     <span className="relative z-10 text-sm sm:text-base">Choose Template</span>
                                   </button>
                                 </div>
+                                <p className="text-xs text-muted-foreground mt-4">{uploadLimitHint}</p>
                               </div>
                             ) : (
                               <div
@@ -4114,6 +4138,7 @@ if (isPublicFlow) {
                                     <span>Upload</span>
                                     <ArrowDown className="w-4 h-4 text-white" />
                                   </button>
+                                  <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
                                 </div>
                               </div>
                             )}

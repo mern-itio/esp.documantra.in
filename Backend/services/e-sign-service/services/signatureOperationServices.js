@@ -23,7 +23,20 @@ async function assertSignerTurn(envelopeId, recipientId) {
 
   const status = String(permission.status || '').toLowerCase();
   if (status === 'completed') {
-    return { ok: false, status: 403, message: 'You have already completed signing for this envelope' };
+    const pendingFieldCount = await SignatureFields.countDocuments({
+      envelopeId,
+      recipientId,
+      status: 'pending',
+    });
+    if (pendingFieldCount > 0) {
+      return { ok: true, permission, resumedBatch: true };
+    }
+    return {
+      ok: false,
+      status: 403,
+      message: 'You have already completed signing for this envelope',
+      code: 'ALREADY_COMPLETED',
+    };
   }
   if (status === 'declined') {
     return { ok: false, status: 403, message: 'Signing was declined for this envelope' };
