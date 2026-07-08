@@ -227,6 +227,8 @@ services:
     - /app/packages/validators/node_modules
     - ./packages/auth-lib:/app/packages/auth-lib:cached
     - /app/packages/auth-lib/node_modules
+    - ./packages/email-lib:/app/packages/email-lib:cached
+    - /app/packages/email-lib/node_modules
 
     command: npm run dev
 
