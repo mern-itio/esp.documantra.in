@@ -7,7 +7,7 @@ export const getEsignMaxUploadBytes = (): number => {
   if (Number.isFinite(fromEnv) && fromEnv > 0) {
     return fromEnv * MB;
   }
-  return 5 * MB;
+  return 100 * MB;
 };
 
 export const getEsignMaxUploadLabel = (): string => {

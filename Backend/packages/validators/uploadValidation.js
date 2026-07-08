@@ -24,13 +24,13 @@ const UPLOAD_PRESETS = {
       'image/webp',
     ],
     allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'rtf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp'],
-    maxFileSize: 50 * 1024 * 1024,
+    maxFileSize: 100 * 1024 * 1024,
     maxFiles: 10,
   },
   PDF_ONLY: {
     allowedMimeTypes: ['application/pdf'],
     allowedExtensions: ['pdf'],
-    maxFileSize: 50 * 1024 * 1024,
+    maxFileSize: 100 * 1024 * 1024,
     maxFiles: 1,
   },
   ORGANIZATION_DOCS: {

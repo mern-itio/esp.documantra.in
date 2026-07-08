@@ -193,6 +193,7 @@ services:
         VITE_SUPPORT_SERVICE_URL: https://esp.documantra.in/support
         VITE_AI_ASSISTANT_SERVICE_URL: https://esp.documantra.in/ai
         VITE_PUBLIC_APP_URL: https://esp.documantra.in
+        VITE_ESIGN_MAX_UPLOAD_MB: 100
     restart: unless-stopped
     networks:
       - esp-net
