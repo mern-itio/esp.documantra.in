@@ -1155,6 +1155,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   const signSingleField = async (
     field: any,
     options?: { suppressNavigation?: boolean; suppressConfetti?: boolean; batchLabel?: string },
+    certificateIdOverride?: string,
   ) => {
     const fieldKeyRaw = field?._id || field?.fieldId;
     const fieldKey = normalizeMongoId(fieldKeyRaw);
@@ -1203,7 +1204,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     };
 
     try {
-      const certificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
+      const certificateId =
+        certificateIdOverride ?? (await issueCertificate(currentUserId, envelopeID, selfValue));
 
       let initialsValue = '';
       let signerName = 'John Doe';
@@ -1295,6 +1297,17 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
     if (fieldsToSign.length === 0) return;
 
+    // When signing multiple pages, certificate issuance can fail on subsequent calls.
+    // Reuse one certificateId for the whole batch.
+    let preIssuedCertificateId: string | undefined;
+    if (useApplyAll && fieldsToSign.length > 1) {
+      try {
+        preIssuedCertificateId = await issueCertificate(currentUserId, envelopeID, selfValue);
+      } catch (e) {
+        console.error('Batch certificate pre-issue failed; falling back to per-field issuance.', e);
+      }
+    }
+
     if (useApplyAll && fieldsToSign.length > 1) {
       setSignBatchProgress(`0 / ${fieldsToSign.length}`);
     }
@@ -1310,7 +1323,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           fieldsToSign.length > 1
             ? `Signing page ${pageNum} (${i + 1} of ${fieldsToSign.length})...`
             : undefined,
-      });
+      }, preIssuedCertificateId);
       setSignBatchProgress(
         fieldsToSign.length > 1 ? `${i + 1} / ${fieldsToSign.length}` : null,
       );
