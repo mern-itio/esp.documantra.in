@@ -75,6 +75,7 @@ import AboutPage from '../pages/LandingPage/AboutPage';
 import WhyDocuSignerPage from '../pages/LandingPage/WhyDocuSignerPage';
 import LoginPage from '../pages/LandingPage/LoginPage';
 import SignupPage from '../pages/LandingPage/SignupPage';
+import FederatedOAuthCallbackPage from '../pages/LandingPage/FederatedOAuthCallbackPage';
 import ForgotPasswordPage from '../pages/LandingPage/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/LandingPage/ResetPasswordPage';
 import PrivacyPolicyPage from '../pages/LandingPage/PrivacyPolicyPage';
@@ -612,6 +613,7 @@ const guestRoutes = [
   { path: '/', element: <LandingPageLayout /> },
   { path: '/login', element: <GuestRoute><LoginPage /></GuestRoute> },
   { path: '/signup', element: <GuestRoute><SignupPage /></GuestRoute> },
+  { path: '/oauth/callback/:provider', element: <GuestRoute><FederatedOAuthCallbackPage /></GuestRoute> },
   { path: '/forgot-password', element: <GuestRoute><ForgotPasswordPage /></GuestRoute> },
   { path: '/reset-password', element: <GuestRoute><ResetPasswordPage /></GuestRoute> },
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> },

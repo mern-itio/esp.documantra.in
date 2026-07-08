@@ -4,9 +4,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, Smartphone, CheckCircle2, XCircle 
 import { useAuth } from '../../components/AuthService/AuthContext'
 import { APP_NAME } from '../../components/constants/appConfig'
 import BrandLogo from '../../components/BrandLogo'
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"
+import { FederatedLoginButtons } from '../../components/AuthService/FederatedLoginButtons'
 const SIGNUP_REFERRER_STORAGE_KEY = 'signupReferrerUserId'
 
 type LoginStep = 'login' | 'verify'
@@ -161,12 +159,16 @@ const LoginPage = () => {
     }
   }
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: string | { credential?: string }) => {
     setError('')
     setIsLoading(true)
     try {
-      if (credentialResponse.credential) {
-        await googleLogin(credentialResponse.credential, {
+      const credential =
+        typeof credentialResponse === 'string'
+          ? credentialResponse
+          : credentialResponse?.credential
+      if (credential) {
+        await googleLogin(credential, {
           ...(referrerUserIdForOAuth ? { referrerUserId: referrerUserIdForOAuth } : {}),
         })
         try {
@@ -442,7 +444,6 @@ const LoginPage = () => {
   }
 
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
      <div className="min-h-screen bg-[#F5F2EE] flex items-center justify-center py-16 px-6 relative overflow-hidden">
        
         <div className="container-max relative px-4">
@@ -878,15 +879,12 @@ const LoginPage = () => {
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
                     <div className="flex justify-center w-full mb-4">
-                      <GoogleLogin
-                        onSuccess={handleGoogleSuccess}
-                        onError={handleGoogleError}
-                        useOneTap
-                        shape="rectangular"
-                        theme="outline"
-                        text="signin_with"
-                        size="large"
-                        width="100%"
+                      <FederatedLoginButtons
+                        mode="login"
+                        disabled={isLoading}
+                        onGoogleSuccess={handleGoogleSuccess}
+                        onGoogleError={handleGoogleError}
+                        onError={setError}
                       />
                     </div>
 
@@ -1017,7 +1015,7 @@ const LoginPage = () => {
           </div>
         </div>
       </div>
-    </GoogleOAuthProvider>
+    </div>
   )
 }
 

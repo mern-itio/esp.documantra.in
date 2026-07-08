@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@draftnsign/auth-lib": "file:../../packages/auth-lib",
+    "@draftnsign/email-lib": "file:../../packages/email-lib",
     "@draftnsign/validators": "file:../../packages/validators",
     "axios": "^1.12.2",
     "bcrypt": "^6.0.0",

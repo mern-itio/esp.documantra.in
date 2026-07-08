@@ -28,6 +28,11 @@ const {listOrganizations,updateOrganizationVerificationStatus} = require('../con
 const {listCreditPackages, createCreditPackage, updateCreditPackage, deleteCreditPackage,getFlexibleCreditPackage} = require('../controllers/creditPackageController');
 const {createEmailTemplate,getEmailTemplates,updateEmailTemplates,deleteEmailTemplate} = require('../controllers/emailTemplateController');
 const {
+  getPlatformEmailConfig,
+  updatePlatformEmailConfig,
+  testPlatformEmail,
+} = require('../controllers/platformEmailController');
+const {
   listTemplates,
   updateTemplate,
   deleteTemplate,
@@ -117,6 +122,11 @@ router.post('/create-email-template',createEmailTemplate);
 router.get('/email-templates',getEmailTemplates);
 router.put('/email-templates/:id',updateEmailTemplates);
 router.delete('/email-templates/:id',deleteEmailTemplate);
+
+// Platform email (Mailgun) settings
+router.get('/platform-email', getPlatformEmailConfig);
+router.put('/platform-email', updatePlatformEmailConfig);
+router.post('/platform-email/test', testPlatformEmail);
 
 // Organization routes
 router.get('/organization-request-list', listOrganizations);

@@ -80,7 +80,7 @@ class AIService {
     // Fallback: Build basic knowledge base
     const knowledgeBase = {
       platform: {
-        name: 'Documantra',
+        name: 'DocuMantra',
         description: 'A comprehensive electronic signature platform that allows users to create, edit, sign, and manage documents with legal compliance across 40+ countries.',
         url: 'https://esp.documantra.in/',
         features: [
@@ -315,10 +315,10 @@ class AIService {
     
     if (!kb) {
       console.error('❌ Knowledge base not loaded!');
-      return 'You are a helpful AI support assistant for Documantra platform.';
+      return 'You are a helpful AI support assistant for DocuMantra platform.';
     }
     
-    let prompt = `You are a helpful AI support assistant for Documantra, a comprehensive electronic signature and document management platform.
+    let prompt = `You are a helpful AI support assistant for DocuMantra, a comprehensive electronic signature and document management platform.
 
 PLATFORM INFORMATION:
 - Name: ${kb.platform.name}
@@ -488,13 +488,13 @@ ${ticketContext.subject ? `Ticket subject: ${ticketContext.subject}` : ''}`;
         message.includes('what technology') || message.includes('what tech')) {
       const kb = this.knowledgeBase;
       if (kb && kb.platform && kb.platform.techStack) {
-        return `The Documantra platform uses the following technology stack:\n\n**Frontend:**\n${kb.platform.techStack.frontend?.map(t => `- ${t}`).join('\n') || 'React 18, TypeScript, Tailwind CSS, Vite, Lucide React'}\n\n**Backend:**\n${kb.platform.techStack.backend?.map(t => `- ${t}`).join('\n') || 'Node.js, Express.js, MongoDB, JWT'}\n\n**Architecture:**\n- ${kb.platform.techStack.architecture || 'Microservices'}\n\n**Deployment:**\n${kb.platform.deployment ? Object.entries(kb.platform.deployment).map(([k, v]) => `- ${k}: ${v}`).join('\n') : '- Docker + Docker Compose\n- Nginx Gateway\n- MongoDB Database'}`;
+        return `The DocuMantra platform uses the following technology stack:\n\n**Frontend:**\n${kb.platform.techStack.frontend?.map(t => `- ${t}`).join('\n') || 'React 18, TypeScript, Tailwind CSS, Vite, Lucide React'}\n\n**Backend:**\n${kb.platform.techStack.backend?.map(t => `- ${t}`).join('\n') || 'Node.js, Express.js, MongoDB, JWT'}\n\n**Architecture:**\n- ${kb.platform.techStack.architecture || 'Microservices'}\n\n**Deployment:**\n${kb.platform.deployment ? Object.entries(kb.platform.deployment).map(([k, v]) => `- ${k}: ${v}`).join('\n') : '- Docker + Docker Compose\n- Nginx Gateway\n- MongoDB Database'}`;
       }
       return `The platform uses React 18, TypeScript, Tailwind CSS for frontend, and Node.js, Express.js, MongoDB for backend. It follows a microservices architecture with Docker deployment.`;
     }
 
     if (message.includes('help') || message.includes('how')) {
-      return `I'm here to help! Documantra is a comprehensive platform for document management and electronic signatures. You can:\n\n- Upload and manage documents\n- Create and sign documents electronically\n- Use 30+ PDF tools\n- Access 45+ legal templates\n- Share and collaborate on documents\n\nWhat specific feature would you like help with?`;
+      return `I'm here to help! DocuMantra is a comprehensive platform for document management and electronic signatures. You can:\n\n- Upload and manage documents\n- Create and sign documents electronically\n- Use 30+ PDF tools\n- Access 45+ legal templates\n- Share and collaborate on documents\n\nWhat specific feature would you like help with?`;
     }
 
     // Default response
@@ -505,7 +505,7 @@ ${ticketContext.subject ? `Ticket subject: ${ticketContext.subject}` : ''}`;
    * Get default response when no match is found
    */
   getDefaultResponse() {
-    return `Thank you for contacting Documantra support! I'm an AI assistant here to help you with questions about our platform.\n\nOur platform offers:\n- Electronic signatures with legal compliance\n- 30+ PDF manipulation tools\n- 45+ legal document templates\n- Document management and sharing\n- Real-time collaboration\n\nCould you please provide more details about what you need help with? This will help me give you a more specific answer.`;
+    return `Thank you for contacting DocuMantra support! I'm an AI assistant here to help you with questions about our platform.\n\nOur platform offers:\n- Electronic signatures with legal compliance\n- 30+ PDF manipulation tools\n- 45+ legal document templates\n- Document management and sharing\n- Real-time collaboration\n\nCould you please provide more details about what you need help with? This will help me give you a more specific answer.`;
   }
 
   /**

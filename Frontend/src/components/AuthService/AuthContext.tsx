@@ -43,6 +43,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string, recaptchaToken?: string) => Promise<void>;
   googleLogin: (credential: string, options?: { referrerUserId?: string }) => Promise<void>;
+  applyLoginFromOAuthPayload: (data: Record<string, unknown>) => Promise<void>;
   logout: () => void;
   signup: (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; recaptchaToken?: string; referrerUserId?: string }) => Promise<{ signupToken: string }>;
   sendSignupEmailOtp: (signupToken: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean }>;
@@ -667,12 +668,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   };
 
+  const applyLoginFromOAuthPayload = async (data: Record<string, unknown>) => {
+    await applyLoginPayload({
+      ...data,
+      token: data.token,
+      user_id: data.user_id,
+      email: data.email || '',
+    });
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated,
     loading,
     login,
     googleLogin,
+    applyLoginFromOAuthPayload,
     logout,
     signup,
     sendSignupEmailOtp,

@@ -194,6 +194,7 @@ services:
         VITE_AI_ASSISTANT_SERVICE_URL: https://esp.documantra.in/ai
         VITE_PUBLIC_APP_URL: https://esp.documantra.in
         VITE_ESIGN_MAX_UPLOAD_MB: 100
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     restart: unless-stopped
     networks:
       - esp-net

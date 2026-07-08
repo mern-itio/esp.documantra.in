@@ -90,7 +90,7 @@ class LLMServiceLangChain {
       recipientMappingsSection += `\nIf user mentions a name from the above list (e.g., "send to ${recipientMappings[0]?.name || 'name'}"), use the corresponding email address in the recipients array.\n`;
     }
     
-    const systemPrompt = `You are an AI assistant for Documantra, a comprehensive document management and e-signature platform.
+    const systemPrompt = `You are an AI assistant for DocuMantra, a comprehensive document management and e-signature platform.
 
 Your main job is to understand natural language commands from users and convert them into structured JSON actions that the backend can execute.
 

@@ -2,8 +2,8 @@ import { DEFAULT_BRAND_LOGO_URL } from '../services/documantraBranding';
 
 /** Single source of truth for product branding across the frontend. */
 export const BRAND = {
-  name: 'Documantra',
-  shortName: 'Documantra',
+  name: 'DocuMantra',
+  shortName: 'DocuMantra',
   domain: 'esp.documantra.in',
   supportEmail: 'support@documantra.in',
   salesEmail: 'sales@documantra.in',

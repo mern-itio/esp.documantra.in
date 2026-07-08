@@ -3,6 +3,9 @@ const { getAllowedOrigins } = require('@draftnsign/validators');
 const SENSITIVE_OPTIONS_PATHS = new Set([
   '/login',
   '/google-login',
+  '/facebook-login',
+  '/linkedin-login',
+  '/twitter-login',
   '/register',
   '/forgot-password',
   '/reset-password',

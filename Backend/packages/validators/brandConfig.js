@@ -1,4 +1,4 @@
-const BRAND_NAME = String(process.env.APP_NAME || process.env.BRAND_NAME || 'Documantra').trim();
+const BRAND_NAME = String(process.env.APP_NAME || process.env.BRAND_NAME || 'DocuMantra').trim();
 
 const DEFAULT_SUPABASE_URL = String(
   process.env.DOCUMANTRA_SUPABASE_URL || 'https://tgkqdagmnbgmrtjpymbz.supabase.co',

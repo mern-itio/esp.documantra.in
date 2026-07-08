@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const { authenticator } = require('otplib');
 
 const ADMIN_TWO_FA_TOKEN_EXPIRY = '10m';
-const ADMIN_BRAND = process.env.APP_NAME || process.env.BRAND_NAME || 'Documantra';
+const ADMIN_BRAND = process.env.APP_NAME || process.env.BRAND_NAME || 'DocuMantra';
 
 authenticator.options = {
   window: [1, 1],

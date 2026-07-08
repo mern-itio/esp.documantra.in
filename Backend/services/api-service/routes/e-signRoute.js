@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 
-const { createEnvelope, forwardRecipientsRequest, getEnvelopeDetail, saveSignatureFields, updateEnvelope, sendEnvelope, getSignatureFields, addSignature, getEnvelopes } = require('../controllers/e-signController');
+const { createEnvelope, forwardRecipientsRequest, getEnvelopeDetail, saveSignatureFields, updateEnvelope, sendEnvelope, getSignatureFields, addSignature, getEnvelopes, initiateRecipientAuth } = require('../controllers/e-signController');
 const validateSandboxApiKey = require('../middleware/apiKeyValidate');
 
 // Multer config - temp storage for uploaded files
@@ -27,6 +27,7 @@ router.post( '/upload-envelope', validateSandboxApiKey, upload.array('files', 10
 
 
 router.post('/add-recipients', validateSandboxApiKey, forwardRecipientsRequest);
+router.post('/initiate-recipient-auth', validateSandboxApiKey, initiateRecipientAuth);
 router.get('/envelope/:id',validateSandboxApiKey , getEnvelopeDetail);
 router.post('/save-signature-fields', validateSandboxApiKey, saveSignatureFields);
 router.post('/update',validateSandboxApiKey, updateEnvelope);

@@ -9,15 +9,12 @@ const { sendVerificationOtpSms } = require('../utils/sms');
 // const { verifyJWT } = require('@draftnsign/auth-lib');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
-const { OAuth2Client } = require('google-auth-library');
 const { getAccessTokenCookieOptions } = require('../utils/cookieOptions');
 const { extractAccessToken } = require('@draftnsign/auth-lib');
 const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/passwordHistory');
 const { enforceConcurrentSessionLimit, getMaxConcurrentSessions } = require('../utils/sessionLimits');
 const { getSessionIdleTimeoutMs, getSessionIdleTimeoutHours } = require('../utils/sessionPolicy');
 const { shouldRequireTwoFaSetup, isLoginTwoFaEnforcementEnabled, getTwoFaGraceDays, isAdminLoginTwoFaEnforcementEnabled, getAdminTwoFaGraceDays } = require('../utils/twoFaPolicy');
-
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const OTP_EXPIRY_MINUTES = 10;
 const SIGNUP_TOKEN_EXPIRY = '15m';
@@ -889,7 +886,7 @@ const setupAuthenticatorTwoFa = async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   const accountLabel = user.email || user.fullname || `user-${user._id}`;
-  const issuer = process.env.APP_NAME || 'Documantra';
+  const issuer = process.env.APP_NAME || 'DocuMantra';
   const otpauthUrl = authenticator.keyuri(accountLabel, issuer, tempSecret);
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(otpauthUrl)}`;
 
@@ -1526,98 +1523,6 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// Google Login Controller
-const googleLogin = async (req, res) => {
-  const { token, deviceId, deviceLabel, ref, referrerUserId } = req.body;
-  if (!token) return res.status(400).json({ message: 'Google token required' });
-
-  try {
-    const ticket = await googleClient.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    if (!payload || !payload.email) {
-      return res.status(400).json({ message: 'Invalid Google token' });
-    }
-
-    const { email, name, sub: googleId } = payload;
-    const normalizedEmail = email.trim().toLowerCase();
-
-    let user = await User.findOne({ email: normalizedEmail });
-
-    if (!user) {
-      // Create new user for google sign-in
-      user = await User.create({
-        fullname: name || 'Google User',
-        email: normalizedEmail,
-        googleId,
-        emailVerified: true, // Google already verified email
-        phoneVerified: false, 
-        plan: 'free',
-        isFirstLogin: true,
-      });
-
-      try {
-        await axios.post(`${process.env.ESING_SERVICE_URL}/api/e-sign/public/link-user-recipient`, {
-          email: user.email,
-          userId: user._id
-        }, { timeout: 5000 });
-      } catch (linkErr) {
-        console.warn('E-sign link-user-recipient failed:', linkErr?.message);
-      }
-
-      try {
-        await attachReferralOnSignup(user._id, ref || referrerUserId);
-      } catch (refErr) {
-        console.warn('Referral attach failed:', refErr?.message);
-      }
-    } else {
-      // Update existing user with googleId if not present
-      if (!user.googleId) {
-        user.googleId = googleId;
-        user.emailVerified = true;
-        await user.save({ validateBeforeSave: false });
-      }
-      if (user.status === false) {
-        return res.status(401).json({
-          status: 401,
-          message: "Your Account has been suspended, please contact the Admin",
-          data: null
-        });
-      }
-    }
-
-    let isFirstLogin = user.isFirstLogin;
-    if (user.isFirstLogin) {
-      user.isFirstLogin = false;
-      await user.save({ validateBeforeSave: false });
-    }
-
-    if (shouldRequireTwoFaSetup(user)) {
-      return respondTwoFaSetupRequired(req, res, user);
-    }
-
-    const expireIn = process.env.ACCESS_TOKEN_EXPIRY || '8h';
-    const currentSessionId = req.user?.data?.sessionId || req.user?.sessionId;
-  const generateToken = await generateAccessTokenUser(user, expireIn, req, currentSessionId);
-
-    return res.cookie('accessToken', generateToken, getAccessTokenCookieOptions(req, expireIn)).status(200).json({
-      status: 200,
-      message: "User is logged in successfully with Google",
-      user_id: user._id,
-      token: generateToken,
-      type: 'user',
-      phone: user.phone || '',
-      plan: user.plan || 'free',
-      isFirstLogin: isFirstLogin
-    });
-  } catch (error) {
-    console.error('Google login error:', error);
-    return res.status(500).json({ message: 'Google login failed', error: error.message });
-  }
-};
-
 // Update Profile (basic fields)
 const updateProfile = async (req, res) => {
   const userId = req.user?.data?.id || req.user?.id || req.user?._id;
@@ -2048,6 +1953,8 @@ const logout = async (req, res) => {
   }
 };
 
+const { googleLoginFederated } = require('./federatedLoginController');
+
 // Export functions
 module.exports = {
   getLoginPublicKey,
@@ -2076,7 +1983,7 @@ module.exports = {
   forgotPassword,
   resetPassword,
   changePassword,
-  googleLogin,
+  googleLogin: googleLoginFederated,
   updateProfile,
   sendProfileEmailOtp,
   verifyProfileEmailOtp,
@@ -2088,4 +1995,6 @@ module.exports = {
   verifyActiveSession,
   validateSessionEndpoint,
   logout,
+  generateAccessTokenUser,
+  respondTwoFaSetupRequired,
 };

@@ -4,9 +4,7 @@ import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Building, Locate, FileText, 
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { useAuth } from '../../components/AuthService/AuthContext'
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"
+import { FederatedLoginButtons } from '../../components/AuthService/FederatedLoginButtons'
 
 type SignupStep = 'form' | 'verify'
 const OTP_EXPIRY_SECONDS = 10 * 60
@@ -278,12 +276,16 @@ const SignupPage = () => {
     }
   }
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: string | { credential?: string }) => {
     setFormError('')
     setIsLoading(true)
     try {
-      if (credentialResponse.credential) {
-        await googleLogin(credentialResponse.credential, {
+      const credential =
+        typeof credentialResponse === 'string'
+          ? credentialResponse
+          : credentialResponse?.credential
+      if (credential) {
+        await googleLogin(credential, {
           ...(referrerUserIdForSignup ? { referrerUserId: referrerUserIdForSignup } : {}),
         })
         try {
@@ -344,7 +346,6 @@ const SignupPage = () => {
   }
 
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <div className="min-h-screen bg-gradient-to-br from-[#260559] via-[#3E2B66] to-[#4d3577] flex items-center justify-center p-4 relative">
       {/* Blurred Dashboard Background */}
       <div className="absolute inset-0 bg-gray-100 overflow-y-auto">
@@ -594,15 +595,12 @@ const SignupPage = () => {
               /* Signup Form */
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="flex justify-center w-full mb-4">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    useOneTap
-                    shape="rectangular"
-                    theme="outline"
-                    text="signup_with"
-                    size="large"
-                    width="100%"
+                  <FederatedLoginButtons
+                    mode="signup"
+                    disabled={isLoading}
+                    onGoogleSuccess={handleGoogleSuccess}
+                    onGoogleError={handleGoogleError}
+                    onError={setFormError}
                   />
                 </div>
                 
@@ -1018,7 +1016,6 @@ const SignupPage = () => {
         </div>
       </div>
     </div>
-    </GoogleOAuthProvider>
   );
 }
 

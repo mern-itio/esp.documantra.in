@@ -6,6 +6,7 @@ const cors = require('cors');
 const { getCorsOptions, createErrorHandler, applySecurityHeaders } = require('@draftnsign/validators');
 const { connectDB } = require('./config/db');
 const { refreshSessionPolicyCache } = require('./utils/sessionPolicy');
+const { refreshFederatedLoginCache } = require('./utils/federatedLoginPolicy');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const verifyJWT = require('@draftnsign/auth-lib');
@@ -23,7 +24,7 @@ applySecurityHeaders(app);
 app.use(optionsGuard);
 app.use(cors(getCorsOptions()));
 
-connectDB().then(() => refreshSessionPolicyCache());
+connectDB().then(() => Promise.all([refreshSessionPolicyCache(), refreshFederatedLoginCache()]));
 
 app.use(express.json());
 app.use('/api-admin', verifyJWT('admin'));

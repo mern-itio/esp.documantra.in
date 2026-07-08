@@ -263,7 +263,7 @@ export default function PublicPDFTools() {
 
           <div className="text-center mb-14">
             <h2 className="text-4xl font-bold mb-4">
-              Why Choose Documantra PDF Tools?
+              Why Choose DocuMantra PDF Tools?
             </h2>
 
             <p className="text-slate-600 max-w-2xl mx-auto">
@@ -398,7 +398,7 @@ export default function PublicPDFTools() {
 
             <div>
               <h3 className="text-2xl font-bold mb-4">
-                Documantra
+                DocuMantra
               </h3>
 
               <p className="text-slate-400">
@@ -446,7 +446,7 @@ export default function PublicPDFTools() {
           </div>
 
           <div className="border-t border-slate-800 mt-12 pt-6 text-center text-slate-500">
-            © 2026 Documantra. All Rights Reserved.
+            © 2026 DocuMantra. All Rights Reserved.
           </div>
 
         </div>

@@ -368,4 +368,55 @@ res.locals.analyticsResponse = {
 }
 };
 
-module.exports = { createEnvelope, forwardRecipientsRequest, saveSignatureFields, updateEnvelope, getEnvelopeDetail, sendEnvelope, getSignatureFields, addSignature };
+const SUBSCRIPTION_API_BASE = (
+  process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110'
+).replace(/\/+$/, '');
+
+/**
+ * Partner S2S: start recipient authentication (DigiLocker, OTP, etc.).
+ * Returns verificationUrl for redirect when action is COMPLETE_IDENTITY_VERIFICATION.
+ */
+const initiateRecipientAuth = async (req, res) => {
+  try {
+    const { providerId, recipientData, envelopeId } = req.body || {};
+    if (!providerId || !recipientData || !envelopeId) {
+      return res.status(400).json({
+        error: 'providerId, recipientData, and envelopeId are required',
+      });
+    }
+
+    const response = await axios.post(
+      `${SUBSCRIPTION_API_BASE}/api/authproviders/initiate/auth`,
+      { providerId, recipientData, envelopeId },
+      {
+        headers: {
+          Authorization: req.headers.authorization,
+          'X-Sandbox-Api-Key': req.headers['x-sandbox-api-key'],
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    res.locals.analyticsResponse = {
+      status: response.status,
+      statusText: response.statusText,
+      message: response.data?.message || response.data?.action,
+      data: response.data,
+    };
+
+    return res.status(response.status).json(response.data);
+  } catch (err) {
+    console.error('initiateRecipientAuth error:', err.response?.data || err.message);
+    res.locals.analyticsResponse = {
+      status: err.response?.status || 500,
+      statusText: err.response?.statusText || 'Error',
+      message: err.response?.data?.message || err.message,
+      data: err.response?.data || { error: 'Auth initiation failed' },
+    };
+    return res.status(err.response?.status || 500).json(
+      err.response?.data || { error: 'Auth initiation failed', details: err.message }
+    );
+  }
+};
+
+module.exports = { createEnvelope, forwardRecipientsRequest, saveSignatureFields, updateEnvelope, getEnvelopeDetail, sendEnvelope, getSignatureFields, addSignature, initiateRecipientAuth };

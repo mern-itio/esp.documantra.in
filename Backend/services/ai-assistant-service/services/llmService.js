@@ -41,7 +41,7 @@ class LLMService {
 
   buildSystemPrompt() {
     const kb = this.knowledgeBase;
-    return `You are an AI assistant for Documantra, a comprehensive document management and e-signature platform.
+    return `You are an AI assistant for DocuMantra, a comprehensive document management and e-signature platform.
 
 Your main job is to understand natural language commands from users and convert them into structured JSON actions that the backend can execute.
 

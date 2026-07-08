@@ -10,11 +10,17 @@ const {
   revokeUserSession,
   revokeAllUserSessions,
 } = require('../controllers/sessionPolicyAdminController');
+const {
+  getFederatedLoginConfig,
+  updateFederatedLoginConfig,
+} = require('../controllers/federatedLoginAdminController');
 router.get('/user-list',userList);
 router.get('/referral-program', getReferralProgram);
 router.put('/referral-program', updateReferralProgram);
 router.get('/session-policy', getSessionPolicy);
 router.put('/session-policy', updateSessionPolicy);
+router.get('/federated-login', getFederatedLoginConfig);
+router.put('/federated-login', updateFederatedLoginConfig);
 router.get('/session-policy/user-sessions', getUserSessionsByEmail);
 router.post('/session-policy/revoke', revokeUserSession);
 router.post('/session-policy/revoke-all', revokeAllUserSessions);
