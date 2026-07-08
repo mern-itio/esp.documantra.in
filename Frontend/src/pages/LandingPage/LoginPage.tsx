@@ -878,22 +878,6 @@ const LoginPage = () => {
                   )
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
-                    <div className="w-full mb-4">
-                      <FederatedLoginButtons
-                        mode="login"
-                        disabled={isLoading}
-                        onGoogleSuccess={handleGoogleSuccess}
-                        onGoogleError={handleGoogleError}
-                        onError={setError}
-                      />
-                    </div>
-
-                    <div className="relative flex items-center py-2">
-                      <div className="flex-grow border-t border-[#E6D8C9]"></div>
-                      <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">Or continue with email</span>
-                      <div className="flex-grow border-t border-[#E6D8C9]"></div>
-                    </div>
-
                     <div className="space-y-1.5">
                       <label htmlFor="email" className="block text-xs font-medium text-slate-800">
                         E-mail ID
@@ -987,6 +971,16 @@ const LoginPage = () => {
                         </span>
                       )}
                     </button>
+
+                    <div className="pt-2">
+                      <FederatedLoginButtons
+                        mode="login"
+                        disabled={isLoading}
+                        onGoogleSuccess={handleGoogleSuccess}
+                        onGoogleError={handleGoogleError}
+                        onError={setError}
+                      />
+                    </div>
                   </form>
                 )}
 

@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
-import { FaFacebookF, FaLinkedinIn } from 'react-icons/fa';
-import { FaXTwitter } from 'react-icons/fa6';
+import { FaFacebookF, FaLinkedinIn, FaTwitter } from 'react-icons/fa';
 import {
   fetchFederatedLoginProviders,
   getGoogleClientIdFromProviders,
@@ -22,11 +21,7 @@ const OAUTH_PKCE_KEY = 'documantra_oauth_pkce';
 const OAUTH_STATE_KEY = 'documantra_oauth_state';
 const OAUTH_REFERRER_KEY = 'documantra_oauth_referrer';
 
-/** Match Google OAuth button height and icon gutter */
-const OAUTH_BTN_HEIGHT = 'h-11';
-const OAUTH_ICON_LEFT = 'left-4';
-const OAUTH_SHELL =
-  'relative w-full overflow-hidden rounded-xl border border-[#E6D8C9] bg-white shadow-sm';
+const PROVIDER_ORDER: FederatedProviderId[] = ['facebook', 'twitter', 'google', 'linkedin'];
 
 function randomString(length = 32) {
   const bytes = new Uint8Array(length);
@@ -89,49 +84,59 @@ async function buildTwitterAuthUrl(provider: PublicFederatedProvider, state: str
   return `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
 }
 
-function ProviderIcon({ provider }: { provider: FederatedProviderId }) {
-  const box = 'flex h-5 w-5 items-center justify-center shrink-0';
-  if (provider === 'facebook') {
-    return (
-      <span className={`${box} rounded-full bg-[#1877F2] text-white`}>
-        <FaFacebookF className="h-3 w-3" aria-hidden />
-      </span>
-    );
-  }
-  if (provider === 'linkedin') {
-    return (
-      <span className={`${box} rounded-[4px] bg-[#0A66C2] text-white`}>
-        <FaLinkedinIn className="h-3 w-3" aria-hidden />
-      </span>
-    );
-  }
-  if (provider === 'twitter') {
-    return (
-      <span className={`${box} rounded-full bg-black text-white`}>
-        <FaXTwitter className="h-3 w-3" aria-hidden />
-      </span>
-    );
-  }
-  return null;
+function providerLabel(provider: FederatedProviderId, mode: 'login' | 'signup') {
+  const action = mode === 'signup' ? 'Sign up' : 'Sign in';
+  const names: Record<FederatedProviderId, string> = {
+    google: 'Google',
+    facebook: 'Facebook',
+    linkedin: 'LinkedIn',
+    twitter: 'Twitter',
+  };
+  return `${action} with ${names[provider]}`;
 }
 
-function providerActionLabel(provider: PublicFederatedProvider, mode: 'login' | 'signup') {
-  if (provider.provider === 'google') {
-    return mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google';
+function providerCircleClass(provider: FederatedProviderId) {
+  switch (provider) {
+    case 'facebook':
+      return 'bg-[#3B5998] hover:bg-[#344E86]';
+    case 'twitter':
+      return 'bg-[#55ACEE] hover:bg-[#4A9AD8]';
+    case 'google':
+      return 'bg-[#DD4B39] hover:bg-[#C93F2F]';
+    case 'linkedin':
+      return 'bg-[#0A66C2] hover:bg-[#0958A8]';
+    default:
+      return 'bg-slate-600 hover:bg-slate-700';
   }
-  return `Continue with ${provider.label}`;
 }
 
-function SocialAuthButton({
+function ProviderGlyph({ provider }: { provider: FederatedProviderId }) {
+  switch (provider) {
+    case 'facebook':
+      return <FaFacebookF className="h-5 w-5" aria-hidden />;
+    case 'twitter':
+      return <FaTwitter className="h-5 w-5" aria-hidden />;
+    case 'google':
+      return <span className="text-lg font-bold leading-none">G</span>;
+    case 'linkedin':
+      return <FaLinkedinIn className="h-5 w-5" aria-hidden />;
+    default:
+      return null;
+  }
+}
+
+function CircularSocialButton({
   label,
-  icon,
+  provider,
   disabled,
   onClick,
+  children,
 }: {
   label: string;
-  icon: ReactNode;
+  provider: FederatedProviderId;
   disabled?: boolean;
-  onClick: () => void;
+  onClick?: () => void;
+  children?: ReactNode;
 }) {
   return (
     <button
@@ -139,17 +144,61 @@ function SocialAuthButton({
       disabled={disabled}
       onClick={onClick}
       aria-label={label}
-      className={`${OAUTH_SHELL} ${OAUTH_BTN_HEIGHT} flex items-center transition hover:bg-[#F7F3EE] disabled:cursor-not-allowed disabled:opacity-50`}
+      className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-50 ${providerCircleClass(provider)}`}
     >
-      <span
-        className={`pointer-events-none absolute ${OAUTH_ICON_LEFT} top-1/2 -translate-y-1/2 flex items-center justify-center`}
-      >
-        {icon}
-      </span>
-      <span className="pointer-events-none w-full px-12 text-center text-sm font-semibold leading-none text-slate-700">
-        {label}
-      </span>
+      {children}
     </button>
+  );
+}
+
+function GoogleCircleButton({
+  clientId,
+  mode,
+  disabled,
+  onSuccess,
+  onError,
+}: {
+  clientId: string;
+  mode: 'login' | 'signup';
+  disabled?: boolean;
+  onSuccess: (credential: string) => void | Promise<void>;
+  onError?: () => void;
+}) {
+  const hiddenGoogleRef = useRef<HTMLDivElement>(null);
+
+  const openGoogle = () => {
+    if (disabled) return;
+    const googleButton = hiddenGoogleRef.current?.querySelector('[role="button"]') as HTMLElement | null;
+    googleButton?.click();
+  };
+
+  return (
+    <div className="relative">
+      <div
+        ref={hiddenGoogleRef}
+        className="pointer-events-none absolute left-1/2 top-1/2 h-px w-px -translate-x-1/2 -translate-y-1/2 overflow-hidden opacity-0"
+        aria-hidden
+      >
+        <GoogleOAuthProvider clientId={clientId}>
+          <GoogleLogin
+            onSuccess={(res) => void onSuccess(res.credential || '')}
+            onError={onError}
+            useOneTap={false}
+            type="icon"
+            shape="circle"
+            size="large"
+          />
+        </GoogleOAuthProvider>
+      </div>
+      <CircularSocialButton
+        label={providerLabel('google', mode)}
+        provider="google"
+        disabled={disabled}
+        onClick={openGoogle}
+      >
+        <ProviderGlyph provider="google" />
+      </CircularSocialButton>
+    </div>
   );
 }
 
@@ -183,6 +232,18 @@ export function FederatedLoginButtons({
   const googleClientId = useMemo(() => getGoogleClientIdFromProviders(providers), [providers]);
   const googleReady = useMemo(() => isGoogleOAuthConfigured(providers), [providers]);
 
+  const orderedProviders = useMemo(() => {
+    const enabled = new Map(providers.map((row) => [row.provider, row]));
+    const rows: PublicFederatedProvider[] = [];
+    for (const id of PROVIDER_ORDER) {
+      const row = enabled.get(id);
+      if (!row) continue;
+      if (id === 'google' && !googleReady) continue;
+      rows.push(row);
+    }
+    return rows;
+  }, [providers, googleReady]);
+
   const startRedirect = useCallback(
     async (provider: PublicFederatedProvider) => {
       if (disabled) return;
@@ -210,52 +271,51 @@ export function FederatedLoginButtons({
 
   if (loading) {
     return (
-      <p className="text-xs text-center text-slate-500 py-2">Loading sign-in options…</p>
+      <p className="py-2 text-center text-xs text-slate-500">Loading sign-in options…</p>
     );
   }
 
-  const socialProviders = providers.filter((p) => p.provider !== 'google');
-  const hasAny = googleReady || socialProviders.length > 0;
-
-  if (!hasAny) {
+  if (orderedProviders.length === 0) {
     return (
-      <p className="text-xs text-center text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+      <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs text-amber-700">
         Social sign-in is not configured yet. Use email or contact your administrator.
       </p>
     );
   }
 
-  const googleBlock = googleReady ? (
-    <div
-      className={`${OAUTH_SHELL} ${OAUTH_BTN_HEIGHT} flex items-center justify-center [&>div]:!h-full [&>div]:!w-full [&>div]:!flex [&>div]:!items-center`}
-    >
-      <GoogleOAuthProvider clientId={googleClientId}>
-        <GoogleLogin
-          onSuccess={(res) => void onGoogleSuccess(res.credential || '')}
-          onError={onGoogleError}
-          useOneTap={mode === 'login'}
-          shape="rectangular"
-          theme="outline"
-          text={mode === 'signup' ? 'signup_with' : 'signin_with'}
-          size="large"
-          width="100%"
-        />
-      </GoogleOAuthProvider>
-    </div>
-  ) : null;
+  const heading = mode === 'signup' ? 'Or Sign Up Using' : 'Or Sign In Using';
 
   return (
-    <div className="flex w-full flex-col gap-2.5">
-      {googleBlock}
-      {socialProviders.map((provider) => (
-        <SocialAuthButton
-          key={provider.provider}
-          label={providerActionLabel(provider, mode)}
-          icon={<ProviderIcon provider={provider.provider} />}
-          disabled={disabled}
-          onClick={() => void startRedirect(provider)}
-        />
-      ))}
+    <div className="w-full">
+      <p className="mb-4 text-center text-sm font-medium text-slate-500">{heading}</p>
+      <div className="flex flex-wrap items-center justify-center gap-4">
+        {orderedProviders.map((provider) => {
+          if (provider.provider === 'google') {
+            return (
+              <GoogleCircleButton
+                key="google"
+                clientId={googleClientId}
+                mode={mode}
+                disabled={disabled}
+                onSuccess={onGoogleSuccess}
+                onError={onGoogleError}
+              />
+            );
+          }
+
+          return (
+            <CircularSocialButton
+              key={provider.provider}
+              label={providerLabel(provider.provider, mode)}
+              provider={provider.provider}
+              disabled={disabled}
+              onClick={() => void startRedirect(provider)}
+            >
+              <ProviderGlyph provider={provider.provider} />
+            </CircularSocialButton>
+          );
+        })}
+      </div>
     </div>
   );
 }

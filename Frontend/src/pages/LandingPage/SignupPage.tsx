@@ -593,23 +593,7 @@ const SignupPage = () => {
                 </div>
               ) : (
               /* Signup Form */
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="flex justify-center w-full mb-4">
-                  <FederatedLoginButtons
-                    mode="signup"
-                    disabled={isLoading}
-                    onGoogleSuccess={handleGoogleSuccess}
-                    onGoogleError={handleGoogleError}
-                    onError={setFormError}
-                  />
-                </div>
-                
-                <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-[#E6D8C9]"></div>
-                  <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">Or continue with email</span>
-                  <div className="flex-grow border-t border-[#E6D8C9]"></div>
-                </div>
-
+                  <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="form-field-group">
                     <label htmlFor="firstName" className="block text-xs font-semibold text-gray-700 mb-1">
@@ -884,6 +868,16 @@ const SignupPage = () => {
                     </>
                   )}
                 </button>
+
+                <div className="pt-2">
+                  <FederatedLoginButtons
+                    mode="signup"
+                    disabled={isLoading}
+                    onGoogleSuccess={handleGoogleSuccess}
+                    onGoogleError={handleGoogleError}
+                    onError={setFormError}
+                  />
+                </div>
               </form>
               )}
               <div className="mt-4 text-center">
