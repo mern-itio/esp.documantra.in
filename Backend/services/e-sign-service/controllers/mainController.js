@@ -1445,11 +1445,7 @@ const completeSignature = async(req, res)=>{
             };
             envelope.status = 'completed';
           await envelope.save();
-          // FetchAllDocuments
-          const documents = await Document.find({envelopeId:envelopeId});
-          if(!documents){
-            return res.status(404).json({message:"Documents not found"});
-          } 
+          // documents already fetched above for final signing
           const attachments = [];
           for (const doc of documents) {
             if (!doc.signedFilePath) continue;
