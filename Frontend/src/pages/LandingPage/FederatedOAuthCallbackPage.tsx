@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../components/AuthService/AuthContext';
-import { API_CONFIG } from '../config/environment';
-import { getOrCreateDeviceId } from '../utils/deviceId';
-import { withAuthFetch } from '../utils/authSession';
+import { useAuth } from '../../components/AuthService/AuthContext';
+import { API_CONFIG } from '../../config/environment';
+import { getOrCreateDeviceId } from '../../utils/deviceId';
+import { withAuthFetch } from '../../utils/authSession';
 import {
   OAUTH_PKCE_KEY,
   OAUTH_REFERRER_KEY,
   OAUTH_STATE_KEY,
-} from '../components/AuthService/FederatedLoginButtons';
+} from '../../components/AuthService/FederatedLoginButtons';
 
 const ENDPOINTS: Record<string, string> = {
   facebook: `${API_CONFIG.BASE_URL}/facebook-login`,

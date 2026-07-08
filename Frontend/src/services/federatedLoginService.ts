@@ -30,7 +30,7 @@ export async function fetchFederatedLoginProviders(
   }
   cachedProviders = Array.isArray(data?.providers) ? data.providers : [];
   cacheExpiresAt = Date.now() + CACHE_MS;
-  return cachedProviders;
+  return cachedProviders ?? [];
 }
 
 export function getGoogleClientIdFromProviders(
