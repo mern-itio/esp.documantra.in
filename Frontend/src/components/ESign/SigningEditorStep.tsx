@@ -5,7 +5,9 @@ import {
   Stamp, Calendar, Building2, Briefcase, Hash, Check, User, Type,
   SaveAll,
   RectangleHorizontal,
-  Settings
+  Settings,
+  Copy,
+  FileStack
 } from "lucide-react";
 import type { Recipient } from "../../types";
 import { eSignApi } from "../../services/apiHelper";
@@ -52,6 +54,8 @@ export type SignatureField = {
   fieldId?: string; // link back to power form field
   options?: string[]; // for select/dropdown fields
   value?: string | boolean; // for checkbox default/value or generic value
+  /** Links copies created via "apply to all pages" in the editor. */
+  placementGroupId?: string;
 };
 
 export type PowerFormSlot = {
@@ -210,6 +214,7 @@ export default function SigningEditorStep({
 
   // Field properties sidebar state
   const [selectedField, setSelectedField] = useState<SignatureField | null>(null);
+  const [isApplyingPlacement, setIsApplyingPlacement] = useState(false);
   const [showPropertiesSidebar, setShowPropertiesSidebar] = useState(false);
   const [fieldLabel, setFieldLabel] = useState<string>('');
   const [isSavingField, setIsSavingField] = useState(false);
@@ -1110,14 +1115,9 @@ export default function SigningEditorStep({
   // Handle field click for selection (opens properties sidebar)
   const handleFieldClick = (e: React.MouseEvent, field: SignatureField) => {
     e.stopPropagation();
-    // Only open properties for editable fields
-    if (isEditableField(field.type)) {
-      setSelectedField(field);
-      setFieldLabel(field.label || '');
-      setShowPropertiesSidebar(true);
-    } else {
-      setShowPropertiesSidebar(false);
-    }
+    setSelectedField(field);
+    setFieldLabel(field.label || '');
+    setShowPropertiesSidebar(true);
   };
 
   // Remove signature field from database and frontend
@@ -1213,6 +1213,228 @@ export default function SigningEditorStep({
       setFieldLabel(selectedField.label || '');
     }
   }, [selectedField]);
+
+  const getFieldKey = (field: SignatureField) => String(field.id ?? field._id ?? '');
+
+  const getDocumentPageCount = useCallback(() => {
+    return Math.max(1, numPages || activeDoc?.pages || 1);
+  }, [numPages, activeDoc?.pages]);
+
+  const getPlacementGroupId = (field: SignatureField) =>
+    field.placementGroupId || getFieldKey(field);
+
+  const fieldsInPlacementGroup = useCallback(
+    (field: SignatureField, fields: SignatureField[] = signatureFields) => {
+      const docId = field.docId ?? field.documentId;
+      const groupId = getPlacementGroupId(field);
+      return fields.filter((f) => {
+        if ((f.docId ?? f.documentId) !== docId) return false;
+        return getPlacementGroupId(f) === groupId;
+      });
+    },
+    [signatureFields],
+  );
+
+  const fieldToApiPayload = (f: SignatureField) => ({
+    _id: f._id,
+    documentId: f.docId ?? f.documentId,
+    recipientId: f.recipientId || null,
+    slotId: f.slotId || null,
+    page: f.page,
+    x: f.x,
+    y: f.y,
+    width: f.width,
+    height: f.height,
+    type: f.type,
+    status: 'pending',
+    label: f.label || '',
+    option: f.options || [],
+    fieldId: f.fieldId || null,
+  });
+
+  const cloneFieldForPage = (
+    template: SignatureField,
+    page: number,
+    groupId: string,
+  ): SignatureField => ({
+    ...template,
+    id: `${Date.now()}-${page}-${Math.random().toString(36).slice(2, 6)}`,
+    _id: undefined,
+    page,
+    placementGroupId: groupId,
+  });
+
+  const deleteFieldFromDb = async (field: SignatureField) => {
+    const isDbRecord = field._id && /^[a-fA-F0-9]{24}$/.test(field._id);
+    if (!isDbRecord) return;
+    await eSignApi.post(`/api/e-sign/envelope/remove-signature-field/${field._id}`);
+  };
+
+  const applyFieldToAllPages = async (field: SignatureField) => {
+    const totalPages = getDocumentPageCount();
+    if (totalPages <= 1) {
+      toast.error('This document has only one page');
+      return;
+    }
+
+    setIsApplyingPlacement(true);
+    try {
+      const groupId = getPlacementGroupId(field);
+      const docId = field.docId ?? field.documentId;
+      const sourceKey = getFieldKey(field);
+
+      let workingFields = signatureFields.map((f) =>
+        getFieldKey(f) === sourceKey ? { ...f, placementGroupId: groupId } : f,
+      );
+
+      const template =
+        workingFields.find((f) => getFieldKey(f) === sourceKey) ?? field;
+
+      const occupiedPages = new Set(
+        workingFields
+          .filter(
+            (f) =>
+              (f.docId ?? f.documentId) === docId &&
+              getPlacementGroupId(f) === groupId,
+          )
+          .map((f) => f.page),
+      );
+
+      const newFields: SignatureField[] = [];
+      for (let page = 1; page <= totalPages; page += 1) {
+        if (!occupiedPages.has(page)) {
+          newFields.push(cloneFieldForPage(template, page, groupId));
+        }
+      }
+
+      if (newFields.length === 0) {
+        toast.success('Field is already on all pages');
+        return;
+      }
+
+      let finalFields = [...workingFields, ...newFields];
+
+      if (envelopeId) {
+        const response = await eSignApi.post(saveSignatureFieldsPath, {
+          envelopeId,
+          signatureFields: newFields.map(fieldToApiPayload),
+        });
+        const saved = response.data?.data?.signatureFields as SignatureField[] | undefined;
+        if (saved?.length) {
+          const savedByPage = new Map(saved.map((sf) => [sf.page, sf]));
+          finalFields = [
+            ...workingFields,
+            ...newFields.map((nf) => {
+              const sf = savedByPage.get(nf.page);
+              return sf
+                ? { ...nf, ...sf, docId: nf.docId ?? sf.documentId }
+                : nf;
+            }),
+          ];
+        }
+      }
+
+      setSignatureFields(finalFields);
+      saveToHistory(finalFields);
+      if (onFieldsChange) onFieldsChange(finalFields);
+      setSelectedField(
+        finalFields.find((f) => getFieldKey(f) === sourceKey) ?? template,
+      );
+      toast.success(`Field applied to ${newFields.length} more page(s)`);
+    } catch (error: any) {
+      console.error('applyFieldToAllPages failed:', error);
+      toast.error(error?.response?.data?.message || 'Failed to apply field to all pages');
+    } finally {
+      setIsApplyingPlacement(false);
+    }
+  };
+
+  const applyFieldToLastPageOnly = async (field: SignatureField) => {
+    const totalPages = getDocumentPageCount();
+    const groupId = getPlacementGroupId(field);
+    const docId = field.docId ?? field.documentId;
+    const sourceKey = getFieldKey(field);
+    const related = fieldsInPlacementGroup(field);
+
+    setIsApplyingPlacement(true);
+    try {
+      for (const f of related) {
+        if (f.page !== totalPages) {
+          await deleteFieldFromDb(f);
+        }
+      }
+
+      const template = related.find((f) => getFieldKey(f) === sourceKey) ?? field;
+      const existingOnLast = related.find((f) => f.page === totalPages);
+
+      const withoutGroup = signatureFields.filter(
+        (f) =>
+          !(
+            (f.docId ?? f.documentId) === docId &&
+            getPlacementGroupId(f) === groupId
+          ),
+      );
+
+      let lastPageField: SignatureField = {
+        ...template,
+        page: totalPages,
+        placementGroupId: groupId,
+      };
+
+      if (existingOnLast && existingOnLast.page === totalPages) {
+        lastPageField = {
+          ...existingOnLast,
+          x: template.x,
+          y: template.y,
+          width: template.width,
+          height: template.height,
+          type: template.type,
+          label: template.label,
+          recipientId: template.recipientId,
+          slotId: template.slotId,
+          options: template.options,
+          value: template.value,
+          placementGroupId: groupId,
+        };
+      } else {
+        lastPageField = {
+          ...cloneFieldForPage(template, totalPages, groupId),
+          _id: undefined,
+        };
+      }
+
+      let finalFields = [...withoutGroup, lastPageField];
+
+      if (envelopeId && !lastPageField._id) {
+        const response = await eSignApi.post(saveSignatureFieldsPath, {
+          envelopeId,
+          signatureFields: [fieldToApiPayload(lastPageField)],
+        });
+        const saved = response.data?.data?.signatureFields?.[0];
+        if (saved) {
+          lastPageField = { ...lastPageField, ...saved, docId: lastPageField.docId };
+          finalFields = [...withoutGroup, lastPageField];
+        }
+      } else if (envelopeId && lastPageField._id) {
+        await eSignApi.post(saveSignatureFieldsPath, {
+          envelopeId,
+          signatureFields: [fieldToApiPayload(lastPageField)],
+        });
+      }
+
+      setSignatureFields(finalFields);
+      saveToHistory(finalFields);
+      if (onFieldsChange) onFieldsChange(finalFields);
+      setSelectedField(lastPageField);
+      setCurrentPage(totalPages);
+      toast.success(`Field placed on page ${totalPages} only`);
+    } catch (error: any) {
+      console.error('applyFieldToLastPageOnly failed:', error);
+      toast.error(error?.response?.data?.message || 'Failed to apply field to last page');
+    } finally {
+      setIsApplyingPlacement(false);
+    }
+  };
 
   // move logic — allow moving any non-locked field (not restricted by active)
   const handleFieldMouseDown = (e: React.MouseEvent, field: SignatureField) => {
@@ -2071,23 +2293,22 @@ export default function SigningEditorStep({
                                   handleFieldMouseDown(e, f);
                                 }}
                                 onClick={(e) => {
-                                  // Handle click for editable fields, but only if field wasn't dragged
-                                  if (isEditableField(f.type) && !fieldWasDraggedRef.current) {
+                                  if (!fieldWasDraggedRef.current) {
                                     handleFieldClick(e, f);
                                   }
                                 }}
                                 title={
                                   f.type === "signature"
-                                    ? `Signature - ${assignee?.name ?? ""}`
+                                    ? `Signature - ${assignee?.name ?? ""} (Click for settings)`
                                     : f.type === "stamp"
-                                      ? `Stamp - ${assignee?.name ?? ""}`
+                                      ? `Stamp - ${assignee?.name ?? ""} (Click for settings)`
                                       : f.type === "text"
-                                        ? `${f.label || "Text"} field - ${assignee?.name ?? ""} (Click to edit label)`
+                                        ? `${f.label || "Text"} field - ${assignee?.name ?? ""} (Click to edit)`
                                         : f.type === "email"
-                                          ? `Email field - ${assignee?.name ?? ""} (Click to edit label)`
+                                          ? `Email field - ${assignee?.name ?? ""} (Click to edit)`
                                           : isEditableField(f.type)
-                                            ? `${f.label || f.type} - Click to edit label`
-                                            : f.label
+                                            ? `${f.label || f.type} - Click to edit`
+                                            : `${f.label || f.type} - Click for settings`
                                 }
                               >
                                 {/* Remove button - only shows on hover */}
@@ -2392,22 +2613,67 @@ export default function SigningEditorStep({
               </div>
 
               {/* Label Input */}
-              <div>
-                <label className="text-xs font-medium text-foreground uppercase tracking-wide mb-2 block">
-                  Label
-                </label>
-                <input
-                  type="text"
-                  value={fieldLabel}
-                  onChange={(e) => setFieldLabel(e.target.value)}
-                  placeholder={`Enter ${selectedField.type} label`}
-                  className="w-full px-3 py-2 text-sm border border-muted rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  style={{ fontSize: '14px' }}
-                />
-                <p className="text-xs text-foreground mt-1">
-                  This label will be displayed on the document
-                </p>
-              </div>
+              {isEditableField(selectedField.type) && (
+                <div>
+                  <label className="text-xs font-medium text-foreground uppercase tracking-wide mb-2 block">
+                    Label
+                  </label>
+                  <input
+                    type="text"
+                    value={fieldLabel}
+                    onChange={(e) => setFieldLabel(e.target.value)}
+                    placeholder={`Enter ${selectedField.type} label`}
+                    className="w-full px-3 py-2 text-sm border border-muted rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ fontSize: '14px' }}
+                  />
+                  <p className="text-xs text-foreground mt-1">
+                    This label will be displayed on the document
+                  </p>
+                </div>
+              )}
+
+              {/* Page placement */}
+              {getDocumentPageCount() > 1 && (
+                <div className="pt-4 border-t border-muted">
+                  <label className="text-xs font-medium text-foreground uppercase tracking-wide mb-2 block">
+                    Page Placement
+                  </label>
+                  <p className="text-xs text-foreground mb-3">
+                    Place this field on more pages at the same position — useful when every page needs a signature.
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    On{' '}
+                    <span className="font-medium text-foreground">
+                      {fieldsInPlacementGroup(selectedField).length}
+                    </span>{' '}
+                    of{' '}
+                    <span className="font-medium text-foreground">
+                      {getDocumentPageCount()}
+                    </span>{' '}
+                    pages
+                  </p>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => applyFieldToAllPages(selectedField)}
+                      disabled={isApplyingPlacement}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-[#1B4D3E] text-white hover:bg-[#163f34] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Copy className="w-4 h-4" />
+                      {isApplyingPlacement ? 'Applying...' : 'Apply to all pages'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyFieldToLastPageOnly(selectedField)}
+                      disabled={isApplyingPlacement}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium border border-muted text-foreground hover:bg-muted disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <FileStack className="w-4 h-4" />
+                      Last page only
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Field Info */}
               <div className="pt-4 border-t border-muted">
@@ -2431,18 +2697,20 @@ export default function SigningEditorStep({
               </div>
 
               {/* Save Button */}
-              <div className="pt-4 border-t border-muted">
-                <button
-                  onClick={saveFieldLabel}
-                  disabled={isSavingField || !fieldLabel.trim()}
-                  className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${isSavingField || !fieldLabel.trim()
-                    ? 'bg-muted text-foreground cursor-not-allowed'
-                    : 'bg-blue-600 text-foreground hover:bg-blue-700'
-                    }`}
-                >
-                  {isSavingField ? 'Saving...' : 'Save Label'}
-                </button>
-              </div>
+              {isEditableField(selectedField.type) && (
+                <div className="pt-4 border-t border-muted">
+                  <button
+                    onClick={saveFieldLabel}
+                    disabled={isSavingField || !fieldLabel.trim()}
+                    className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${isSavingField || !fieldLabel.trim()
+                      ? 'bg-muted text-foreground cursor-not-allowed'
+                      : 'bg-blue-600 text-foreground hover:bg-blue-700'
+                      }`}
+                  >
+                    {isSavingField ? 'Saving...' : 'Save Label'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
