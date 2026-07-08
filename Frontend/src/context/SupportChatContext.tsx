@@ -4,6 +4,7 @@ import { useAuth } from '../components/AuthService/AuthContext';
 import { SUPPORT_SERVICE_URL } from '../services/supportService';
 import { getMemoryAccessToken } from '../utils/authSession';
 import toast from 'react-hot-toast';
+import { DEFAULT_BRAND_LOGO_URL, fetchBrandingAssets } from '../services/documantraBranding';
 
 interface Message {
   _id: string;
@@ -73,6 +74,13 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const isTypingRef = useRef(false);
   const currentTicketRef = useRef<Ticket | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [notificationIconUrl, setNotificationIconUrl] = useState(DEFAULT_BRAND_LOGO_URL);
+
+  useEffect(() => {
+    fetchBrandingAssets().then((assets) => {
+      if (assets.logoUrl) setNotificationIconUrl(assets.logoUrl);
+    });
+  }, []);
 
   // Initialize socket connection
   useEffect(() => {
@@ -358,10 +366,10 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(title, {
         body,
-        icon: '/logo.png'
+        icon: notificationIconUrl,
       });
     }
-  }, []);
+  }, [notificationIconUrl]);
 
   // Request notification permission on mount
   useEffect(() => {

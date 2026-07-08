@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-do
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Smartphone, CheckCircle2, XCircle } from 'lucide-react'
 import { useAuth } from '../../components/AuthService/AuthContext'
 import { APP_NAME } from '../../components/constants/appConfig'
+import BrandLogo from '../../components/BrandLogo'
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"
@@ -507,11 +508,7 @@ const LoginPage = () => {
                       Use your {APP_NAME} account to access documents, templates, and teams.
                     </p>
                   </div>
-                <img
-  src="https://documantra.in/logo.png"
-  alt="Documantra"
-  className="h-14 w-auto object-contain"
-/>
+                <BrandLogo className="h-14 w-auto object-contain" />
                 </div>
 
                 {error && (

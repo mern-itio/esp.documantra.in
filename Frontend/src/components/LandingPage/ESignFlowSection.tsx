@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, type MotionProps } from 'framer-motion'
 import { Upload, Users, Send, FileCheck, ShieldCheck, PenTool } from 'lucide-react'
+import BrandLogo from '../BrandLogo'
 type MotionDivProps = React.HTMLAttributes<HTMLDivElement> & MotionProps
 const MotionDiv = motion.div as React.FC<MotionDivProps>
 
@@ -255,11 +256,7 @@ const ESignFlowSection = () => {
           <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-200/70 via-transparent to-transparent mix-blend-multiply" />
           <div className="relative flex h-full items-center justify-center overflow-hidden rounded-l-2xl">
             <div className="flex h-[72%] w-[82%] items-center justify-center">
-              <img
-                src="./Logo.png"
-                alt="{BRAND.name} logo"
-                className="h-25 w-auto opacity-90"
-              />
+              <BrandLogo className="h-25 w-auto opacity-90" />
             </div>
           </div>
         </MotionDiv>

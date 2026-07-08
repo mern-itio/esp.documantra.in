@@ -6,7 +6,7 @@ const {
   isSmtpConfigured,
 } = require('@draftnsign/email-lib');
 
-const { getBrandName } = require('@draftnsign/validators/brandConfig');
+const { getBrandName, renderEmailLogoHeader } = require('@draftnsign/validators/brandConfig');
 
 const APP_NAME = getBrandName();
 
@@ -81,8 +81,10 @@ function simpleEmailHtml(title, bodyHtml) {
 </head>
 <body style="margin:0; padding:24px 16px; background-color:#f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <div style="max-width:520px; margin:0 auto; background:#ffffff; border-radius:12px; padding:32px 28px; border:1px solid #e2e8f0;">
+    ${renderEmailLogoHeader()}
     <h1 style="margin:0 0 20px; font-size:20px; font-weight:700; color:#0f172a;">${escapeHtml(title)}</h1>
     ${bodyHtml}
+    <p style="margin: 24px 0 0; font-size: 13px; color: #94a3b8; text-align: center;">Sent via ${escapeHtml(APP_NAME)}</p>
   </div>
 </body>
 </html>`.trim();

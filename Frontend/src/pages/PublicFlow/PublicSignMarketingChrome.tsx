@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  Apple,
   ArrowUp,
   Mail,
   Menu,
@@ -7,105 +8,141 @@ import {
   Smartphone,
   X,
 } from 'lucide-react';
-import { BRAND } from '../../config/brand';
+import {
+  type DocumantraChrome,
+  type FooterContent,
+  type NavLink,
+  DOCUMANTRA_SITE,
+  fetchDocumantraChrome,
+  fallbackFooter,
+  fallbackHeader,
+  resolveDocumantraAsset,
+  resolveDocumantraHref,
+} from '../../services/documantraSiteContent';
 
-const mainSite = 'https://documantra.in';
-
-const navLinks = [
-  { label: 'Product', href: `${mainSite}/#product` },
-  { label: 'Features', href: `${mainSite}/#features` },
-  { label: 'Pricing', href: `${mainSite}/pricing` },
-  { label: 'Security', href: `${mainSite}/#security` },
-  { label: 'API', href: `${mainSite}/#api` },
-];
-
-const footerGroups = [
-  {
-    category: 'Product',
-    links: [
-      { label: 'Features', href: `${mainSite}/#features` },
-      { label: 'Pricing', href: `${mainSite}/pricing` },
-      { label: 'Templates', href: `${mainSite}/templates` },
-      { label: 'Public Sign', href: '/public-sign' },
-    ],
-  },
-  {
-    category: 'Resources',
-    links: [
-      { label: 'Blog', href: `${mainSite}/blog` },
-      { label: 'Case Studies', href: `${mainSite}/case-studies` },
-      { label: 'Guides', href: `${mainSite}/guides` },
-    ],
-  },
-  {
-    category: 'Company',
-    links: [
-      { label: 'About Us', href: `${mainSite}/about` },
-      { label: 'Careers', href: `${mainSite}/careers` },
-      { label: 'Contact', href: `${mainSite}/contact` },
-    ],
-  },
-  {
-    category: 'Legal',
-    links: [
-      { label: 'Privacy Policy', href: `${mainSite}/privacy` },
-      { label: 'Terms of Service', href: `${mainSite}/terms` },
-      { label: 'Cookie Policy', href: `${mainSite}/cookies` },
-    ],
-  },
-];
-
-const trustBadges = [
-  'SOC 2 Type II Certified',
-  'ISO 27001',
-  'GDPR Compliant',
-  '256-bit Encryption',
-  'VAPT',
-];
-
-const socialLinks = [
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/documantra/' },
-  { label: 'X', href: 'https://x.com/documantra_' },
-  { label: 'YouTube', href: 'https://www.youtube.com/@documantra' },
-  { label: 'Instagram', href: 'https://www.instagram.com/documantra' },
-  { label: 'Email', href: `mailto:${BRAND.supportEmail}` },
-];
-
+const primaryGreen = 'bg-[hsl(160,48%,21%)] hover:bg-[hsl(160,48%,18%)]';
 const linkClass =
   'text-sm font-medium text-gray-600 transition-colors hover:text-gray-950';
 
+const XIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+const LinkedInIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452z" />
+  </svg>
+);
+
+const FacebookIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
+const YouTubeIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+  </svg>
+);
+
+const InstagramIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919C8.416 2.175 8.796 2.163 12 2.163z" />
+  </svg>
+);
+
+const PinterestIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12.017 24c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641 0 12.017 0z" />
+  </svg>
+);
+
+const MediumIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zM20.96 12c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75C23.47 6.25 24 8.83 24 12z" />
+  </svg>
+);
+
+const WhatsAppIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" />
+  </svg>
+);
+
+function useDocumantraChrome() {
+  const [chrome, setChrome] = useState<DocumantraChrome>({
+    header: fallbackHeader,
+    footer: fallbackFooter,
+    navLinks: fallbackHeader.navLinks,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchDocumantraChrome().then((data) => {
+      if (!cancelled) setChrome(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return chrome;
+}
+
+const NavAnchor = ({
+  link,
+  mobile = false,
+  onNavigate,
+}: {
+  link: NavLink;
+  mobile?: boolean;
+  onNavigate?: () => void;
+}) => (
+  <a
+    href={resolveDocumantraHref(link.href)}
+    className={`${linkClass}${mobile ? ' py-2' : ''}`}
+    onClick={onNavigate}
+  >
+    {link.label}
+  </a>
+);
+
 export const PublicSignHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { header, navLinks } = useDocumantraChrome();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200/70 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <a href={mainSite} className="group flex items-center gap-2.5">
-          <span className="text-2xl font-bold tracking-tight text-gray-950 transition-transform group-hover:scale-[1.02]">
-            DocuMantra
-          </span>
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200/70 bg-[#FDFBF7]/95 backdrop-blur supports-[backdrop-filter]:bg-[#FDFBF7]/80">
+      <div className="mx-auto flex h-28 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <a href={DOCUMANTRA_SITE} className="group flex items-center gap-2.5">
+          <img
+            src={resolveDocumantraAsset(header.logoUrl)}
+            alt={header.siteName || 'DocuMantra'}
+            className="h-24 w-auto max-w-[660px] transition-transform group-hover:scale-[1.02]"
+          />
         </a>
 
         <nav className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (
-            <a key={link.label} href={link.href} className={linkClass}>
-              {link.label}
-            </a>
+            <NavAnchor key={`${link.label}-${link.href}`} link={link} />
           ))}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
           <a
-            href={`${mainSite}/contact`}
+            href={resolveDocumantraHref(header.secondaryCtaHref)}
             className="rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950"
           >
-            Contact Sales
+            {header.secondaryCtaLabel}
           </a>
           <a
-            href="/public-sign"
-            className="rounded-md bg-[#1B7A4B] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#15633D]"
+            href={resolveDocumantraHref(header.primaryCtaHref)}
+            className={`rounded-md px-4 py-2 text-sm font-semibold text-white transition ${primaryGreen}`}
           >
-            Get Started Free
+            {header.primaryCtaLabel}
           </a>
         </div>
 
@@ -120,33 +157,31 @@ export const PublicSignHeader = () => {
       </div>
 
       <div
-        className={`absolute left-0 right-0 top-24 border-b border-gray-200 bg-white transition-all duration-300 md:hidden ${
+        className={`absolute left-0 right-0 top-28 border-b border-gray-200 bg-[#FDFBF7] transition-all duration-300 md:hidden ${
           isMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
         }`}
       >
         <nav className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6">
           {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className={`${linkClass} py-2`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {link.label}
-            </a>
+            <NavAnchor
+              key={`mobile-${link.label}-${link.href}`}
+              link={link}
+              mobile
+              onNavigate={() => setIsMenuOpen(false)}
+            />
           ))}
           <div className="flex flex-col gap-2 border-t border-gray-200 pt-4">
             <a
-              href={`${mainSite}/contact`}
+              href={resolveDocumantraHref(header.secondaryCtaHref)}
               className="rounded-md px-3 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-100"
             >
-              Contact Sales
+              {header.secondaryCtaLabel}
             </a>
             <a
-              href="/public-sign"
-              className="rounded-md bg-[#1B7A4B] px-4 py-2 text-center text-sm font-semibold text-white hover:bg-[#15633D]"
+              href={resolveDocumantraHref(header.primaryCtaHref)}
+              className={`rounded-md px-4 py-2 text-center text-sm font-semibold text-white ${primaryGreen}`}
             >
-              Get Started Free
+              {header.primaryCtaLabel}
             </a>
           </div>
         </nav>
@@ -159,128 +194,247 @@ const BackToTop = () => (
   <button
     type="button"
     onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-    className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-[#1B7A4B] text-white shadow-lg transition hover:bg-[#15633D]"
+    className={`fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full text-white shadow-lg transition ${primaryGreen}`}
     aria-label="Back to top"
   >
     <ArrowUp className="h-4 w-4" />
   </button>
 );
 
+const TrustBadges = ({ badges }: { badges: string[] }) => (
+  <div className="border-t border-gray-200 py-8">
+    <div className="flex flex-wrap justify-center gap-3">
+      {badges.filter(Boolean).map((badge) => (
+        <div
+          key={badge}
+          className="inline-flex items-center gap-2 rounded-full border border-[hsl(160,48%,21%)]/10 bg-[hsl(160,48%,21%)]/5 px-4 py-2 text-xs font-medium text-gray-600"
+        >
+          <Shield className="h-3.5 w-3.5 text-[hsl(160,48%,21%)]" />
+          {badge}
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const AppStoreLinks = ({
+  appStoreUrl,
+  playStoreUrl,
+}: {
+  appStoreUrl: string;
+  playStoreUrl: string;
+}) => (
+  <div className="flex flex-wrap items-center gap-3">
+    {appStoreUrl ? (
+      <a
+        href={appStoreUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-lg bg-gray-950 px-4 py-2 text-xs font-medium text-white transition hover:opacity-90"
+      >
+        <Apple className="h-4 w-4" />
+        <span className="leading-tight">
+          <span className="block text-[10px] opacity-80">Download on the</span>
+          App Store
+        </span>
+      </a>
+    ) : null}
+    {playStoreUrl ? (
+      <a
+        href={playStoreUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-lg bg-gray-950 px-4 py-2 text-xs font-medium text-white transition hover:opacity-90"
+      >
+        <Smartphone className="h-4 w-4" />
+        <span className="leading-tight">
+          <span className="block text-[10px] opacity-80">Get it on</span>
+          Google Play
+        </span>
+      </a>
+    ) : null}
+  </div>
+);
+
+const buildSocialItems = (content: FooterContent) => {
+  const whatsappUrl = content.whatsappNumber
+    ? `https://wa.me/${content.whatsappNumber}?text=${encodeURIComponent(
+        content.whatsappMessage || '',
+      )}`
+    : '';
+
+  return [
+    { icon: FacebookIcon, href: content.socialLinks.facebook, label: 'Facebook' },
+    { icon: LinkedInIcon, href: content.socialLinks.linkedin, label: 'LinkedIn' },
+    { icon: XIcon, href: content.socialLinks.twitter, label: 'X' },
+    { icon: YouTubeIcon, href: content.socialLinks.youtube, label: 'YouTube' },
+    { icon: InstagramIcon, href: content.socialLinks.instagram, label: 'Instagram' },
+    { icon: PinterestIcon, href: content.socialLinks.pinterest, label: 'Pinterest' },
+    { icon: MediumIcon, href: content.socialLinks.medium, label: 'Medium' },
+    { icon: WhatsAppIcon, href: whatsappUrl, label: 'WhatsApp' },
+    {
+      icon: null,
+      href: content.contactEmail ? `mailto:${content.contactEmail}` : '',
+      label: 'Email',
+      isLucide: true,
+    },
+  ].filter((item) => item.href && item.href !== '#');
+};
+
 export const PublicSignFooter = () => {
+  const { footer, header } = useDocumantraChrome();
+  const socialItems = buildSocialItems(footer);
+  const whatsappUrl = footer.whatsappNumber
+    ? `https://wa.me/${footer.whatsappNumber}?text=${encodeURIComponent(
+        footer.whatsappMessage || '',
+      )}`
+    : '';
+
   return (
-    <footer className="border-t border-gray-200 bg-gray-50">
+    <footer className="border-t border-gray-200 bg-[#FDFBF7]">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
         <div className="mb-10 grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
-          {footerGroups.map((group) => (
-            <div key={group.category}>
+          {footer.linkGroups.map((group, groupIndex) => (
+            <div key={`${group.category}-${groupIndex}`}>
               <h3 className="mb-4 text-sm font-bold text-gray-950">
                 {group.category}
               </h3>
               <ul className="space-y-2.5">
-                {group.links.map((link) => (
-                  <li key={`${group.category}-${link.label}`}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-gray-600 transition-colors hover:text-gray-950"
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
+                {(group.links || [])
+                  .filter((link) => link.label)
+                  .map((link, linkIndex) => (
+                    <li key={`${group.category}-${link.label}-${linkIndex}`}>
+                      <a
+                        href={resolveDocumantraHref(link.href)}
+                        className="inline-flex items-center gap-1.5 text-sm text-gray-600 transition-colors hover:text-gray-950"
+                      >
+                        {link.label}
+                        {link.badge ? (
+                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                            {link.badge}
+                          </span>
+                        ) : null}
+                      </a>
+                      {link.desc ? (
+                        <span className="mt-0.5 block text-xs text-gray-500">
+                          {link.desc}
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
               </ul>
             </div>
           ))}
         </div>
 
-        <div className="border-t border-gray-200 py-8">
-          <div className="flex flex-wrap justify-center gap-3">
-            {trustBadges.map((badge) => (
-              <div
-                key={badge}
-                className="inline-flex items-center gap-2 rounded-full border border-[#1B7A4B]/15 bg-[#1B7A4B]/5 px-4 py-2 text-xs font-medium text-gray-600"
-              >
-                <Shield className="h-3.5 w-3.5 text-[#1B7A4B]" />
-                {badge}
-              </div>
-            ))}
-          </div>
-        </div>
+        {footer.showTrustBadges ? (
+          <TrustBadges badges={footer.trustBadges || []} />
+        ) : null}
 
         <div className="flex flex-col items-start justify-between gap-8 border-t border-gray-200 py-8 lg:flex-row lg:items-center">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-            <span className="text-lg font-bold tracking-tight text-gray-950">
-              DocuMantra
-            </span>
+            <a href={DOCUMANTRA_SITE} className="flex items-center gap-2.5">
+              <img
+                src={resolveDocumantraAsset(header.logoUrl)}
+                alt="DocuMantra"
+                className="h-16 w-auto max-w-[280px]"
+              />
+            </a>
             <div>
-              <p className="max-w-xs text-sm text-gray-600">
-                The free forever digital signature platform for modern businesses.
-              </p>
-              <a
-                href={`mailto:${BRAND.supportEmail}`}
-                className="mt-1 inline-block text-sm text-[#1B7A4B] hover:underline"
-              >
-                {BRAND.supportEmail}
-              </a>
+              <p className="max-w-xs text-sm text-gray-600">{footer.tagline}</p>
+              {footer.contactEmail ? (
+                <a
+                  href={`mailto:${footer.contactEmail}`}
+                  className="mt-1 inline-block text-sm text-[hsl(160,48%,21%)] hover:underline"
+                >
+                  {footer.contactEmail}
+                </a>
+              ) : null}
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <a
-              href={`${mainSite}/contact`}
-              className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white"
-            >
-              Contact us
-            </a>
-            <a
-              href={`${mainSite}/pricing`}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-950 px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-            >
-              <Smartphone className="h-4 w-4" />
-              View plans
-            </a>
+          <div className="flex w-full flex-col gap-6 sm:w-auto sm:flex-row sm:items-center">
+            <div>
+              <p className="mb-2 text-sm font-medium text-gray-950">
+                {footer.newsletterText}
+              </p>
+              <form
+                className="flex gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  window.location.href = `mailto:${footer.contactEmail}?subject=Newsletter%20subscribe`;
+                }}
+              >
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="max-w-[240px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                  required
+                />
+                <button
+                  type="submit"
+                  className={`rounded-md px-4 py-2 text-sm font-medium text-white ${primaryGreen}`}
+                >
+                  Subscribe
+                </button>
+              </form>
+            </div>
+            <AppStoreLinks
+              appStoreUrl={footer.appStoreUrl}
+              playStoreUrl={footer.playStoreUrl}
+            />
           </div>
         </div>
 
         <div className="flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 md:flex-row">
-          <p className="text-sm text-gray-600">
-            © {new Date().getFullYear()} DocuMantra. All rights reserved.
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600">
-            <a href={`${mainSite}/privacy`} className="hover:text-gray-950">
-              Privacy
-            </a>
-            <a href={`${mainSite}/terms`} className="hover:text-gray-950">
-              Terms
-            </a>
-            <a href={`${mainSite}/cookies`} className="hover:text-gray-950">
-              Cookies
-            </a>
-            <a href={`${mainSite}/sitemap`} className="hover:text-gray-950">
-              Sitemap
-            </a>
+          <div className="flex flex-col items-center gap-4 sm:flex-row">
+            <p className="text-sm text-gray-600">
+              © {new Date().getFullYear()} {footer.copyright}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600">
+              {(footer.bottomQuickLinks || []).map((link) => (
+                <a
+                  key={link.label}
+                  href={resolveDocumantraHref(link.href)}
+                  className="transition-colors hover:text-gray-950"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {socialLinks.map((social) => (
-              <a
-                key={social.label}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-xs font-semibold text-gray-600 transition hover:bg-gray-100 hover:text-gray-950"
-                aria-label={social.label}
-              >
-                {social.label === 'Email' ? (
-                  <Mail size={18} />
-                ) : (
-                  social.label.slice(0, 1)
-                )}
-              </a>
-            ))}
+            {socialItems.map((social) => {
+              const Icon = social.icon;
+              return (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-gray-600 transition hover:bg-gray-100 hover:text-gray-950"
+                  aria-label={social.label}
+                >
+                  {social.isLucide ? <Mail size={18} /> : Icon ? <Icon /> : null}
+                </a>
+              );
+            })}
           </div>
         </div>
       </div>
+
+      {footer.whatsappNumber ? (
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 left-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-110"
+          aria-label="Chat on WhatsApp"
+        >
+          <WhatsAppIcon />
+        </a>
+      ) : null}
 
       <BackToTop />
     </footer>

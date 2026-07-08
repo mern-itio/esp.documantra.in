@@ -16,6 +16,7 @@ import SubscriptionPlansModal from './components/common/SubscriptionPlansModal';
 import CreditPurchaseModal from './components/common/CreditPurchaseModal';
 import CustomerChatWidget from './components/SupportChat/CustomerChatWidget';
 import AIAssistantButton from './components/AIAssistant/AIAssistantButton';
+import BrandingHead from './components/BrandingHead';
 import { useSubscription } from './context/SubscriptionContext';
 
 const ConditionalWidgets: React.FC = () => {
@@ -94,6 +95,7 @@ const App: React.FC = () => {
             <AppProvider>
               <SidebarProvider>
                 <ThemeConfig>
+                  <BrandingHead />
                   <RouterProvider router={activeRouter} />
                   <Toaster
                     containerStyle={{ zIndex: 10100 }}

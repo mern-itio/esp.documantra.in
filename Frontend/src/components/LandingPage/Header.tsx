@@ -6,7 +6,7 @@ import { useAuth } from '../AuthService/AuthContext'
 import UseCases from './headerTab/useCases'
 import ProductSection from './headerTab/product'
 import ResourceTab from './headerTab/ResourceTab'
-import { BRAND } from '../../config/brand'
+import BrandLogo from '../BrandLogo'
 
 const Header = () => {
   const { isAuthenticated, user } = useAuth()
@@ -116,7 +116,7 @@ const Header = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link to="/login"><img src="/Logo.png" alt={`${BRAND.name} Logo`} className="h-15 w-auto " /></Link>
+              <Link to="/login"><BrandLogo className="h-15 w-auto " /></Link>
             </div>
 
             {/* Desktop Navigation */}

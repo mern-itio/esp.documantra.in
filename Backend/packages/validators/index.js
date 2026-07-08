@@ -436,4 +436,8 @@ module.exports = {
   BRAND_NAME: brandConfig.BRAND_NAME,
   getBrandName: brandConfig.getBrandName,
   formatEnvelopeSubject: brandConfig.formatEnvelopeSubject,
+  getBrandLogoUrl: brandConfig.getBrandLogoUrl,
+  getBrandFaviconUrl: brandConfig.getBrandFaviconUrl,
+  renderEmailLogoHeader: brandConfig.renderEmailLogoHeader,
+  wrapBrandedEmailBody: brandConfig.wrapBrandedEmailBody,
 };

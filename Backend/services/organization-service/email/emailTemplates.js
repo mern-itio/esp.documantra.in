@@ -1,3 +1,5 @@
+const { getBrandName, renderEmailLogoHeader } = require('@draftnsign/validators/brandConfig');
+
 const inviteTemplate = (recipientName, emailSubject, emailMessage, link, LinkButtonText='Click Here') => `
   <div style="
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -13,6 +15,9 @@ const inviteTemplate = (recipientName, emailSubject, emailMessage, link, LinkBut
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       overflow: hidden;
     ">
+      <div style="padding: 24px 24px 0; text-align: center;">
+        ${renderEmailLogoHeader()}
+      </div>
       <div style="
         background: linear-gradient(90deg, #4D0080, #8E2DE2);
         color: #ffffff;
@@ -64,7 +69,7 @@ const inviteTemplate = (recipientName, emailSubject, emailMessage, link, LinkBut
         font-size: 13px;
         color: #888;
       ">
-        © ${new Date().getFullYear()} Draft & Sign. All rights reserved.
+        © ${new Date().getFullYear()} ${getBrandName()}. All rights reserved.
       </div>
     </div>
   </div>

@@ -1,5 +1,5 @@
 // emailTemplates.js
-const { getBrandName } = require('@draftnsign/validators/brandConfig');
+const { getBrandName, wrapBrandedEmailBody } = require('@draftnsign/validators/brandConfig');
 
 function escapeHtml(value) {
   if (value == null) return '';
@@ -12,12 +12,7 @@ function escapeHtml(value) {
 }
 
 function wrapEmailBody(contentHtml) {
-  return `
-  <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 24px 16px; margin: 0;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; padding: 28px 24px; border: 1px solid #e2e8f0;">
-      ${contentHtml}
-    </div>
-  </div>`;
+  return wrapBrandedEmailBody(contentHtml);
 }
 
 const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, signLink) => {
@@ -48,7 +43,6 @@ const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, si
           If the button does not work, copy and paste this link into your browser:<br>
           <a href="${signLink}" target="_blank" style="color: #4D0080;">${safeLinkText}</a>
         </p>
-        <p style="margin: 24px 0 0; font-size: 13px; color: #94a3b8; text-align: center;">Sent via ${escapeHtml(getBrandName())}</p>
   `);
 };
 
@@ -80,7 +74,6 @@ const signReminderTemplate = (recipientName, envelopeSubject, envelopeMessage, s
           If the button does not work, copy and paste this link into your browser:<br>
           <a href="${signLink}" target="_blank" style="color: #4D0080;">${safeLinkText}</a>
         </p>
-        <p style="margin: 24px 0 0; font-size: 13px; color: #94a3b8; text-align: center;">Sent via ${escapeHtml(getBrandName())}</p>
   `);
 };
 
