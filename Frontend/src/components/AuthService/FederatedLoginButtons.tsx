@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { FaFacebookF, FaLinkedinIn } from 'react-icons/fa';
+import { FaXTwitter } from 'react-icons/fa6';
 import {
   fetchFederatedLoginProviders,
   getGoogleClientIdFromProviders,
   isGoogleOAuthConfigured,
   type PublicFederatedProvider,
+  type FederatedProviderId,
 } from '../../services/federatedLoginService';
 
 type Props = {
@@ -81,7 +84,39 @@ async function buildTwitterAuthUrl(provider: PublicFederatedProvider, state: str
 }
 
 const providerButtonClass =
-  'w-full inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6D8C9] bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-[#F7F3EE] disabled:cursor-not-allowed disabled:opacity-50';
+  'w-full inline-flex items-center justify-center gap-3 rounded-xl border border-[#E6D8C9] bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-[#F7F3EE] disabled:cursor-not-allowed disabled:opacity-50';
+
+function ProviderIcon({ provider }: { provider: FederatedProviderId }) {
+  if (provider === 'facebook') {
+    return (
+      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1877F2] text-white">
+        <FaFacebookF className="h-3 w-3" aria-hidden />
+      </span>
+    );
+  }
+  if (provider === 'linkedin') {
+    return (
+      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] bg-[#0A66C2] text-white">
+        <FaLinkedinIn className="h-3 w-3" aria-hidden />
+      </span>
+    );
+  }
+  if (provider === 'twitter') {
+    return (
+      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-black text-white">
+        <FaXTwitter className="h-3 w-3" aria-hidden />
+      </span>
+    );
+  }
+  return null;
+}
+
+function providerActionLabel(provider: PublicFederatedProvider, mode: 'login' | 'signup') {
+  if (provider.provider === 'google') {
+    return mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google';
+  }
+  return `Continue with ${provider.label}`;
+}
 
 export function FederatedLoginButtons({
   mode,
@@ -156,22 +191,24 @@ export function FederatedLoginButtons({
   }
 
   const googleBlock = googleReady ? (
-    <GoogleOAuthProvider clientId={googleClientId}>
-      <GoogleLogin
-        onSuccess={(res) => void onGoogleSuccess(res.credential || '')}
-        onError={onGoogleError}
-        useOneTap={mode === 'login'}
-        shape="rectangular"
-        theme="outline"
-        text={mode === 'signup' ? 'signup_with' : 'signin_with'}
-        size="large"
-        width="100%"
-      />
-    </GoogleOAuthProvider>
+    <div className="w-full [&>div]:!w-full [&>div]:!max-w-none">
+      <GoogleOAuthProvider clientId={googleClientId}>
+        <GoogleLogin
+          onSuccess={(res) => void onGoogleSuccess(res.credential || '')}
+          onError={onGoogleError}
+          useOneTap={mode === 'login'}
+          shape="rectangular"
+          theme="outline"
+          text={mode === 'signup' ? 'signup_with' : 'signin_with'}
+          size="large"
+          width="100%"
+        />
+      </GoogleOAuthProvider>
+    </div>
   ) : null;
 
   return (
-    <div className="space-y-2 w-full">
+    <div className="space-y-2.5 w-full">
       {googleBlock}
       {socialProviders.map((provider) => (
         <button
@@ -180,8 +217,10 @@ export function FederatedLoginButtons({
           disabled={disabled}
           className={providerButtonClass}
           onClick={() => void startRedirect(provider)}
+          aria-label={providerActionLabel(provider, mode)}
         >
-          Continue with {provider.label}
+          <ProviderIcon provider={provider.provider} />
+          <span>{providerActionLabel(provider, mode)}</span>
         </button>
       ))}
     </div>
