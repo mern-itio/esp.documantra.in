@@ -377,7 +377,7 @@ const envelopesDetail = async (req, res) => {
           path: 'permissions',          // populate envelope-specific permissions
           model: 'RecipientPermission',
           match: { envelopeId: envelopeId }, // only permissions for this envelope
-          select: 'role order status authLevel'
+          select: 'role order status authLevel signingEvidence'
         }
       });
     if (!envelope) {
@@ -391,7 +391,7 @@ const envelopesDetail = async (req, res) => {
           path: 'recipientId',
           select: 'name email phone UserId signature initials'
         })
-        .select('recipientId role order status authLevel')
+        .select('recipientId role order status authLevel signingEvidence')
         .lean();
       envelope.recipientIds = fallbackPerms
         .map((p) => {
@@ -399,7 +399,7 @@ const envelopesDetail = async (req, res) => {
           if (!r) return null;
           return {
             ...r,
-            permissions: [{ role: p.role, order: p.order, status: p.status, authLevel: p.authLevel }]
+            permissions: [{ role: p.role, order: p.order, status: p.status, authLevel: p.authLevel, signingEvidence: p.signingEvidence }]
           };
         })
         .filter(Boolean);
@@ -518,8 +518,12 @@ if (senderId) {
         name: doc.fileName,
         size: doc.fileSize,
         type: doc.mimeType,
-        filePath: toPublicUploadUrl(doc.filePath, doc._id),
-        signedFilePath: toPublicUploadUrl(doc.signedFilePath, doc._id)
+        filePath: toPublicUploadUrl(
+          doc.preparedDoc || doc.signedFilePath || doc.filePath,
+          doc._id,
+        ),
+        signedFilePath: toPublicUploadUrl(doc.signedFilePath, doc._id),
+        preparedDoc: doc.preparedDoc ? toPublicUploadUrl(doc.preparedDoc, doc._id) : null,
       })),
       recipients: envelope.recipientIds.map(recipient => {
         const perm = recipient.permissions?.[0] || {};
@@ -543,6 +547,7 @@ if (senderId) {
             return JSON.stringify([perm.authLevel]);
           })(),
           signature: recipient.signature,
+          signingEvidence: perm.signingEvidence || null,
           rejectionReason: declineMeta?.reason || null,
           rejectedAt: declineMeta?.timestamp || null,
         };
@@ -1003,60 +1008,117 @@ const dispatchEnvelopeEmail = async ({ userId, toEmail, subject, html, attachmen
   }
   throw lastErr;
 };
-const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage,userId) => {
+const isParallelSigningOrder = (signingOrder) => {
+  const v = String(signingOrder || '').toLowerCase();
+  return v === 'parallel';
+};
+
+const sendSignEmailToPermission = async ({
+  waitingPermission,
+  envelopeId,
+  envelopeSubject,
+  envelopeMessage,
+  userId,
+}) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const signLink = `${frontendUrl}/e-sign/signer/${envelopeId}/${waitingPermission.recipientId._id}`;
+  const html = signRequestTemplate(
+    waitingPermission.recipientId.name,
+    envelopeSubject,
+    envelopeMessage,
+    signLink,
+  );
+
+  await dispatchEnvelopeEmail({
+    userId,
+    toEmail: waitingPermission.recipientId.email,
+    subject: `Action Required: Sign "${envelopeSubject}"`,
+    html,
+  });
+
+  waitingPermission.status = 'sent';
+  await waitingPermission.save();
+
+  return {
+    recipientId: waitingPermission.recipientId._id,
+    permissionId: waitingPermission._id,
+  };
+};
+
+const sendToRecipients = async (envelopeId, envelopeSubject, envelopeMessage, userId) => {
   try {
-    // Step 1: Find the first waiting recipient who is NOT in_person_signer (in-person signers
-    // do not receive email; host opens the signing link for them)
+    const envelope = await Envelope.findById(envelopeId).lean();
+    const roleFilter = { $nin: ['in_person_signer', 'carbon_copy', 'cc'] };
+
+    if (isParallelSigningOrder(envelope?.signingOrder)) {
+      const waitingPermissions = await RecipientPermission.find({
+        envelopeId,
+        status: 'waiting',
+        role: roleFilter,
+      })
+        .sort({ order: 1, createdAt: 1 })
+        .populate('recipientId');
+
+      if (!waitingPermissions.length) {
+        return { error: 'No waiting recipients' };
+      }
+
+      const sentRecipients = [];
+      for (const waitingPermission of waitingPermissions) {
+        try {
+          const sent = await sendSignEmailToPermission({
+            waitingPermission,
+            envelopeId,
+            envelopeSubject,
+            envelopeMessage,
+            userId,
+          });
+          sentRecipients.push(sent);
+        } catch (err) {
+          console.error('Error sending parallel sign request email:', err.response?.data || err.message);
+          const rawMessage = err.response?.data?.message || err.message || 'Failed to send sign request email';
+          const friendlyMessage = /ECONNRESET|ETIMEDOUT|ESOCKET|socket hang up/i.test(rawMessage)
+            ? 'Email delivery failed due to a temporary connection issue. Please try again.'
+            : rawMessage;
+          return { error: friendlyMessage };
+        }
+      }
+
+      return { success: true, sentRecipients };
+    }
+
     const waitingPermission = await RecipientPermission.findOne({
       envelopeId,
       status: 'waiting',
-      role: { $nin: ['in_person_signer'] }
+      role: roleFilter,
     })
-      .sort({ order: 1, createdAt: 1 }) // respect signing order
-      .populate('recipientId'); // fetch the recipient details (name, email, etc.)
+      .sort({ order: 1, createdAt: 1 })
+      .populate('recipientId');
 
     if (!waitingPermission) {
-      return { error: "No waiting recipients" };
+      return { error: 'No waiting recipients' };
     }
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const signLink = `${frontendUrl}/e-sign/signer/${envelopeId}/${waitingPermission.recipientId._id}`;
-    const html = signRequestTemplate(
-      waitingPermission.recipientId.name, 
-      envelopeSubject,
-      envelopeMessage,
-      signLink
-    );
-
     try {
-      await dispatchEnvelopeEmail({
+      const sent = await sendSignEmailToPermission({
+        waitingPermission,
+        envelopeId,
+        envelopeSubject,
+        envelopeMessage,
         userId,
-        toEmail: waitingPermission.recipientId.email,
-        subject: `Action Required: Sign "${envelopeSubject}"`,
-        html,
       });
+      return { success: true, ...sent };
     } catch (err) {
       console.error('Error sending sign request email:', err.response?.data || err.message);
       const rawMessage = err.response?.data?.message || err.message || 'Failed to send sign request email';
       const friendlyMessage = /ECONNRESET|ETIMEDOUT|ESOCKET|socket hang up/i.test(rawMessage)
         ? 'Email delivery failed due to a temporary connection issue. Please try again.'
         : rawMessage;
-      return {
-        error: friendlyMessage,
-      };
+      return { error: friendlyMessage };
     }
-
-    waitingPermission.status = 'sent';
-    await waitingPermission.save();
-
-    return {
-      success: true,
-      recipientId: waitingPermission.recipientId._id,
-      permissionId: waitingPermission._id
-    };
   } catch (error) {
-    console.error("Error sending to recipients:", error);
-    return { error: "Internal error while sending recipient email" };
+    console.error('Error sending to recipients:', error);
+    return { error: 'Internal error while sending recipient email' };
   }
 };
 const sendToAllSelfSigners = async(envelope,signedFilePath,signedPdfFilename,certFilePath,certFilename,cycleId) => {
@@ -1150,6 +1212,15 @@ const addSignature = async (req, res) => {
     // Validation...
     if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId) {
       return res.status(400).json({ message: 'All required parameters are missing' });
+    }
+    if (mode === 'Recipient') {
+      const turnCheck = await signatureOperationServices.assertSignerTurn(envelopeId, recipientId);
+      if (!turnCheck.ok) {
+        return res.status(turnCheck.status || 403).json({
+          message: turnCheck.message,
+          code: turnCheck.code || 'SIGNING_NOT_ALLOWED',
+        });
+      }
     }
     // Prepare PDF
     const document = await Document.findById(documentId);
@@ -1290,7 +1361,7 @@ const addSignature = async (req, res) => {
   }
 };
 const completeSignature = async(req, res)=>{
-  const {envelopeId,currentUserId, selfValue} = req.body;
+  const {envelopeId,currentUserId, selfValue, signingContext} = req.body;
   console.log('Envelope Id', envelopeId);
   console.log('currentUserId',currentUserId);
   console.log('Self Value',selfValue);
@@ -1299,10 +1370,7 @@ const completeSignature = async(req, res)=>{
   }
   const envelope = await Envelope.findById(envelopeId);
   if (!envelope) {
-    return {
-      status: 404,
-      response: { message: 'Envelope not found' }
-    };
+    return res.status(404).json({ message: 'Envelope not found' });
   }
   let mode= "";
     if(selfValue === "1" || selfValue === 1){
@@ -1316,6 +1384,13 @@ const completeSignature = async(req, res)=>{
       break;
     case "Recipient":
       const recipientId = currentUserId;
+      const turnCheck = await signatureOperationServices.assertSignerTurn(envelopeId, recipientId);
+      if (!turnCheck.ok) {
+        return res.status(turnCheck.status || 403).json({
+          message: turnCheck.message,
+          code: turnCheck.code || 'SIGNING_NOT_ALLOWED',
+        });
+      }
       const recipient = await Recipient.findById(recipientId);
       if(!recipient){
         return res.status(200).json({message:"Recipient not found"});
@@ -1324,13 +1399,42 @@ const completeSignature = async(req, res)=>{
       const resPendingFields = await signatureOperationServices.fetchPendingFieldsByRecipient(envelopeId,recipientId);
       console.log(resPendingFields);
       if(resPendingFields.length === 0 ){
-        const markRecComplete = await signatureOperationServices.markRecipientAsCompleted(envelopeId,recipientId);
+        const { mergeSigningEvidence, sanitizeSigningEvidence } = require('../utils/signingEvidenceHelper');
+        const RecipientPermission = require('../models/RecipientPermission');
+        const permission = await RecipientPermission.findOne({ envelopeId, recipientId });
+        const reqMeta = {
+          ip: (req.headers['x-forwarded-for'] || '').toString().split(',')[0].trim() || req.socket?.remoteAddress || '',
+          userAgent: req.headers['user-agent'] || '',
+        };
+        const mergedEvidence = sanitizeSigningEvidence(mergeSigningEvidence(
+          permission?.signingEvidence || {},
+          signingContext || {},
+          reqMeta,
+        ));
+        if (permission) {
+          permission.signingEvidence = mergedEvidence;
+          await permission.save();
+        }
+
+        const markRecComplete = await signatureOperationServices.markRecipientAsCompleted(
+          envelopeId,
+          recipientId,
+          mergedEvidence,
+        );
         if(!markRecComplete){
           return res.status(404).json({message:"Recipient not exist"});
         }
         const pendingRecipient = await signatureOperationServices.pendingRecipients(envelopeId);
         if(pendingRecipient.length === 0 ){
           try{
+            const documents = await Document.find({ envelopeId });
+            for (const doc of documents) {
+              const prepared = await prepareDocumentForFinalSigning(envelopeId, doc._id);
+              if (prepared) {
+                await finalizeSigning(envelopeId, doc._id);
+              }
+            }
+
             const { buffer, filename, filepath } = await generateAndStoreCompletionCertificate(envelopeId); // Generate Certificate
             // Mark Envelope Complete
             envelope.completionCertificate = {
@@ -1407,12 +1511,14 @@ const completeSignature = async(req, res)=>{
               type: 'signature_completed',
               message: `${recipient.name} has signed "${envelope.subject}"`
             });
-           // Send to next recipient
-           await sendToRecipients(envelope._id, envelope.subject, envelope.message, envelope?.sender);
-           await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
-              subject: envelope.subject,
-              message: envelope.message
-            });
+           // Advance to next signer in sequential mode only
+           if (!isParallelSigningOrder(envelope.signingOrder)) {
+             await sendToRecipients(envelope._id, envelope.subject, envelope.message, envelope?.sender);
+             await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
+               subject: envelope.subject,
+               message: envelope.message,
+             });
+           }
           return res.status(200).json({
             success:true,
             message:"Signature completed",
@@ -1442,6 +1548,19 @@ const addDigitalSignatureForRecipient = async ({ envelopeId, documentId, recipie
 
     // All fields across all documents are completed
     if (pendingFields.length === 0) {
+      const allSignersDone = await signatureOperationServices.allSigningRecipientsCompleted(envelopeId);
+      if (!allSignersDone) {
+        return {
+          status: 200,
+          response: {
+            status: 200,
+            success: true,
+            message: 'All your fields are signed. Click Complete to finish.',
+            fieldRemmaning: false,
+          },
+        };
+      }
+
       const envelope = await Envelope.findById(envelopeId);
       if (!envelope) {
         return {
@@ -1563,24 +1682,16 @@ const addDigitalSignatureForRecipient = async ({ envelopeId, documentId, recipie
         console.error('Error creating notification:', notifErr);
       }
 
-      // Send to next recipient
-      await sendToRecipients(envelope._id, envelope.subject, envelope.message, envelope?.sender);
-
-      await logActivity(envelopeId, "Envelope_Sent_to_next_recipient", "Recipient", {
-        subject: envelope.subject,
-        message: envelope.message
-      });
-
-      console.log('Envelope sent to next recipient');
+      console.log('Recipient finished all assigned fields; awaiting Complete action');
 
       return {
         status: 200,
         response: {
           status: 200,
           success: true,
-          message: 'Signature added with compliance',
-          fieldRemmaning: false
-        }
+          message: 'All your fields are signed. Click Complete to finish.',
+          fieldRemmaning: false,
+        },
       };
     }
 
@@ -2535,6 +2646,13 @@ const saveNonSignatureField = async (req, res) => {
 
     await selfSignerUpdate.save();
   }else{
+    const turnCheck = await signatureOperationServices.assertSignerTurn(envelopeID, recipientId);
+    if (!turnCheck.ok) {
+      return res.status(turnCheck.status || 403).json({
+        message: turnCheck.message,
+        code: turnCheck.code || 'SIGNING_NOT_ALLOWED',
+      });
+    }
     // Handle regular recipient mode: update the SignatureField directly
     nonSignatureField.signature = fields.value;
     nonSignatureField.status = 'completed';

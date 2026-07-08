@@ -11,6 +11,16 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs').promises;
 const path = require('path');
+const {
+  maskAadhaar,
+  mergeSigningEvidence,
+  buildDefaultTimeline,
+  filterCertificateAuditLogs,
+  sanitizeSigningEvidence,
+  buildVerifiedAuthMethodsFromEvidence,
+  enrichEvidenceWithIpGeo,
+} = require('../utils/signingEvidenceHelper');
+const { renderOtpSignAuditCertificate } = require('./certificateOtpSignLayout');
 
 function toDate(d) {
   if (!d) return null;
@@ -926,155 +936,100 @@ function renderCertificateHeader(doc, { title, subtitleLines = [], subject, mess
  * @returns {Promise<{buffer: Buffer, filename: string, filepath: string}>}
  */
 async function generateAndStoreCompletionCertificate(envelopeId) {
-  // Replace these requires to match your project's structure if needed
   const Envelope = require('../models/Envelope');
   const { Certificate } = require('../models/Certificate');
   const DigitalSignature = require('../models/DigitalSignature');
   const SignatureField = require('../models/SignatureFields');
-  const { AuditTrail } = require('../models/AuditTrail');
   const Recipient = require('../models/Recipient');
+  const RecipientPermission = require('../models/RecipientPermission');
 
-  // load envelope
   const envelope = await Envelope.findById(envelopeId).lean();
   if (!envelope) throw new Error('Envelope not found');
 
-  // load related data
-  const [certs, signatures, fields, auditLogs] = await Promise.all([
+  const permissions = await RecipientPermission.find({ envelopeId, role: { $ne: 'carbon_copy' } })
+    .sort({ order: 1 })
+    .lean();
+
+  const recipientIds = permissions.map((p) => String(p.recipientId)).filter(Boolean);
+  const recipients = recipientIds.length
+    ? await Recipient.find({ _id: { $in: recipientIds } }).lean()
+    : [];
+  const recipientById = {};
+  recipients.forEach((r) => { recipientById[String(r._id)] = r; });
+
+  const [certs, signatures, fields] = await Promise.all([
     Certificate.find({ envelopeId }).lean(),
     DigitalSignature.find({ envelopeId }).lean(),
     SignatureField.find({ envelopeId }).lean(),
-    AuditTrail.find({ envelopeId }).sort({ timestamp: 1 }).lean()
   ]);
 
-  // gather recipient ids and recipients
-  const recipientIdsSet = new Set();
-  certs.forEach(c => c.recipientId && recipientIdsSet.add(String(c.recipientId)));
-  signatures.forEach(s => s.recipientId && recipientIdsSet.add(String(s.recipientId)));
-  fields.forEach(f => f.recipientId && recipientIdsSet.add(String(f.recipientId)));
-  const recipientIds = Array.from(recipientIdsSet);
+  const certByPermissionId = {};
+  certs.forEach((c) => { if (c.recipientId) certByPermissionId[String(c.recipientId)] = c; });
+  const sigByPermissionId = {};
+  signatures.forEach((s) => { if (s.recipientId) sigByPermissionId[String(s.recipientId)] = s; });
 
-  const recipients = recipientIds.length ? await Recipient.find({ _id: { $in: recipientIds } }).lean() : [];
-  const recipientMap = {};
-  recipients.forEach(r => { recipientMap[String(r._id)] = r; });
-
-  const certMap = {}; certs.forEach(c => { if (c.recipientId) certMap[String(c.recipientId)] = c; });
-  const sigMap = {}; signatures.forEach(s => { if (s.recipientId) sigMap[String(s.recipientId)] = s; });
+  const signatureFieldCountByRecipient = {};
   const signatureImageByRecipientId = {};
-  const stampImagesByRecipientId = {};
-  const filledByRecipientId = {};
+  const handwrittenByRecipientId = {};
   fields.forEach((f) => {
     const rid = f?.recipientId ? String(f.recipientId) : null;
     if (!rid) return;
-
-    // Prefer actual signature images only from signature-type fields.
+    signatureFieldCountByRecipient[rid] = (signatureFieldCountByRecipient[rid] || 0) + (f.type === 'signature' ? 1 : 0);
     if (f?.type === 'signature' && f?.signature) {
       signatureImageByRecipientId[rid] = f.signature;
     }
-
-    // Collect stamps (can be multiple)
-    if (f?.type === 'stamp' && f?.signature && String(f.signature).startsWith('data:image')) {
-      if (!stampImagesByRecipientId[rid]) stampImagesByRecipientId[rid] = [];
-      stampImagesByRecipientId[rid].push(f.signature);
-    }
-
-    // Collect other filled fields (exclude signature + stamp; stamp shown separately)
-    if (f?.type && f.type !== 'signature' && f.type !== 'stamp') {
-      const val = f.value ?? f.signature ?? '';
-      if (val != null && String(val).trim() !== '') {
-        if (!filledByRecipientId[rid]) filledByRecipientId[rid] = [];
-        filledByRecipientId[rid].push({
-          label: (f.label || f.type || 'Field').toString(),
-          value: String(val),
-        });
-      }
-    }
   });
 
-  // PDF generation
-  const doc = new PDFDocument({ size: 'A4', margin: 10 });
+  const signers = await Promise.all(permissions.map(async (permission) => {
+    const rid = String(permission.recipientId);
+    const recipient = recipientById[rid] || {};
+    const permissionId = String(permission._id);
+    const evidence = permission.signingEvidence || {};
+    const verifiedAuthMethods = buildVerifiedAuthMethodsFromEvidence(evidence, permission.authLevel || []);
+
+    let mergedEvidence = sanitizeSigningEvidence(mergeSigningEvidence(evidence, {
+      authMethods: verifiedAuthMethods,
+      handwrittenSignature: evidence.handwrittenSignature || signatureImageByRecipientId[rid] || '',
+      dualSignature: Boolean(
+        evidence.dualSignature ||
+        (signatureImageByRecipientId[rid] && verifiedAuthMethods.some((a) => /aadhaar|aadhar/i.test(String(a.type || a.name))))
+      ),
+    }));
+    mergedEvidence = sanitizeSigningEvidence(await enrichEvidenceWithIpGeo(mergedEvidence));
+
+    const timeline = buildDefaultTimeline({
+      permission,
+      recipient,
+      signatureFieldCount: signatureFieldCountByRecipient[rid] || 0,
+      signingEvidence: mergedEvidence,
+    });
+
+    const cert = certByPermissionId[permissionId];
+    const sig = sigByPermissionId[permissionId];
+    if (cert?.issuedAt && !timeline.find((t) => t.event === 'Digital Certificate Issued')) {
+      timeline.push({ event: 'Digital Certificate Issued', at: cert.issuedAt });
+    }
+    if (sig?.signedAt && !timeline.find((t) => t.event === 'Document Cryptographically Signed')) {
+      timeline.push({ event: 'Document Cryptographically Signed', at: sig.signedAt });
+    }
+
+    return {
+      name: recipient.name || recipient.email || 'Signer',
+      email: recipient.email || '',
+      phone: recipient.phone || '',
+      aadhaarMasked: maskAadhaar(recipient.aadhaarNumber),
+      evidence: mergedEvidence,
+      timeline,
+      cert,
+      sig,
+    };
+  }));
+
+  const doc = new PDFDocument({ size: 'A4', margin: 36, bufferPages: true });
   const buffers = [];
-  doc.on('data', chunk => buffers.push(chunk));
+  doc.on('data', (chunk) => buffers.push(chunk));
 
-  const generatedAtForHeader = formatTimestampLocal(new Date());
-
-  // Header (attractive branded banner + info boxes)
-  renderCertificateHeader(doc, {
-    title: 'Certificate of Completion',
-    subtitleLines: [],
-    subject: envelope.subject,
-    message: envelope.message,
-    signatureType: envelope.signatureType,
-    metaLine: `Generated at: ${generatedAtForHeader}`,
-  });
-
-  // Per-signer summary (attractive cards)
-  renderSummarySectionHeader(
-    doc,
-    'Signers & Certificate Summary'
-  );
-
-  for (const rid of recipientIds) {
-    const r = recipientMap[rid] || { _id: rid, name: 'Unknown', email: '' };
-    const c = certMap[rid];
-    const s = sigMap[rid];
-
-    const hasCert = Boolean(c);
-    const hasSig = Boolean(s);
-
-    const stripColor = hasCert && hasSig ? '#10b981' : (hasCert ? '#f59e0b' : '#ef4444');
-    const signatureImageBase64 = signatureImageByRecipientId[rid];
-    const signatureImageBuffer = extractBase64ImageToBuffer(signatureImageBase64);
-    const stampImageBuffers = (stampImagesByRecipientId[rid] || [])
-      .map((s) => extractBase64ImageToBuffer(s))
-      .filter(Boolean);
-    const filledRows = (filledByRecipientId[rid] || []).slice(0, 12);
-
-    const name = r.name || r.fullName || r.email || 'Unknown';
-    const email = r.email || '';
-    const subtitle = `Signature type: ${envelope.signatureType || '—'}`;
-
-    const certRows = hasCert
-      ? [
-        { label: 'Certificate Serial', value: c.certSerial || '—' },
-        { label: 'Issuer', value: c.issuer || '—' },
-        { label: 'Issued At', value: formatTimestampLocalShort(c.issuedAt) || '—' },
-        { label: 'Valid Till', value: formatTimestampLocalShort(c.validTill) || '—' },
-      ]
-      : [{ label: 'Certificate', value: 'Not found' }];
-
-    const sigRows = hasSig
-      ? [
-        { label: 'Signed At', value: formatTimestampLocalShort(s.signedAt) || '—' },
-        { label: 'Hash Algorithm', value: s.hashAlgorithm || '—' },
-        { label: 'PDF Hash', value: shortenForUi(s.pdfHash, 70) },
-      ]
-      : [{ label: 'Digital signature', value: 'Not found' }];
-
-    renderSignerSummaryCard(doc, {
-      name,
-      email,
-      subtitle,
-      stripColor,
-      certRows,
-      sigRows,
-      filledRows,
-      stampImageBuffers,
-      signatureImageBuffer,
-    }, { headerTitle: 'Signers & Certificate Summary', headerSubtitle: 'A simple, human-readable summary of who signed and the certificates used.' });
-  }
-
-  // Audit trail
-  doc.addPage();
-  renderAuditPageHeader(doc, { continued: false });
-  (auditLogs || []).forEach((log, idx) => {
-    renderAuditCard(doc, log, idx);
-  });
-
-  // Footer page
-  doc.addPage();
-  doc.fontSize(8).text('This certificate confirms that the signing actions recorded above are captured in the system audit logs and cryptographic records.');
-  doc.moveDown(1);
-  doc.text(`Generated At: ${generatedAtForHeader}`);
+  await renderOtpSignAuditCertificate(doc, { envelope, signers });
 
   doc.end();
 

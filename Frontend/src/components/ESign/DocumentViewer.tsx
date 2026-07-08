@@ -9,6 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Upload, Stamp as StampIcon, X, Pencil, Check, ChevronDown, ArrowUp } from "lucide-react";
 import { toTitleCase } from "../../utils/formatName";
 import { resolveEsignDocumentFileProp } from "../../utils/esignDocumentUrl";
+import { collectSigningContext } from "../../utils/signingContext";
 
 interface Props {
   // Backward compatible single document
@@ -140,10 +141,21 @@ const DocumentViewerContent: React.FC<Props> = ({
     }
     const env = String(envelopeID ?? "");
     const rid = String(currentUserId ?? "");
+    const drawnSignature = signatureFields.find(
+      (f: any) =>
+        String(f.recipientId) === rid &&
+        f.type === "signature" &&
+        f.signature,
+    )?.signature;
+    const signingContext = await collectSigningContext(env, rid, {
+      dualSignature: signatureMethod === "aadhaarSignature" && Boolean(drawnSignature),
+      handwrittenSignature: drawnSignature || undefined,
+    });
     const response = await eSignApi.post('/api/e-sign/public/signature-complete',{
       envelopeId:envelopeID,
       currentUserId:currentUserId,
-      selfValue:selfValue
+      selfValue:selfValue,
+      signingContext,
     });
     if(response?.status == 200 ){
        navigate(`/e-sign/signer/status/${env}/${rid}`);

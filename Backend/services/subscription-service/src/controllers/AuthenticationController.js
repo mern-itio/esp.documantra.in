@@ -1,6 +1,22 @@
 const { verify } = require('jsonwebtoken');
 const authProviderServices = require('../services/authProviderServices');
 const axios = require('axios');
+
+const toIdentityAssetUrl = (imagePath) => {
+  if (!imagePath) return null;
+  const raw = String(imagePath);
+  if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('data:image')) {
+    return raw;
+  }
+  const base = (process.env.IDENTITY_SERVICE_URL || 'http://localhost:2114').replace(/\/+$/, '');
+  if (raw.startsWith('/uploads/')) return `${base}${raw}`;
+  return `${base}/uploads/${raw.replace(/^\/+/, '')}`;
+};
+
+const getEsignPublicBase = () =>
+  (process.env.ESING_SERVICE_URL || process.env.ESIGN_SERVICE_URL || 'http://localhost:2103')
+    .replace(/\/+$/, '');
+
 const getConfigExtra = (extraFields, key) => {
   if (!extraFields || !key) return undefined;
   if (typeof extraFields.get === 'function') return extraFields.get(key);
@@ -314,12 +330,23 @@ const verifySelfie = async (req, res) => {
       });
     }
 
+    let livePic = null;
     try {
-      await axios.post(process.env.ESING_SERVICE_URL + '/api/e-sign/public/recipients/update-verification-status', {
+      livePic = toIdentityAssetUrl(storeResponse.data?.data?.imagePath);
+      const checks = storeResponse.data?.data?.checks || storeResponse.data?.data?.metadata?.checks || {};
+      await axios.post(`${getEsignPublicBase()}/api/e-sign/public/recipients/update-verification-status`, {
         recipientId,
         providerId,
         envelopeId,
         verificationStatus: 'completed',
+        authMethodName: provider?.name || 'Selfie Verification',
+        authMethodType: provider?.config?.providerType || 'selfie_capture',
+        biometricEvidence: {
+          livePic,
+          livePicUrl: livePic,
+          liveMatchPercent: Number(checks.faceMatchPercent ?? checks.matchScore ?? 100),
+          verificationId,
+        },
       });
     } catch (err) {
       console.error('Failed to update recipient record after selfie verification:', err);
@@ -332,7 +359,11 @@ const verifySelfie = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Selfie verified successfully',
-      data: storeResponse.data?.data || null,
+      data: {
+        ...(storeResponse.data?.data || {}),
+        imageUrl: storeResponse.data?.data?.imageUrl || `/uploads/${storeResponse.data?.data?.imagePath || ''}`,
+        livePicUrl: livePic,
+      },
     });
   } catch (err) {
     console.error('Selfie verification failed:', err);
@@ -427,12 +458,26 @@ const verifyLiveness = async (req, res) => {
       });
     }
 
+    let livePic = null;
+    let idPic = null;
     try {
-      await axios.post(process.env.ESING_SERVICE_URL + '/api/e-sign/public/recipients/update-verification-status', {
+      livePic = toIdentityAssetUrl(storeResponse.data?.data?.imagePath);
+      idPic = toIdentityAssetUrl(storeResponse.data?.data?.secondaryImagePath);
+      const checks = storeResponse.data?.data?.checks || storeResponse.data?.data?.metadata?.checks || {};
+      await axios.post(`${getEsignPublicBase()}/api/e-sign/public/recipients/update-verification-status`, {
         recipientId,
         providerId,
         envelopeId,
         verificationStatus: 'completed',
+        authMethodName: provider?.name || 'Liveness Verification',
+        authMethodType: provider?.config?.providerType || 'liveness_check',
+        biometricEvidence: {
+          livePic,
+          livePicUrl: livePic,
+          idPic: idPic || livePic,
+          liveMatchPercent: Number(checks.faceMatchPercent ?? checks.matchScore ?? 100),
+          verificationId,
+        },
       });
     } catch (err) {
       console.error('Failed to update recipient record after liveness verification:', err);
@@ -445,7 +490,15 @@ const verifyLiveness = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Liveness verified successfully',
-      data: storeResponse.data?.data || null,
+      data: {
+        ...(storeResponse.data?.data || {}),
+        imageUrl: `/uploads/${storeResponse.data?.data?.imagePath || ''}`,
+        secondaryImageUrl: storeResponse.data?.data?.secondaryImagePath
+          ? `/uploads/${storeResponse.data.data.secondaryImagePath}`
+          : null,
+        livePicUrl: livePic,
+        idPicUrl: idPic || livePic,
+      },
     });
   } catch (err) {
     console.error('Liveness verification failed:', err);

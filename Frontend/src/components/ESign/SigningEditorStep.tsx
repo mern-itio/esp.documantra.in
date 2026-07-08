@@ -120,6 +120,14 @@ export default function SigningEditorStep({
   envelopeId?: string | null;
   aiSuggestions?: Array<{ suggestions: any[]; documentId: string }>;
 }) {
+  const isPublicFlow =
+    typeof window !== "undefined" &&
+    (window.location.pathname.startsWith("/public-sign") ||
+      window.location.search.includes("public=true"));
+  const saveSignatureFieldsPath = isPublicFlow
+    ? "/api/e-sign/public/save-signature-fields"
+    : "/api/e-sign/save-signature-fields";
+
   // PDF.js worker setup - same approach as InsertPDF
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -683,7 +691,7 @@ export default function SigningEditorStep({
       if (isCtrl && e.key === 's' && !isShift) {
         e.preventDefault();
         if (envelopeId) {
-          eSignApi.post('/api/e-sign/save-signature-fields', {
+          eSignApi.post(saveSignatureFieldsPath, {
             envelopeId,
             signatureFields: signatureFields.map(f => ({
               _id: f._id,
@@ -842,6 +850,7 @@ export default function SigningEditorStep({
         } else {
           data = await fetchEsignDocumentData(activeDoc, {
             envelopeId: envelopeId || undefined,
+            isPublicFlow,
           });
         }
 
@@ -919,7 +928,7 @@ export default function SigningEditorStep({
         if (task && task.cancel) task.cancel();
       });
     };
-  }, [activeDoc, loadPDFJS]);
+  }, [activeDoc, loadPDFJS, envelopeId, isPublicFlow]);
 
   // drag handlers
   const handleDragStart = (e: React.DragEvent, field: { type: FieldType; label?: string; id?: string }) => {
@@ -1175,7 +1184,7 @@ export default function SigningEditorStep({
       };
 
       // Save to backend
-      const response = await eSignApi.post('/api/e-sign/save-signature-fields', {
+      const response = await eSignApi.post(saveSignatureFieldsPath, {
         envelopeId,
         signatureFields: [fieldData],
       });
@@ -1363,7 +1372,7 @@ export default function SigningEditorStep({
             typeof dbId === "string" && /^[a-fA-F0-9]{24}$/.test(dbId);
 
           if (field && isDbRecord) {
-            await eSignApi.post("/api/e-sign/save-signature-fields", {
+            await eSignApi.post(saveSignatureFieldsPath, {
               envelopeId,
               signatureFields: [
                 {
@@ -1745,7 +1754,7 @@ export default function SigningEditorStep({
           <button
             onClick={() => {
               if (envelopeId) {
-                eSignApi.post('/api/e-sign/save-signature-fields', {
+                eSignApi.post(saveSignatureFieldsPath, {
                   envelopeId,
                   signatureFields: signatureFields.map(f => ({
                     _id: f._id,

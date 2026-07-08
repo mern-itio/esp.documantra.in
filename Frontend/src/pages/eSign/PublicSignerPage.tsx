@@ -5,8 +5,9 @@ import DocumentViewer from "../../components/ESign/DocumentViewer";
 import SelfieCapture from "../../components/ESign/SelfieCapture";
 import LivenessCapture from "../../components/ESign/LivenessCapture";
 import DocumentSignatureBackground from "../../components/common/DocumentSignatureBackground";
-import { BRAND } from "../../config/brand";
+import BrandLogo from "../../components/BrandLogo";
 import { resolveEsignDocumentFileProp } from "../../utils/esignDocumentUrl";
+import { markDocumentOpened, persistBiometricEvidence } from "../../utils/signingContext";
 import * as Icons from "lucide-react";
 import {
   FileText,
@@ -79,6 +80,13 @@ const EnvelopeDetails: React.FC = () => {
   const { recipientId } = useParams<{ recipientId: string }>();
   const { cycleId } = useParams<{ cycleId: string }>();
   const location = useLocation();
+
+  useEffect(() => {
+    if (id && recipientId) {
+      markDocumentOpened(String(id), String(recipientId));
+    }
+  }, [id, recipientId]);
+
   const [envelope, setEnvelope] = useState<any>(null);
   const [signatureFields, setSignatureFields] = useState<any[]>([]);
   const [_activeDocument, setActiveDocument] = useState<any>(null);
@@ -695,6 +703,21 @@ const EnvelopeDetails: React.FC = () => {
       });
 
       if (response.status === 200 && response.data?.success) {
+        const identityBase = (
+          import.meta.env.VITE_IDENTITY_SERVICE_URL || "http://localhost:2114"
+        ).replace(/\/+$/, "");
+        const data = response.data?.data || {};
+        const imagePath = data.imageUrl || data.livePicUrl || "";
+        const livePic = imagePath.startsWith("http")
+          ? imagePath
+          : imagePath
+            ? `${identityBase}${imagePath.startsWith("/") ? imagePath : `/${imagePath}`}`
+            : payload.imageBase64;
+        persistBiometricEvidence(String(id), String(currentRecipient.id), {
+          livePic,
+          livePicUrl: livePic,
+          liveMatchPercent: Number(data?.metadata?.checks?.faceMatchPercent ?? 100),
+        });
         handleAuthSuccess();
       } else {
         handleBiometricValidationFailure(response.data?.message, response.data?.maxAttemptsReached);
@@ -736,6 +759,22 @@ const EnvelopeDetails: React.FC = () => {
       });
 
       if (response.status === 200 && response.data?.success) {
+        const identityBase = (
+          import.meta.env.VITE_IDENTITY_SERVICE_URL || "http://localhost:2114"
+        ).replace(/\/+$/, "");
+        const data = response.data?.data || {};
+        const toAbsolute = (path?: string) => {
+          if (!path) return "";
+          if (path.startsWith("http") || path.startsWith("data:image")) return path;
+          return `${identityBase}${path.startsWith("/") ? path : `/${path}`}`;
+        };
+        persistBiometricEvidence(String(id), String(currentRecipient.id), {
+          livePic: toAbsolute(data.livePicUrl || data.imageUrl),
+          livePicUrl: toAbsolute(data.livePicUrl || data.imageUrl),
+          idPic: toAbsolute(data.idPicUrl || data.secondaryImageUrl || data.imageUrl),
+          idPicUrl: toAbsolute(data.idPicUrl || data.secondaryImageUrl || data.imageUrl),
+          liveMatchPercent: 100,
+        });
         handleAuthSuccess();
       } else {
         handleBiometricValidationFailure(response.data?.message, response.data?.maxAttemptsReached);
@@ -868,6 +907,101 @@ const EnvelopeDetails: React.FC = () => {
       </div>
     );
   }
+
+  const recipientStatus = (currentRecipient?.status || "").toString().toLowerCase();
+  const isWaitingForTurn =
+    !isPreviewMode &&
+    !isViewOnly &&
+    recipientStatus === "waiting" &&
+    (envelope?.status || "").toString().toLowerCase() !== "completed";
+
+  const activeSigners = (allRecipients || []).filter((r: any) => {
+    const role = (r?.role || "").toString().toLowerCase();
+    return role !== "carbon_copy" && role !== "cc" && role !== "in_person_signer";
+  });
+
+  if (isWaitingForTurn) {
+    const completedCount = activeSigners.filter(
+      (r: any) => (r?.status || "").toString().toLowerCase() === "completed",
+    ).length;
+    const envelopeTitle =
+      (envelope?.subject && String(envelope.subject).trim()) ||
+      (envelope?.name && String(envelope.name).trim()) ||
+      "Document";
+
+    return (
+      <div className="relative min-h-screen overflow-hidden bg-blue-50 px-4 py-10">
+        <DocumentSignatureBackground />
+        <div className="relative z-10 mx-auto w-full max-w-2xl rounded-2xl bg-white p-8 shadow-xl ring-1 ring-gray-100">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-700">
+              <Bell className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                Waiting for your turn
+              </p>
+              <h1 className="text-xl font-semibold text-gray-900">{envelopeTitle}</h1>
+            </div>
+          </div>
+
+          <p className="text-sm leading-6 text-gray-600">
+            This envelope uses sequential signing. Another signer must finish before you can sign.
+            You will receive an email when it is your turn.
+          </p>
+
+          <div className="mt-6 rounded-xl bg-gray-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Signing progress
+            </p>
+            <p className="mt-2 text-sm text-gray-800">
+              {completedCount} of {activeSigners.length} signer{activeSigners.length === 1 ? "" : "s"} completed
+            </p>
+            <div className="mt-4 space-y-2">
+              {activeSigners
+                .slice()
+                .sort((a: any, b: any) => (a?.order ?? 0) - (b?.order ?? 0))
+                .map((signer: any, idx: number) => {
+                  const status = (signer?.status || "").toString().toLowerCase();
+                  const isDone = status === "completed";
+                  const isCurrent = normId(signer) === String(recipientId ?? "");
+                  return (
+                    <div
+                      key={String(signer?.id || idx)}
+                      className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
+                        isCurrent ? "bg-amber-50 ring-1 ring-amber-100" : "bg-white"
+                      }`}
+                    >
+                      <span className="font-medium text-gray-900">
+                        {idx + 1}. {formatDisplayName(signer?.name)}
+                        {isCurrent ? " (You)" : ""}
+                      </span>
+                      <span
+                        className={`text-xs font-semibold uppercase ${
+                          isDone ? "text-emerald-700" : status === "sent" ? "text-blue-700" : "text-gray-500"
+                        }`}
+                      >
+                        {isDone ? "Completed" : status === "sent" ? "Signing" : "Waiting"}
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => fetchEnvelopeDetails()}
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#260559] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1d0445]"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh status
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (showAssignedAwayPage) {
     const senderLabel =
       envelope?.sender?.name ||
@@ -1484,7 +1618,7 @@ const EnvelopeDetails: React.FC = () => {
             <div className="px-8 pt-7">
               <div className="flex items-center gap-2 border-b border-gray-400 pb-2">
                 <span className="mx-auto">
-                  <img src={BRAND.logo} alt={BRAND.name} className="h-15 w-auto " />
+                  <BrandLogo className="h-15 w-auto " />
                 </span>
 
               </div>

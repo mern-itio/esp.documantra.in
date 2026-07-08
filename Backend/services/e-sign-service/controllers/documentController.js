@@ -1,6 +1,5 @@
 const Document = require('../models/Document');
 const archiver = require('archiver');
-const path = require('path');
 const fs = require('fs');
 const Envelope = require('../models/Envelope');
 const {
@@ -66,4 +65,29 @@ const downloadAllSignedDocument = async (req, res) => {
   }
 };
 
-module.exports = { downloadSignedDocument, downloadAllSignedDocument };
+const downloadCompletionCertificate = async (req, res) => {
+  try {
+    const { envelopeId } = req.params;
+    const access = await assertEnvelopeDownloadAccess(req, envelopeId);
+    if (!access.ok) {
+      return res.status(access.status).json({ message: access.message });
+    }
+
+    const envelope = await Envelope.findById(envelopeId).lean();
+    const cert = envelope?.completionCertificate;
+    if (!cert?.path || !fs.existsSync(cert.path)) {
+      return res.status(404).json({ message: 'Completion certificate not available yet' });
+    }
+
+    res.download(cert.path, cert.filename || `completion-certificate-${envelopeId}.pdf`);
+  } catch (err) {
+    console.error('Certificate download error:', err);
+    res.status(500).json({ message: 'Failed to download completion certificate' });
+  }
+};
+
+module.exports = {
+  downloadSignedDocument,
+  downloadAllSignedDocument,
+  downloadCompletionCertificate,
+};

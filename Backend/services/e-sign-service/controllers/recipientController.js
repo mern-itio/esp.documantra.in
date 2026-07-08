@@ -137,7 +137,15 @@ exports.deleteRecipient = async (req, res) => {
 };
 exports.updateAuthStatus = async (req, res) => {
   try {
-    const { recipientId, providerId, verificationStatus, envelopeId } = req.body;
+    const {
+      recipientId,
+      providerId,
+      verificationStatus,
+      envelopeId,
+      biometricEvidence,
+      authMethodName,
+      authMethodType,
+    } = req.body;
 
     if (!recipientId || !providerId || !verificationStatus || !envelopeId) {
       return res.status(400).json({
@@ -167,8 +175,27 @@ exports.updateAuthStatus = async (req, res) => {
       });
     }
 
+    if (verificationStatus === 'completed' && biometricEvidence) {
+      const { mergeSigningEvidence } = require('../utils/signingEvidenceHelper');
+      const merged = mergeSigningEvidence(updatedRecord.signingEvidence || {}, {
+        ...biometricEvidence,
+        authMethods: [
+          {
+            authMethodId: String(providerId),
+            name: authMethodName || biometricEvidence.authMethodName || 'Authentication',
+            type: authMethodType || biometricEvidence.authMethodType || 'auth',
+            status: 'completed',
+            completedAt: new Date().toISOString(),
+          },
+        ],
+      });
+      updatedRecord.signingEvidence = merged;
+      await updatedRecord.save();
+    }
+
     return res.status(200).json({
       message: 'Authentication status updated successfully',
+      signingEvidence: updatedRecord.signingEvidence || null,
     });
 
   } catch (err) {
@@ -176,6 +203,32 @@ exports.updateAuthStatus = async (req, res) => {
     return res.status(500).json({
       message: 'Failed to update authentication status'
     });
+  }
+};
+
+exports.patchSigningEvidence = async (req, res) => {
+  try {
+    const { recipientId, envelopeId, evidence } = req.body;
+    if (!recipientId || !envelopeId || !evidence) {
+      return res.status(400).json({ message: 'recipientId, envelopeId, and evidence are required' });
+    }
+
+    const permission = await RecipientPermission.findOne({ recipientId, envelopeId });
+    if (!permission) {
+      return res.status(404).json({ message: 'Recipient permission not found' });
+    }
+
+    const { mergeSigningEvidence } = require('../utils/signingEvidenceHelper');
+    permission.signingEvidence = mergeSigningEvidence(permission.signingEvidence || {}, evidence);
+    await permission.save();
+
+    return res.status(200).json({
+      message: 'Signing evidence updated',
+      signingEvidence: permission.signingEvidence,
+    });
+  } catch (err) {
+    console.error('patchSigningEvidence error', err);
+    return res.status(500).json({ message: 'Failed to update signing evidence' });
   }
 };
 exports.saveAadhaar = async (req, res) => {

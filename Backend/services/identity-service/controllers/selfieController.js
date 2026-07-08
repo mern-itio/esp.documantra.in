@@ -95,6 +95,8 @@ exports.storeSelfie = async (req, res) => {
         id: record._id,
         imagePath: record.imagePath,
         imageUrl: `/uploads/${record.imagePath}`,
+        metadata: record.metadata || {},
+        checks: validation.checks || {},
       },
     });
   } catch (err) {

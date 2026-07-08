@@ -4,6 +4,66 @@ const SignatureFields = require("../models/SignatureFields");
 const fs = require('fs');
 const path = require('path');
 
+const NON_SIGNING_ROLES = new Set(['carbon_copy', 'cc', 'in_person_signer']);
+
+function isSigningRole(role) {
+  const r = String(role || '').toLowerCase().trim();
+  return r && !NON_SIGNING_ROLES.has(r);
+}
+
+async function assertSignerTurn(envelopeId, recipientId) {
+  const permission = await RecipientPermission.findOne({ envelopeId, recipientId });
+  if (!permission) {
+    return { ok: false, status: 404, message: 'Recipient not found for this envelope' };
+  }
+
+  if (!isSigningRole(permission.role)) {
+    return { ok: false, status: 403, message: 'This recipient is not allowed to sign' };
+  }
+
+  const status = String(permission.status || '').toLowerCase();
+  if (status === 'completed') {
+    return { ok: false, status: 403, message: 'You have already completed signing for this envelope' };
+  }
+  if (status === 'declined') {
+    return { ok: false, status: 403, message: 'Signing was declined for this envelope' };
+  }
+  if (status === 'waiting') {
+    return {
+      ok: false,
+      status: 403,
+      message: 'It is not your turn to sign yet. Please wait for the previous signer to finish.',
+      code: 'WAITING_FOR_TURN',
+    };
+  }
+  if (status !== 'sent') {
+    return { ok: false, status: 403, message: 'You are not authorized to sign at this time' };
+  }
+
+  const Envelope = require('../models/Envelope');
+  const envelope = await Envelope.findById(envelopeId).lean();
+  const isParallel = String(envelope?.signingOrder || '').toLowerCase() === 'parallel';
+
+  if (!isParallel) {
+    const priorIncomplete = await RecipientPermission.findOne({
+      envelopeId,
+      order: { $lt: permission.order ?? 0 },
+      role: { $nin: Array.from(NON_SIGNING_ROLES) },
+      status: { $ne: 'completed' },
+    });
+    if (priorIncomplete) {
+      return {
+        ok: false,
+        status: 403,
+        message: 'Please wait for previous signers to complete before you sign.',
+        code: 'WAITING_FOR_TURN',
+      };
+    }
+  }
+
+  return { ok: true, permission };
+}
+
 async function markFieldAsCompleted(fieldId) {
   try {
     const field = await SignatureFields.findById(fieldId);
@@ -52,7 +112,7 @@ async function fetchPendingFieldsByRecipient(envelopeId, recipientId) {
     return [];
   }
 }
-async function markRecipientAsCompleted(envelopeId, recipientId) {
+async function markRecipientAsCompleted(envelopeId, recipientId, signingEvidence = null) {
     try{
         const recipient  = await RecipientPermission.findOne({ envelopeId: envelopeId, recipientId: recipientId });
         if (!recipient) {
@@ -60,6 +120,9 @@ async function markRecipientAsCompleted(envelopeId, recipientId) {
             return false;
         }
         recipient.status = "completed";
+        if (signingEvidence && typeof signingEvidence === 'object') {
+          recipient.signingEvidence = signingEvidence;
+        }
         await recipient.save();
         return recipient;
     }catch (err){
@@ -111,12 +174,18 @@ async function updateDocument(documentId,paylad){
 
   }
 }
-async function pendingRecipients(envelopeId){
+async function pendingRecipients(envelopeId) {
   const penRecipient = await RecipientPermission.find({
-    envelopeId:envelopeId,
-    status: { $ne: 'completed' }
+    envelopeId,
+    status: { $in: ['waiting', 'sent'] },
+    role: { $nin: Array.from(NON_SIGNING_ROLES) },
   });
   return penRecipient;
+}
+
+async function allSigningRecipientsCompleted(envelopeId) {
+  const pending = await pendingRecipients(envelopeId);
+  return pending.length === 0;
 }
 async function fetchAllFieldsOfDocument(envelopeId, documentId){
   try{
@@ -139,6 +208,8 @@ module.exports = {
   markAllFieldsOfRecipientAsCompleted,
   updateDocumentWithSignedPdf,
   pendingRecipients,
+  allSigningRecipientsCompleted,
+  assertSignerTurn,
   fetchAllFieldsOfDocument,
   updateDocument
 };

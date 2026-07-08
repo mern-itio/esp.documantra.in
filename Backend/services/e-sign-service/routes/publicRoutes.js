@@ -29,7 +29,7 @@ const {
   saveSignatureFields
 } = require('../controllers/eSignController');
 
-const {updateAuthStatus,saveAadhaar} = require('../controllers/recipientController');
+const {updateAuthStatus,saveAadhaar,patchSigningEvidence} = require('../controllers/recipientController');
 const vSignController = require('../controllers/vSignController');
 const { upload } = require('../utils/secureUpload');
 const { viewDocument } = require('../controllers/documentViewController');
@@ -79,6 +79,7 @@ router.post('/envelope/assign-to-someone-else', assignEnvelopeToSomeoneElsePubli
 router.post('/envelope/decline', declineEnvelopePublic);
 router.get('/envelope/:envelopeId/recipient/:recipientId/audit-trail', getRecipientAuditTrail);
 router.post('/recipients/update-verification-status',updateAuthStatus);
+router.post('/signing-evidence', patchSigningEvidence);
 router.post('/recipients/validate',validateRecipient);
 router.post('/save-aadhaar', saveAadhaar);  
 router.post('/envelope/accept-terms',acceptTerms);

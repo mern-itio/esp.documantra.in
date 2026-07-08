@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { authApi, eSignApi, subscriptionApi } from "../../services/apiHelper";
 import confetti from "canvas-confetti";
+import BrandLogo from "../../components/BrandLogo";
 
 export default function SignerStatusPage() {
   const { envelopeId, recipientId } = useParams<{
@@ -361,6 +362,11 @@ export default function SignerStatusPage() {
     return signers.every((r: any) => isCompletedStatus(r.status));
   }, [signers]);
 
+  const hasDualSignature = useMemo(
+    () => signers.some((r: any) => Boolean(r?.signingEvidence?.dualSignature)),
+    [signers],
+  );
+
   const completionPct = useMemo(() => {
     if (signers.length === 0) return 0;
     const completed = signers.filter((r: any) => isCompletedStatus(r.status)).length;
@@ -390,18 +396,11 @@ export default function SignerStatusPage() {
     window.open(url, "_blank");
   };
 
-  // Dummy placeholders for future APIs (separate buttons like the screenshot)
-  // const handleDownloadDocument = () => {
-  //   if (!envelopeId || !esignBase) return;
-  //   const url = `${esignBase}/api/e-sign/signatures/download/${envelopeId}`; // placeholder
-  //   window.open(url, "_blank");
-  // };
-
-  // const handleDownloadAuditCertificate = () => {
-  //   if (!envelopeId || !esignBase) return;
-  //   const url = `${esignBase}/api/e-sign/audit-trail/download/${envelopeId}`; // placeholder
-  //   window.open(url, "_blank");
-  // };
+  const handleDownloadAuditCertificate = () => {
+    if (!envelopeId || !esignBase || !recipientId) return;
+    const url = `${esignBase}/api/e-sign/signatures/completion-certificate/${envelopeId}?recipientId=${encodeURIComponent(recipientId)}`;
+    window.open(url, "_blank");
+  };
 
   const title = viewerDeclined
     ? "You have declined this document"
@@ -772,6 +771,22 @@ export default function SignerStatusPage() {
                     </div>
                     <h1 className="text-2xl thankyou-heading font-semibold text-gray-900">{title}</h1>
                     <p className="mt-2 thankyou-para max-w-2xl text-gray-600">{subtitle}</p>
+                    <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                      <Link
+                        to="/login"
+                        className="inline-flex items-center justify-center rounded-xl bg-[#1B4D3E] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#163f34]"
+                      >
+                        Sign in
+                      </Link>
+                      {userType === "new" && (
+                        <Link
+                          to="/signup"
+                          className="inline-flex items-center justify-center rounded-xl border border-[#1B4D3E] px-5 py-2.5 text-sm font-semibold text-[#1B4D3E] hover:bg-[#1B4D3E]/5"
+                        >
+                          Create free account
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -834,20 +849,6 @@ export default function SignerStatusPage() {
 
                     <div className="shrink-0 w-full md:w-auto">
                       <div className="flex flex-col gap-3 sm:flex-row">
-                        {/* <button
-                          type="button"
-                          onClick={handleDownloadDocument}
-                          disabled={!allSignersCompleted}
-                          className={
-                            allSignersCompleted
-                              ? "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#111] px-6 py-3 text-sm font-semibold text-white hover:bg-black sm:w-44"
-                              : "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-500 cursor-not-allowed sm:w-44"
-                          }
-                        >
-                          <FileSignature className="h-4 w-4" />
-                          Document
-                        </button>
-
                         <button
                           type="button"
                           onClick={handleDownloadAuditCertificate}
@@ -860,7 +861,7 @@ export default function SignerStatusPage() {
                         >
                           <ShieldCheck className="h-4 w-4" />
                           Audit Certificate
-                        </button> */}
+                        </button>
                       </div>
 
                       <div className="mt-3 flex items-center justify-end">
@@ -951,17 +952,20 @@ export default function SignerStatusPage() {
                         r?.updatedAt ||
                         (isCompletedStatus(r.status) ? "Signed recently" : "");
 
-                      // Show dynamic audit details when available; keep safe visual fallback for missing media.
-                      const audit = r?.auditTrail || r?.livenessAudit || {};
+                      // Show dynamic audit details from stored signing evidence.
+                      const evidence = r?.signingEvidence || r?.auditTrail || r?.livenessAudit || {};
+                      const audit = evidence;
                       const liveMatch = Number(audit?.liveMatchPercent ?? (showVideoAudit ? 100 - idx * 17 : 0));
                       const spokenText =
                         audit?.spokenStatement ||
                         `“In full awareness and without any pressure, I, ${displayName}, am signing this document.”`;
                       const livePicSrc =
+                        audit?.livePic ||
                         audit?.livePicUrl ||
                         audit?.livePic ||
                         dummyAvatarDataUri(displayName, "live");
                       const idPicSrc =
+                        audit?.idPic ||
                         audit?.idPicUrl ||
                         audit?.idPic ||
                         dummyAvatarDataUri(displayName, "id");
@@ -1047,6 +1051,31 @@ export default function SignerStatusPage() {
                               </div>
                             )}
 
+                            {(audit?.device || audit?.ip || audit?.browser) && (
+                              <div className="mt-4 grid grid-cols-1 gap-2 rounded-xl bg-[#F5F2EE] px-4 py-3 text-xs text-gray-700 sm:grid-cols-2">
+                                {audit?.device ? <div><span className="font-semibold">Device:</span> {audit.device}</div> : null}
+                                {audit?.os ? <div><span className="font-semibold">OS:</span> {audit.os}</div> : null}
+                                {audit?.browser ? <div><span className="font-semibold">Browser:</span> {audit.browser}</div> : null}
+                                {audit?.ip ? <div><span className="font-semibold">Sign IP:</span> {audit.ip}</div> : null}
+                                {audit?.location ? <div><span className="font-semibold">Location:</span> {audit.location}</div> : null}
+                                {audit?.isp ? <div><span className="font-semibold">ISP:</span> {audit.isp}</div> : null}
+                              </div>
+                            )}
+
+                            {audit?.dualSignature && audit?.handwrittenSignature ? (
+                              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-sm text-gray-800">
+                                <div className="font-semibold text-emerald-900">Dual Signature Support: Digital + Handwritten</div>
+                                <p className="mt-1 text-xs text-gray-600">
+                                  This signer used Aadhaar eSign together with a handwritten signature on the same document.
+                                </p>
+                                <img
+                                  src={audit.handwrittenSignature}
+                                  alt="Handwritten signature"
+                                  className="mt-3 h-12 max-w-[220px] rounded border border-gray-200 bg-white object-contain p-1"
+                                />
+                              </div>
+                            ) : null}
+
                             <div className="mt-4 rounded-xl bg-[#F5F2EE] px-4 py-3 text-sm text-gray-700">
                               <span className="font-semibold">Spoken:</span>{" "}
                               <span className="italic">{spokenText}</span>
@@ -1112,6 +1141,23 @@ export default function SignerStatusPage() {
                     })}
                   </div>
                 </div>
+
+                {hasDualSignature && (
+                  <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-6 shadow-sm">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <div className="text-lg font-semibold text-gray-900">
+                          Dual Signature Support: Digital + Handwritten
+                        </div>
+                        <p className="mt-2 max-w-2xl text-sm text-gray-600">
+                          Signers can combine Aadhaar eSign with a traditional handwritten signature on the same
+                          document — useful where wet signatures are still expected alongside digital validity.
+                        </p>
+                      </div>
+                      <BrandLogo className="h-10 w-auto opacity-90" />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* RIGHT COLUMN */}
