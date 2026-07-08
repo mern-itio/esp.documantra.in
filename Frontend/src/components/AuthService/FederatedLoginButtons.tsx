@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { FaFacebookF, FaLinkedinIn } from 'react-icons/fa';
 import { FaXTwitter } from 'react-icons/fa6';
@@ -21,6 +21,12 @@ type Props = {
 const OAUTH_PKCE_KEY = 'documantra_oauth_pkce';
 const OAUTH_STATE_KEY = 'documantra_oauth_state';
 const OAUTH_REFERRER_KEY = 'documantra_oauth_referrer';
+
+/** Match Google OAuth button height and icon gutter */
+const OAUTH_BTN_HEIGHT = 'h-11';
+const OAUTH_ICON_LEFT = 'left-4';
+const OAUTH_SHELL =
+  'relative w-full overflow-hidden rounded-xl border border-[#E6D8C9] bg-white shadow-sm';
 
 function randomString(length = 32) {
   const bytes = new Uint8Array(length);
@@ -83,27 +89,25 @@ async function buildTwitterAuthUrl(provider: PublicFederatedProvider, state: str
   return `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
 }
 
-const providerButtonClass =
-  'w-full inline-flex items-center justify-center gap-3 rounded-xl border border-[#E6D8C9] bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-[#F7F3EE] disabled:cursor-not-allowed disabled:opacity-50';
-
 function ProviderIcon({ provider }: { provider: FederatedProviderId }) {
+  const box = 'flex h-5 w-5 items-center justify-center shrink-0';
   if (provider === 'facebook') {
     return (
-      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1877F2] text-white">
+      <span className={`${box} rounded-full bg-[#1877F2] text-white`}>
         <FaFacebookF className="h-3 w-3" aria-hidden />
       </span>
     );
   }
   if (provider === 'linkedin') {
     return (
-      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] bg-[#0A66C2] text-white">
+      <span className={`${box} rounded-[4px] bg-[#0A66C2] text-white`}>
         <FaLinkedinIn className="h-3 w-3" aria-hidden />
       </span>
     );
   }
   if (provider === 'twitter') {
     return (
-      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-black text-white">
+      <span className={`${box} rounded-full bg-black text-white`}>
         <FaXTwitter className="h-3 w-3" aria-hidden />
       </span>
     );
@@ -116,6 +120,37 @@ function providerActionLabel(provider: PublicFederatedProvider, mode: 'login' | 
     return mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google';
   }
   return `Continue with ${provider.label}`;
+}
+
+function SocialAuthButton({
+  label,
+  icon,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  icon: ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-label={label}
+      className={`${OAUTH_SHELL} ${OAUTH_BTN_HEIGHT} flex items-center transition hover:bg-[#F7F3EE] disabled:cursor-not-allowed disabled:opacity-50`}
+    >
+      <span
+        className={`pointer-events-none absolute ${OAUTH_ICON_LEFT} top-1/2 -translate-y-1/2 flex items-center justify-center`}
+      >
+        {icon}
+      </span>
+      <span className="pointer-events-none w-full px-12 text-center text-sm font-semibold leading-none text-slate-700">
+        {label}
+      </span>
+    </button>
+  );
 }
 
 export function FederatedLoginButtons({
@@ -191,7 +226,9 @@ export function FederatedLoginButtons({
   }
 
   const googleBlock = googleReady ? (
-    <div className="w-full [&>div]:!w-full [&>div]:!max-w-none">
+    <div
+      className={`${OAUTH_SHELL} ${OAUTH_BTN_HEIGHT} flex items-center justify-center [&>div]:!h-full [&>div]:!w-full [&>div]:!flex [&>div]:!items-center`}
+    >
       <GoogleOAuthProvider clientId={googleClientId}>
         <GoogleLogin
           onSuccess={(res) => void onGoogleSuccess(res.credential || '')}
@@ -208,20 +245,16 @@ export function FederatedLoginButtons({
   ) : null;
 
   return (
-    <div className="space-y-2.5 w-full">
+    <div className="flex w-full flex-col gap-2.5">
       {googleBlock}
       {socialProviders.map((provider) => (
-        <button
+        <SocialAuthButton
           key={provider.provider}
-          type="button"
+          label={providerActionLabel(provider, mode)}
+          icon={<ProviderIcon provider={provider.provider} />}
           disabled={disabled}
-          className={providerButtonClass}
           onClick={() => void startRedirect(provider)}
-          aria-label={providerActionLabel(provider, mode)}
-        >
-          <ProviderIcon provider={provider.provider} />
-          <span>{providerActionLabel(provider, mode)}</span>
-        </button>
+        />
       ))}
     </div>
   );

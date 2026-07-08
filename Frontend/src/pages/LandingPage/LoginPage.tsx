@@ -878,7 +878,7 @@ const LoginPage = () => {
                   )
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
-                    <div className="flex justify-center w-full mb-4">
+                    <div className="w-full mb-4">
                       <FederatedLoginButtons
                         mode="login"
                         disabled={isLoading}
@@ -899,7 +899,7 @@ const LoginPage = () => {
                         E-mail ID
                       </label>
                       <div className="relative">
-                        <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                           type="email"
                           id="email"
@@ -907,7 +907,7 @@ const LoginPage = () => {
                           autoComplete="off"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
+                          className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
                           placeholder="you@company.com"
                           required
                         />
@@ -919,7 +919,7 @@ const LoginPage = () => {
                         Password
                       </label>
                       <div className="relative">
-                        <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                           type={showPassword ? 'text' : 'password'}
                           id="password"
@@ -927,14 +927,14 @@ const LoginPage = () => {
                           autoComplete="off"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] px-9 pr-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
+                          className="w-full rounded-xl border border-[#E6D8C9] bg-[#F7F3EE] py-2.5 pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#155E4B] focus:outline-none focus:ring-2 focus:ring-[#155E4B]/20"
                           placeholder="Enter your password"
                           required
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          className="absolute right-3.5 top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center text-slate-400 hover:text-slate-600"
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
@@ -942,7 +942,7 @@ const LoginPage = () => {
                     </div>
 
                     <div className="flex items-center justify-between text-xs">
-                      <label className="inline-flex items-center gap-2 text-slate-600">
+                      <label className="inline-flex cursor-pointer items-center gap-2.5 text-slate-600">
                         <input
                           type="checkbox"
                           checked={rememberMe}
@@ -956,7 +956,7 @@ const LoginPage = () => {
                               // ignore localStorage errors
                             }
                           }}
-                          className="h-3.5 w-3.5 rounded border-slate-300 bg-[#F7F3EE] text-[#155E4B] focus:ring-[#155E4B]/40"
+                          className="h-4 w-4 shrink-0 rounded border-slate-300 bg-[#F7F3EE] text-[#155E4B] focus:ring-[#155E4B]/40"
                         />
                         <span>Remember this device</span>
                       </label>
@@ -981,9 +981,9 @@ const LoginPage = () => {
                           Signing you in...
                         </span>
                       ) : (
-                        <span className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-2">
                           Login
-                          <ArrowRight className="h-3.5 w-3.5" />
+                          <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
                         </span>
                       )}
                     </button>
@@ -1003,8 +1003,8 @@ const LoginPage = () => {
                     </p>
                   </div>
 
-                  <p className="mt-3 flex items-center gap-2 text-[11px] text-slate-400">
-                    <span className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-emerald-100">
+                  <p className="mt-3 flex items-start gap-2.5 text-[11px] text-slate-400">
+                    <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     </span>
                     End-to-end encryption, SOC2-ready infrastructure, and region-aware data residency.
