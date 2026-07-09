@@ -1,6 +1,6 @@
 /**
- * Start backend services for local dev on Windows (no Docker).
- * Usage: npm run dev:app
+ * Start ALL backend microservices for local dev (no Docker).
+ * Usage: npm run dev:all
  */
 const { spawn } = require('child_process');
 const path = require('path');
@@ -12,9 +12,15 @@ const services = [
   { name: 'document', cwd: 'services/document-service', entry: 'index.js', port: 2102 },
   { name: 'esign', cwd: 'services/e-sign-service', entry: 'index.js', port: 2103 },
   { name: 'pdf', cwd: 'services/pdf-service', entry: 'index.js', port: 2104 },
+  { name: 'api', cwd: 'services/api-service', entry: 'index.js', port: 2105 },
+  { name: 'template', cwd: 'services/template-service', entry: 'index.js', port: 2106 },
+  { name: 'support', cwd: 'services/support-service', entry: 'index.js', port: 2107 },
+  { name: 'ai', cwd: 'services/ai-assistant-service', entry: 'index.js', port: 2108 },
   { name: 'subscription', cwd: 'services/subscription-service', entry: 'index.js', port: 2110 },
   { name: 'organization', cwd: 'services/organization-service', entry: 'index.js', port: 2111 },
-  { name: 'support', cwd: 'services/support-service', entry: 'index.js', port: 2107 },
+  { name: 'email', cwd: 'services/email-service', entry: 'index.js', port: 2112 },
+  { name: 'gateway', cwd: 'services/api-gateway', entry: 'index.js', port: 2113 },
+  { name: 'identity', cwd: 'services/identity-service', entry: 'index.js', port: 2114 },
   { name: 'admin', cwd: 'services/admin-service', entry: 'index.js', port: 3100 },
 ];
 

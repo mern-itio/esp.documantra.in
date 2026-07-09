@@ -15,6 +15,13 @@ const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/pass
 const { enforceConcurrentSessionLimit, getMaxConcurrentSessions } = require('../utils/sessionLimits');
 const { getSessionIdleTimeoutMs, getSessionIdleTimeoutHours } = require('../utils/sessionPolicy');
 const { shouldRequireTwoFaSetup, isLoginTwoFaEnforcementEnabled, getTwoFaGraceDays, isAdminLoginTwoFaEnforcementEnabled, getAdminTwoFaGraceDays } = require('../utils/twoFaPolicy');
+const { recordConsentEntries } = require('../services/consentService');
+const {
+  CONSENT_TYPES,
+  SUBJECT_TYPES,
+  CONSENT_SOURCES,
+  DEFAULT_CONSENT_VERSIONS,
+} = require('@draftnsign/validators/userConsent');
 
 const OTP_EXPIRY_MINUTES = 10;
 const SIGNUP_TOKEN_EXPIRY = '15m';
@@ -970,7 +977,26 @@ const regenerateAuthenticatorBackupCodes = async (req, res) => {
 
 // Register — email OTP required to activate; phone / SMS verification optional
 const register = async (req, res) => {
-  const { fullname, email, phone, password, company, address, recaptchaToken, ref, referrerUserId } = req.body;
+  const {
+    fullname,
+    email,
+    phone,
+    password,
+    company,
+    address,
+    recaptchaToken,
+    ref,
+    referrerUserId,
+    agreeToTerms,
+    subscribeNewsletter,
+    termsVersion,
+    privacyVersion,
+    marketingVersion,
+  } = req.body;
+
+  if (!agreeToTerms) {
+    return res.status(400).json({ message: 'You must accept the Terms of Service and Privacy Policy.' });
+  }
 
   if (!isChromeExtensionClient(req)) {
     const isValidRecaptcha = true; // captcha disabled
@@ -1033,6 +1059,36 @@ const register = async (req, res) => {
       phoneOtpHash: null,
       phoneOtpExpires: null
     });
+
+    await recordConsentEntries(req, [
+      {
+        consentType: CONSENT_TYPES.TERMS_OF_SERVICE,
+        consentVersion: termsVersion || DEFAULT_CONSENT_VERSIONS.terms_of_service,
+        granted: true,
+        subjectType: SUBJECT_TYPES.USER,
+        subjectId: user._id,
+        userId: user._id,
+        source: CONSENT_SOURCES.SIGNUP,
+      },
+      {
+        consentType: CONSENT_TYPES.PRIVACY_POLICY,
+        consentVersion: privacyVersion || DEFAULT_CONSENT_VERSIONS.privacy_policy,
+        granted: true,
+        subjectType: SUBJECT_TYPES.USER,
+        subjectId: user._id,
+        userId: user._id,
+        source: CONSENT_SOURCES.SIGNUP,
+      },
+      {
+        consentType: CONSENT_TYPES.MARKETING_EMAIL,
+        consentVersion: marketingVersion || DEFAULT_CONSENT_VERSIONS.marketing_email,
+        granted: Boolean(subscribeNewsletter),
+        subjectType: SUBJECT_TYPES.USER,
+        subjectId: user._id,
+        userId: user._id,
+        source: CONSENT_SOURCES.SIGNUP,
+      },
+    ]);
 
     await sendVerificationOtpEmail(user.email, emailOtp, user.fullname, OTP_EXPIRY_MINUTES);
 

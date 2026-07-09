@@ -589,7 +589,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signup = async (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; recaptchaToken?: string; referrerUserId?: string }) => {
+  const signup = async (userData: {
+    fullname: string;
+    email: string;
+    phone: string;
+    address: string;
+    company: string;
+    password: string;
+    recaptchaToken?: string;
+    referrerUserId?: string;
+    agreeToTerms?: boolean;
+    subscribeNewsletter?: boolean;
+    termsVersion?: string;
+    privacyVersion?: string;
+    marketingVersion?: string;
+  }) => {
     const data = await apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
       method: 'POST',
       body: JSON.stringify(userData),

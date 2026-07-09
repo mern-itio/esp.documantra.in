@@ -164,6 +164,11 @@ const SignupPage = () => {
         address: formData.address,
         password: formData.password,
         recaptchaToken: 'disabled',
+        agreeToTerms: formData.agreeToTerms,
+        subscribeNewsletter: formData.subscribeNewsletter,
+        termsVersion: 'v1',
+        privacyVersion: 'v1',
+        marketingVersion: 'v1',
         ...(referrerUserIdForSignup ? { referrerUserId: referrerUserIdForSignup } : {}),
       })
       setSignupToken(token)

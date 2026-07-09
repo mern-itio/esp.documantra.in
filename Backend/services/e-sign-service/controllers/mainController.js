@@ -23,6 +23,14 @@ const Notification = require('../models/Notification');
 const { AuditTrail } = require('../models/AuditTrail');
 const archiver = require('archiver');
 const { assertEnvelopeDownloadAccess } = require('../helpers/documentDownloadAccess');
+const { recordConsentEntries } = require('../services/consentService');
+const {
+  CONSENT_TYPES,
+  SUBJECT_TYPES,
+  CONSENT_SOURCES,
+  DEFAULT_CONSENT_VERSIONS,
+  getRequestMeta,
+} = require('@draftnsign/validators/userConsent');
 const { json } = require('stream/consumers');
 const signingServices = require('../services/signing');
 const signatureOperationServices = require('../services/signatureOperationServices');
@@ -3575,8 +3583,41 @@ const getRecipientAuditTrail = async (req, res) => {
 };
 
 const acceptTerms = async (req, res) =>{
-  const {recipientId, envelopeId,cycleId} = req.body;
-  console.log(recipientId,envelopeId,cycleId);
+  const {recipientId, envelopeId,cycleId, consentVersion} = req.body;
+  const disclosureVersion = consentVersion || DEFAULT_CONSENT_VERSIONS.esign_electronic_records;
+  const requestMeta = getRequestMeta(req);
+
+  const logTermsAcceptance = async ({ subjectType, subjectObjectId, recipientObjectId, envelopeObjectId, cycleObjectId }) => {
+    await recordConsentEntries(req, [{
+      consentType: CONSENT_TYPES.ESIGN_ELECTRONIC_RECORDS,
+      consentVersion: disclosureVersion,
+      granted: true,
+      subjectType,
+      subjectId: subjectObjectId,
+      recipientId: recipientObjectId || null,
+      envelopeId: envelopeObjectId || null,
+      cycleId: cycleObjectId || null,
+      source: cycleObjectId ? CONSENT_SOURCES.POWERFORM : CONSENT_SOURCES.PUBLIC_SIGNER,
+      metadata: { disclosure: 'electronic_records_and_signatures' },
+    }]);
+
+    if (envelopeObjectId) {
+      await logActivity(envelopeObjectId, 'TERMS_ACCEPTED', 'Recipient', {
+        recipientId: recipientObjectId,
+        consentVersion: disclosureVersion,
+        subjectType,
+      });
+      await AuditTrail.create({
+        envelopeId: envelopeObjectId,
+        recipientId: recipientObjectId || undefined,
+        action: 'TERMS_ACCEPTED',
+        details: { consentVersion: disclosureVersion, subjectType },
+        ip: requestMeta.ipAddress,
+        userAgent: requestMeta.userAgent,
+      }).catch(() => {});
+    }
+  };
+
     if(!cycleId){
       // Accept Term for Recipient Flow
       try{
@@ -3595,6 +3636,12 @@ const acceptTerms = async (req, res) =>{
         if(!permission){
           return res.status(404).json({success:false, message:"Something went wrong, Please try again later!"});
         }
+        await logTermsAcceptance({
+          subjectType: SUBJECT_TYPES.RECIPIENT,
+          subjectObjectId: recipientId,
+          recipientObjectId: recipientId,
+          envelopeObjectId: envelopeId,
+        });
           return res.status(200).json({success:true, message:"Terms and Conditions accepted."});
       }catch (err){
         console.log(err);
@@ -3621,6 +3668,13 @@ const acceptTerms = async (req, res) =>{
         if(!response){
           return res.status(404).json({success:false, message:"Something went wrong, Please try again later!"});
         }
+        await logTermsAcceptance({
+          subjectType: SUBJECT_TYPES.SELF_SIGNER,
+          subjectObjectId: recipientId,
+          recipientObjectId: recipientId,
+          envelopeObjectId: cycle?.envelopeId,
+          cycleObjectId: cycleId,
+        });
         return res.status(200).json({success:true, message:"Terms and Conditions accepted."});
       }catch(err){
         console.log(err);

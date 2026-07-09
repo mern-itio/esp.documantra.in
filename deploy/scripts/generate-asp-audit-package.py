@@ -265,27 +265,22 @@ def generate_annexures(target_dir: Path) -> dict[str, Path]:
         ),
     )
 
-    policy = fetch_security_policy()
+    # A4 — full Information Security Policy (classification + approval block)
+    import importlib.util
 
-    # A4 ISMS / security policy
-    isms_paras = [
-        "This document summarizes information security controls implemented for the Documantra ASP platform.",
-        f"Transport security: HTTPS required ({URL}).",
-        f"Password policy: minimum {policy['passwordPolicy']['minLength']} characters; uppercase, lowercase, number, and special character required.",
-        f"Session idle timeout: {policy['sessionIdleTimeoutHours']} hours.",
-        f"Maximum concurrent sessions per user: {policy['maxConcurrentSessions']}.",
-        f"Two-factor authentication (TOTP): available for users and admin; enforcement configurable via environment policy.",
-        "Input validation on profile and organization metadata; SSRF guard on logo URL ingestion.",
-        "Security headers on user and admin SPAs: HSTS, CSP, X-Frame-Options, X-Content-Type-Options.",
-        "Audit logging: envelope actions stored in MongoDB audittrails collection.",
-        "Secrets and credentials stored in server environment files; database not exposed publicly.",
-        "VAPT remediation completed June 2026 with retest evidence maintained.",
-    ]
-    files["isms"] = write_docx(
-        target_dir / "Annexure-A4-Information-Security-Policy.docx",
-        "Information Security Policy Summary — Documantra ASP",
-        isms_paras,
-    )
+    a4_script = ROOT / "deploy" / "scripts" / "generate-isp-annexure-a4.py"
+    spec = importlib.util.spec_from_file_location("generate_isp_annexure_a4", a4_script)
+    a4_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(a4_mod)
+
+    a4_doc = a4_mod.build()
+    a4_path = target_dir / "Annexure-A4-Information-Security-Policy.docx"
+    a4_doc.save(a4_path)
+    shutil.copy2(a4_path, target_dir / "Information-Security-Policy.docx")
+    files["isms"] = a4_path
+    if target_dir != a4_mod.OUT.parent:
+        a4_doc.save(a4_mod.OUT)
+        shutil.copy2(a4_mod.OUT, a4_mod.OUT_ALIAS)
 
     # A5 System hardening
     hardening = [

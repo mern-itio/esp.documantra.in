@@ -472,7 +472,8 @@ const EnvelopeDetails: React.FC = () => {
         {
           envelopeId: String(id ?? ""),
           recipientId: String(recipientId ?? ""),
-          cycleId:String(cycleId ?? "")
+          cycleId:String(cycleId ?? ""),
+          consentVersion: TERMS_VERSION,
         });
         if(response.status==200){
             window.localStorage.setItem(termsStorageKey, "true");

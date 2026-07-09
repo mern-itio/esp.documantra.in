@@ -21,10 +21,47 @@ if (-not $DumpFile) {
   $DumpFile = Join-Path $BackendRoot ".live-db-dump.archive.gz"
 }
 
+foreach ($cmd in @('ssh', 'scp')) {
+  if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
+    $candidates = @(
+      "C:\Windows\System32\OpenSSH\$cmd.exe",
+      "C:\Program Files\Git\usr\bin\$cmd.exe"
+    )
+    $found = $false
+    foreach ($candidate in $candidates) {
+      if (Test-Path $candidate) {
+        $dir = Split-Path -Parent $candidate
+        if ($env:PATH -notlike "*$dir*") {
+          $env:PATH = "$dir;$env:PATH"
+        }
+        $found = $true
+        break
+      }
+    }
+    if (-not $found) {
+      Write-Error "Missing '$cmd'. Install OpenSSH Client (Windows Settings -> Optional Features) or use Git Bash."
+    }
+  }
+}
+
 $mongorestore = "mongorestore"
 if (-not (Get-Command mongorestore -ErrorAction SilentlyContinue)) {
-  $candidate = "C:\Program Files\MongoDB\Server\8.3\bin\mongorestore.exe"
-  if (Test-Path $candidate) { $mongorestore = $candidate }
+  $candidates = @(
+    "C:\Program Files\MongoDB\Tools\100\bin\mongorestore.exe",
+    "C:\Program Files\MongoDB\Server\8.3\bin\mongorestore.exe",
+    "C:\Program Files\MongoDB\Server\8.0\bin\mongorestore.exe"
+  )
+  $found = $false
+  foreach ($candidate in $candidates) {
+    if (Test-Path $candidate) {
+      $mongorestore = $candidate
+      $found = $true
+      break
+    }
+  }
+  if (-not $found) {
+    Write-Error "mongorestore not found. Install MongoDB Database Tools or MongoDB Server."
+  }
 }
 
 $remoteDump = "/tmp/draftnsign-live-$(Get-Date -Format 'yyyyMMdd-HHmmss').gz"

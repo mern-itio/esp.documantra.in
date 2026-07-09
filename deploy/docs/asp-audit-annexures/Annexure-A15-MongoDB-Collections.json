@@ -1,0 +1,609 @@
+{
+  "generated": "06 July 2026",
+  "organization": "ITIO Innovex Pvt Ltd",
+  "product": "Documantra (ASP)",
+  "productionUrl": "https://esp.documantra.in",
+  "databaseEngine": "MongoDB",
+  "note": "MongoDB uses collections, not SQL tables.",
+  "databases": [
+    "draftnsign",
+    "support-db"
+  ],
+  "totalCollections": 83,
+  "collections": [
+    {
+      "database": "draftnsign",
+      "service": "auth-service",
+      "collection": "users",
+      "mongooseModel": "User",
+      "description": "Registered accounts \u2014 email, 2FA, sessions, plan"
+    },
+    {
+      "database": "draftnsign",
+      "service": "auth-service",
+      "collection": "adminusers",
+      "mongooseModel": "AdminUser",
+      "description": "Admin panel accounts"
+    },
+    {
+      "database": "draftnsign",
+      "service": "auth-service",
+      "collection": "sessionpolicyconfigs",
+      "mongooseModel": "SessionPolicyConfig",
+      "description": "Session timeout / concurrent session policy"
+    },
+    {
+      "database": "draftnsign",
+      "service": "auth-service",
+      "collection": "referrals",
+      "mongooseModel": "Referral",
+      "description": "User referral records"
+    },
+    {
+      "database": "draftnsign",
+      "service": "auth-service",
+      "collection": "referralprogramconfigs",
+      "mongooseModel": "ReferralProgramConfig",
+      "description": "Referral program settings"
+    },
+    {
+      "database": "draftnsign",
+      "service": "auth-service",
+      "collection": "rewards",
+      "mongooseModel": "Reward",
+      "description": "Referral rewards"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "envelopes",
+      "mongooseModel": "Envelope",
+      "description": "Signing envelopes \u2014 status, recipients, scheduling"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "recipients",
+      "mongooseModel": "Recipient",
+      "description": "Envelope signers / viewers"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "recipientpermissions",
+      "mongooseModel": "RecipientPermission",
+      "description": "Per-recipient signing permissions"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "documents",
+      "mongooseModel": "Document",
+      "description": "Documents attached to envelopes (e-sign domain)"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "digitalsignatures",
+      "mongooseModel": "DigitalSignature",
+      "description": "PKI digital signature records"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "certificates",
+      "mongooseModel": "Certificate",
+      "description": "Signer certificates (ASP-issued RSA)"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "audittrails",
+      "mongooseModel": "AuditTrail",
+      "description": "Immutable signing audit log \u2014 action, IP, timestamp, docHash"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "signaturefields",
+      "mongooseModel": "SignatureFields",
+      "description": "Placed signature field coordinates"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "signaturetransactions",
+      "mongooseModel": "SignatureTransaction",
+      "description": "Aadhaar eSign / ESP transaction refs"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "activitylogs",
+      "mongooseModel": "ActivityLogs",
+      "description": "Envelope activity events"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "notifications",
+      "mongooseModel": "Notification",
+      "description": "Signer notifications"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "envelopetypes",
+      "mongooseModel": "EnvelopeType",
+      "description": "Envelope type definitions"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "cycles",
+      "mongooseModel": "Cycle",
+      "description": "Recurring envelope cycles"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "otplogs",
+      "mongooseModel": "OtpLog",
+      "description": "OTP send/verify audit"
+    },
+    {
+      "database": "draftnsign",
+      "service": "e-sign-service",
+      "collection": "selfsigners",
+      "mongooseModel": "SelfSigner",
+      "description": "Self-sign workflow data"
+    },
+    {
+      "database": "draftnsign",
+      "service": "document-service",
+      "collection": "documents",
+      "mongooseModel": "Document",
+      "description": "User document library (upload, share, version)"
+    },
+    {
+      "database": "draftnsign",
+      "service": "document-service",
+      "collection": "folders",
+      "mongooseModel": "Folder",
+      "description": "Document folders"
+    },
+    {
+      "database": "draftnsign",
+      "service": "document-service",
+      "collection": "shareddocuments",
+      "mongooseModel": "SharedDocument",
+      "description": "Shared document access links"
+    },
+    {
+      "database": "draftnsign",
+      "service": "document-service",
+      "collection": "versions",
+      "mongooseModel": "Version",
+      "description": "Document version history"
+    },
+    {
+      "database": "draftnsign",
+      "service": "document-service",
+      "collection": "comments",
+      "mongooseModel": "Comment",
+      "description": "Document comments"
+    },
+    {
+      "database": "draftnsign",
+      "service": "document-service",
+      "collection": "workflows",
+      "mongooseModel": "Workflow",
+      "description": "Document approval workflows"
+    },
+    {
+      "database": "draftnsign",
+      "service": "document-service",
+      "collection": "documentanalyses",
+      "mongooseModel": "DocumentAnalysis",
+      "description": "OCR / AI document analysis results"
+    },
+    {
+      "database": "draftnsign",
+      "service": "organization-service",
+      "collection": "organizations",
+      "mongooseModel": "Organization",
+      "description": "Organization profiles and verification"
+    },
+    {
+      "database": "draftnsign",
+      "service": "organization-service",
+      "collection": "organizationusers",
+      "mongooseModel": "OrganizationUser",
+      "description": "Org membership"
+    },
+    {
+      "database": "draftnsign",
+      "service": "organization-service",
+      "collection": "organizationroles",
+      "mongooseModel": "OrganizationRole",
+      "description": "Org roles"
+    },
+    {
+      "database": "draftnsign",
+      "service": "organization-service",
+      "collection": "organizationpermissions",
+      "mongooseModel": "OrganizationPermission",
+      "description": "Org permission matrix"
+    },
+    {
+      "database": "draftnsign",
+      "service": "organization-service",
+      "collection": "orgfolders",
+      "mongooseModel": "OrgFolder",
+      "description": "Organization document folders"
+    },
+    {
+      "database": "draftnsign",
+      "service": "organization-service",
+      "collection": "orgfoldershares",
+      "mongooseModel": "OrgFolderShare",
+      "description": "Shared org folders"
+    },
+    {
+      "database": "draftnsign",
+      "service": "organization-service",
+      "collection": "folderenvelopes",
+      "mongooseModel": "FolderEnvelope",
+      "description": "Envelopes linked to org folders"
+    },
+    {
+      "database": "draftnsign",
+      "service": "subscription-service",
+      "collection": "subscriptions",
+      "mongooseModel": "Subscription",
+      "description": "User/org subscription state"
+    },
+    {
+      "database": "draftnsign",
+      "service": "subscription-service",
+      "collection": "plantemplates",
+      "mongooseModel": "PlanTemplate",
+      "description": "Subscription plan definitions"
+    },
+    {
+      "database": "draftnsign",
+      "service": "subscription-service",
+      "collection": "creditpackages",
+      "mongooseModel": "CreditPackage",
+      "description": "Credit bundles"
+    },
+    {
+      "database": "draftnsign",
+      "service": "subscription-service",
+      "collection": "flexiblecreditpackages",
+      "mongooseModel": "flexibleCreditPackage",
+      "description": "Flexible credit pricing"
+    },
+    {
+      "database": "draftnsign",
+      "service": "subscription-service",
+      "collection": "usagerecords",
+      "mongooseModel": "UsageRecord",
+      "description": "Feature usage metering"
+    },
+    {
+      "database": "draftnsign",
+      "service": "subscription-service",
+      "collection": "invoices",
+      "mongooseModel": "Invoice",
+      "description": "Billing invoices"
+    },
+    {
+      "database": "draftnsign",
+      "service": "subscription-service",
+      "collection": "authproviders",
+      "mongooseModel": "AuthProvider",
+      "description": "DigiLocker / KYC provider config"
+    },
+    {
+      "database": "draftnsign",
+      "service": "subscription-service",
+      "collection": "toolsettings",
+      "mongooseModel": "ToolSettings",
+      "description": "PDF tool feature flags"
+    },
+    {
+      "database": "draftnsign",
+      "service": "subscription-service",
+      "collection": "verificationcodes",
+      "mongooseModel": "VerificationCode",
+      "description": "Phone/email verification codes"
+    },
+    {
+      "database": "draftnsign",
+      "service": "template-service",
+      "collection": "templates",
+      "mongooseModel": "template",
+      "description": "Document templates"
+    },
+    {
+      "database": "draftnsign",
+      "service": "template-service",
+      "collection": "templatetypes",
+      "mongooseModel": "TemplateType",
+      "description": "Template categories"
+    },
+    {
+      "database": "draftnsign",
+      "service": "template-service",
+      "collection": "forms",
+      "mongooseModel": "Form",
+      "description": "Form builder definitions"
+    },
+    {
+      "database": "draftnsign",
+      "service": "template-service",
+      "collection": "formfields",
+      "mongooseModel": "FormFields",
+      "description": "Form field schemas"
+    },
+    {
+      "database": "draftnsign",
+      "service": "template-service",
+      "collection": "formsubmissions",
+      "mongooseModel": "FormSubmission",
+      "description": "Submitted web forms"
+    },
+    {
+      "database": "draftnsign",
+      "service": "template-service",
+      "collection": "pendingdocuments",
+      "mongooseModel": "PendingDocument",
+      "description": "AI template pending docs"
+    },
+    {
+      "database": "draftnsign",
+      "service": "template-service",
+      "collection": "aifeedbacks",
+      "mongooseModel": "AIFeedback",
+      "description": "AI content feedback"
+    },
+    {
+      "database": "draftnsign",
+      "service": "template-service",
+      "collection": "feedbackcategories",
+      "mongooseModel": "FeedbackCategory",
+      "description": "Feedback taxonomy"
+    },
+    {
+      "database": "draftnsign",
+      "service": "pdf-service",
+      "collection": "pdfoperationtrackings",
+      "mongooseModel": "PdfOperationTracking",
+      "description": "PDF tool operation logs"
+    },
+    {
+      "database": "draftnsign",
+      "service": "pdf-service",
+      "collection": "documenttrackings",
+      "mongooseModel": "DocumentTracking",
+      "description": "PDF document tracking"
+    },
+    {
+      "database": "draftnsign",
+      "service": "pdf-service",
+      "collection": "commenteddocuments",
+      "mongooseModel": "CommentedDocument",
+      "description": "PDF annotations"
+    },
+    {
+      "database": "draftnsign",
+      "service": "pdf-service",
+      "collection": "cloudserviceconnections",
+      "mongooseModel": "CloudServiceConnection",
+      "description": "Google Drive / cloud OAuth"
+    },
+    {
+      "database": "draftnsign",
+      "service": "pdf-service",
+      "collection": "cloudfiles",
+      "mongooseModel": "CloudFile",
+      "description": "Synced cloud files"
+    },
+    {
+      "database": "draftnsign",
+      "service": "pdf-service",
+      "collection": "oauthstates",
+      "mongooseModel": "OAuthState",
+      "description": "OAuth CSRF state tokens"
+    },
+    {
+      "database": "draftnsign",
+      "service": "pdf-service",
+      "collection": "workflowtemplates",
+      "mongooseModel": "WorkflowTemplate",
+      "description": "PDF workflow templates"
+    },
+    {
+      "database": "draftnsign",
+      "service": "pdf-service",
+      "collection": "workflowexecutions",
+      "mongooseModel": "WorkflowExecution",
+      "description": "Workflow run history"
+    },
+    {
+      "database": "draftnsign",
+      "service": "pdf-service",
+      "collection": "guestusages",
+      "mongooseModel": "GuestUsage",
+      "description": "Guest PDF tool limits"
+    },
+    {
+      "database": "draftnsign",
+      "service": "pdf-service",
+      "collection": "activesessions",
+      "mongooseModel": "ActiveSession",
+      "description": "Active PDF editor sessions"
+    },
+    {
+      "database": "draftnsign",
+      "service": "identity-service",
+      "collection": "identitysessions",
+      "mongooseModel": "IdentitySession",
+      "description": "DigiLocker / KYC verification sessions"
+    },
+    {
+      "database": "draftnsign",
+      "service": "identity-service",
+      "collection": "selfieverifications",
+      "mongooseModel": "SelfieVerification",
+      "description": "Selfie auth verification records"
+    },
+    {
+      "database": "draftnsign",
+      "service": "api-service",
+      "collection": "esignapikeys",
+      "mongooseModel": "ESignApiKey",
+      "description": "Public API keys"
+    },
+    {
+      "database": "draftnsign",
+      "service": "api-service",
+      "collection": "apiendpointanalytics",
+      "mongooseModel": "ApiEndpointAnalytics",
+      "description": "API usage analytics"
+    },
+    {
+      "database": "draftnsign",
+      "service": "api-service",
+      "collection": "analyticsdays",
+      "mongooseModel": "AnalyticsDay",
+      "description": "Daily analytics aggregates"
+    },
+    {
+      "database": "draftnsign",
+      "service": "api-service",
+      "collection": "posts",
+      "mongooseModel": "Post",
+      "description": "Community posts"
+    },
+    {
+      "database": "draftnsign",
+      "service": "api-service",
+      "collection": "supporttickets",
+      "mongooseModel": "SupportTicket",
+      "description": "API-routed support tickets"
+    },
+    {
+      "database": "draftnsign",
+      "service": "ai-assistant-service",
+      "collection": "documentembeddings",
+      "mongooseModel": "DocumentEmbedding",
+      "description": "RAG vector embeddings"
+    },
+    {
+      "database": "draftnsign",
+      "service": "ai-assistant-service",
+      "collection": "conversations",
+      "mongooseModel": "Conversation",
+      "description": "AI chat sessions"
+    },
+    {
+      "database": "draftnsign",
+      "service": "ai-assistant-service",
+      "collection": "useractions",
+      "mongooseModel": "UserAction",
+      "description": "AI assistant user actions"
+    },
+    {
+      "database": "draftnsign",
+      "service": "ai-assistant-service",
+      "collection": "learningpatterns",
+      "mongooseModel": "LearningPattern",
+      "description": "AI learning patterns"
+    },
+    {
+      "database": "draftnsign",
+      "service": "email-service",
+      "collection": "templates",
+      "mongooseModel": "Template",
+      "description": "Email templates"
+    },
+    {
+      "database": "draftnsign",
+      "service": "email-service",
+      "collection": "smtpconfigurations",
+      "mongooseModel": "SmtpConfiguration",
+      "description": "SMTP server config"
+    },
+    {
+      "database": "draftnsign",
+      "service": "admin-service",
+      "collection": "pdftools",
+      "mongooseModel": "PDFTool",
+      "description": "Admin PDF tool registry"
+    },
+    {
+      "database": "draftnsign",
+      "service": "admin-service",
+      "collection": "pdftoolsettings",
+      "mongooseModel": "PDFToolSettings",
+      "description": "PDF tool configuration"
+    },
+    {
+      "database": "draftnsign",
+      "service": "admin-service",
+      "collection": "pdftoolactivations",
+      "mongooseModel": "PDFToolActivation",
+      "description": "Tool activation per tenant"
+    },
+    {
+      "database": "support-db",
+      "service": "support-service",
+      "collection": "tickets",
+      "mongooseModel": "Ticket",
+      "description": "Support tickets"
+    },
+    {
+      "database": "support-db",
+      "service": "support-service",
+      "collection": "messages",
+      "mongooseModel": "Message",
+      "description": "Ticket chat messages"
+    },
+    {
+      "database": "support-db",
+      "service": "support-service",
+      "collection": "customers",
+      "mongooseModel": "Customer",
+      "description": "Support customers"
+    },
+    {
+      "database": "support-db",
+      "service": "support-service",
+      "collection": "supportagents",
+      "mongooseModel": "SupportAgent",
+      "description": "Support agents"
+    },
+    {
+      "database": "support-db",
+      "service": "support-service",
+      "collection": "typingindicators",
+      "mongooseModel": "TypingIndicator",
+      "description": "Live chat typing state"
+    }
+  ],
+  "endpointProtection": {
+    "traditionalAntivirusAgent": false,
+    "model": "Linux cloud VM defence-in-depth",
+    "controls": [
+      "DigitalOcean Cloud Firewall",
+      "UFW",
+      "fail2ban",
+      "unattended-upgrades",
+      "Docker localhost binding",
+      "nginx TLS and security headers",
+      "application rate limits"
+    ]
+  }
+}
