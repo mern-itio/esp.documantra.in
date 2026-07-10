@@ -85,6 +85,13 @@ app.listen(PORT, () => {
       } else {
         console.error('[Scheduled Worker] processScheduledEnvelopes function not found in controller');
       }
+
+      if (global._scheduledWorkerController.processAutoReminders) {
+        const reminderResult = await global._scheduledWorkerController.processAutoReminders();
+        if (reminderResult && reminderResult.processed > 0) {
+          console.log(`[Scheduled Worker] Sent auto reminders for ${reminderResult.processed} envelope(s)`);
+        }
+      }
     } catch (error) {
       const isConnectionError = error && error.message && (
         error.message.includes('connection') || 

@@ -30,6 +30,17 @@ const {
 } = require('../controllers/eSignController');
 
 const {updateAuthStatus,saveAadhaar,patchSigningEvidence} = require('../controllers/recipientController');
+const {
+  requestRecipientPortalCode,
+  verifyRecipientPortalCode,
+  listRecipientPortalDocuments,
+} = require('../controllers/recipientPortalController');
+const {
+  checkSignerAccess,
+  requestSignerAccessCode,
+  verifySignerAccessCode,
+} = require('../controllers/signerAccessController');
+const recipientPortalAuth = require('../middleware/recipientPortalAuth');
 const vSignController = require('../controllers/vSignController');
 const { upload } = require('../utils/secureUpload');
 const { viewDocument } = require('../controllers/documentViewController');
@@ -84,6 +95,12 @@ router.post('/recipients/validate',validateRecipient);
 router.post('/save-aadhaar', saveAadhaar);  
 router.post('/envelope/accept-terms',acceptTerms);
 router.post('/fetch/current-recipient',fetchCurrentRecipient);
+router.post('/recipient-portal/request-code', requestRecipientPortalCode);
+router.post('/recipient-portal/verify-code', verifyRecipientPortalCode);
+router.get('/recipient-portal/documents', recipientPortalAuth, listRecipientPortalDocuments);
+router.get('/signer-access/check', checkSignerAccess);
+router.post('/signer-access/request-code', requestSignerAccessCode);
+router.post('/signer-access/verify-code', verifySignerAccessCode);
 //V Sign
 // router.post('/start-esign', vSignController.startEsign);
 router.post('/v-sign/response', vSignController.esignResponse);

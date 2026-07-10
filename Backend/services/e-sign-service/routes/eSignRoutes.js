@@ -8,6 +8,7 @@ const {
          sendEnvelope,
          scheduleEnvelope,
          processScheduledEnvelopesHandler,
+         processAutoRemindersHandler,
          addSignature,
          getRecipientByEmail,
          envelopeArchive,
@@ -56,6 +57,7 @@ router.get('/analytics/envelope-stats', getEnvelopeStats);
 router.post('/send-envelope/:envelopeId', senderAccess, requireTwoFaForSensitiveActions, sendEnvelope);
 router.post('/schedule-envelope/:envelopeId', senderAccess, scheduleEnvelope);
 router.post('/process-scheduled-envelopes', processScheduledEnvelopesHandler);
+router.post('/process-auto-reminders', processAutoRemindersHandler);
 router.get('/get-recipient/:email',getRecipientByEmail);
 router.post('/envelope/archive/:envelopeId', senderAccess, envelopeArchive);
 router.post('/envelope/delete/:envelopeId', senderAccess, envelopeDelete);

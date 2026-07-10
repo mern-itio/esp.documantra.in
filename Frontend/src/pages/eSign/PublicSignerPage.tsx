@@ -2,6 +2,11 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { eSignApi, subscriptionApi } from "../../services/apiHelper";
 import DocumentViewer from "../../components/ESign/DocumentViewer";
+import SignerAccessGate, {
+  readSignerAccessToken,
+  saveSignerAccessToken,
+} from "../../components/ESign/SignerAccessGate";
+import { CookiePreferenceCenter } from "../../components/common/CookiePreferenceCenter";
 import SelfieCapture from "../../components/ESign/SelfieCapture";
 import LivenessCapture from "../../components/ESign/LivenessCapture";
 import DocumentSignatureBackground from "../../components/common/DocumentSignatureBackground";
@@ -81,6 +86,23 @@ const EnvelopeDetails: React.FC = () => {
   const { cycleId } = useParams<{ cycleId: string }>();
   const location = useLocation();
 
+  const isPreviewMode = useMemo(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('preview') === '1' || location.pathname.includes('/e-sign/preview/');
+    } catch {
+      return location.pathname.includes('/e-sign/preview/');
+    }
+  }, [location.pathname, location.search]);
+
+  const initialAccessToken = useMemo(() => {
+    try {
+      return new URLSearchParams(location.search).get('accessToken');
+    } catch {
+      return null;
+    }
+  }, [location.search]);
+
   useEffect(() => {
     if (id && recipientId) {
       markDocumentOpened(String(id), String(recipientId));
@@ -93,7 +115,7 @@ const EnvelopeDetails: React.FC = () => {
   const [allDocuments, setAllDocuments] = useState<any[]>([]);
   const [allRecipients, setAllRecipients] = useState<any[]>([]);
   const [currentRecipient,setCurrentRecipient] = useState<any>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(isPreviewMode);
   const [_showDownloadModal, setShowDownloadModal] = useState(false);
 
   /* ---------- TERMS & CONDITIONS GATE ---------- */
@@ -181,28 +203,37 @@ const EnvelopeDetails: React.FC = () => {
   const [verificationMessage, setVerificationMessage] = useState<string>(''); // To display any messages from backend during verification
   const [biometricError, setBiometricError] = useState<string>('');
   const [verificationUrl, setVerificationUrl] = useState<string>(''); // For redirects to external identity verification
-  const isPreviewMode = useMemo(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('preview') === '1' || location.pathname.includes('/e-sign/preview/');
-    } catch {
-      return location.pathname.includes('/e-sign/preview/');
-    }
-  }, [location.pathname]);
+  const [signerAccessToken, setSignerAccessToken] = useState<string | null>(null);
+  const [accessVerified, setAccessVerified] = useState(false);
+  const [showCookieCenter, setShowCookieCenter] = useState(false);
 
   const [redirectCountdown, setRedirectCountdown] = useState<number>(5);
   const [skipMessage, setSkipMessage] = useState<string>(''); // If current method can't be used, show message then auto-advance
   const [showSkipWarningModal, setShowSkipWarningModal] = useState(false);
   const [pendingSkipReason, setPendingSkipReason] = useState<string>("");
 
+  const getSignerAccessHeaders = (tokenOverride?: string | null) => {
+    const token =
+      tokenOverride ||
+      signerAccessToken ||
+      initialAccessToken ||
+      readSignerAccessToken(String(id ?? ""), String(recipientId ?? ""));
+    return token ? { Authorization: `Bearer ${token}` } : undefined;
+  };
+
   useEffect(() => {
+    if (!isPreviewMode) return;
+    setLoading(true);
     fetchEnvelopeDetails();
     console.log('Fetched Envelope details');
-  }, []);
+  }, [isPreviewMode]);
 
-  const fetchEnvelopeDetails = async () => {
+  const fetchEnvelopeDetails = async (tokenOverride?: string | null) => {
     try {
-      const response = await eSignApi.get(`/api/e-sign/public/envelope/${id}`);
+      const response = await eSignApi.get(`/api/e-sign/public/envelope/${id}`, {
+        params: recipientId ? { recipientId } : undefined,
+        headers: getSignerAccessHeaders(tokenOverride),
+      });
       if (response.status === 200) {
         setEnvelope(response.data.data);
         const docs = response.data.data.documents || [];
@@ -223,7 +254,11 @@ const EnvelopeDetails: React.FC = () => {
         for (const d of docs) {
           try {
             const res = await eSignApi.get(
-              `/api/e-sign/public/document/signature-fields/${d.id}`
+              `/api/e-sign/public/document/signature-fields/${d.id}`,
+              {
+                params: recipientId ? { recipientId } : undefined,
+                headers: getSignerAccessHeaders(tokenOverride),
+              }
             );
             if (res.status === 200 && Array.isArray(res.data.signatureFields)) {
               allFields.push(...res.data.signatureFields);
@@ -888,6 +923,29 @@ const EnvelopeDetails: React.FC = () => {
     }
   };
 
+  if (!isPreviewMode && !accessVerified) {
+    return (
+      <>
+        <SignerAccessGate
+          envelopeId={String(id ?? "")}
+          recipientId={String(recipientId ?? "")}
+          initialAccessToken={initialAccessToken}
+          onVerified={(token) => {
+            saveSignerAccessToken(String(id ?? ""), String(recipientId ?? ""), token);
+            setSignerAccessToken(token);
+            setAccessVerified(true);
+            setLoading(true);
+            fetchEnvelopeDetails(token);
+          }}
+        />
+        <CookiePreferenceCenter
+          open={showCookieCenter}
+          onClose={() => setShowCookieCenter(false)}
+        />
+      </>
+    );
+  }
+
   if (loading) {
     return (
       <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-blue-50 px-4 text-gray-600">
@@ -1299,17 +1357,29 @@ const EnvelopeDetails: React.FC = () => {
         }}
         className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
       >
-        Reassign Document
+        Forward document
       </button>
+      {envelope?.canDecline !== false && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowOtherOptions(false);
+            setShowDeclineModal(true);
+          }}
+          className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+        >
+          Reject Request
+        </button>
+      )}
       <button
         type="button"
         onClick={() => {
           setShowOtherOptions(false);
-          setShowDeclineModal(true);
+          setShowCookieCenter(true);
         }}
         className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
       >
-        Reject Request
+        Cookie preferences
       </button>
       <button
         type="button"
@@ -2407,6 +2477,10 @@ const EnvelopeDetails: React.FC = () => {
         </div>
       )}
 
+      <CookiePreferenceCenter
+        open={showCookieCenter}
+        onClose={() => setShowCookieCenter(false)}
+      />
 
     </div>
   );

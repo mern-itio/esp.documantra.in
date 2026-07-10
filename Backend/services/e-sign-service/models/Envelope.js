@@ -38,6 +38,7 @@ sender: {
   expirationAlertDays: { type: Number, default: 0 }, // days before expiration to send alert
   isReminder: { type: Boolean, default: false },
   reminderInterval: { type: Number }, // in days
+  lastReminderSentAt: { type: Date, default: null },
   isAll: { type: Boolean, default: false }, // require all signers to sign
   canDecline: { type: Boolean, default: true },
   documentIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],

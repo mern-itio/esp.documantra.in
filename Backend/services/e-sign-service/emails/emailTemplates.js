@@ -15,11 +15,12 @@ function wrapEmailBody(contentHtml) {
   return wrapBrandedEmailBody(contentHtml);
 }
 
-const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, signLink) => {
+const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, signLink, portalLink) => {
   const safeName = escapeHtml(recipientName);
   const safeSubject = escapeHtml(envelopeSubject);
   const safeMessage = escapeHtml(envelopeMessage) || 'No message provided.';
   const safeLinkText = escapeHtml(signLink);
+  const safePortalLink = portalLink ? escapeHtml(portalLink) : '';
 
   return wrapEmailBody(`
         <h2 style="margin: 0 0 16px; font-size: 20px; color: #111827;">Document signing request</h2>
@@ -36,9 +37,18 @@ const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, si
         </p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${signLink}" target="_blank" style="background: #4D0080; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block; font-size: 16px;">
-            Review &amp; sign document
+            OPEN THE DOCUMENT
           </a>
         </div>
+        ${
+          portalLink
+            ? `<div style="text-align: center; margin: 0 0 24px;">
+                 <a href="${portalLink}" target="_blank" style="color: #4D0080; font-weight: 600; text-decoration: underline; font-size: 14px;">
+                   VIEW MY DOCUMENTS
+                 </a>
+               </div>`
+            : ''
+        }
         <p style="font-size: 14px; color: #777; text-align: center; line-height: 1.5;">
           If the button does not work, copy and paste this link into your browser:<br>
           <a href="${signLink}" target="_blank" style="color: #4D0080;">${safeLinkText}</a>
@@ -46,7 +56,7 @@ const signRequestTemplate = (recipientName, envelopeSubject, envelopeMessage, si
   `);
 };
 
-const signReminderTemplate = (recipientName, envelopeSubject, envelopeMessage, signLink) => {
+const signReminderTemplate = (recipientName, envelopeSubject, envelopeMessage, signLink, portalLink) => {
   const safeName = escapeHtml(recipientName);
   const safeSubject = escapeHtml(envelopeSubject);
   const safeMessage = escapeHtml(envelopeMessage) || 'No message provided.';
@@ -67,12 +77,44 @@ const signReminderTemplate = (recipientName, envelopeSubject, envelopeMessage, s
         </p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${signLink}" target="_blank" style="background: #4D0080; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block; font-size: 16px;">
-            Review &amp; sign document
+            OPEN THE DOCUMENT
           </a>
         </div>
+        ${
+          portalLink
+            ? `<div style="text-align: center; margin: 0 0 24px;">
+                 <a href="${portalLink}" target="_blank" style="color: #4D0080; font-weight: 600; text-decoration: underline; font-size: 14px;">
+                   VIEW MY DOCUMENTS
+                 </a>
+               </div>`
+            : ''
+        }
         <p style="font-size: 14px; color: #777; text-align: center; line-height: 1.5;">
           If the button does not work, copy and paste this link into your browser:<br>
           <a href="${signLink}" target="_blank" style="color: #4D0080;">${safeLinkText}</a>
+        </p>
+  `);
+};
+
+const recipientPortalOtpTemplate = ({ recipientEmail, otpCode, expiresInMinutes = 10 }) => {
+  const safeEmail = escapeHtml(recipientEmail);
+  const safeCode = escapeHtml(otpCode);
+
+  return wrapEmailBody(`
+        <h2 style="margin: 0 0 16px; font-size: 20px; color: #111827;">Access your documents</h2>
+        <p style="font-size: 15px; color: #333; line-height: 1.6;">
+          Use this one-time code to sign in to your document inbox for <strong>${safeEmail}</strong>.
+        </p>
+        <div style="text-align: center; margin: 28px 0;">
+          <div style="display: inline-block; letter-spacing: 6px; font-size: 28px; font-weight: 700; color: #1b0c3e; background: #FFF8E6; border: 1px solid #f59e0b; border-radius: 10px; padding: 14px 22px;">
+            ${safeCode}
+          </div>
+        </div>
+        <p style="font-size: 14px; color: #555; line-height: 1.6; text-align: center;">
+          This code expires in ${Number(expiresInMinutes) || 10} minutes.
+        </p>
+        <p style="font-size: 13px; color: #777; line-height: 1.6; text-align: center; margin-top: 20px;">
+          If you did not request this code, you can ignore this email.
         </p>
   `);
 };
@@ -182,4 +224,5 @@ module.exports = {
   signReminderTemplate,
   reassignedSignRequestTemplate,
   reassignedOwnerCcTemplate,
+  recipientPortalOtpTemplate,
 };

@@ -733,6 +733,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       });
   }, [signatureFields, selfSigner, mode, currentUserId, localSignedMap, localFieldValues, isViewOnly]);
 
+  const showRequiredFieldsBanner =
+    !isViewOnly && actionableFields.length > 0 && !showCompleteButton;
+
   // Track if there were fields initially
   useEffect(() => {
     if (actionableFields.length > 0 && !hadFieldsInitiallyRef.current) {
@@ -2573,7 +2576,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                   onClick={() => onRequestActions?.()}
                   className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#F7F3EE] px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-[#F7F3EE]/90"
                 >
-                  Actions
+                  More actions
                   <ChevronDown className="h-4 w-4" />
                 </button>
               )}
@@ -2616,6 +2619,21 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           </div>
         </div>
 
+        {!showRequiredFieldsBanner ? null : (
+          <div className="pointer-events-auto fixed top-12 left-0 right-0 z-[55] flex h-11 items-center justify-between border-b border-amber-200/80 bg-[#FFF8E6] px-4 text-[#1b0c3e]">
+            <p className="text-sm font-medium">
+              Please fill in {actionableFields.length} required field{actionableFields.length === 1 ? '' : 's'}.
+            </p>
+            <button
+              type="button"
+              onClick={goToNext}
+              className="inline-flex items-center justify-center rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-[#1b0c3e] shadow-sm hover:bg-amber-300"
+            >
+              {hasStarted ? 'Next field' : 'Start'}
+            </button>
+          </div>
+        )}
+
         {shouldHighlightCompleteCta && (
           <div
             className="fixed left-0 right-0 top-12 bottom-0 z-[45] bg-black/45"
@@ -2627,9 +2645,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       {/* PDF(s) container */}
       <div
         ref={pdfContainerRef}
-        className={`relative flex-1 w-full max-w-full sm:max-w-3xl lg:max-w-4xl border border-gray-200 rounded-lg shadow-sm bg-[#F7F3EE] overflow-auto self-center mt-14 sm:mt-16 lg:mt-20 mb-20 px-3 sm:px-4 py-4 ${
-          shouldHighlightCompleteCta ? "pointer-events-none" : ""
-        }`}
+        className={`relative flex-1 w-full max-w-full sm:max-w-3xl lg:max-w-4xl border border-gray-200 rounded-lg shadow-sm bg-[#F7F3EE] overflow-auto self-center mb-20 px-3 sm:px-4 py-4 ${
+          !showRequiredFieldsBanner
+            ? "mt-14 sm:mt-16 lg:mt-20"
+            : "mt-[5.75rem]"
+        } ${shouldHighlightCompleteCta ? "pointer-events-none" : ""}`}
         style={{ maxHeight: "calc(100vh - 160px)" }}
         onKeyDown={(e) => {
           // Prevent Enter key from submitting any form anywhere in the container
@@ -2806,6 +2826,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             )}
 
             {!hasStarted ? (
+              showRequiredFieldsBanner ? null : (
               <button
                 onClick={goToNext}
                 disabled={!hasNextField}
@@ -2826,6 +2847,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               >
                 {buttonText}
               </button>
+              )
             ) : (
               <button
                 onClick={goToNext}

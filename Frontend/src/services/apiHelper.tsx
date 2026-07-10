@@ -22,7 +22,8 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
       isPublicSignOnlyApp() ||
       (typeof window !== 'undefined' &&
         (window.location.pathname.startsWith('/public-sign') ||
-          window.location.pathname.startsWith('/e-sign/signer')));
+          window.location.pathname.startsWith('/e-sign/signer') ||
+          window.location.pathname.startsWith('/e-sign/recipient-portal')));
 
     if (!isPublicEsignRequest) {
       const accountHeaders = getAccountContextHeaders();
@@ -50,6 +51,7 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
   const isPublicRoute =
     path.startsWith('/public-sign') ||
     path.startsWith('/e-sign/signer') ||
+    path.startsWith('/e-sign/recipient-portal') ||
     isPublicSignOnlyApp();
 
   if (!isPublicRoute) {

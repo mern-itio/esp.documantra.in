@@ -10,7 +10,7 @@ const path = require('path');
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const connectDB = require('../config/db');
-const { processScheduledEnvelopes } = require('../controllers/mainController');
+const { processScheduledEnvelopes, processAutoReminders } = require('../controllers/mainController');
 
 async function runWorker() {
   try {
@@ -24,6 +24,14 @@ async function runWorker() {
       console.log(`✅ Successfully processed ${result.processed} scheduled envelope(s)`);
     } else {
       console.log('ℹ️  No scheduled envelopes to process');
+    }
+
+    console.log('Processing auto reminders...');
+    const reminderResult = await processAutoReminders();
+    if (reminderResult && reminderResult.processed > 0) {
+      console.log(`✅ Sent auto reminders for ${reminderResult.processed} envelope(s)`);
+    } else {
+      console.log('ℹ️  No auto reminders due');
     }
     
     process.exit(0);

@@ -12,6 +12,8 @@ const { logActivity } = require('../services/activityLogService');
 const { ActivityLogs } = require('../models/ActivityLogs');
 const Document = require('../models/Document');
 const Cycle = require('../models/Cycle');
+const { evaluateSignerAccess } = require('../helpers/signerAccessGate');
+const { buildPublicSignerUrl } = require('../helpers/signerAccessToken');
 const { issueCertificate } = require('../services/pkiService');
 const { generateAndStoreCompletionCertificate,generateAndStoreCompletionCertificateOfPowerForm } = require('../services/certificateGenerator');
 const fs = require('fs');
@@ -373,8 +375,21 @@ const envelopesData = async (req, res) => {
 const envelopesDetail = async (req, res) => {
   const envelopeId = req.params.id;
   const userId = req?.user?.data?.id;
+  const recipientId = req.query.recipientId;
 
   try {
+    if (recipientId) {
+      const gate = await evaluateSignerAccess(req, envelopeId, recipientId);
+      if (!gate.ok) {
+        return res.status(403).json({
+          message: gate.message || 'Signer access verification required',
+          requiresAccessVerification: !!gate.requiresAccessVerification,
+          expired: !!gate.expired,
+          maskedEmail: gate.maskedEmail || null,
+        });
+      }
+    }
+
     // Step 1: Fetch single envelope by ID
     const envelope = await Envelope.findById(envelopeId)
       .populate("documentIds")   // fetch docs
@@ -521,6 +536,7 @@ if (senderId) {
         avatar: ""
       },
       signatureType: envelope.signatureType,
+      canDecline: envelope.canDecline !== false,
       documents: envelope.documentIds.map(doc => ({
         id: doc._id,
         name: doc.fileName,
@@ -579,6 +595,22 @@ const getSignatureFields = async (req, res) => {
   const isSelf = req.params.mode === "self";
   console.log("isSelf:", isSelf);
   try {
+    const recipientId = req.query.recipientId;
+    if (!isSelf && recipientId) {
+      const doc = await Document.findById(documentId).select('envelopeId').lean();
+      if (doc?.envelopeId) {
+        const gate = await evaluateSignerAccess(req, doc.envelopeId, recipientId);
+        if (!gate.ok) {
+          return res.status(403).json({
+            message: gate.message || 'Signer access verification required',
+            requiresAccessVerification: !!gate.requiresAccessVerification,
+            expired: !!gate.expired,
+            maskedEmail: gate.maskedEmail || null,
+          });
+        }
+      }
+    }
+
     // 1. Fetch signature fields for the document
     const signatureFields = await SignatureField.find({ documentId });
     if (!signatureFields) {
@@ -971,7 +1003,7 @@ const buildSigningLinks = async (envelopeId) => {
       name: p.recipientId.name,
       email: p.recipientId.email,
       order: p.order,
-      signLink: `${frontendUrl}/e-sign/signer/${envelopeId}/${p.recipientId._id}`,
+      signLink: buildPublicSignerUrl(envelopeId, p.recipientId._id),
     }));
 };
 const dispatchEnvelopeEmail = async ({ userId, toEmail, subject, html, attachments }) => {
@@ -1028,13 +1060,15 @@ const sendSignEmailToPermission = async ({
   envelopeMessage,
   userId,
 }) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const signLink = `${frontendUrl}/e-sign/signer/${envelopeId}/${waitingPermission.recipientId._id}`;
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+  const signLink = buildPublicSignerUrl(envelopeId, waitingPermission.recipientId._id);
+  const portalLink = `${frontendUrl}/e-sign/recipient-portal`;
   const html = signRequestTemplate(
     waitingPermission.recipientId.name,
     envelopeSubject,
     envelopeMessage,
     signLink,
+    portalLink,
   );
 
   await dispatchEnvelopeEmail({
@@ -1970,54 +2004,72 @@ const envelopePermanentDelete = async (req, res) => {
     return res.status(500).json({ message: "Failed to permanently delete envelope", error: error.message });
   }
 }
+const sendReminderEmailsForEnvelope = async (envelope) => {
+  if (!envelope || String(envelope.status || '').toLowerCase() !== 'in-progress') {
+    return { sent: 0, recipients: [] };
+  }
+
+  const pendingSignatureFields = await SignatureFields.find({
+    envelopeId: envelope._id,
+    status: 'pending',
+  }).populate('recipientId');
+
+  const recipientsMap = new Map();
+  pendingSignatureFields.forEach((field) => {
+    const recipient = field.recipientId;
+    if (recipient && !recipientsMap.has(recipient._id.toString())) {
+      recipientsMap.set(recipient._id.toString(), recipient);
+    }
+  });
+
+  const uniqueRecipients = Array.from(recipientsMap.values());
+  const frontendUrl = String(process.env.FRONTEND_URL || '').replace(/\/+$/, '');
+  const portalLink = `${frontendUrl}/e-sign/recipient-portal`;
+
+  for (const recipient of uniqueRecipients) {
+    const signLink = buildPublicSignerUrl(envelope._id, recipient._id);
+    const html = signReminderTemplate(
+      recipient.name,
+      envelope.subject,
+      envelope.message,
+      signLink,
+      portalLink,
+    );
+
+    try {
+      await dispatchEnvelopeEmail({
+        userId: envelope.sender,
+        toEmail: recipient.email,
+        subject: `Reminder: Action Required: Sign "${envelope.subject}"`,
+        html,
+      });
+    } catch (err) {
+      console.error('Error generating reminder email:', err);
+    }
+  }
+
+  return { sent: uniqueRecipients.length, recipients: uniqueRecipients };
+};
+
 const envelopeReminder = async (req, res) => {
   try {
     const envelopeId = req.params.envelopeId;
     const envelope = await Envelope.findById(envelopeId);
 
-    if (envelope && envelope.status === "in-progress") {
-      const pendingSignatureFields = await SignatureFields.find({
-        envelopeId: envelopeId,
-        status: "pending"
-      }).populate('recipientId');
-
-      const recipientsMap = new Map();
-      pendingSignatureFields.forEach(field => {
-        const recipient = field.recipientId;
-        if (recipient && !recipientsMap.has(recipient._id.toString())) {
-          recipientsMap.set(recipient._id.toString(), recipient);
-        }
-      });
-
-      const uniqueRecipients = Array.from(recipientsMap.values());
-
-      // Loop through unique recipients
-      for (const recipient of uniqueRecipients) {
-        const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelope._id}/${recipient._id}`;
-        const html = signReminderTemplate(recipient.name, envelope.subject, envelope.message, signLink);
-        // Send Reminder E-Mail to pending recipients
-        try{
-          await axios.post(`${process.env.EMAIL_SERVICE_URL}/mail/send/${envelope?.sender}`, {
-            toEmail: recipient.email,
-            subject: `Reminder: Action Required: Sign "${envelope.subject}"`,
-            html: html
-          });
-        }catch(err){
-          console.error("Error generating reminder email:", err);
-        }
-      }
+    if (envelope && envelope.status === 'in-progress') {
+      const result = await sendReminderEmailsForEnvelope(envelope);
 
       return res.status(200).json({
         success: true,
         message: 'Reminder emails processing initiated',
-        recipients: uniqueRecipients,
-      });
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: 'Envelope not in progress or not found',
+        recipients: result.recipients,
       });
     }
+
+    return res.status(400).json({
+      success: false,
+      message: 'Envelope not in progress or not found',
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({
@@ -2970,7 +3022,7 @@ const assignEnvelopeToSomeoneElsePublic = async (req, res) => {
     // Send signer link immediately if old recipient was currently in "sent" state.
     try {
       if (String(originalStatus).toLowerCase() === 'sent') {
-        const signLink = `${process.env.FRONTEND_URL}/e-sign/signer/${envelope._id}/${replacementRecipient._id}`;
+        const signLink = buildPublicSignerUrl(envelope._id, replacementRecipient._id);
         const html = reassignedSignRequestTemplate({
           recipientName: replacementRecipient.name,
           envelopeSubject: envelope.subject,
@@ -3070,6 +3122,10 @@ const declineEnvelopePublic = async (req, res) => {
     const envelope = await Envelope.findById(envelopeId);
     if (!envelope) {
       return res.status(404).json({ message: 'Envelope not found' });
+    }
+
+    if (envelope.canDecline === false) {
+      return res.status(403).json({ message: 'Declining is not allowed for this envelope' });
     }
 
     const recipient = await Recipient.findById(recipientId);
@@ -3321,7 +3377,59 @@ const processScheduledEnvelopes = async () => {
     console.error("Error processing scheduled envelopes:", error);
     throw error;
   }
-}
+};
+
+const processAutoReminders = async () => {
+  try {
+    const now = Date.now();
+    const envelopes = await Envelope.find({
+      isReminder: true,
+      status: 'in-progress',
+      reminderInterval: { $gte: 1 },
+    });
+
+    let processed = 0;
+    for (const envelope of envelopes) {
+      const intervalDays = Number(envelope.reminderInterval) || 1;
+      const intervalMs = intervalDays * 24 * 60 * 60 * 1000;
+      const lastSentAt = envelope.lastReminderSentAt
+        ? new Date(envelope.lastReminderSentAt).getTime()
+        : new Date(envelope.updatedAt || envelope.createdAt).getTime();
+
+      if (now - lastSentAt < intervalMs) {
+        continue;
+      }
+
+      await sendReminderEmailsForEnvelope(envelope);
+      envelope.lastReminderSentAt = new Date();
+      await envelope.save();
+      processed += 1;
+    }
+
+    return { processed };
+  } catch (error) {
+    console.error('Error processing auto reminders:', error);
+    throw error;
+  }
+};
+
+const processAutoRemindersHandler = async (req, res) => {
+  try {
+    const result = await processAutoReminders();
+    return res.status(200).json({
+      success: true,
+      message: `Processed ${result.processed} auto reminder envelope(s)`,
+      processed: result.processed,
+    });
+  } catch (error) {
+    console.error('Error in processAutoRemindersHandler:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error processing auto reminders',
+      error: error.message,
+    });
+  }
+};
 
 // HTTP route handler wrapper for processScheduledEnvelopes
 const processScheduledEnvelopesHandler = async (req, res) => {
@@ -3821,6 +3929,8 @@ module.exports = {
   scheduleEnvelope,
   processScheduledEnvelopes,
   processScheduledEnvelopesHandler,
+  processAutoReminders,
+  processAutoRemindersHandler,
   addSignature,
   addDigitalSignatureForRecipient,
   addDigitalSignatureForSelfSigner,

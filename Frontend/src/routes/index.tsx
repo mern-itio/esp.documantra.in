@@ -190,6 +190,7 @@ import ApiServiceMarketPlace from '../pages/ApiService/MarketPlace/Main';
 import ApiServiceCommunity from '../pages/ApiService/Community/Main';
 import ApiServiceSupport from '../pages/ApiService/Support/Main';
 import PublicSignerPage from '../pages/eSign/PublicSignerPage';
+import RecipientPortalPage from '../pages/eSign/RecipientPortalPage';
 import CreatePdfFormPage from '../pages/PDFTools/CreatePdfFormPage';
 import OAuthCallback from '../pages/OAuthCallback';
 import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
@@ -657,6 +658,7 @@ const guestRoutes = [
   // Public signer status page should show landing header/footer
   { path: '/e-sign/signer/status/:envelopeId/:recipientId', element: <SignerStatusPage /> },
   { path: '/e-sign/signer/finish-later/:envelopeId/:recipientId', element: <FinishLaterPage /> },
+  { path: '/e-sign/recipient-portal', element: <RecipientPortalPage /> },
   // Public Shared Document Route (No Authentication Required)
 
   // PDF Tool Pages
