@@ -45,7 +45,21 @@ interface AuthContextType {
   googleLogin: (credential: string, options?: { referrerUserId?: string }) => Promise<void>;
   applyLoginFromOAuthPayload: (data: Record<string, unknown>) => Promise<void>;
   logout: () => void;
-  signup: (userData: { fullname: string; email: string; phone: string; address: string; company: string; password: string; recaptchaToken?: string; referrerUserId?: string }) => Promise<{ signupToken: string }>;
+  signup: (userData: {
+    fullname: string;
+    email: string;
+    phone: string;
+    address: string;
+    company: string;
+    password: string;
+    recaptchaToken?: string;
+    referrerUserId?: string;
+    agreeToTerms?: boolean;
+    subscribeNewsletter?: boolean;
+    termsVersion?: string;
+    privacyVersion?: string;
+    marketingVersion?: string;
+  }) => Promise<{ signupToken: string }>;
   sendSignupEmailOtp: (signupToken: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean }>;
   verifySignupEmailOtp: (signupToken: string, emailOtp: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean; loggedIn: boolean }>;
   sendSignupPhoneOtp: (signupToken: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean }>;
