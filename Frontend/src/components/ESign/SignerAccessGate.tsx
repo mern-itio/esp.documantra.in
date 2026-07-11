@@ -77,10 +77,17 @@ const SignerAccessGate: React.FC<SignerAccessGateProps> = ({
 
         if (cancelled) return;
 
+        if (response.data?.redirectToStatus) {
+          window.location.replace(
+            `/e-sign/signer/status/${envelopeId}/${recipientId}`,
+          );
+          return;
+        }
+
         if (response.data?.verified) {
           const token =
             tokenFromUrl || readSignerAccessToken(envelopeId, recipientId) || '';
-          if (token) onVerified(token);
+          onVerified(token);
           return;
         }
 

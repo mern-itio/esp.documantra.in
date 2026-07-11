@@ -157,10 +157,28 @@ const DocumentViewerContent: React.FC<Props> = ({
       selfValue:selfValue,
       signingContext,
     });
-    if(response?.status == 200 ){
-       navigate(`/e-sign/signer/status/${env}/${rid}`);
+    if (response?.status === 200) {
+      window.location.replace(`/e-sign/signer/status/${env}/${rid}`);
     }
   }
+
+  const maybeAutoCompleteSigning = () => {
+    if (
+      completionTriggeredRef.current ||
+      isViewOnly ||
+      mode !== MODE.RECIPIENT ||
+      !envelopeID ||
+      !currentUserId
+    ) {
+      return;
+    }
+    completionTriggeredRef.current = true;
+    setShowCompleteButton(true);
+    setCompleteCtaState('done');
+    window.setTimeout(() => {
+      completeSignature(envelopeID, currentUserId);
+    }, 700);
+  };
 
   // Get matched signer for a field (self-signer mode only)
   const getMatchedSigner = (field: any) => {
@@ -286,6 +304,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [selfSigner, setSelfSigner] = useState<SignerData[]>([]);
   const [showCompleteButton, setShowCompleteButton] = useState(false);
   const [completeCtaState, setCompleteCtaState] = useState<"idle" | "done">("idle");
+  const completionTriggeredRef = useRef(false);
   const [isCompleteCtaGuidanceDismissed, setIsCompleteCtaGuidanceDismissed] = useState(false);
   const shouldHighlightCompleteCta =
     !isViewOnly &&
@@ -1651,12 +1670,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             } catch (err) {
               console.error('onRecipientComplete callback error:', err);
             }
+            maybeAutoCompleteSigning();
+          } else {
+            setShowCompleteButton(true);
           }
-          console.log("Showing complete button");
-          setShowCompleteButton(true);
-          // If parent provided a completion handler, it controls what happens next.
-          // Fallback to legacy thank-you navigation when no callback is provided.
-          if (!onRecipientComplete) {
+          if (!onRecipientComplete && mode !== MODE.RECIPIENT) {
             navigate("/e-sign/signer/thank-you");
           }
         }
@@ -2997,9 +3015,13 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                   } catch (err) {
                     console.error('onRecipientComplete callback error:', err);
                   }
-                  setShowCompleteButton(true);
-                  if (!onRecipientComplete) {
-                    navigate("/e-sign/signer/thank-you");
+                  if (mode === MODE.RECIPIENT) {
+                    maybeAutoCompleteSigning();
+                  } else {
+                    setShowCompleteButton(true);
+                    if (!onRecipientComplete) {
+                      navigate("/e-sign/signer/thank-you");
+                    }
                   }
                 }
                 break;

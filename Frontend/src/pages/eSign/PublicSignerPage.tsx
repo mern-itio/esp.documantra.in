@@ -413,7 +413,7 @@ const EnvelopeDetails: React.FC = () => {
         try {
           const envId = String(id ?? "");
           const rid = String(recipientId ?? "");
-          window.location.assign(`/e-sign/signer/status/${envId}/${rid}`);
+          window.location.replace(`/e-sign/signer/status/${envId}/${rid}`);
         } catch {
           // Fallback: show download modal if navigation fails
           setShowDownloadModal(true);
@@ -1469,7 +1469,7 @@ const EnvelopeDetails: React.FC = () => {
       const envId = String(id ?? "").trim();
       const rid = String(recipientId ?? "").trim();
       if (envId && rid) {
-        window.location.assign(`/e-sign/signer/status/${envId}/${rid}`);
+        window.location.replace(`/e-sign/signer/status/${envId}/${rid}`);
       } else {
         window.location.assign("/");
       }

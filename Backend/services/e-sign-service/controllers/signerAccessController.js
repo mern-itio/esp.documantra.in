@@ -57,6 +57,16 @@ async function loadSignerContext(envelopeId, recipientId) {
   return { recipient, permission, envelope };
 }
 
+function recipientShouldUseStatusPage(permission, envelope) {
+  const permStatus = String(permission?.status || '').toLowerCase();
+  const envStatus = String(envelope?.status || '').toLowerCase();
+  return (
+    ['completed', 'signed', 'declined'].includes(permStatus) ||
+    envStatus === 'completed' ||
+    envStatus === 'declined'
+  );
+}
+
 const checkSignerAccess = async (req, res) => {
   try {
     const envelopeId = req.query.envelopeId || req.body?.envelopeId;
@@ -64,6 +74,22 @@ const checkSignerAccess = async (req, res) => {
 
     if (!envelopeId || !recipientId) {
       return res.status(400).json({ message: 'envelopeId and recipientId are required' });
+    }
+
+    const context = await loadSignerContext(envelopeId, recipientId);
+    if (!context) {
+      return res.status(404).json({ message: 'Signer access not found' });
+    }
+
+    if (recipientShouldUseStatusPage(context.permission, context.envelope)) {
+      return res.status(200).json({
+        status: 'success',
+        verified: true,
+        redirectToStatus: true,
+        requiresAccessVerification: false,
+        recipientStatus: context.permission.status,
+        envelopeStatus: context.envelope.status,
+      });
     }
 
     if (!isSignerAccessOtpEnabled()) {
@@ -109,6 +135,14 @@ const requestSignerAccessCode = async (req, res) => {
     const context = await loadSignerContext(envelopeId, recipientId);
     if (!context) {
       return res.status(404).json({ message: 'Signer access not found' });
+    }
+
+    if (recipientShouldUseStatusPage(context.permission, context.envelope)) {
+      return res.status(200).json({
+        status: 'success',
+        message: 'Signing is already complete for this recipient.',
+        redirectToStatus: true,
+      });
     }
 
     const email = String(context.recipient.email || '').trim().toLowerCase();
