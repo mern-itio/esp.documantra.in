@@ -7,7 +7,9 @@ import {
   RectangleHorizontal,
   Settings,
   Copy,
-  FileStack
+  FileStack,
+  MoreHorizontal,
+  Loader2,
 } from "lucide-react";
 import type { Recipient } from "../../types";
 import { eSignApi } from "../../services/apiHelper";
@@ -56,6 +58,7 @@ export type SignatureField = {
   value?: string | boolean; // for checkbox default/value or generic value
   /** Links copies created via "apply to all pages" in the editor. */
   placementGroupId?: string;
+  placementMode?: 'all_pages' | 'last_page_only';
 };
 
 export type PowerFormSlot = {
@@ -209,6 +212,7 @@ export default function SigningEditorStep({
   const fieldWasDraggedRef = useRef(false);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [hoveredFieldId, setHoveredFieldId] = useState<string | null>(null);
+  const [fieldActionsMenuId, setFieldActionsMenuId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showRecipientDropdown, setShowRecipientDropdown] = useState(false);
   const [showDocDropdown, setShowDocDropdown] = useState(false);
@@ -240,6 +244,13 @@ export default function SigningEditorStep({
   useEffect(() => {
     latestFieldsRef.current = signatureFields;
   }, [signatureFields]);
+
+  useEffect(() => {
+    if (!fieldActionsMenuId) return;
+    const closeMenu = () => setFieldActionsMenuId(null);
+    document.addEventListener('click', closeMenu);
+    return () => document.removeEventListener('click', closeMenu);
+  }, [fieldActionsMenuId]);
 
   // Guided tour state
   const [isEditorTourOpen, setIsEditorTourOpen] = useState<boolean>(false);
@@ -1240,6 +1251,40 @@ export default function SigningEditorStep({
     [signatureFields],
   );
 
+  const getPlacementMode = useCallback(
+    (field: SignatureField): 'all_pages' | 'last_page_only' | null => {
+      if (field.placementMode === 'all_pages' || field.placementMode === 'last_page_only') {
+        return field.placementMode;
+      }
+      const totalPages = getDocumentPageCount();
+      const group = fieldsInPlacementGroup(field);
+      if (totalPages > 1 && group.length >= totalPages) {
+        return 'all_pages';
+      }
+      return null;
+    },
+    [fieldsInPlacementGroup, getDocumentPageCount],
+  );
+
+  const applyPlacementModeToGroup = (
+    fields: SignatureField[],
+    field: SignatureField,
+    mode: 'all_pages' | 'last_page_only' | null,
+  ) => {
+    const groupId = getPlacementGroupId(field);
+    const docId = field.docId ?? field.documentId;
+    return fields.map((f) => {
+      if ((f.docId ?? f.documentId) !== docId) return f;
+      if (getPlacementGroupId(f) !== groupId) return f;
+      if (!mode) {
+        const next = { ...f };
+        delete next.placementMode;
+        return next;
+      }
+      return { ...f, placementMode: mode };
+    });
+  };
+
   const fieldToApiPayload = (f: SignatureField) => ({
     _id: f._id,
     documentId: f.docId ?? f.documentId,
@@ -1313,6 +1358,12 @@ export default function SigningEditorStep({
       }
 
       if (newFields.length === 0) {
+        const withMode = applyPlacementModeToGroup(workingFields, field, 'all_pages');
+        setSignatureFields(withMode);
+        saveToHistory(withMode);
+        if (onFieldsChange) onFieldsChange(withMode);
+        setSelectedField(withMode.find((f) => getFieldKey(f) === sourceKey) ?? template);
+        setFieldActionsMenuId(null);
         toast.success('Field is already on all pages');
         return;
       }
@@ -1339,12 +1390,14 @@ export default function SigningEditorStep({
         }
       }
 
-      setSignatureFields(finalFields);
-      saveToHistory(finalFields);
-      if (onFieldsChange) onFieldsChange(finalFields);
+      const withMode = applyPlacementModeToGroup(finalFields, field, 'all_pages');
+      setSignatureFields(withMode);
+      saveToHistory(withMode);
+      if (onFieldsChange) onFieldsChange(withMode);
       setSelectedField(
-        finalFields.find((f) => getFieldKey(f) === sourceKey) ?? template,
+        withMode.find((f) => getFieldKey(f) === sourceKey) ?? template,
       );
+      setFieldActionsMenuId(null);
       toast.success(`Field applied to ${newFields.length} more page(s)`);
     } catch (error: any) {
       console.error('applyFieldToAllPages failed:', error);
@@ -1427,11 +1480,13 @@ export default function SigningEditorStep({
         });
       }
 
-      setSignatureFields(finalFields);
-      saveToHistory(finalFields);
-      if (onFieldsChange) onFieldsChange(finalFields);
-      setSelectedField(lastPageField);
+      const withMode = applyPlacementModeToGroup(finalFields, lastPageField, 'last_page_only');
+      setSignatureFields(withMode);
+      saveToHistory(withMode);
+      if (onFieldsChange) onFieldsChange(withMode);
+      setSelectedField(withMode.find((f) => getFieldKey(f) === getFieldKey(lastPageField)) ?? lastPageField);
       setCurrentPage(totalPages);
+      setFieldActionsMenuId(null);
       toast.success(`Field placed on page ${totalPages} only`);
     } catch (error: any) {
       console.error('applyFieldToLastPageOnly failed:', error);
@@ -1439,6 +1494,152 @@ export default function SigningEditorStep({
     } finally {
       setIsApplyingPlacement(false);
     }
+  };
+
+  const removePlacementExpansion = async (field: SignatureField) => {
+    const mode = getPlacementMode(field);
+    if (!mode) return;
+
+    setIsApplyingPlacement(true);
+    try {
+      const groupId = getPlacementGroupId(field);
+      const docId = field.docId ?? field.documentId;
+      const keepPage = field.page;
+      const related = fieldsInPlacementGroup(field);
+
+      if (mode === 'all_pages') {
+        for (const f of related) {
+          if (f.page !== keepPage) {
+            await deleteFieldFromDb(f);
+          }
+        }
+      }
+
+      const keptField = related.find((f) => f.page === keepPage) ?? field;
+      const remaining = signatureFields.filter((f) => {
+        if ((f.docId ?? f.documentId) !== docId) return true;
+        if (getPlacementGroupId(f) !== groupId) return true;
+        return f.page === keepPage;
+      });
+
+      const singleField: SignatureField = {
+        ...keptField,
+        placementGroupId: undefined,
+        placementMode: undefined,
+      };
+
+      const finalFields = [
+        ...remaining.filter((f) => getFieldKey(f) !== getFieldKey(keptField)),
+        singleField,
+      ];
+
+      if (envelopeId && singleField._id) {
+        await eSignApi.post(saveSignatureFieldsPath, {
+          envelopeId,
+          signatureFields: [fieldToApiPayload(singleField)],
+        });
+      }
+
+      setSignatureFields(finalFields);
+      saveToHistory(finalFields);
+      if (onFieldsChange) onFieldsChange(finalFields);
+      setSelectedField(singleField);
+      setFieldActionsMenuId(null);
+      toast.success('Placement removed');
+    } catch (error: any) {
+      console.error('removePlacementExpansion failed:', error);
+      toast.error(error?.response?.data?.message || 'Failed to remove placement');
+    } finally {
+      setIsApplyingPlacement(false);
+    }
+  };
+
+  const renderPagePlacementActions = (
+    field: SignatureField,
+    variant: 'sidebar' | 'menu',
+    closeMenu?: () => void,
+  ) => {
+    const totalPages = getDocumentPageCount();
+    if (totalPages <= 1) return null;
+
+    const mode = getPlacementMode(field);
+    const actionBtnClass =
+      variant === 'sidebar'
+        ? 'w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed'
+        : 'w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-foreground hover:bg-muted transition-colors disabled:opacity-50';
+
+    const activeClass =
+      variant === 'sidebar'
+        ? 'w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-semibold bg-[#1B4D3E] text-white'
+        : 'w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-semibold bg-[#1B4D3E]/10 text-[#1B4D3E]';
+
+    const run = (action: () => void | Promise<void>) => {
+      void action();
+      closeMenu?.();
+    };
+
+    if (mode === 'all_pages') {
+      return (
+        <div className={variant === 'sidebar' ? 'space-y-2' : 'py-1'}>
+          <div className={activeClass}>
+            <Copy className="w-4 h-4" />
+            Applied to all pages
+          </div>
+          <button
+            type="button"
+            onClick={() => run(() => removePlacementExpansion(field))}
+            disabled={isApplyingPlacement}
+            className={`${actionBtnClass} ${variant === 'sidebar' ? 'border border-muted text-foreground hover:bg-muted' : 'text-destructive hover:bg-destructive/10'}`}
+          >
+            <Trash2 className="w-4 h-4" />
+            Remove from all pages
+          </button>
+        </div>
+      );
+    }
+
+    if (mode === 'last_page_only') {
+      return (
+        <div className={variant === 'sidebar' ? 'space-y-2' : 'py-1'}>
+          <div className={activeClass}>
+            <FileStack className="w-4 h-4" />
+            Last page only
+          </div>
+          <button
+            type="button"
+            onClick={() => run(() => removePlacementExpansion(field))}
+            disabled={isApplyingPlacement}
+            className={`${actionBtnClass} ${variant === 'sidebar' ? 'border border-muted text-foreground hover:bg-muted' : 'text-destructive hover:bg-destructive/10'}`}
+          >
+            <Trash2 className="w-4 h-4" />
+            Remove last page placement
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className={variant === 'sidebar' ? 'space-y-2' : 'py-1'}>
+        <button
+          type="button"
+          onClick={() => run(() => applyFieldToAllPages(field))}
+          disabled={isApplyingPlacement}
+          className={`${actionBtnClass} ${variant === 'sidebar' ? 'bg-[#1B4D3E] text-white hover:bg-[#163f34]' : ''}`}
+        >
+          <Copy className="w-4 h-4" />
+          {isApplyingPlacement ? 'Applying...' : 'Apply to all pages'}
+        </button>
+        <button
+          type="button"
+          onClick={() => run(() => applyFieldToLastPageOnly(field))}
+          disabled={isApplyingPlacement}
+          className={`${actionBtnClass} ${variant === 'sidebar' ? 'border border-muted text-foreground hover:bg-muted' : ''}`}
+        >
+          <FileStack className="w-4 h-4" />
+          Last page only
+        </button>
+      </div>
+    );
   };
 
   // move logic — allow moving any non-locked field (not restricted by active)
@@ -1700,13 +1901,13 @@ export default function SigningEditorStep({
   return (
     <div className="h-screen min-h-0 flex flex-col overflow-hidden bg-muted" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
       <style>{`
-        .field-container:hover .field-remove-btn {
+        .field-container:hover .field-more-btn {
           opacity: 1 !important;
           pointer-events: auto !important;
         }
-        .field-remove-btn:hover {
-          background: #dc2626 !important;
-          transform: scale(1.1);
+        .field-more-btn:hover {
+          background: #f3f4f6 !important;
+          transform: scale(1.05);
         }
       `}</style>
 
@@ -2246,6 +2447,8 @@ export default function SigningEditorStep({
                             mode === "normal"
                               ? f.recipientId === activeRecipientId
                               : f.slotId === activeSlotId;
+                          const fieldKey = String(f.id ?? f._id ?? '');
+                          const isMenuOpen = fieldActionsMenuId === fieldKey;
                           console.log("activeRecipientId8", activeRecipientId);
                           return (
                             <React.Fragment key={f.id ?? f._id}>
@@ -2316,37 +2519,65 @@ export default function SigningEditorStep({
                                             : `${f.label || f.type} - Click for settings`
                                 }
                               >
-                                {/* Remove button - only shows on hover */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeSignatureField(f);
-                                  }}
-                                  className="field-remove-btn"
-                                  style={{
-                                    position: "absolute",
-                                    top: 4,
-                                    right: 4,
-                                    width: 20,
-                                    height: 20,
-                                    borderRadius: "4px",
-                                    background: "#ef4444",
-                                    color: "white",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    zIndex: 40,
-                                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                                    transition: "all 0.2s ease",
-                                    opacity: 0,
-                                    pointerEvents: "none",
-                                  }}
-                                  title="Remove field"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                {/* More options - shows on hover */}
+                                {(isHovered || isMenuOpen) && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFieldActionsMenuId((prev) => (prev === fieldKey ? null : fieldKey));
+                                    }}
+                                    className="field-more-btn"
+                                    style={{
+                                      position: "absolute",
+                                      top: 4,
+                                      right: 4,
+                                      width: 22,
+                                      height: 22,
+                                      borderRadius: "4px",
+                                      background: "#ffffff",
+                                      color: "#374151",
+                                      border: "1px solid #d1d5db",
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      zIndex: 45,
+                                      boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
+                                      transition: "all 0.2s ease",
+                                      opacity: isMenuOpen ? 1 : 0,
+                                      pointerEvents: isMenuOpen ? "auto" : "none",
+                                    }}
+                                    title="More options"
+                                  >
+                                    <MoreHorizontal className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+
+                                {isMenuOpen && (
+                                  <div
+                                    className="absolute right-0 top-7 z-50 min-w-[190px] overflow-hidden rounded-md border border-border bg-card py-1 shadow-lg"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setFieldActionsMenuId(null);
+                                        removeSignatureField(f);
+                                      }}
+                                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-destructive hover:bg-destructive/10"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      Delete field
+                                    </button>
+                                    {getDocumentPageCount() > 1 && (
+                                      <div className="border-t border-border">
+                                        {renderPagePlacementActions(f, 'menu', () => setFieldActionsMenuId(null))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
 
                                 {/* Resize handles - shown on hover (not click) */}
                                 {isHovered && !f.locked && (() => {
@@ -2658,24 +2889,7 @@ export default function SigningEditorStep({
                     pages
                   </p>
                   <div className="space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => applyFieldToAllPages(selectedField)}
-                      disabled={isApplyingPlacement}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-[#1B4D3E] text-white hover:bg-[#163f34] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <Copy className="w-4 h-4" />
-                      {isApplyingPlacement ? 'Applying...' : 'Apply to all pages'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => applyFieldToLastPageOnly(selectedField)}
-                      disabled={isApplyingPlacement}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium border border-muted text-foreground hover:bg-muted disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <FileStack className="w-4 h-4" />
-                      Last page only
-                    </button>
+                    {renderPagePlacementActions(selectedField, 'sidebar')}
                   </div>
                 </div>
               )}
@@ -2808,7 +3022,14 @@ export default function SigningEditorStep({
               : 'bg-primary text-primary-foreground hover:bg-primary/90'
               }`}
           >
-            {sending ? 'Sending...' : 'Review'}
+            {sending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Review'
+            )}
           </button>
 
         </div>
