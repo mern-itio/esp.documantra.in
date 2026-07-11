@@ -27,7 +27,6 @@ import {
   AlertTriangle,
   CircleQuestionMark,
   ChevronLeft,
-  ChevronRight,
   ExternalLink,
   Phone,
   Edit,
