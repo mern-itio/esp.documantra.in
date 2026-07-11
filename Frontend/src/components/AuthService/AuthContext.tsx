@@ -172,9 +172,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const isPublicAuthExemptRoute = () => {
+    const path = window.location.pathname;
+    return (
+      path.includes('/e-sign/signer/') ||
+      path.startsWith('/e-sign/recipient-portal') ||
+      path.startsWith('/public-sign')
+    );
+  };
+
   useEffect(() => {
-    const isPublicSignerRoute = window.location.pathname.includes('/e-sign/signer/');
-    if (isPublicSignerRoute) {
+    if (isPublicAuthExemptRoute()) {
       setLoading(false);
       return;
     }
@@ -185,8 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!isAuthenticated || document.visibilityState !== 'visible') return;
       fetch(API_ENDPOINTS.AUTH.ME, withAuthFetch({ cache: 'no-store' })).then(async (res) => {
         if (res.status === 401 || res.status === 403) {
-          const isPublicRoute = window.location.pathname.startsWith('/public-sign');
-          if (isPublicRoute) return;
+          if (isPublicAuthExemptRoute()) return;
           console.warn('Session is invalid or revoked, logging out.');
           window.dispatchEvent(new CustomEvent('app:auth-logout'));
         }

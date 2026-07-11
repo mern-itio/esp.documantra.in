@@ -86,6 +86,7 @@ const RecipientPortalPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(false);
   const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
   const [info, setInfo] = useState('');
   const [resendSeconds, setResendSeconds] = useState(0);
   const [changeEmailMode, setChangeEmailMode] = useState(false);
@@ -114,6 +115,9 @@ const RecipientPortalPage: React.FC = () => {
       setEmail(prefill);
       setMaskedEmail(maskEmail(prefill));
       sessionStorage.setItem(PORTAL_PREFILL_KEY, prefill);
+      setChangeEmailMode(false);
+    } else if (!localStorage.getItem(PORTAL_TOKEN_KEY)) {
+      setChangeEmailMode(true);
     }
     restoreSession();
   }, [searchParams, restoreSession]);
@@ -170,12 +174,14 @@ const RecipientPortalPage: React.FC = () => {
   const requestCode = async (targetEmail?: string) => {
     const nextEmail = (targetEmail || email).trim().toLowerCase();
     if (!nextEmail) {
-      setError('Enter your email address to continue.');
+      setChangeEmailMode(true);
+      setFormError('Enter your email address to continue.');
       return;
     }
 
     setLoading(true);
     setError('');
+    setFormError('');
     setInfo('');
     try {
       const response = await eSignApi.post('/api/e-sign/public/recipient-portal/request-code', {
@@ -198,7 +204,7 @@ const RecipientPortalPage: React.FC = () => {
         setMaskedEmail(err?.response?.data?.maskedEmail || maskEmail(nextEmail));
         setStep('verify');
       }
-      setError(err?.response?.data?.message || 'Unable to send access code.');
+      setFormError(err?.response?.data?.message || 'Unable to send access code.');
     } finally {
       setLoading(false);
     }
@@ -206,12 +212,13 @@ const RecipientPortalPage: React.FC = () => {
 
   const verifyCode = async () => {
     if (!sessionEmail || !code.trim()) {
-      setError('Enter the 6-digit code from your email.');
+      setFormError('Enter the 6-digit code from your email.');
       return;
     }
 
     setLoading(true);
     setError('');
+    setFormError('');
     try {
       const response = await eSignApi.post('/api/e-sign/public/recipient-portal/verify-code', {
         email: sessionEmail,
@@ -229,7 +236,7 @@ const RecipientPortalPage: React.FC = () => {
       setStep('documents');
       setInfo('');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Invalid or expired code.');
+      setFormError(err?.response?.data?.message || 'Invalid or expired code.');
     } finally {
       setLoading(false);
     }
@@ -244,8 +251,9 @@ const RecipientPortalPage: React.FC = () => {
     setMaskedEmail(email ? maskEmail(email) : '');
     setStep('access');
     setError('');
+    setFormError('');
     setInfo('');
-    setChangeEmailMode(false);
+    setChangeEmailMode(!email.trim());
   };
 
   const renderDocumentTable = (rows: Array<{ from: string; name: string; status: string; date: string; action?: React.ReactNode }>, blurred = false) => (
@@ -341,7 +349,7 @@ const RecipientPortalPage: React.FC = () => {
           </div>
         </div>
 
-        {error && (
+        {error && isAuthenticated && (
           <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
           </div>
@@ -387,7 +395,10 @@ const RecipientPortalPage: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setChangeEmailMode(true)}
+                            onClick={() => {
+                              setChangeEmailMode(true);
+                              setFormError('');
+                            }}
                             className="text-sm font-medium text-[#4D0080] hover:underline"
                           >
                             {sessionEmail ? 'Use a different email' : 'Enter your email'}
@@ -402,7 +413,10 @@ const RecipientPortalPage: React.FC = () => {
                             id="portal-email"
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                              setEmail(e.target.value);
+                              if (formError) setFormError('');
+                            }}
                             placeholder="you@company.com"
                             className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none ring-[#4D0080] focus:border-[#4D0080] focus:ring-2"
                             disabled={loading}
@@ -419,13 +433,22 @@ const RecipientPortalPage: React.FC = () => {
                           {sessionEmail ? (
                             <button
                               type="button"
-                              onClick={() => setChangeEmailMode(false)}
+                              onClick={() => {
+                                setChangeEmailMode(false);
+                                setFormError('');
+                              }}
                               className="w-full text-sm font-medium text-gray-600 hover:text-gray-900"
                             >
                               Back to suggested email
                             </button>
                           ) : null}
+                          {formError && (
+                            <p className="text-sm text-rose-600">{formError}</p>
+                          )}
                         </div>
+                      )}
+                      {formError && !changeEmailMode && (
+                        <p className="mt-4 text-sm text-rose-600">{formError}</p>
                       )}
                       {info && <p className="mt-4 text-sm text-emerald-700">{info}</p>}
                     </>
@@ -443,11 +466,15 @@ const RecipientPortalPage: React.FC = () => {
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         value={code}
-                        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        onChange={(e) => {
+                          setCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                          if (formError) setFormError('');
+                        }}
                         placeholder="123456"
                         className="mt-6 w-full rounded-lg border border-gray-300 px-4 py-3 text-center text-lg tracking-[0.35em] outline-none ring-[#4D0080] focus:border-[#4D0080] focus:ring-2"
                         disabled={loading}
                       />
+                      {formError && <p className="mt-3 text-sm text-rose-600">{formError}</p>}
                       {info && <p className="mt-3 text-sm text-emerald-700">{info}</p>}
                       <button
                         type="button"
@@ -474,6 +501,7 @@ const RecipientPortalPage: React.FC = () => {
                             setStep('access');
                             setCode('');
                             setError('');
+                            setFormError('');
                             setInfo('');
                           }}
                           className="text-sm font-medium text-gray-600 hover:text-gray-900"
