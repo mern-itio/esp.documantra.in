@@ -51,6 +51,7 @@ import {
   ESIGN_UPLOAD_FORMAT_LABEL,
   isEsignUploadFile,
   isPdfUploadFile,
+  getEsignDocumentPreviewKind,
 } from '../../config/esignUploadFormats';
 import { fetchEsignDocumentData, resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
 import { isAuthMethodFreeViaReferralPerk } from '../../utils/referralAuthPerks';
@@ -59,6 +60,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import type { Document as ESDocument, Recipient } from '../../types';
 import AdvancedAuthenticationSelector from '../../components/ESign/advanced/AdvancedAuthenticationSelector';
+import { DocumentUploadThumbnail, DocumentUploadViewer } from '../../components/ESign/DocumentUploadPreview';
 import SignatureTypeSelector from '../../components/ESign/advanced/SignatureTypeSelector';
 import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 import { SubscriptionStorage } from '../../services/subscriptionService';
@@ -91,7 +93,6 @@ type Party = {
 };
 type EnvelopeRecipient = Recipient & { phone?: string };
 
-import { Document as PDFDocument, Page as PDFPage } from 'react-pdf';
 import DatePicker from 'react-datepicker';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
@@ -3868,9 +3869,7 @@ if (isPublicFlow) {
                                 }}
                                 className="relative flex min-h-[130px] items-center justify-center border-b border-border bg-gradient-to-br from-primary/5 to-card p-2"
                               >
-                                <PDFDocument file={doc.url}>
-                                  <PDFPage pageNumber={1} width={90} renderTextLayer={false} renderAnnotationLayer={false} />
-                                </PDFDocument>
+                                <DocumentUploadThumbnail doc={doc} pdfWidth={90} minHeight="130px" />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
                                   <span className="flex items-center gap-1 rounded-md bg-card px-2 py-1 text-xs font-medium text-foreground shadow">
                                     <Eye className="h-3.5 w-3.5" />
@@ -3990,9 +3989,7 @@ if (isPublicFlow) {
                             >
                               {/* React-PDF thumbnail (first page) */}
                               <div className="w-full h-full flex items-center justify-center bg-background">
-                                <PDFDocument file={doc.url}>
-                                  <PDFPage pageNumber={1} width={pdfWidth} renderTextLayer={false} renderAnnotationLayer={false} />
-                                </PDFDocument>
+                                <DocumentUploadThumbnail doc={doc} pdfWidth={pdfWidth} minHeight={previewMinHeight} />
                               </div>
                               {/* View Button - appears on hover */}
                               <div className="absolute inset-0 bg-black/50 backdrop-blur-sm group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -7624,7 +7621,7 @@ if (isPublicFlow) {
                 <h2 className="text-lg font-semibold text-foreground truncate">
                   {selectedPdfForPreview.name}
                 </h2>
-                {pdfNumPages && (
+                {pdfNumPages && getEsignDocumentPreviewKind(selectedPdfForPreview) === 'pdf' && (
                   <p className="text-sm text-muted-foreground mt-0.5">{pdfNumPages} {pdfNumPages === 1 ? 'page' : 'pages'}</p>
                 )}
               </div>
@@ -7641,34 +7638,11 @@ if (isPublicFlow) {
 
             {/* PDF Viewer (React-PDF with local worker) */}
             <div className="flex-1 overflow-hidden bg-card">
-              <div className="w-full h-full overflow-auto flex flex-col items-center p-4 gap-4">
-                <PDFDocument
-                  file={selectedPdfForPreview.url}
-                  onLoadSuccess={({ numPages }) => {
-                    setPdfNumPages(numPages);
-                  }}
-                  onLoadError={(error) => {
-                    console.error('Error loading PDF:', error);
-                    setPdfNumPages(null);
-                  }}
-                >
-                  {pdfNumPages && [...Array(pdfNumPages)].map((_, index) => (
-                    <PDFPage
-                      key={`page_${index + 1}`}
-                      pageNumber={index + 1}
-                      width={900}
-                      renderTextLayer={false}
-                      renderAnnotationLayer={false}
-                      className="mb-4 shadow-lg"
-                    />
-                  ))}
-                </PDFDocument>
-                {!pdfNumPages && (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-muted-foreground">Loading PDF...</div>
-                  </div>
-                )}
-              </div>
+              <DocumentUploadViewer
+                doc={selectedPdfForPreview}
+                onPdfLoadSuccess={(numPages) => setPdfNumPages(numPages)}
+                onPdfLoadError={() => setPdfNumPages(null)}
+              />
             </div>
           </div>
         </div>
