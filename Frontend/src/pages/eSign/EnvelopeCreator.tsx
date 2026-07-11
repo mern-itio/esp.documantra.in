@@ -1473,8 +1473,9 @@ const isPublicFlow =
   const formatFileSize = formatUploadFileSize;
   const totalUploadedBytes = (documents || []).reduce((sum, doc) => sum + (doc.size || 0), 0);
   const uploadLimitHint = getEsignUploadLimitHint();
-  const FAN_CARD_HEIGHT = 168;
-  const GRID_CARD_MIN_WIDTH = 120;
+  const FAN_CARD_WIDTH = 96;
+  const FAN_CARD_HEIGHT = 176;
+  const FAN_CARD_OVERLAP = 72;
 
   const getUploadZoneMode = (docCount: number): 'full' | 'shrinking' | 'compact' => {
     if (docCount === 0) return 'full';
@@ -1486,7 +1487,7 @@ const isPublicFlow =
     const isCompact = mode === 'compact';
 
     return (
-      <div data-tour="ec-upload" className={isFull ? undefined : 'h-[168px] w-full'}>
+      <div data-tour="ec-upload" className={isFull ? undefined : 'h-[176px]'}>
         <div
           onClick={() => fileInputRef.current?.click()}
           onDragOver={handleDragOver}
@@ -1499,7 +1500,7 @@ const isPublicFlow =
             isFull
               ? 'min-h-[220px] rounded-2xl p-8 sm:p-12'
               : isCompact
-                ? 'rounded-lg p-3 hover:border-[#1B4D3E] hover:bg-[#1B4D3E]/5'
+                ? 'h-[176px] w-[120px] rounded-lg p-3 hover:border-[#1B4D3E] hover:bg-[#1B4D3E]/5'
                 : 'rounded-xl px-4 py-3 hover:border-[#1B4D3E] hover:bg-[#1B4D3E]/5'
           }`}
         >
@@ -1591,10 +1592,14 @@ const isPublicFlow =
     </div>
   );
 
-  const renderDocumentGridCard = (doc: (typeof documents)[number], index: number) => (
+  const renderDocumentFanCard = (doc: (typeof documents)[number], index: number) => (
     <div
       key={doc.id}
-      className="group relative cursor-pointer transition-transform duration-200 hover:z-10 hover:-translate-y-1"
+      className="group relative flex-shrink-0 cursor-pointer transition-all duration-200 hover:z-[80] hover:-translate-y-4"
+      style={{
+        marginLeft: index === 0 ? 0 : -FAN_CARD_OVERLAP,
+        zIndex: index + 1,
+      }}
       onClick={() => {
         if (!doc.isUploading && doc.url) {
           setSelectedPdfForPreview(doc);
@@ -1603,12 +1608,14 @@ const isPublicFlow =
       }}
     >
       <div
-        className="relative mx-auto flex w-full max-w-[140px] flex-col overflow-hidden rounded-xl border-2 border-border bg-card shadow-md transition-all group-hover:border-[#1B4D3E] group-hover:shadow-xl"
-        style={{ height: FAN_CARD_HEIGHT }}
+        className="relative flex flex-col overflow-hidden rounded-lg border border-border/90 bg-[#FDFBF7] shadow-[2px_2px_6px_rgba(0,0,0,0.12)] transition-all group-hover:border-[#1B4D3E] group-hover:shadow-lg"
+        style={{ width: FAN_CARD_WIDTH, height: FAN_CARD_HEIGHT }}
       >
-        <span className="absolute left-1.5 top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#1B4D3E] text-[10px] font-bold text-white shadow-sm">
-          {index + 1}
-        </span>
+        <div className="pointer-events-none absolute inset-y-3 left-1 flex w-4 flex-col items-center justify-between">
+          <span className="text-[11px] font-bold leading-none text-[#1B4D3E]">{index + 1}</span>
+          <FileText className="h-3 w-3 text-[#1B4D3E]/70" />
+          <span className="rotate-180 text-[11px] font-bold leading-none text-[#1B4D3E]">{index + 1}</span>
+        </div>
         {!doc.isUploading && (
           <button
             type="button"
@@ -1621,25 +1628,27 @@ const isPublicFlow =
             <X className="h-3 w-3 text-white" />
           </button>
         )}
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-gradient-to-b from-[#F7F3EE] to-white p-1.5">
-          {!doc.isUploading && doc.url ? (
-            <DocumentUploadThumbnail doc={doc} pdfWidth={82} minHeight="112px" />
-          ) : (
-            <LoaderPlaceholder doc={doc} />
-          )}
-        </div>
-        <div className="border-t border-border bg-card px-1.5 py-1.5">
-          <p className="truncate text-[10px] font-semibold text-foreground" title={doc.name}>
-            {doc.name}
-          </p>
-          <p className="text-[9px] text-muted-foreground">
-            {doc.isUploading
-              ? `${doc.uploadProgress ?? 0}%`
-              : `${doc.pages}p · ${formatFileSize(doc.size)}`}
-          </p>
+        <div className="ml-4 flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-gradient-to-b from-[#F7F3EE] to-white p-1">
+            {!doc.isUploading && doc.url ? (
+              <DocumentUploadThumbnail doc={doc} pdfWidth={68} minHeight="108px" />
+            ) : (
+              <LoaderPlaceholder doc={doc} />
+            )}
+          </div>
+          <div className="border-t border-border/80 bg-[#FDFBF7] px-1 py-1">
+            <p className="truncate text-[8px] font-semibold text-foreground" title={doc.name}>
+              {doc.name}
+            </p>
+            <p className="text-[7px] text-muted-foreground">
+              {doc.isUploading
+                ? `${doc.uploadProgress ?? 0}%`
+                : `${doc.pages}p · ${formatFileSize(doc.size)}`}
+            </p>
+          </div>
         </div>
         {doc.isUploading && (
-          <div className="absolute inset-x-1.5 bottom-9 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="absolute inset-x-2 bottom-8 h-1 overflow-hidden rounded-full bg-muted">
             <div className="h-full bg-primary transition-all" style={{ width: `${doc.uploadProgress ?? 0}%` }} />
           </div>
         )}
@@ -1656,12 +1665,13 @@ const isPublicFlow =
 
     return (
       <div className="space-y-2">
-        <div
-          className="grid gap-3"
-          style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_CARD_MIN_WIDTH}px, 1fr))` }}
-        >
-          {documents.map((doc, index) => renderDocumentGridCard(doc, index))}
-          <div className="min-h-[168px] w-full min-w-0">
+        <div className="flex w-full min-w-0 items-end gap-3">
+          <div className="min-w-0 flex-1 overflow-x-auto pb-2 pt-3">
+            <div className="inline-flex items-end pl-1 pr-2">
+              {documents.map((doc, index) => renderDocumentFanCard(doc, index))}
+            </div>
+          </div>
+          <div className="flex-shrink-0">
             {renderDocumentUploadDropzone(getUploadZoneMode(docCount))}
           </div>
         </div>
