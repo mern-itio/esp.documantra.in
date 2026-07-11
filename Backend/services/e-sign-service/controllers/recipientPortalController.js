@@ -343,8 +343,8 @@ async function fetchSenderNameMap(senderIds) {
 const listRecipientPortalDocuments = async (req, res) => {
   try {
     const email = req.recipientPortal?.email;
-    const permissions = req.recipientPortal?.permissions || [];
-    if (!permissions.includes(PORTAL_VIEW_PERMISSION)) {
+    const portalPermissions = req.recipientPortal?.permissions || [];
+    if (!portalPermissions.includes(PORTAL_VIEW_PERMISSION)) {
       return res.status(403).json({ message: 'Insufficient portal permissions' });
     }
     const tab = String(req.query?.tab || 'inbox').toLowerCase();
