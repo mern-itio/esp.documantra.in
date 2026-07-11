@@ -15,7 +15,10 @@ const {
 
 const OTP_EXPIRY_MINUTES = 10;
 const RESEND_COOLDOWN_SECONDS = 60;
-const MAX_VERIFY_ATTEMPTS = 5;
+const MAX_VERIFY_ATTEMPTS = Number(process.env.OTP_MAX_VERIFY_ATTEMPTS || 10);
+const MAX_OTP_SEND_ATTEMPTS = Number(process.env.OTP_MAX_SEND_ATTEMPTS || 10);
+const OTP_SEND_WINDOW_MS =
+  Number(process.env.OTP_SEND_WINDOW_HOURS || 24) * 60 * 60 * 1000;
 
 function maskEmail(email) {
   const normalized = normalizePortalEmail(email);
@@ -91,6 +94,17 @@ const requestRecipientPortalCode = async (req, res) => {
           maskedEmail: maskEmail(email),
         });
       }
+    }
+
+    const recentSendCount = await RecipientPortalOtp.countDocuments({
+      email,
+      createdAt: { $gte: new Date(Date.now() - OTP_SEND_WINDOW_MS) },
+    });
+    if (recentSendCount >= MAX_OTP_SEND_ATTEMPTS) {
+      return res.status(429).json({
+        message: `OTP send limit reached (${MAX_OTP_SEND_ATTEMPTS} codes per ${Number(process.env.OTP_SEND_WINDOW_HOURS || 24)} hours). Please try again later.`,
+        maskedEmail: maskEmail(email),
+      });
     }
 
     const otpCode = generateOtpCode();
