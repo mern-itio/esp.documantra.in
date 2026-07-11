@@ -376,10 +376,10 @@ const RecipientPortalPage: React.FC = () => {
     if (step === 'consent' && !changeEmailMode) {
       return (
         <>
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-            <ShieldCheck className="h-7 w-7" />
+          <div className="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-8 ring-white">
+            <ShieldCheck className="h-6 w-6" />
           </div>
-          <h2 className="mt-5 text-2xl font-semibold tracking-tight text-gray-900">
+          <h2 className="mt-4 text-xl font-semibold tracking-tight text-gray-900 sm:text-2xl">
             {displayName ? `Hi ${firstName(displayName)}` : 'Verify it\u2019s you'}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-gray-600">
@@ -414,10 +414,10 @@ const RecipientPortalPage: React.FC = () => {
     if (step === 'access' || changeEmailMode) {
       return (
         <>
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-            <ShieldCheck className="h-7 w-7" />
+          <div className="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-8 ring-white">
+            <ShieldCheck className="h-6 w-6" />
           </div>
-          <h2 className="mt-5 text-2xl font-semibold tracking-tight text-gray-900">
+          <h2 className="mt-4 text-xl font-semibold tracking-tight text-gray-900 sm:text-2xl">
             Your documents are secure
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-gray-600">
@@ -470,10 +470,10 @@ const RecipientPortalPage: React.FC = () => {
     if (step === 'verify') {
       return (
         <>
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-violet-50 text-[#4D0080]">
-            <Mail className="h-7 w-7" />
+          <div className="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-50 text-[#4D0080] ring-8 ring-white">
+            <Mail className="h-6 w-6" />
           </div>
-          <h2 className="mt-5 text-2xl font-semibold tracking-tight text-gray-900">Check your email</h2>
+          <h2 className="mt-4 text-xl font-semibold tracking-tight text-gray-900 sm:text-2xl">Check your email</h2>
           <p className="mt-2 text-sm text-gray-600">
             Enter the 6-digit code sent to{' '}
             <strong className="text-gray-800">{maskedEmail || maskEmail(sessionEmail)}</strong>
@@ -620,12 +620,18 @@ const RecipientPortalPage: React.FC = () => {
           </div>
         )}
 
-        <div className="relative mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div
+          className={`relative mt-6 rounded-xl border border-gray-200 bg-white shadow-sm ${
+            isAuthenticated ? 'overflow-hidden' : 'min-h-[520px]'
+          }`}
+        >
           {!isAuthenticated ? (
             <>
-              {renderDocumentTable(PREVIEW_ROWS, true)}
-              <div className="absolute inset-0 flex items-center justify-center bg-white/70 p-4 backdrop-blur-[2px]">
-                <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center shadow-2xl sm:p-8">
+              <div className="absolute inset-0 overflow-hidden rounded-xl">
+                {renderDocumentTable(PREVIEW_ROWS, true)}
+              </div>
+              <div className="relative z-10 flex min-h-[520px] items-center justify-center bg-white/60 p-4 backdrop-blur-[1px] sm:p-6">
+                <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white px-6 py-8 text-center shadow-2xl sm:px-8 sm:py-9">
                   {renderAccessOverlay()}
                 </div>
               </div>
