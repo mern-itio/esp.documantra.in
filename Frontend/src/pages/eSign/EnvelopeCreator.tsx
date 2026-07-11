@@ -25,7 +25,6 @@ import {
   AlertTriangle,
   CircleQuestionMark,
   ChevronLeft,
-  ChevronRight,
   ExternalLink,
   Phone,
   Edit,
@@ -307,13 +306,7 @@ const isPublicFlow =
     }
   }, [documents]);
 
-  useEffect(() => {
-    if (documents && documents.length > 0) {
-      setStackedDocIndex(prev => Math.max(0, Math.min(prev, documents.length - 1)));
-    }
-  }, [documents?.length]);
   const [showDocuments, setShowDocuments] = useState(true);
-  const [stackedDocIndex, setStackedDocIndex] = useState(0);
   const [openRoleDropdownId, setOpenRoleDropdownId] = useState<string | null>(null);
   const [openCustomizeDropdownId, setOpenCustomizeDropdownId] = useState<string | null>(null);
   const [setSigningOrder, setSetSigningOrder] = useState(false);
@@ -1480,25 +1473,27 @@ const isPublicFlow =
   const formatFileSize = formatUploadFileSize;
   const totalUploadedBytes = (documents || []).reduce((sum, doc) => sum + (doc.size || 0), 0);
   const uploadLimitHint = getEsignUploadLimitHint();
+  const FAN_CARD_WIDTH = 88;
+  const FAN_CARD_HEIGHT = 130;
+  const FAN_CARD_OVERLAP = 62;
 
-  const shiftStackedDoc = (delta: number) => {
-    setStackedDocIndex((prev) => {
-      const maxIndex = Math.max(0, (documents?.length || 0) - 1);
-      return Math.max(0, Math.min(maxIndex, prev + delta));
-    });
-  };
-
-  const renderDocumentUploadDropzone = (compact = false) => (
-    <div data-tour="ec-upload">
+  const renderDocumentUploadDropzone = (mode: 'full' | 'inline' = 'full') => {
+    const isInline = mode === 'inline';
+    return (
+    <div data-tour="ec-upload" className={isInline ? 'h-[130px]' : undefined}>
       <div
         onClick={() => fileInputRef.current?.click()}
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`flex items-center justify-center rounded-2xl border border-dashed bg-card transition-colors ${
+        className={`flex items-center justify-center border border-dashed bg-card transition-colors ${
           isDragOver ? 'border-primary bg-primary/5' : 'border-border'
-        } ${compact ? 'min-h-[140px] p-5' : 'min-h-[200px] p-8 sm:p-12'} cursor-pointer`}
+        } ${
+          isInline
+            ? 'h-[130px] w-[120px] cursor-pointer rounded-lg p-3 hover:border-[#1B4D3E] hover:bg-[#1B4D3E]/5'
+            : 'min-h-[200px] cursor-pointer rounded-2xl p-8 sm:p-12'
+        }`}
       >
         <input
           ref={fileInputRef}
@@ -1508,12 +1503,15 @@ const isPublicFlow =
           onChange={handleFileUpload}
           className="hidden"
         />
-        <div className="flex flex-col items-center justify-center space-y-3 text-center">
-          <div className={`rounded-xl bg-[#1B4D3E] ${compact ? 'p-2.5' : 'p-3'}`}>
-            <Upload className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} text-white`} />
+        <div className={`flex flex-col items-center justify-center text-center ${isInline ? 'space-y-2' : 'space-y-3'}`}>
+          <div className={`rounded-xl bg-[#1B4D3E] ${isInline ? 'p-2' : 'p-3'}`}>
+            <Upload className={`${isInline ? 'h-4 w-4' : 'h-5 w-5'} text-white`} />
           </div>
-          {compact ? (
-            <p className="text-sm text-muted-foreground">Drop more files or tap to upload</p>
+          {isInline ? (
+            <>
+              <p className="text-[10px] font-semibold leading-tight text-foreground">Add files</p>
+              <p className="text-[8px] leading-tight text-muted-foreground">Drop here</p>
+            </>
           ) : (
             <>
               <p className="text-sm text-muted-foreground">Drop your files here or</p>
@@ -1547,169 +1545,98 @@ const isPublicFlow =
                   <span className="relative z-10 text-sm sm:text-base">Choose Template</span>
                 </button>
               </div>
+              <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
             </>
           )}
-          <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const LoaderPlaceholder = ({ doc }: { doc: (typeof documents)[number] }) => (
-    <div className="flex h-full w-full items-center justify-center p-2 text-center">
-      <p className="text-[10px] text-muted-foreground">{doc.name}</p>
+    <div className="flex h-full w-full items-center justify-center p-1 text-center">
+      <p className="line-clamp-3 text-[8px] text-muted-foreground">{doc.name}</p>
     </div>
   );
 
-  const renderDocumentDeckCard = (doc: (typeof documents)[number], featured: boolean) => (
-    <div className="flex items-center gap-4">
+  const renderDocumentFanCard = (doc: (typeof documents)[number], index: number) => (
+    <div
+      key={doc.id}
+      className="group relative flex-shrink-0 cursor-pointer transition-transform duration-200 hover:z-[60] hover:-translate-y-3"
+      style={{
+        marginLeft: index === 0 ? 0 : -FAN_CARD_OVERLAP,
+        zIndex: index + 1,
+      }}
+      onClick={() => {
+        if (!doc.isUploading && doc.url) {
+          setSelectedPdfForPreview(doc);
+          setPdfPreviewModalOpen(true);
+        }
+      }}
+    >
       <div
-        className={`relative flex flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-gradient-to-br from-[#F7F3EE] to-white ${
-          featured ? 'h-24 w-20' : 'h-20 w-16'
-        }`}
+        className="relative flex flex-col overflow-hidden rounded-lg border-2 border-border bg-card shadow-md transition-all group-hover:border-[#1B4D3E] group-hover:shadow-xl"
+        style={{ width: FAN_CARD_WIDTH, height: FAN_CARD_HEIGHT }}
       >
-        {!doc.isUploading && doc.url ? (
-          <DocumentUploadThumbnail doc={doc} pdfWidth={featured ? 72 : 58} minHeight={featured ? '96px' : '80px'} />
-        ) : (
-          <LoaderPlaceholder doc={doc} />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className={`truncate font-semibold text-foreground ${featured ? 'text-sm' : 'text-xs'}`} title={doc.name}>
-          {doc.name}
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {doc.isUploading
-            ? `Uploading… ${doc.uploadProgress ?? 0}%`
-            : `${doc.pages} page${doc.pages !== 1 ? 's' : ''} · ${formatFileSize(doc.size)}`}
-        </p>
-        {featured && !doc.isUploading && doc.url && (
+        <span className="absolute left-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-[#1B4D3E] text-[9px] font-bold text-white shadow-sm">
+          {index + 1}
+        </span>
+        {!doc.isUploading && (
           <button
             type="button"
-            onClick={() => {
-              setSelectedPdfForPreview(doc);
-              setPdfPreviewModalOpen(true);
+            onClick={(e) => {
+              e.stopPropagation();
+              removeDocument(doc.id);
             }}
-            className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#1B4D3E] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#163f34]"
+            className="absolute right-0.5 top-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-black/70 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/90"
           >
-            <Eye className="h-3 w-3" />
-            Preview
+            <X className="h-2.5 w-2.5 text-white" />
           </button>
         )}
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-gradient-to-b from-[#F7F3EE] to-white p-1">
+          {!doc.isUploading && doc.url ? (
+            <DocumentUploadThumbnail doc={doc} pdfWidth={64} minHeight="88px" />
+          ) : (
+            <LoaderPlaceholder doc={doc} />
+          )}
+        </div>
+        <div className="border-t border-border bg-card px-1 py-1">
+          <p className="truncate text-[8px] font-semibold text-foreground" title={doc.name}>
+            {doc.name}
+          </p>
+          <p className="text-[7px] text-muted-foreground">
+            {doc.isUploading
+              ? `${doc.uploadProgress ?? 0}%`
+              : `${doc.pages}p · ${formatFileSize(doc.size)}`}
+          </p>
+        </div>
         {doc.isUploading && (
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="absolute inset-x-1 bottom-7 h-1 overflow-hidden rounded-full bg-muted">
             <div className="h-full bg-primary transition-all" style={{ width: `${doc.uploadProgress ?? 0}%` }} />
           </div>
         )}
       </div>
-      {featured && !doc.isUploading && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            removeDocument(doc.id);
-          }}
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-black/5 text-muted-foreground hover:bg-rose-50 hover:text-rose-600"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
     </div>
   );
 
-  const renderDocumentStackedDeck = () => {
-    const count = documents.length;
-    const activeIndex = Math.min(stackedDocIndex, count - 1);
-    const activeDoc = documents[activeIndex];
-    const peekLayers = Math.min(2, Math.max(0, count - activeIndex - 1));
-
+  const renderDocumentFanLayout = () => {
+    const hasDocs = documents.length > 0;
     return (
-      <div className="space-y-5">
-        <div
-          className="relative mx-auto w-full max-w-xl"
-          style={{ minHeight: `${168 + peekLayers * 14}px` }}
-        >
-          {count > 1 &&
-            [2, 1].map((layer) => {
-              const behindIndex = activeIndex + layer;
-              if (behindIndex >= count) return null;
-              const doc = documents[behindIndex];
-              return (
-                <div
-                  key={`stack-behind-${doc.id}`}
-                  className="absolute inset-x-3 rounded-2xl border border-border/80 bg-card shadow-md"
-                  style={{
-                    top: layer * 14,
-                    transform: `scale(${1 - layer * 0.035})`,
-                    zIndex: 30 - layer,
-                    opacity: 0.92 - layer * 0.1,
-                  }}
-                >
-                  <div className="p-4">{renderDocumentDeckCard(doc, false)}</div>
-                </div>
-              );
-            })}
-
-          <div className="absolute inset-x-0 top-0 z-40 rounded-2xl border border-border bg-card p-4 shadow-xl ring-1 ring-black/5">
-            {renderDocumentDeckCard(activeDoc, true)}
-          </div>
-
-          {count > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={() => shiftStackedDoc(-1)}
-                disabled={activeIndex === 0}
-                className="absolute left-0 top-1/2 z-50 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-30"
-                aria-label="Previous document"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => shiftStackedDoc(1)}
-                disabled={activeIndex >= count - 1}
-                className="absolute right-0 top-1/2 z-50 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-30"
-                aria-label="Next document"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </>
+      <div className="space-y-2">
+        <div className="flex max-w-full flex-wrap items-end gap-3">
+          {hasDocs && (
+            <div className="inline-flex flex-shrink-0 items-end pl-1 pt-3 pb-1">
+              {documents.map((doc, index) => renderDocumentFanCard(doc, index))}
+            </div>
           )}
+          <div className={`flex-shrink-0 ${hasDocs ? '' : 'w-full'}`}>
+            {renderDocumentUploadDropzone(hasDocs ? 'inline' : 'full')}
+          </div>
         </div>
-
-        {count > 1 && (
-          <p className="text-center text-xs font-medium text-muted-foreground">
-            Document {activeIndex + 1} of {count}
-          </p>
+        {hasDocs && (
+          <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
         )}
-
-        <div className="flex flex-wrap justify-center gap-2">
-          {documents.map((doc, index) => (
-            <button
-              key={`doc-chip-${doc.id}`}
-              type="button"
-              onClick={() => setStackedDocIndex(index)}
-              className={`inline-flex max-w-[220px] items-center gap-2 rounded-full border px-3 py-1.5 text-left text-xs transition-all ${
-                activeIndex === index
-                  ? 'border-[#1B4D3E] bg-[#1B4D3E]/10 text-[#1B4D3E] shadow-sm'
-                  : 'border-border bg-card text-foreground hover:border-[#1B4D3E]/30 hover:bg-muted/50'
-              }`}
-              title={doc.name}
-            >
-              <span
-                className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                  activeIndex === index ? 'bg-[#1B4D3E] text-white' : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {index + 1}
-              </span>
-              <span className="truncate font-medium">{doc.name}</span>
-            </button>
-          ))}
-        </div>
-
-        {renderDocumentUploadDropzone(true)}
       </div>
     );
   };
@@ -4071,11 +3998,7 @@ if (isPublicFlow) {
                     <span className="font-medium text-foreground">{formatFileSize(totalUploadedBytes)}</span> total
                   </p>
                 )}
-                {documents.length === 0 ? (
-                  renderDocumentUploadDropzone(false)
-                ) : (
-                  renderDocumentStackedDeck()
-                )}
+                {renderDocumentFanLayout()}
               </div>
             )}
             <hr className="border-t-2 border-border my-4" />
