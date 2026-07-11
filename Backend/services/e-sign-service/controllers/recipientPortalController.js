@@ -5,16 +5,19 @@ const Recipient = require('../models/Recipient');
 const RecipientPermission = require('../models/RecipientPermission');
 const Envelope = require('../models/Envelope');
 const RecipientPortalOtp = require('../models/RecipientPortalOtp');
+const RecipientPortalSession = require('../models/RecipientPortalSession');
 const {
   recipientPortalOtpTemplate,
 } = require('../emails/emailTemplates');
 const {
   signRecipientPortalToken,
   normalizePortalEmail,
+  PORTAL_VIEW_PERMISSION,
 } = require('../helpers/recipientPortalToken');
 
 const OTP_EXPIRY_MINUTES = 10;
 const RESEND_COOLDOWN_SECONDS = 60;
+const PORTAL_SESSION_DAYS = Number(process.env.RECIPIENT_PORTAL_SESSION_DAYS || 365);
 const MAX_VERIFY_ATTEMPTS = Number(process.env.OTP_MAX_VERIFY_ATTEMPTS || 10);
 const MAX_OTP_SEND_ATTEMPTS = Number(process.env.OTP_MAX_SEND_ATTEMPTS || 10);
 const OTP_SEND_WINDOW_MS =
@@ -34,6 +37,61 @@ function hashOtp(code) {
 
 function generateOtpCode() {
   return String(crypto.randomInt(100000, 1000000));
+}
+
+function hashRefreshToken(token) {
+  return crypto.createHash('sha256').update(String(token)).digest('hex');
+}
+
+function createRefreshToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+async function getRecipientDisplayName(email) {
+  const recipient = await Recipient.findOne({ email })
+    .sort({ updatedAt: -1 })
+    .select('name')
+    .lean();
+  return String(recipient?.name || '').trim();
+}
+
+async function upsertPortalSession(email, recipientName = '') {
+  const refreshToken = createRefreshToken();
+  const expiresAt = new Date(Date.now() + PORTAL_SESSION_DAYS * 24 * 60 * 60 * 1000);
+  const session = await RecipientPortalSession.findOneAndUpdate(
+    { email },
+    {
+      email,
+      refreshTokenHash: hashRefreshToken(refreshToken),
+      recipientName: recipientName || '',
+      permissions: [PORTAL_VIEW_PERMISSION],
+      verifiedAt: new Date(),
+      expiresAt,
+      lastSeenAt: new Date(),
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  );
+
+  return { session, refreshToken };
+}
+
+function buildPortalAuthResponse({ email, session, refreshToken, recipientName }) {
+  const token = signRecipientPortalToken(email, {
+    sessionId: String(session._id),
+    permissions: session.permissions,
+  });
+
+  return {
+    status: 'success',
+    token,
+    refreshToken,
+    email,
+    maskedEmail: maskEmail(email),
+    recipientName: recipientName || session.recipientName || '',
+    permissions: session.permissions,
+    sessionExpiresAt: session.expiresAt,
+    accountCreated: true,
+  };
 }
 
 async function dispatchPortalEmail({ toEmail, subject, html }) {
@@ -180,19 +238,65 @@ const verifyRecipientPortalCode = async (req, res) => {
     otpRecord.verifiedAt = new Date();
     await otpRecord.save();
 
-    const token = signRecipientPortalToken(email);
     const recipientName = await getRecipientDisplayName(email);
-    return res.status(200).json({
-      status: 'success',
-      token,
-      email,
-      maskedEmail: maskEmail(email),
-      recipientName,
-      expiresInHours: 24,
-    });
+    const { session, refreshToken } = await upsertPortalSession(email, recipientName);
+    return res.status(200).json(
+      buildPortalAuthResponse({ email, session, refreshToken, recipientName }),
+    );
   } catch (error) {
     console.error('verifyRecipientPortalCode error:', error);
     return res.status(500).json({ message: 'Failed to verify access code' });
+  }
+};
+
+const refreshRecipientPortalSession = async (req, res) => {
+  try {
+    const email = normalizePortalEmail(req.body?.email);
+    const refreshToken = String(req.body?.refreshToken || '').trim();
+
+    if (!email || !refreshToken) {
+      return res.status(400).json({ message: 'Email and refresh token are required' });
+    }
+
+    const session = await RecipientPortalSession.findOne({ email });
+    if (!session) {
+      return res.status(401).json({ message: 'Portal account not found. Please verify your email again.' });
+    }
+
+    if (session.expiresAt < new Date()) {
+      return res.status(401).json({ message: 'Portal session expired. Please verify your email again.' });
+    }
+
+    if (session.refreshTokenHash !== hashRefreshToken(refreshToken)) {
+      return res.status(401).json({ message: 'Invalid portal session' });
+    }
+
+    session.lastSeenAt = new Date();
+    await session.save();
+
+    const recipientName = session.recipientName || (await getRecipientDisplayName(email));
+    if (recipientName && !session.recipientName) {
+      session.recipientName = recipientName;
+      await session.save();
+    }
+
+    const accessToken = signRecipientPortalToken(email, {
+      sessionId: String(session._id),
+      permissions: session.permissions,
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      token: accessToken,
+      email,
+      maskedEmail: maskEmail(email),
+      recipientName,
+      permissions: session.permissions,
+      sessionExpiresAt: session.expiresAt,
+    });
+  } catch (error) {
+    console.error('refreshRecipientPortalSession error:', error);
+    return res.status(500).json({ message: 'Failed to refresh portal session' });
   }
 };
 
@@ -236,17 +340,13 @@ async function fetchSenderNameMap(senderIds) {
   return senderMap;
 }
 
-async function getRecipientDisplayName(email) {
-  const recipient = await Recipient.findOne({ email })
-    .sort({ updatedAt: -1 })
-    .select('name')
-    .lean();
-  return String(recipient?.name || '').trim();
-}
-
 const listRecipientPortalDocuments = async (req, res) => {
   try {
     const email = req.recipientPortal?.email;
+    const permissions = req.recipientPortal?.permissions || [];
+    if (!permissions.includes(PORTAL_VIEW_PERMISSION)) {
+      return res.status(403).json({ message: 'Insufficient portal permissions' });
+    }
     const tab = String(req.query?.tab || 'inbox').toLowerCase();
 
     const recipients = await Recipient.find({ email }).select('_id name email').lean();
@@ -333,6 +433,7 @@ const listRecipientPortalDocuments = async (req, res) => {
 module.exports = {
   requestRecipientPortalCode,
   verifyRecipientPortalCode,
+  refreshRecipientPortalSession,
   listRecipientPortalDocuments,
   maskEmail,
 };

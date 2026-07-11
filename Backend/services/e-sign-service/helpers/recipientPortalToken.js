@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 
-const PORTAL_TOKEN_TTL = '24h';
+const PORTAL_TOKEN_TTL = process.env.RECIPIENT_PORTAL_TOKEN_TTL || '90d';
+const PORTAL_VIEW_PERMISSION = 'recipient_portal:view_documents';
 
 function getPortalTokenSecret() {
   return (
@@ -23,15 +24,17 @@ function buildRecipientPortalUrl(frontendUrl, email) {
   return `${path}?email=${encodeURIComponent(normalized)}`;
 }
 
-function signRecipientPortalToken(email) {
+function signRecipientPortalToken(email, options = {}) {
   const normalizedEmail = normalizePortalEmail(email);
   return jwt.sign(
     {
       type: 'recipient_portal',
       email: normalizedEmail,
+      sessionId: options.sessionId || undefined,
+      permissions: options.permissions || [PORTAL_VIEW_PERMISSION],
     },
     getPortalTokenSecret(),
-    { expiresIn: PORTAL_TOKEN_TTL },
+    { expiresIn: options.expiresIn || PORTAL_TOKEN_TTL },
   );
 }
 
@@ -42,6 +45,8 @@ function verifyRecipientPortalToken(token) {
   }
   return {
     email: normalizePortalEmail(decoded.email),
+    sessionId: decoded.sessionId || null,
+    permissions: Array.isArray(decoded.permissions) ? decoded.permissions : [PORTAL_VIEW_PERMISSION],
     exp: decoded.exp,
   };
 }
@@ -51,4 +56,5 @@ module.exports = {
   verifyRecipientPortalToken,
   normalizePortalEmail,
   buildRecipientPortalUrl,
+  PORTAL_VIEW_PERMISSION,
 };

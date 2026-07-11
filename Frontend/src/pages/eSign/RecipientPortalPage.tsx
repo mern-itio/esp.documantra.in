@@ -13,7 +13,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
-import { APP_NAME } from '../../config/brand';
+import BrandLogo from '../../components/BrandLogo';
 import {
   CookieConsentBanner,
   CookiePreferenceCenter,
@@ -23,6 +23,7 @@ const PORTAL_TOKEN_KEY = 'recipientPortalToken';
 const PORTAL_EMAIL_KEY = 'recipientPortalEmail';
 const PORTAL_PREFILL_KEY = 'recipientPortalPrefillEmail';
 const PORTAL_NAME_KEY = 'recipientPortalPrefillName';
+const PORTAL_REFRESH_KEY = 'recipientPortalRefreshToken';
 
 type PortalDocument = {
   envelopeId: string;
@@ -89,6 +90,24 @@ function firstName(name: string) {
   return trimmed.split(/\s+/)[0] || trimmed;
 }
 
+function isJwtExpired(accessToken: string) {
+  try {
+    const segment = accessToken.split('.')[1];
+    if (!segment) return true;
+    const payload = JSON.parse(atob(segment.replace(/-/g, '+').replace(/_/g, '/')));
+    if (!payload?.exp) return true;
+    return payload.exp * 1000 <= Date.now() + 60_000;
+  } catch {
+    return true;
+  }
+}
+
+function clearPortalSession() {
+  localStorage.removeItem(PORTAL_TOKEN_KEY);
+  localStorage.removeItem(PORTAL_EMAIL_KEY);
+  localStorage.removeItem(PORTAL_REFRESH_KEY);
+}
+
 const RecipientPortalPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [cookieCenterOpen, setCookieCenterOpen] = useState(false);
@@ -108,6 +127,7 @@ const RecipientPortalPage: React.FC = () => {
   const [resendSeconds, setResendSeconds] = useState(0);
   const [changeEmailMode, setChangeEmailMode] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [sessionBootstrapping, setSessionBootstrapping] = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const sessionEmail = useMemo(
@@ -132,37 +152,103 @@ const RecipientPortalPage: React.FC = () => {
     [sessionEmail, recipientName],
   );
 
-  const restoreSession = useCallback(() => {
-    const savedToken = localStorage.getItem(PORTAL_TOKEN_KEY);
-    const savedEmail = localStorage.getItem(PORTAL_EMAIL_KEY) || '';
-    if (savedToken && savedEmail) {
-      setToken(savedToken);
-      setEmail(savedEmail);
-      setMaskedEmail(maskEmail(savedEmail));
+  const persistPortalSession = useCallback(
+    (payload: {
+      token: string;
+      email: string;
+      refreshToken?: string;
+      recipientName?: string;
+    }) => {
+      const normalizedEmail = payload.email.trim().toLowerCase();
+      localStorage.setItem(PORTAL_TOKEN_KEY, payload.token);
+      localStorage.setItem(PORTAL_EMAIL_KEY, normalizedEmail);
+      if (payload.refreshToken) {
+        localStorage.setItem(PORTAL_REFRESH_KEY, payload.refreshToken);
+      }
+      setToken(payload.token);
+      setEmail(normalizedEmail);
+      setMaskedEmail(maskEmail(normalizedEmail));
+      sessionStorage.setItem(PORTAL_PREFILL_KEY, normalizedEmail);
+      if (payload.recipientName) {
+        setRecipientName(payload.recipientName);
+        sessionStorage.setItem(PORTAL_NAME_KEY, payload.recipientName);
+      }
       setStep('documents');
-    }
-  }, []);
+    },
+    [],
+  );
+
+  const tryRefreshSession = useCallback(
+    async (preferredEmail?: string): Promise<string | null> => {
+      const savedEmail = (preferredEmail || localStorage.getItem(PORTAL_EMAIL_KEY) || email)
+        .trim()
+        .toLowerCase();
+      const savedRefresh = localStorage.getItem(PORTAL_REFRESH_KEY);
+      if (!savedEmail || !savedRefresh) return null;
+
+      try {
+        const response = await eSignApi.post('/api/e-sign/public/recipient-portal/refresh-session', {
+          email: savedEmail,
+          refreshToken: savedRefresh,
+        });
+        const nextToken = response.data?.token;
+        if (!nextToken) return null;
+        persistPortalSession({
+          token: nextToken,
+          email: savedEmail,
+          recipientName: response.data?.recipientName,
+        });
+        return nextToken;
+      } catch {
+        return null;
+      }
+    },
+    [email, persistPortalSession],
+  );
 
   useEffect(() => {
-    const fromUrlEmail = (searchParams.get('email') || '').trim().toLowerCase();
-    const fromStorageEmail = (sessionStorage.getItem(PORTAL_PREFILL_KEY) || '').trim().toLowerCase();
-    const prefillEmail = fromUrlEmail || fromStorageEmail;
+    let mounted = true;
 
-    const fromUrlName = (searchParams.get('name') || '').trim();
-    const fromStorageName = (sessionStorage.getItem(PORTAL_NAME_KEY) || '').trim();
-    const prefillName = fromUrlName || fromStorageName;
+    const bootstrap = async () => {
+      const fromUrlEmail = (searchParams.get('email') || '').trim().toLowerCase();
+      const fromStorageEmail = (sessionStorage.getItem(PORTAL_PREFILL_KEY) || '').trim().toLowerCase();
+      const prefillEmail = fromUrlEmail || fromStorageEmail;
 
-    if (prefillEmail) {
-      setEmail(prefillEmail);
-      setMaskedEmail(maskEmail(prefillEmail));
-      sessionStorage.setItem(PORTAL_PREFILL_KEY, prefillEmail);
-    }
-    if (prefillName) {
-      setRecipientName(prefillName);
-      sessionStorage.setItem(PORTAL_NAME_KEY, prefillName);
-    }
+      const fromUrlName = (searchParams.get('name') || '').trim();
+      const fromStorageName = (sessionStorage.getItem(PORTAL_NAME_KEY) || '').trim();
+      const prefillName = fromUrlName || fromStorageName;
 
-    if (!localStorage.getItem(PORTAL_TOKEN_KEY)) {
+      if (prefillEmail) {
+        setEmail(prefillEmail);
+        setMaskedEmail(maskEmail(prefillEmail));
+        sessionStorage.setItem(PORTAL_PREFILL_KEY, prefillEmail);
+      }
+      if (prefillName) {
+        setRecipientName(prefillName);
+        sessionStorage.setItem(PORTAL_NAME_KEY, prefillName);
+      }
+
+      const savedToken = localStorage.getItem(PORTAL_TOKEN_KEY);
+      const savedEmail = (localStorage.getItem(PORTAL_EMAIL_KEY) || prefillEmail || '')
+        .trim()
+        .toLowerCase();
+      const savedRefresh = localStorage.getItem(PORTAL_REFRESH_KEY);
+
+      if (savedToken && savedEmail && !isJwtExpired(savedToken)) {
+        persistPortalSession({ token: savedToken, email: savedEmail });
+        if (mounted) setSessionBootstrapping(false);
+        return;
+      }
+
+      if (savedEmail && savedRefresh) {
+        const refreshedToken = await tryRefreshSession(savedEmail);
+        if (refreshedToken && mounted) {
+          setSessionBootstrapping(false);
+          return;
+        }
+      }
+
+      if (!mounted) return;
       if (prefillEmail) {
         setStep('consent');
         setChangeEmailMode(false);
@@ -170,10 +256,15 @@ const RecipientPortalPage: React.FC = () => {
         setStep('access');
         setChangeEmailMode(true);
       }
-    }
+      setSessionBootstrapping(false);
+    };
 
-    restoreSession();
-  }, [searchParams, restoreSession]);
+    setSessionBootstrapping(true);
+    bootstrap();
+    return () => {
+      mounted = false;
+    };
+  }, [searchParams, persistPortalSession, tryRefreshSession]);
 
   useEffect(() => {
     if (resendSeconds <= 0) return undefined;
@@ -194,7 +285,11 @@ const RecipientPortalPage: React.FC = () => {
   }, []);
 
   const loadDocuments = useCallback(
-    async (activeTab: 'inbox' | 'archived', activeToken?: string | null) => {
+    async (
+      activeTab: 'inbox' | 'archived',
+      activeToken?: string | null,
+      allowRefresh = true,
+    ) => {
       const authToken = activeToken || token || localStorage.getItem(PORTAL_TOKEN_KEY);
       if (!authToken) return;
 
@@ -218,9 +313,17 @@ const RecipientPortalPage: React.FC = () => {
       } catch (err: any) {
         const message =
           err?.response?.data?.message || 'Unable to load your documents right now.';
-        if (err?.response?.status === 401) {
-          localStorage.removeItem(PORTAL_TOKEN_KEY);
-          localStorage.removeItem(PORTAL_EMAIL_KEY);
+        if (err?.response?.status === 401 && allowRefresh) {
+          const refreshedToken = await tryRefreshSession();
+          if (refreshedToken) {
+            await loadDocuments(activeTab, refreshedToken, false);
+            return;
+          }
+          clearPortalSession();
+          setToken(null);
+          setStep(sessionEmail ? 'consent' : 'access');
+        } else if (err?.response?.status === 401) {
+          clearPortalSession();
           setToken(null);
           setStep(sessionEmail ? 'consent' : 'access');
         }
@@ -229,7 +332,7 @@ const RecipientPortalPage: React.FC = () => {
         setListLoading(false);
       }
     },
-    [token, sessionEmail],
+    [token, sessionEmail, tryRefreshSession],
   );
 
   useEffect(() => {
@@ -296,16 +399,13 @@ const RecipientPortalPage: React.FC = () => {
       if (!nextToken) {
         throw new Error('Missing portal session token');
       }
-      localStorage.setItem(PORTAL_TOKEN_KEY, nextToken);
-      localStorage.setItem(PORTAL_EMAIL_KEY, sessionEmail);
-      if (response.data?.recipientName) {
-        setRecipientName(response.data.recipientName);
-        sessionStorage.setItem(PORTAL_NAME_KEY, response.data.recipientName);
-      }
-      setToken(nextToken);
-      setMaskedEmail(response.data?.maskedEmail || maskEmail(sessionEmail));
+      persistPortalSession({
+        token: nextToken,
+        email: sessionEmail,
+        refreshToken: response.data?.refreshToken,
+        recipientName: response.data?.recipientName,
+      });
       setCode('');
-      setStep('documents');
       setInfo('');
     } catch (err: any) {
       setFormError(err?.response?.data?.message || 'Invalid or expired code.');
@@ -315,8 +415,7 @@ const RecipientPortalPage: React.FC = () => {
   };
 
   const signOut = () => {
-    localStorage.removeItem(PORTAL_TOKEN_KEY);
-    localStorage.removeItem(PORTAL_EMAIL_KEY);
+    clearPortalSession();
     setToken(null);
     setDocuments([]);
     setCode('');
@@ -534,12 +633,23 @@ const RecipientPortalPage: React.FC = () => {
     return null;
   };
 
+  if (sessionBootstrapping) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Loading your documents...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <span className="text-base font-semibold text-gray-900">{APP_NAME}</span>
+            <BrandLogo className="h-8 w-auto sm:h-9" />
             <span className="hidden text-sm text-gray-400 sm:inline">/</span>
             <span className="hidden text-sm font-medium text-gray-600 sm:inline">My documents</span>
           </div>

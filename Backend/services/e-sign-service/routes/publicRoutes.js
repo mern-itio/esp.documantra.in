@@ -33,6 +33,7 @@ const {updateAuthStatus,saveAadhaar,patchSigningEvidence} = require('../controll
 const {
   requestRecipientPortalCode,
   verifyRecipientPortalCode,
+  refreshRecipientPortalSession,
   listRecipientPortalDocuments,
 } = require('../controllers/recipientPortalController');
 const {
@@ -97,6 +98,7 @@ router.post('/envelope/accept-terms',acceptTerms);
 router.post('/fetch/current-recipient',fetchCurrentRecipient);
 router.post('/recipient-portal/request-code', requestRecipientPortalCode);
 router.post('/recipient-portal/verify-code', verifyRecipientPortalCode);
+router.post('/recipient-portal/refresh-session', refreshRecipientPortalSession);
 router.get('/recipient-portal/documents', recipientPortalAuth, listRecipientPortalDocuments);
 router.get('/signer-access/check', checkSignerAccess);
 router.post('/signer-access/request-code', requestSignerAccessCode);
