@@ -1,14 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Archive,
-  ArrowRight,
+  ArrowUpRight,
+  ExternalLink,
   FileText,
   Inbox,
   Loader2,
   LogOut,
   Mail,
   RefreshCw,
+  ShieldCheck,
 } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
 import { APP_NAME } from '../../config/brand';
@@ -19,6 +21,7 @@ import {
 
 const PORTAL_TOKEN_KEY = 'recipientPortalToken';
 const PORTAL_EMAIL_KEY = 'recipientPortalEmail';
+const PORTAL_PREFILL_KEY = 'recipientPortalPrefillEmail';
 
 type PortalDocument = {
   envelopeId: string;
@@ -31,6 +34,12 @@ type PortalDocument = {
 };
 
 type PortalStep = 'access' | 'verify' | 'documents';
+
+const PREVIEW_ROWS = [
+  { from: 'Mandeep Kaur', name: 'Phantom Compliance - Northgate Fintech Limited', status: 'SIGNED', date: 'Jul 3, 2026' },
+  { from: 'Operations Team', name: 'Vendor Agreement - FY26', status: 'PENDING', date: 'Jul 1, 2026' },
+  { from: 'Legal Desk', name: 'Mutual NDA - Partner Co.', status: 'SIGNED', date: 'Jun 28, 2026' },
+];
 
 function maskEmail(email: string) {
   const normalized = email.trim().toLowerCase();
@@ -51,7 +60,7 @@ function formatDate(value?: string) {
   });
 }
 
-function statusBadgeClass(status: PortalDocument['status']) {
+function statusBadgeClass(status: PortalDocument['status'] | string) {
   switch (status) {
     case 'SIGNED':
       return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
@@ -65,6 +74,7 @@ function statusBadgeClass(status: PortalDocument['status']) {
 }
 
 const RecipientPortalPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [cookieCenterOpen, setCookieCenterOpen] = useState(false);
   const [step, setStep] = useState<PortalStep>('access');
   const [email, setEmail] = useState('');
@@ -78,6 +88,7 @@ const RecipientPortalPage: React.FC = () => {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [resendSeconds, setResendSeconds] = useState(0);
+  const [changeEmailMode, setChangeEmailMode] = useState(false);
 
   const sessionEmail = useMemo(
     () => email.trim().toLowerCase() || localStorage.getItem(PORTAL_EMAIL_KEY) || '',
@@ -96,8 +107,16 @@ const RecipientPortalPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const fromUrl = (searchParams.get('email') || '').trim().toLowerCase();
+    const fromStorage = (sessionStorage.getItem(PORTAL_PREFILL_KEY) || '').trim().toLowerCase();
+    const prefill = fromUrl || fromStorage;
+    if (prefill) {
+      setEmail(prefill);
+      setMaskedEmail(maskEmail(prefill));
+      sessionStorage.setItem(PORTAL_PREFILL_KEY, prefill);
+    }
     restoreSession();
-  }, [restoreSession]);
+  }, [searchParams, restoreSession]);
 
   useEffect(() => {
     if (resendSeconds <= 0) return undefined;
@@ -163,12 +182,14 @@ const RecipientPortalPage: React.FC = () => {
         email: nextEmail,
       });
       setEmail(nextEmail);
+      sessionStorage.setItem(PORTAL_PREFILL_KEY, nextEmail);
       setMaskedEmail(response.data?.maskedEmail || maskEmail(nextEmail));
       setResendSeconds(Number(response.data?.resendAfterSeconds || 60));
       setInfo(
         response.data?.message ||
           'If this email has documents waiting, we sent a one-time sign-in code.',
       );
+      setChangeEmailMode(false);
       setStep('verify');
     } catch (err: any) {
       const retryAfter = Number(err?.response?.data?.resendAfterSeconds || 0);
@@ -220,19 +241,55 @@ const RecipientPortalPage: React.FC = () => {
     setToken(null);
     setDocuments([]);
     setCode('');
-    setEmail('');
-    setMaskedEmail('');
+    setMaskedEmail(email ? maskEmail(email) : '');
     setStep('access');
     setError('');
     setInfo('');
+    setChangeEmailMode(false);
   };
+
+  const renderDocumentTable = (rows: Array<{ from: string; name: string; status: string; date: string; action?: React.ReactNode }>, blurred = false) => (
+    <div className={`overflow-hidden ${blurred ? 'pointer-events-none select-none blur-[2px]' : ''}`}>
+      <div className="hidden border-b border-gray-100 bg-gray-50 px-6 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 sm:grid sm:grid-cols-12 sm:gap-4">
+        <div className="sm:col-span-3">From</div>
+        <div className="sm:col-span-4">Name</div>
+        <div className="sm:col-span-2">Status</div>
+        <div className="sm:col-span-3">Date received</div>
+      </div>
+      <ul className="divide-y divide-gray-100">
+        {rows.map((row, index) => (
+          <li key={`${row.name}-${index}`} className="px-4 py-4 sm:px-6">
+            <div className="grid gap-3 sm:grid-cols-12 sm:items-center">
+              <div className="sm:col-span-3">
+                <p className="text-sm font-semibold text-gray-900">{row.from}</p>
+              </div>
+              <div className="sm:col-span-4">
+                <p className="truncate text-sm text-gray-800">{row.name}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${statusBadgeClass(row.status)}`}>
+                  {row.status}
+                </span>
+              </div>
+              <div className="sm:col-span-3 flex items-center justify-between gap-3">
+                <span className="text-sm text-gray-500">{row.date}</span>
+                {row.action}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
+  const isAuthenticated = step === 'documents' && !!token;
 
   return (
     <div className="min-h-screen bg-[#F7F3EE]">
       <header className="border-b border-gray-200 bg-[#1b0c3e] text-white">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <div className="text-sm font-semibold">{APP_NAME} · My documents</div>
-          {step === 'documents' && (
+          {isAuthenticated && (
             <button
               type="button"
               onClick={signOut}
@@ -245,197 +302,225 @@ const RecipientPortalPage: React.FC = () => {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-10">
-        {step === 'access' && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#FFF8E6] px-3 py-1 text-xs font-semibold text-[#1b0c3e]">
-              <Mail className="h-3.5 w-3.5" />
-              Access your documents
-            </div>
-            <h1 className="mt-4 text-2xl font-semibold text-gray-900">
-              Sign in with your email
-            </h1>
-            <p className="mt-2 text-sm text-gray-600">
-              We will email you a one-time code to open your signing inbox. No password required.
+      <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
+        <div className="mb-6">
+          {isAuthenticated && (
+            <p className="text-sm text-gray-600">
+              Signed in as <strong>{maskedEmail || maskEmail(sessionEmail)}</strong>
             </p>
+          )}
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">My documents</h1>
+        </div>
 
-            <label className="mt-6 block text-sm font-medium text-gray-700" htmlFor="portal-email">
-              Email address
-            </label>
-            <input
-              id="portal-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-              className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none ring-[#4D0080] focus:border-[#4D0080] focus:ring-2"
-              disabled={loading}
-            />
-
-            {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
-            {info && <p className="mt-3 text-sm text-emerald-700">{info}</p>}
-
+        <div className="mb-4 border-b border-gray-200">
+          <div className="flex gap-6">
             <button
               type="button"
-              onClick={() => requestCode()}
-              disabled={loading}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#4D0080] px-4 py-3 text-sm font-semibold text-white hover:bg-[#3d0066] disabled:opacity-60"
+              onClick={() => isAuthenticated && setTab('inbox')}
+              className={`inline-flex items-center gap-2 border-b-2 px-1 pb-3 text-sm font-semibold transition-colors ${
+                tab === 'inbox'
+                  ? 'border-[#1B4D3E] text-[#1B4D3E]'
+                  : 'border-transparent text-gray-500 hover:text-gray-800'
+              }`}
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              Continue
+              <Inbox className="h-4 w-4" />
+              Inbox
             </button>
-          </section>
-        )}
-
-        {step === 'verify' && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-            <h1 className="text-2xl font-semibold text-gray-900">Enter your access code</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              We sent a 6-digit code to <strong>{maskedEmail || maskEmail(sessionEmail)}</strong>.
-            </p>
-
-            <label className="mt-6 block text-sm font-medium text-gray-700" htmlFor="portal-code">
-              One-time code
-            </label>
-            <input
-              id="portal-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="123456"
-              className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 text-center text-lg tracking-[0.35em] outline-none ring-[#4D0080] focus:border-[#4D0080] focus:ring-2"
-              disabled={loading}
-            />
-
-            {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
-            {info && <p className="mt-3 text-sm text-emerald-700">{info}</p>}
-
             <button
               type="button"
-              onClick={verifyCode}
-              disabled={loading || code.trim().length < 6}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#4D0080] px-4 py-3 text-sm font-semibold text-white hover:bg-[#3d0066] disabled:opacity-60"
+              onClick={() => isAuthenticated && setTab('archived')}
+              className={`inline-flex items-center gap-2 border-b-2 px-1 pb-3 text-sm font-semibold transition-colors ${
+                tab === 'archived'
+                  ? 'border-[#1B4D3E] text-[#1B4D3E]'
+                  : 'border-transparent text-gray-500 hover:text-gray-800'
+              }`}
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Open my documents
+              <Archive className="h-4 w-4" />
+              Archived
             </button>
+          </div>
+        </div>
 
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="button"
-                onClick={() => requestCode(sessionEmail)}
-                disabled={loading || resendSeconds > 0}
-                className="inline-flex items-center gap-2 text-sm font-medium text-[#4D0080] disabled:text-gray-400"
-              >
-                <RefreshCw className="h-4 w-4" />
-                {resendSeconds > 0 ? `Resend in ${resendSeconds}s` : 'Resend code'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStep('access');
-                  setCode('');
-                  setError('');
-                  setInfo('');
-                }}
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
-              >
-                Use a different email
-              </button>
-            </div>
-          </section>
+        {error && (
+          <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
         )}
 
-        {step === 'documents' && (
-          <section className="space-y-4">
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-sm text-gray-600">
-                Signed in as <strong>{maskedEmail || maskEmail(sessionEmail)}</strong>
-              </p>
-              <h1 className="mt-2 text-2xl font-semibold text-gray-900">My documents</h1>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setTab('inbox')}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
-                  tab === 'inbox'
-                    ? 'bg-[#1b0c3e] text-white'
-                    : 'bg-white text-gray-700 ring-1 ring-gray-200'
-                }`}
-              >
-                <Inbox className="h-4 w-4" />
-                Inbox
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab('archived')}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
-                  tab === 'archived'
-                    ? 'bg-[#1b0c3e] text-white'
-                    : 'bg-white text-gray-700 ring-1 ring-gray-200'
-                }`}
-              >
-                <Archive className="h-4 w-4" />
-                Archived
-              </button>
-            </div>
-
-            {error && (
-              <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {error}
-              </div>
-            )}
-
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              {listLoading ? (
-                <div className="flex items-center justify-center gap-2 px-6 py-16 text-sm text-gray-600">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading documents...
-                </div>
-              ) : documents.length === 0 ? (
-                <div className="px-6 py-16 text-center">
-                  <FileText className="mx-auto h-10 w-10 text-gray-300" />
-                  <p className="mt-3 text-sm font-medium text-gray-900">
-                    {tab === 'inbox' ? 'No documents waiting for you' : 'No archived documents yet'}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Documents sent to this email will appear here.
-                  </p>
-                </div>
-              ) : (
-                <ul className="divide-y divide-gray-100">
-                  {documents.map((doc) => (
-                    <li key={`${doc.envelopeId}-${doc.recipientId}`} className="px-4 py-4 sm:px-6">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-gray-900">{doc.name}</p>
-                          <p className="mt-1 text-xs text-gray-500">
-                            From {doc.from} · {formatDate(doc.updatedAt)}
-                          </p>
-                          <span
-                            className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${statusBadgeClass(doc.status)}`}
-                          >
-                            {doc.status}
-                          </span>
-                        </div>
-                        <Link
-                          to={`/e-sign/signer/${doc.envelopeId}/${doc.recipientId}`}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-[#1b0c3e] hover:bg-amber-300"
-                        >
-                          Open
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
+        <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          {!isAuthenticated ? (
+            <>
+              {renderDocumentTable(PREVIEW_ROWS, true)}
+              <div className="absolute inset-0 flex items-center justify-center bg-white/55 p-4 backdrop-blur-[1px]">
+                <div className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-xl sm:p-8">
+                  {step === 'access' ? (
+                    <>
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#E8F5EE] text-[#1B4D3E]">
+                        <ShieldCheck className="h-6 w-6" />
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                      <h2 className="mt-4 text-xl font-semibold text-gray-900">
+                        Your documents are secure — verify your email to access for free
+                      </h2>
+                      <p className="mt-2 text-sm text-gray-600">
+                        We will send a one-time code to open your signing inbox. No password required.
+                      </p>
+
+                      {!changeEmailMode ? (
+                        <div className="mt-6 space-y-4">
+                          {sessionEmail ? (
+                            <p className="rounded-lg bg-[#F7F3EE] px-4 py-3 text-sm text-gray-700">
+                              Continue with <strong>{maskedEmail || maskEmail(sessionEmail)}</strong>
+                            </p>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => requestCode()}
+                            disabled={loading}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1B4D3E] px-4 py-3 text-sm font-semibold text-white hover:bg-[#163f34] disabled:opacity-60"
+                          >
+                            {loading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <ExternalLink className="h-4 w-4" />
+                            )}
+                            View my documents
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setChangeEmailMode(true)}
+                            className="text-sm font-medium text-[#4D0080] hover:underline"
+                          >
+                            {sessionEmail ? 'Use a different email' : 'Enter your email'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="mt-6 space-y-4 text-left">
+                          <label className="block text-sm font-medium text-gray-700" htmlFor="portal-email">
+                            Email address
+                          </label>
+                          <input
+                            id="portal-email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="you@company.com"
+                            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none ring-[#4D0080] focus:border-[#4D0080] focus:ring-2"
+                            disabled={loading}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => requestCode()}
+                            disabled={loading}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1B4D3E] px-4 py-3 text-sm font-semibold text-white hover:bg-[#163f34] disabled:opacity-60"
+                          >
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                            Send code & continue
+                          </button>
+                          {sessionEmail ? (
+                            <button
+                              type="button"
+                              onClick={() => setChangeEmailMode(false)}
+                              className="w-full text-sm font-medium text-gray-600 hover:text-gray-900"
+                            >
+                              Back to suggested email
+                            </button>
+                          ) : null}
+                        </div>
+                      )}
+                      {info && <p className="mt-4 text-sm text-emerald-700">{info}</p>}
+                    </>
+                  ) : (
+                    <>
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F3ECFF] text-[#4D0080]">
+                        <Mail className="h-6 w-6" />
+                      </div>
+                      <h2 className="mt-4 text-xl font-semibold text-gray-900">Check your email</h2>
+                      <p className="mt-2 text-sm text-gray-600">
+                        Enter the 6-digit code sent to <strong>{maskedEmail || maskEmail(sessionEmail)}</strong>
+                      </p>
+                      <input
+                        id="portal-code"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="123456"
+                        className="mt-6 w-full rounded-lg border border-gray-300 px-4 py-3 text-center text-lg tracking-[0.35em] outline-none ring-[#4D0080] focus:border-[#4D0080] focus:ring-2"
+                        disabled={loading}
+                      />
+                      {info && <p className="mt-3 text-sm text-emerald-700">{info}</p>}
+                      <button
+                        type="button"
+                        onClick={verifyCode}
+                        disabled={loading || code.trim().length < 6}
+                        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1B4D3E] px-4 py-3 text-sm font-semibold text-white hover:bg-[#163f34] disabled:opacity-60"
+                      >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
+                        Open my documents
+                      </button>
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <button
+                          type="button"
+                          onClick={() => requestCode(sessionEmail)}
+                          disabled={loading || resendSeconds > 0}
+                          className="inline-flex items-center justify-center gap-2 text-sm font-medium text-[#4D0080] disabled:text-gray-400"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          {resendSeconds > 0 ? `Resend in ${resendSeconds}s` : 'Resend code'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStep('access');
+                            setCode('');
+                            setError('');
+                            setInfo('');
+                          }}
+                          className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                        >
+                          Change email
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : listLoading ? (
+            <div className="flex items-center justify-center gap-2 px-6 py-16 text-sm text-gray-600">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading documents...
             </div>
-          </section>
-        )}
+          ) : documents.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <FileText className="mx-auto h-10 w-10 text-gray-300" />
+              <p className="mt-3 text-sm font-medium text-gray-900">
+                {tab === 'inbox' ? 'No documents waiting for you' : 'No archived documents yet'}
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                Documents sent to this email will appear here.
+              </p>
+            </div>
+          ) : (
+            renderDocumentTable(
+              documents.map((doc) => ({
+                from: doc.from,
+                name: doc.name,
+                status: doc.status,
+                date: formatDate(doc.updatedAt),
+                action: (
+                  <Link
+                    to={`/e-sign/signer/${doc.envelopeId}/${doc.recipientId}`}
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-[#1B4D3E] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#163f34]"
+                  >
+                    Open
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </Link>
+                ),
+              })),
+            )
+          )}
+        </div>
       </main>
       <CookieConsentBanner onManage={() => setCookieCenterOpen(true)} />
       <CookiePreferenceCenter

@@ -342,6 +342,16 @@ export default function SignerStatusPage() {
     );
   }, [envelope, recipientId]);
 
+  const recipientPortalHref = useMemo(() => {
+    const email = (currentRecipient?.email || currentRecipient?.recipientEmail || '')
+      .toString()
+      .trim()
+      .toLowerCase();
+    return email
+      ? `/e-sign/recipient-portal?email=${encodeURIComponent(email)}`
+      : '/e-sign/recipient-portal';
+  }, [currentRecipient]);
+
   const currentUserIsCc = useMemo(
     () => !!currentRecipient && isCcRole(currentRecipient),
     [currentRecipient]
@@ -773,7 +783,7 @@ export default function SignerStatusPage() {
                     <p className="mt-2 thankyou-para max-w-2xl text-gray-600">{subtitle}</p>
                     <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
                       <Link
-                        to="/e-sign/recipient-portal"
+                        to={recipientPortalHref}
                         className="inline-flex items-center justify-center rounded-xl bg-[#4D0080] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#3d0066]"
                       >
                         View my documents

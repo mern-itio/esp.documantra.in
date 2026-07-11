@@ -2729,6 +2729,9 @@ if (response.status == 200) {
     return normalized === 'signer' || normalized === 'in_person_signer' || normalized === 'approver';
   };
 
+  const isRecipientConfigured = (recipient: Recipient) =>
+    Boolean(recipient.name?.trim() || recipient.email?.trim());
+
   const getRecipientRoleLabel = (role?: string) => {
     switch ((role || 'signer').toLowerCase()) {
       case 'in_person_signer':
@@ -4165,38 +4168,59 @@ if (isPublicFlow) {
                   <ChevronDown className="w-5 h-5 text-muted-foreground" />
                 )}
               </h3>
-              {!showRecipients && !isOnlySigner && recipients.length > 0 && (
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {[...recipients]
-                    .sort((a, b) => (a.order || 0) - (b.order || 0))
-                    .map((recipient, index) => (
-                      <button
-                        key={`collapsed-recipient-${recipient.id}`}
-                        type="button"
-                        onClick={() => {
-                          setShowRecipients(true);
-                          setActiveRecipientId(recipient.id);
-                        }}
-                        className="inline-flex max-w-[260px] items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left text-xs shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-                        title={recipient.email || recipient.name}
-                      >
-                        <span
-                          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
-                          style={{ backgroundColor: RECIPIENT_COLORS[index % RECIPIENT_COLORS.length] }}
-                        >
-                          {(recipient.order || index + 1)}
+              {!showRecipients && !isOnlySigner && (
+                <div className="mb-4">
+                  {recipients.filter(isRecipientConfigured).length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {[...recipients]
+                        .filter(isRecipientConfigured)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0))
+                        .map((recipient, index) => (
+                          <button
+                            key={`collapsed-recipient-${recipient.id}`}
+                            type="button"
+                            onClick={() => {
+                              setShowRecipients(true);
+                              setActiveRecipientId(recipient.id);
+                            }}
+                            className="inline-flex max-w-[260px] items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left text-xs shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+                            title={recipient.email || recipient.name}
+                          >
+                            <span
+                              className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                              style={{ backgroundColor: RECIPIENT_COLORS[index % RECIPIENT_COLORS.length] }}
+                            >
+                              {(recipient.order || index + 1)}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate font-medium text-foreground">
+                                {recipient.name?.trim() || recipient.email}
+                              </span>
+                              <span className="block truncate text-[10px] text-muted-foreground">
+                                {getRecipientRoleLabel(recipient.role)}
+                                {recipient.email && recipient.name?.trim() ? ` · ${recipient.email}` : ''}
+                              </span>
+                            </span>
+                          </button>
+                        ))}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowRecipients(true)}
+                      className="flex w-full items-center gap-4 rounded-xl border border-dashed border-primary/30 bg-gradient-to-r from-primary/5 to-transparent px-4 py-5 text-left transition-colors hover:border-primary/50 hover:bg-primary/10"
+                    >
+                      <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <UserRoundPlus className="h-5 w-5" />
+                      </span>
+                      <span>
+                        <span className="block text-sm font-semibold text-foreground">No recipient selected</span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          Click to add who needs to sign, view, or receive a copy
                         </span>
-                        <span className="min-w-0">
-                          <span className="block truncate font-medium text-foreground">
-                            {recipient.name?.trim() || 'Unnamed recipient'}
-                          </span>
-                          <span className="block truncate text-[10px] text-muted-foreground">
-                            {getRecipientRoleLabel(recipient.role)}
-                            {recipient.email ? ` · ${recipient.email}` : ''}
-                          </span>
-                        </span>
-                      </button>
-                    ))}
+                      </span>
+                    </button>
+                  )}
                 </div>
               )}
               {bulkList && (
@@ -4213,6 +4237,15 @@ if (isPublicFlow) {
               )}
               {showRecipients && (
                 <div className="space-y-4">
+                  {recipients.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 px-5 py-8 text-center">
+                      <UserRoundPlus className="mx-auto h-8 w-8 text-primary" />
+                      <p className="mt-3 text-sm font-semibold text-foreground">No recipients added yet</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Use the button below to add the first signer or viewer
+                      </p>
+                    </div>
+                  )}
                   <div className="space-y-3">
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input
@@ -6276,25 +6309,6 @@ if (isPublicFlow) {
         return null;
     }
   };
-
-  // Ensure at least one recipient by default; guard against double-run in StrictMode
-  useEffect(() => {
-    const shouldAutoAdd = (currentStep === 1 || (currentStep === 2 && mode === 'normal'))
-      && (!recipients || recipients.length === 0)
-      && !isOnlySigner
-      && !bulkList; // Don't auto-add when bulk list is active
-    if (!hasAutoAddedRecipient.current && shouldAutoAdd) {
-      addRecipient();
-      hasAutoAddedRecipient.current = true;
-    }
-  }, [currentStep, mode, recipients, isOnlySigner, bulkList]);
-
-  // Auto-add recipient when recipients section expands and there are no recipients
-  useEffect(() => {
-    if (showRecipients && !isOnlySigner && (!recipients || recipients.length === 0) && !bulkList) {
-      addRecipient();
-    }
-  }, [showRecipients, bulkList]);
 
   // Initialize orders when signing order is enabled
   useEffect(() => {

@@ -14,6 +14,7 @@ const Document = require('../models/Document');
 const Cycle = require('../models/Cycle');
 const { evaluateSignerAccess } = require('../helpers/signerAccessGate');
 const { buildPublicSignerUrl } = require('../helpers/signerAccessToken');
+const { buildRecipientPortalUrl } = require('../helpers/recipientPortalToken');
 const { issueCertificate } = require('../services/pkiService');
 const { generateAndStoreCompletionCertificate,generateAndStoreCompletionCertificateOfPowerForm } = require('../services/certificateGenerator');
 const fs = require('fs');
@@ -1062,7 +1063,7 @@ const sendSignEmailToPermission = async ({
 }) => {
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
   const signLink = buildPublicSignerUrl(envelopeId, waitingPermission.recipientId._id);
-  const portalLink = `${frontendUrl}/e-sign/recipient-portal`;
+  const portalLink = buildRecipientPortalUrl(frontendUrl, waitingPermission.recipientId.email);
   const html = signRequestTemplate(
     waitingPermission.recipientId.name,
     envelopeSubject,
@@ -2024,10 +2025,10 @@ const sendReminderEmailsForEnvelope = async (envelope) => {
 
   const uniqueRecipients = Array.from(recipientsMap.values());
   const frontendUrl = String(process.env.FRONTEND_URL || '').replace(/\/+$/, '');
-  const portalLink = `${frontendUrl}/e-sign/recipient-portal`;
 
   for (const recipient of uniqueRecipients) {
     const signLink = buildPublicSignerUrl(envelope._id, recipient._id);
+    const portalLink = buildRecipientPortalUrl(frontendUrl, recipient.email);
     const html = signReminderTemplate(
       recipient.name,
       envelope.subject,

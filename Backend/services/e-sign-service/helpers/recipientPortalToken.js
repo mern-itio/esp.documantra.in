@@ -15,6 +15,14 @@ function normalizePortalEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
+function buildRecipientPortalUrl(frontendUrl, email) {
+  const base = String(frontendUrl || '').replace(/\/+$/, '');
+  const path = `${base}/e-sign/recipient-portal`;
+  const normalized = normalizePortalEmail(email);
+  if (!normalized) return path;
+  return `${path}?email=${encodeURIComponent(normalized)}`;
+}
+
 function signRecipientPortalToken(email) {
   const normalizedEmail = normalizePortalEmail(email);
   return jwt.sign(
@@ -42,4 +50,5 @@ module.exports = {
   signRecipientPortalToken,
   verifyRecipientPortalToken,
   normalizePortalEmail,
+  buildRecipientPortalUrl,
 };

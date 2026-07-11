@@ -247,6 +247,10 @@ const EnvelopeDetails: React.FC = () => {
             (r: any) => normId(r) === String(recipientId ?? "")
           );
           setCurrentRecipient(rowcurrentRecipient);
+          const email = (rowcurrentRecipient?.email || '').toString().trim().toLowerCase();
+          if (email) {
+            sessionStorage.setItem('recipientPortalPrefillEmail', email);
+          }
         }else{
           await fetchCurrentRecipient(recipientId);
         }
@@ -287,6 +291,10 @@ const EnvelopeDetails: React.FC = () => {
     });
     if(response.status==200){
       setCurrentRecipient(response.data.currentRecipient);
+      const email = (response.data.currentRecipient?.email || '').toString().trim().toLowerCase();
+      if (email) {
+        sessionStorage.setItem('recipientPortalPrefillEmail', email);
+      }
     }
   }
 
