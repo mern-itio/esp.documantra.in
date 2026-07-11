@@ -1473,24 +1473,12 @@ const isPublicFlow =
   const formatFileSize = formatUploadFileSize;
   const totalUploadedBytes = (documents || []).reduce((sum, doc) => sum + (doc.size || 0), 0);
   const uploadLimitHint = getEsignUploadLimitHint();
-  const FAN_CARD_WIDTH = 112;
   const FAN_CARD_HEIGHT = 168;
-  const FAN_CARD_OVERLAP = 78;
-  const MAX_FAN_CARDS_PER_ROW = 8;
-  const UPLOAD_INLINE_MIN_WIDTH = 140;
-
-  const chunkDocuments = (docs: typeof documents, size: number) => {
-    const rows: (typeof documents)[] = [];
-    for (let i = 0; i < docs.length; i += size) {
-      rows.push(docs.slice(i, i + size));
-    }
-    return rows;
-  };
+  const GRID_CARD_MIN_WIDTH = 120;
 
   const getUploadZoneMode = (docCount: number): 'full' | 'shrinking' | 'compact' => {
     if (docCount === 0) return 'full';
-    if (docCount >= 5) return 'compact';
-    return 'shrinking';
+    return 'compact';
   };
 
   const renderDocumentUploadDropzone = (mode: 'full' | 'shrinking' | 'compact' = 'full') => {
@@ -1603,18 +1591,10 @@ const isPublicFlow =
     </div>
   );
 
-  const renderDocumentFanCard = (
-    doc: (typeof documents)[number],
-    globalIndex: number,
-    indexInRow: number,
-  ) => (
+  const renderDocumentGridCard = (doc: (typeof documents)[number], index: number) => (
     <div
       key={doc.id}
-      className="group relative flex-shrink-0 cursor-pointer transition-transform duration-200 hover:z-[60] hover:-translate-y-3"
-      style={{
-        marginLeft: indexInRow === 0 ? 0 : -FAN_CARD_OVERLAP,
-        zIndex: indexInRow + 1,
-      }}
+      className="group relative cursor-pointer transition-transform duration-200 hover:z-10 hover:-translate-y-1"
       onClick={() => {
         if (!doc.isUploading && doc.url) {
           setSelectedPdfForPreview(doc);
@@ -1623,11 +1603,11 @@ const isPublicFlow =
       }}
     >
       <div
-        className="relative flex flex-col overflow-hidden rounded-xl border-2 border-border bg-card shadow-md transition-all group-hover:border-[#1B4D3E] group-hover:shadow-xl"
-        style={{ width: FAN_CARD_WIDTH, height: FAN_CARD_HEIGHT }}
+        className="relative mx-auto flex w-full max-w-[140px] flex-col overflow-hidden rounded-xl border-2 border-border bg-card shadow-md transition-all group-hover:border-[#1B4D3E] group-hover:shadow-xl"
+        style={{ height: FAN_CARD_HEIGHT }}
       >
         <span className="absolute left-1.5 top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#1B4D3E] text-[10px] font-bold text-white shadow-sm">
-          {globalIndex + 1}
+          {index + 1}
         </span>
         {!doc.isUploading && (
           <button
@@ -1669,50 +1649,21 @@ const isPublicFlow =
 
   const renderDocumentFanLayout = () => {
     const docCount = documents.length;
-    const uploadMode = getUploadZoneMode(docCount);
 
     if (docCount === 0) {
       return <div className="space-y-2">{renderDocumentUploadDropzone('full')}</div>;
     }
 
-    const rows = chunkDocuments(documents, MAX_FAN_CARDS_PER_ROW);
-    const lastRowIndex = rows.length - 1;
-    const lastRowFull = rows[lastRowIndex].length >= MAX_FAN_CARDS_PER_ROW;
-
     return (
       <div className="space-y-2">
-        <div className="space-y-3">
-          {rows.map((rowDocs, rowIndex) => {
-            const rowStartIndex = rowIndex * MAX_FAN_CARDS_PER_ROW;
-            const isLastRow = rowIndex === lastRowIndex;
-            const showInlineUpload = isLastRow && !lastRowFull;
-
-            return (
-              <div
-                key={`doc-fan-row-${rowStartIndex}`}
-                className="flex w-full min-w-0 flex-wrap items-end gap-3"
-              >
-                <div className="inline-flex flex-shrink-0 items-end pl-1 pb-1 pt-2">
-                  {rowDocs.map((doc, indexInRow) =>
-                    renderDocumentFanCard(doc, rowStartIndex + indexInRow, indexInRow)
-                  )}
-                </div>
-                {showInlineUpload && (
-                  <div
-                    className="min-w-[140px] flex-1 basis-[160px] transition-all duration-300 ease-out"
-                    style={{ minWidth: UPLOAD_INLINE_MIN_WIDTH }}
-                  >
-                    {renderDocumentUploadDropzone(uploadMode)}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {lastRowFull && (
-            <div className="w-full transition-all duration-300 ease-out">
-              {renderDocumentUploadDropzone(uploadMode)}
-            </div>
-          )}
+        <div
+          className="grid gap-3"
+          style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_CARD_MIN_WIDTH}px, 1fr))` }}
+        >
+          {documents.map((doc, index) => renderDocumentGridCard(doc, index))}
+          <div className="min-h-[168px] w-full min-w-0">
+            {renderDocumentUploadDropzone(getUploadZoneMode(docCount))}
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
       </div>
