@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   AlertTriangle,
+  Check,
   CheckCircle,
   Clock,
+  X,
 } from 'lucide-react';
 import { subscriptionApi } from '../../../services/apiHelper';
 import * as LucideIcons from 'lucide-react';
@@ -29,6 +31,7 @@ interface AdvancedAuthenticationSelectorProps {
   complianceRequirements?: string[];
   showSaveButton?: boolean;
   allowMultiple?: boolean; // New prop to enable multi-select
+  compact?: boolean;
 }
 
 const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorProps> = ({
@@ -40,7 +43,8 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   riskLevel,
   complianceRequirements = [],
   showSaveButton = false,
-  allowMultiple = true // Default to multi-select
+  allowMultiple = true, // Default to multi-select
+  compact = false,
 }) => {
   const [activeTab, setActiveTab] = useState('recommended');
   const [authMethods, setAuthMethods] = useState<AuthMethod[]>([]);
@@ -162,11 +166,16 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
     const isSelected = localSelectedMethods.includes(method.id);
     const IconName = method.icon || 'Shield';
     const Icon = (LucideIcons as any)[IconName];
+    const cardPadding = compact ? 'p-3' : 'p-6';
+    const iconSize = compact ? 'h-9 w-9' : 'h-12 w-12';
+    const iconInner = compact ? 'h-4 w-4' : 'h-6 w-6';
+    const titleSize = compact ? 'text-sm' : 'text-lg';
+    const descSize = compact ? 'text-xs mb-2 line-clamp-2' : 'mb-4';
     return (
       <div
         key={method.id}
-        className={`relative cursor-pointer rounded-xl border-2 p-6 transition-all duration-200 ${isSelected
-            ? 'border-primary bg-primary/10'
+        className={`relative cursor-pointer rounded-xl border-2 transition-all duration-200 ${cardPadding} ${isSelected
+            ? 'border-primary bg-primary/10 shadow-sm'
             : 'border-border bg-card hover:border-primary/40'
           }`}
         onClick={() => toggleMethod(method.id)}
@@ -180,66 +189,78 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
           }
         }}
       >
+        <div
+          className={`absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
+            isSelected
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-muted text-muted-foreground'
+          }`}
+          aria-hidden
+        >
+          {isSelected ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+        </div>
+
         {isRecommended && (
-          <div className="absolute -right-2 -top-2 rounded-full bg-success px-2 py-1 text-xs font-medium text-success-foreground">
+          <div className={`absolute rounded-full bg-success font-medium text-success-foreground ${compact ? '-right-1 -top-1 px-1.5 py-0.5 text-[10px]' : '-right-2 -top-2 px-2 py-1 text-xs'}`}>
             Recommended
           </div>
         )}
 
-        <div className="flex items-start space-x-4">
+        <div className={`flex items-start ${compact ? 'gap-2.5' : 'space-x-4'}`}>
           <div
-            className={`flex h-12 w-12 items-center justify-center rounded-lg ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            className={`flex ${iconSize} flex-shrink-0 items-center justify-center rounded-lg ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
               }`}
           >
-            <Icon className="h-6 w-6" />
+            <Icon className={iconInner} />
           </div>
 
-          <div className="flex-1">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-foreground">{method.name}</h3>
-              {isSelected && <CheckCircle className="h-5 w-5 text-primary" />}
+          <div className="min-w-0 flex-1 pr-5">
+            <div className={`mb-1 flex items-center justify-between ${compact ? '' : 'mb-2'}`}>
+              <h3 className={`font-semibold text-foreground ${titleSize}`}>{method.name}</h3>
             </div>
 
-            <p className="mb-4 text-muted-foreground">{method.description}</p>
+            <p className={`text-muted-foreground ${descSize}`}>{method.description}</p>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Security Level:</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSecurityLevelColor(method.securityLevel)}`}>
+            <div className={compact ? 'space-y-1' : 'space-y-2'}>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Security:</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${getSecurityLevelColor(method.securityLevel)}`}>
                   {method.securityLevel.charAt(0).toUpperCase() + method.securityLevel.slice(1)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Estimated Time:</span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Time:</span>
                 <span className="flex items-center gap-1 text-foreground">
                   <Clock className="h-3 w-3" />
                   {method.estimatedTime}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Cost:</span>
                 <span className={`font-medium ${getCostColor(Number(method.cost))}`}>
                   {Number(method.cost)} Credits
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Compliance:</span>
-                <div className="flex gap-1">
-                  {method.compliance.slice(0, 2).map(comp => (
-                    <span key={comp} className="rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">
-                      {comp.toUpperCase()}
-                    </span>
-                  ))}
-                  {method.compliance.length > 2 && (
-                    <span className="rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">
-                      +{method.compliance.length - 2}
-                    </span>
-                  )}
+              {!compact && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Compliance:</span>
+                  <div className="flex gap-1">
+                    {method.compliance.slice(0, 2).map(comp => (
+                      <span key={comp} className="rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">
+                        {comp.toUpperCase()}
+                      </span>
+                    ))}
+                    {method.compliance.length > 2 && (
+                      <span className="rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">
+                        +{method.compliance.length - 2}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -329,7 +350,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
       )}
 
       {/* Methods Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 gap-6'}`}>
         {(activeTab === 'recommended' ? getRecommendedMethods() : authMethods).map(method =>
           renderMethodCard(method, activeTab === 'recommended')
         )}

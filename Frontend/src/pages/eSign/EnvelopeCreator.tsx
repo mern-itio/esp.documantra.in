@@ -341,6 +341,8 @@ const isPublicFlow =
   const [bulkRoleDropdownOpen, setBulkRoleDropdownOpen] = useState<boolean>(false);
   const [bulkCustomizeOpen, setBulkCustomizeOpen] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const authModalScrollRef = useRef<HTMLDivElement>(null);
+  const [authModalScrolled, setAuthModalScrolled] = useState(false);
   const [authModalForRecipientId, setAuthModalForRecipientId] = useState<string | null>(null);
   const [authModalForBulk, setAuthModalForBulk] = useState<boolean>(false);
   const [tempAuthSelection, setTempAuthSelection] = useState<string[] | undefined>(undefined);
@@ -480,8 +482,49 @@ const isPublicFlow =
     if (!showAuthModal) {
       setHasUserChangedSelection(false);
       setTempAuthSelection(undefined);
+      setAuthModalScrolled(false);
     }
   }, [showAuthModal]);
+
+  const handleAuthModalScroll = () => {
+    const scrollTop = authModalScrollRef.current?.scrollTop ?? 0;
+    setAuthModalScrolled(scrollTop > 48);
+  };
+
+  const closeAuthModal = () => {
+    setShowAuthModal(false);
+    setAuthModalForRecipientId(null);
+    setAuthModalForBulk(false);
+    setTempAuthSelection(undefined);
+    setHasUserChangedSelection(false);
+    setAuthModalScrolled(false);
+  };
+
+  const saveAuthModalSelection = () => {
+    const methodsToSave = tempAuthSelection || [];
+    handleAuthMethodSelect(methodsToSave);
+  };
+
+  const getAuthModalSelectedMethods = (): string[] => {
+    if (hasUserChangedSelection) {
+      return tempAuthSelection || [];
+    }
+    if (authModalForBulk) {
+      const firstAuth = recipients.length > 0 ? recipients[0]?.authentication : null;
+      if (!firstAuth) return [];
+      const firstAuthArray = parseAuthentication(firstAuth);
+      const allSame = recipients.every(r => {
+        const rAuth = parseAuthentication(r.authentication);
+        return JSON.stringify(rAuth.sort()) === JSON.stringify(firstAuthArray.sort());
+      });
+      return allSame ? firstAuthArray : [];
+    }
+    if (authModalForRecipientId) {
+      const recipient = recipients.find(r => r.id === authModalForRecipientId);
+      return parseAuthentication(recipient?.authentication);
+    }
+    return [];
+  };
   const getTomorrowDate = () => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -2681,6 +2724,69 @@ if (response.status == 200) {
     }
   };
 
+  const isSigningRecipientRole = (role?: string) => {
+    const normalized = (role || 'signer').toLowerCase();
+    return normalized === 'signer' || normalized === 'in_person_signer' || normalized === 'approver';
+  };
+
+  const getRecipientRoleLabel = (role?: string) => {
+    switch ((role || 'signer').toLowerCase()) {
+      case 'in_person_signer':
+        return 'In Person Signer';
+      case 'carbon_copy':
+        return 'Receives a Copy';
+      case 'viewer':
+        return 'Needs to View';
+      case 'approver':
+        return 'Approver';
+      default:
+        return 'Needs to Sign';
+    }
+  };
+
+  const validateMultiPartyReadyToSend = (): { valid: boolean; message?: string } => {
+    if (isOnlySigner || bulkList) {
+      return { valid: true };
+    }
+
+    const completeRecipients = recipients.filter((r) => r.name?.trim() && r.email?.trim());
+    if (completeRecipients.length < 2) {
+      return { valid: true };
+    }
+
+    const incompleteRecipient = recipients.find((r) => !r.name?.trim() || !r.email?.trim());
+    if (incompleteRecipient) {
+      return {
+        valid: false,
+        message: 'Please complete name and email for all recipients before sending.',
+      };
+    }
+
+    const signingRecipients = recipients.filter((r) => isSigningRecipientRole(r.role));
+    if (signingRecipients.length < 2) {
+      return { valid: true };
+    }
+
+    const signingFieldTypes = new Set(['signature', 'initial', 'stamp', 'sign']);
+    for (const recipient of signingRecipients) {
+      const hasSigningField = signatureFields.some((field) => {
+        const fieldRecipientId = field.recipientId || (field as { recipient?: string }).recipient;
+        if (fieldRecipientId !== recipient.id) return false;
+        return signingFieldTypes.has((field.type || '').toLowerCase());
+      });
+
+      if (!hasSigningField) {
+        const label = recipient.name?.trim() || recipient.email || 'each signing party';
+        return {
+          valid: false,
+          message: `Please add signature fields for ${label} before sending.`,
+        };
+      }
+    }
+
+    return { valid: true };
+  };
+
   const handleSendEnvelope = async () => {
     console.log('handleSendEnvelope called', { envelopeId, mode });
     if (!envelopeId) {
@@ -2688,6 +2794,13 @@ if (response.status == 200) {
       console.error('Cannot send envelope: envelopeId is missing');
       return;
     }
+
+    const partyValidation = validateMultiPartyReadyToSend();
+    if (!partyValidation.valid) {
+      toast.error(partyValidation.message || 'Please configure all signing parties before sending.');
+      return;
+    }
+
     // Pure in-person flow (only in_person_signer + CC): skip the two-step
     // confirmation modal and go straight to confirmAndSendEnvelope so there
     // is no mail-sending summary/success UI.
@@ -2733,6 +2846,12 @@ if (response.status == 200) {
 
   const confirmAndSendEnvelope = async () => {
     if (!envelopeId) return;
+
+    const partyValidation = validateMultiPartyReadyToSend();
+    if (!partyValidation.valid) {
+      toast.error(partyValidation.message || 'Please configure all signing parties before sending.');
+      return;
+    }
 
     if (isScheduled && scheduledDate) {
       setShowSendConfirmationModal(false);
@@ -3711,199 +3830,100 @@ if (isPublicFlow) {
 
             {showDocuments && (
               <div className="space-y-6 overflow-visible">
-                <div className="flex flex-col gap-1 rounded-lg border border-border bg-muted/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-foreground">
-                    <span className="font-medium">Upload limit:</span> {uploadLimitHint}
-                  </p>
+                {documents.length > 0 && (
                   <p className="text-sm text-muted-foreground">
-                    {documents.length > 0 ? (
-                      <>
-                        <span className="font-medium text-foreground">{documents.length}</span> file{documents.length !== 1 ? 's' : ''} ·{' '}
-                        <span className="font-medium text-foreground">{formatFileSize(totalUploadedBytes)}</span> total
-                      </>
-                    ) : (
-                      'No files uploaded yet'
-                    )}
+                    <span className="font-medium text-foreground">{documents.length}</span> file{documents.length !== 1 ? 's' : ''} ·{' '}
+                    <span className="font-medium text-foreground">{formatFileSize(totalUploadedBytes)}</span> total
                   </p>
-                </div>
-                {/* Stacked layout for 4+ documents OR grid layout for 0-3 documents */}
+                )}
+                {/* Grid layout for 4+ documents with file chips; default grid for 0-3 */}
                 {documents && documents.length > 3 ? (
-                  <div className="flex gap-4 items-stretch py-1 overflow-visible">
-                    {/* Stacked Documents Container */}
-                    <div className="w-1/3 relative" style={{ overflow: 'visible', paddingRight: '60px', paddingBottom: '50px' }}>
-                      <div className="relative w-full h-full" style={{ minHeight: '150px', overflow: 'visible' }}>
-                        {documents.map((doc, index) => {
-                          // Calculate relative position: 0 is on top (stackedDocIndex), others are below
-                          const position = index - stackedDocIndex;
-                          const absPosition = position < 0 ? documents.length + position : position;
-
-                          const previewMinHeight = '180px';
-                          const pdfWidth = 100;
-                          const paddingClass = 'p-2';
-                          const fontSizeClass = 'text-xs';
-                          const closeButtonSize = 'w-5 h-5';
-                          const closeIconSize = 'w-2.5 h-2.5';
-                          const verticalOffset = 10;
-                          const horizontalOffset = absPosition === 0 ? 0 : 20 + (absPosition * 6);
-                          if (absPosition >= 4) return null;
-                          const scale = absPosition === 0 ? 1 : Math.max(0.98 - absPosition * 0.01, 0.95);
-                          const cardColors = [
-                            { border: '#260559', shadow: 'rgba(38, 5, 89, 0.2)', accent: '#6366f1' },
-                            { border: '#6366f1', shadow: 'rgba(99, 102, 241, 0.15)', accent: '#155E4B' },
-                            { border: '#155E4B', shadow: 'rgba(139, 92, 246, 0.12)', accent: '#a78bfa' },
-                            { border: '#a78bfa', shadow: 'rgba(167, 139, 250, 0.1)', accent: '#c4b5fd' }
-                          ];
-                          const cardColor = cardColors[Math.min(absPosition, 3)];
-
-                          return (
-                            <div
-                              key={doc.id}
-                              className="absolute top-0 left-0 w-full bg-primary rounded-2xl flex flex-col transition-all duration-500 ease-in-out overflow-hidden"
-                              style={{
-                                transform: `translate(${horizontalOffset}px, ${absPosition * verticalOffset}px) scale(${scale})`,
-                                transformOrigin: 'top left',
-                                zIndex: 10 - absPosition,
-                                border: `1px solid ${absPosition === 0 ? cardColor.border : 'rgba(0, 0, 0, 0.1)'}`,
-                                borderLeft: absPosition === 0 ? `2px solid ${cardColor.border}` : `1px solid rgba(0, 0, 0, 0.1)`, // Subtle left edge
-                                boxShadow: absPosition === 0
-                                  ? `0 4px 12px -2px ${cardColor.shadow}, 0 2px 4px -1px rgba(0, 0, 0, 0.1)`
-                                  : `0 2px 6px -1px ${cardColor.shadow}, 0 1px 2px rgba(0, 0, 0, 0.06)`,
-                                opacity: absPosition < 4 ? Math.max(1 - absPosition * 0.05, 0.85) : 0,
-                                pointerEvents: absPosition === 0 ? 'auto' : 'none',
-                                willChange: 'transform, opacity',
-                                background: 'var(--card)'
-                              }}
-                            >
-                              {!doc.isUploading && absPosition === 0 && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeDocument(doc.id);
-                                  }}
-                                  className={`absolute top-2 right-2 z-30 ${closeButtonSize} bg-black bg-opacity-70 rounded-full flex items-center justify-center hover:bg-opacity-90 transition-all`}
-                                  onMouseEnter={(e) => e.stopPropagation()}
-                                >
-                                  <X className={`${closeIconSize} text-white`} />
-                                </button>
-                              )}
-
-                              {!doc.isUploading && doc.url && (
-                                <div
-                                  className="w-full flex-1 border-b overflow-hidden bg-gradient-to-br from-gray-50 to-white min-h-0 relative group"
-                                  style={{
-                                    minHeight: previewMinHeight,
-                                    borderBottomColor: absPosition === 0 ? cardColor.border + '40' : 'rgba(0, 0, 0, 0.1)'
-                                  }}
-                                >
-                                  <div
-                                    className="absolute inset-0 opacity-30 pointer-events-none"
-                                    style={{
-                                      background: `linear-gradient(135deg, ${cardColor.accent}15 0%, transparent 50%)`
-                                    }}
-                                  />
-                                  <div className="w-full h-full flex items-center justify-center bg-transparent relative z-10 p-2">
-                                    <div className="rounded-md shadow-sm border border-border/50 bg-card p-1">
-                                      <PDFDocument file={doc.url}>
-                                        <PDFPage pageNumber={1} width={pdfWidth} renderTextLayer={false} renderAnnotationLayer={false} />
-                                      </PDFDocument>
-                                    </div>
-                                  </div>
-                                  {absPosition === 0 && (
-                                    <div
-                                      className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-sm group-hover:opacity-100 transition-all duration-300 flex items-center justify-center opacity-0 z-20"
-                                      style={{ pointerEvents: 'none' }}
-                                    >
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedPdfForPreview(doc);
-                                          setPdfPreviewModalOpen(true);
-                                        }}
-                                      className="flex items-center gap-2 px-5 py-2.5 bg-card text-foreground rounded-lg shadow-xl hover:bg-muted transition-all hover:scale-105 font-medium"
-                                        style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)', pointerEvents: 'auto' }}
-                                      >
-                                        <Eye className="w-4 h-4" />
-                                        <span className="text-sm">View</span>
-                                      </button>
-                                    </div>
-                                  )}
+                  <div className="space-y-4 py-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {documents.map((doc, index) => {
+                        const isActive = stackedDocIndex === index;
+                        return (
+                          <div
+                            key={doc.id}
+                            className={`group relative flex flex-col overflow-hidden rounded-xl border-2 bg-card shadow-sm transition-all duration-200 ${isActive ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'}`}
+                          >
+                            {!doc.isUploading && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeDocument(doc.id);
+                                }}
+                                className="absolute right-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/90"
+                              >
+                                <X className="h-2.5 w-2.5 text-white" />
+                              </button>
+                            )}
+                            {!doc.isUploading && doc.url ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setStackedDocIndex(index);
+                                  setSelectedPdfForPreview(doc);
+                                  setPdfPreviewModalOpen(true);
+                                }}
+                                className="relative flex min-h-[130px] items-center justify-center border-b border-border bg-gradient-to-br from-primary/5 to-card p-2"
+                              >
+                                <PDFDocument file={doc.url}>
+                                  <PDFPage pageNumber={1} width={90} renderTextLayer={false} renderAnnotationLayer={false} />
+                                </PDFDocument>
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                  <span className="flex items-center gap-1 rounded-md bg-card px-2 py-1 text-xs font-medium text-foreground shadow">
+                                    <Eye className="h-3.5 w-3.5" />
+                                    View
+                                  </span>
                                 </div>
-                              )}
-
-                              {!doc.isUploading ? (
-                                <div className={paddingClass} >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="flex-1 min-w-0">
-                                      <p className={`font-semibold ${fontSizeClass} mb-1 truncate`}
-                                        style={{ color: absPosition === 0 ? cardColor.border : 'var(--foreground)' }}
-                                        title={doc.name}>
-                                        {doc.name}
-                                      </p>
-                                      <div className="flex items-center justify-between">
-                                        <p className="text-xs font-medium" style={{ color: absPosition === 0 ? cardColor.accent : 'var(--muted-foreground)' }}>
-                                          {doc.pages} page{doc.pages !== 1 ? 's' : ''} • {formatFileSize(doc.size)}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className={paddingClass}>
-                                  <p className={`font-medium text-foreground ${fontSizeClass} mb-2`}>{doc.name} — Uploading...</p>
-                                  <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
-                                    <div
-                                      className="h-full bg-blue-500 transition-all"
-                                      style={{ width: `${doc.uploadProgress ?? 0}%` }}
-                                    />
-                                  </div>
-                                  <p className="text-[10px] text-muted-foreground mt-1">{doc.uploadProgress ?? 0}%</p>
-                                </div>
-                              )}
+                              </button>
+                            ) : (
+                              <div className="flex min-h-[130px] items-center justify-center border-b border-border bg-muted/40 p-3">
+                                <p className="text-xs text-muted-foreground">{doc.name} — Uploading...</p>
+                              </div>
+                            )}
+                            <div className="p-2.5">
+                              <p className="truncate text-xs font-semibold text-foreground" title={doc.name}>{doc.name}</p>
+                              <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                {doc.pages} page{doc.pages !== 1 ? 's' : ''} · {formatFileSize(doc.size)}
+                              </p>
                             </div>
-                          );
-                        })}
-
-                        {documents.length > 1 && (
-                          <>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setStackedDocIndex((prev) => (prev - 1 + documents.length) % documents.length);
-                              }}
-                              className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 z-30 p-2.5 transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
-                              style={{ left: '10px' }}
-                              title="Previous document"
-                            >
-                              <ChevronLeft className="w-6 h-6 text-primary" />
-                            </button>
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setStackedDocIndex((prev) => (prev + 1) % documents.length);
-                              }}
-                              className="absolute right-0 top-1/2 translate-x-full -translate-y-1/2 z-30 p-2.5 transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
-                              style={{ right: '10px' }}
-                              title="Next document"
-                            >
-                              <ChevronRight className="w-6 h-6 text-primary" />
-                            </button>
-                          </>
-                        )}
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="w-2/3 flex-shrink-0" data-tour="ec-upload">
+
+                    <div className="flex flex-wrap gap-2">
+                      {documents.map((doc, index) => (
+                        <button
+                          key={`doc-chip-${doc.id}`}
+                          type="button"
+                          onClick={() => setStackedDocIndex(index)}
+                          className={`inline-flex max-w-[220px] items-center gap-2 rounded-lg border px-3 py-1.5 text-left text-xs transition-colors ${stackedDocIndex === index
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50'
+                            }`}
+                          title={doc.name}
+                        >
+                          <FileText className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate font-medium">{doc.name}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div data-tour="ec-upload">
                       <div
-                        onClick={(!documents || documents.length === 0) ? () => fileInputRef.current?.click() : undefined}
+                        onClick={() => fileInputRef.current?.click()}
                         onDragOver={handleDragOver}
                         onDragEnter={handleDragEnter}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
-                        className={`bg-card transition-colors ${isDragOver
-                          ? 'border-2 border-blue-400 bg-blue-50 dark:bg-blue-950/40'
-                          : 'border border-border'
-                          } ${documents && documents.length > 0 ? 'p-6' : 'p-8 sm:p-12'
-                          } ${(!documents || documents.length === 0) ? 'cursor-pointer' : ''} rounded-lg h-full min-h-[250px] flex items-center justify-center`}
+                        className={`flex min-h-[180px] items-center justify-center rounded-xl border border-dashed bg-card p-6 transition-colors ${isDragOver
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border'
+                          } cursor-pointer`}
                       >
                         <input
                           ref={fileInputRef}
@@ -3913,48 +3933,24 @@ if (isPublicFlow) {
                           onChange={handleFileUpload}
                           className="hidden"
                         />
-                        {(!documents || documents.length === 0) ? (
-                          <div className="flex flex-col items-center justify-center space-y-4 w-full">
-                            <div className="bg-primary rounded-lg p-3">
-                              <ArrowUpToLine className="w-6 h-6 text-white" />
-                            </div>
-                            <p className="text-sm text-muted-foreground">Drop your files here or</p>
-                              <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                fileInputRef.current?.click();
-                              }}
-                                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                            >
-                              <span>Upload</span>
-                              <Triangle className="w-3 h-2 fill-white rotate-180" />
-                            </button>
-                            <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
+                        <div className="flex flex-col items-center justify-center space-y-3">
+                          <div className="rounded-lg bg-primary p-3">
+                            <Upload className="h-5 w-5 text-primary-foreground" />
                           </div>
-                        ) : (
-                          <div
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex flex-col items-center justify-center w-full cursor-pointer text-muted-foreground hover:text-muted-foreground"
+                          <p className="text-sm text-muted-foreground">Drop more files here or</p>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fileInputRef.current?.click();
+                            }}
+                            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90"
                           >
-                            <div className="flex flex-col items-center justify-center space-y-4">
-                              <div className="bg-muted-foreground rounded-lg p-3">
-                                <Upload className="w-6 h-6 text-white" />
-                              </div>
-                              <p className="text-sm text-muted-foreground">Drop your files here or</p>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  fileInputRef.current?.click();
-                                }}
-                                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                              >
-                                <span>Upload</span>
-                                <ArrowDown className="w-4 h-4 text-white" />
-                              </button>
-                              <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
-                            </div>
-                          </div>
-                        )}
+                            <span>Upload</span>
+                            <ArrowDown className="h-4 w-4" />
+                          </button>
+                          <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -4173,6 +4169,40 @@ if (isPublicFlow) {
                   <ChevronDown className="w-5 h-5 text-muted-foreground" />
                 )}
               </h3>
+              {!showRecipients && !isOnlySigner && recipients.length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {[...recipients]
+                    .sort((a, b) => (a.order || 0) - (b.order || 0))
+                    .map((recipient, index) => (
+                      <button
+                        key={`collapsed-recipient-${recipient.id}`}
+                        type="button"
+                        onClick={() => {
+                          setShowRecipients(true);
+                          setActiveRecipientId(recipient.id);
+                        }}
+                        className="inline-flex max-w-[260px] items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left text-xs shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+                        title={recipient.email || recipient.name}
+                      >
+                        <span
+                          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                          style={{ backgroundColor: RECIPIENT_COLORS[index % RECIPIENT_COLORS.length] }}
+                        >
+                          {(recipient.order || index + 1)}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-foreground">
+                            {recipient.name?.trim() || 'Unnamed recipient'}
+                          </span>
+                          <span className="block truncate text-[10px] text-muted-foreground">
+                            {getRecipientRoleLabel(recipient.role)}
+                            {recipient.email ? ` · ${recipient.email}` : ''}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              )}
               {bulkList && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-foreground mb-2">Batch Name <span className="text-red-500">*</span></label>
@@ -4903,87 +4933,6 @@ if (isPublicFlow) {
                               >
                                 Close
                               </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {/* Authentication Method Selection Modal */}
-                      {showAuthModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center">
-                          <div
-                            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-                            onClick={() => {
-                              setShowAuthModal(false);
-                              setAuthModalForRecipientId(null);
-                              setAuthModalForBulk(false);
-                            }}
-                          />
-                          <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
-                            <div className="mb-6 flex items-center justify-between">
-                              <h2 className="text-xl font-semibold text-foreground">
-                                Select Authentication Method
-                              </h2>
-                              <div className="flex items-center gap-3">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const methodToSave = tempAuthSelection === undefined ? null : tempAuthSelection;
-                                    handleAuthMethodSelect(methodToSave);
-                                  }}
-                                  className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setShowAuthModal(false);
-                                    setAuthModalForRecipientId(null);
-                                    setAuthModalForBulk(false);
-                                    setTempAuthSelection(undefined);
-                                    setHasUserChangedSelection(false);
-                                  }}
-                                  className="z-10 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                                  aria-label="Close"
-                                >
-                                  <X className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="mt-8">
-                              <AdvancedAuthenticationSelector
-                                selectedMethods={(() => {
-                                  // If user has made a change, always use tempAuthSelection
-                                  if (hasUserChangedSelection) {
-                                    return tempAuthSelection || [];
-                                  }
-                                  // Otherwise, use the current recipient's authentication
-                                  if (authModalForBulk) {
-                                    // For bulk, check if all recipients have the same authentication
-                                    const firstAuth = recipients.length > 0 ? recipients[0]?.authentication : null;
-                                    if (!firstAuth) return [];
-                                    const firstAuthArray = parseAuthentication(firstAuth);
-                                    const allSame = recipients.every(r => {
-                                      const rAuth = parseAuthentication(r.authentication);
-                                      return JSON.stringify(rAuth.sort()) === JSON.stringify(firstAuthArray.sort());
-                                    });
-                                    return allSame ? firstAuthArray : [];
-                                  } else if (authModalForRecipientId) {
-                                    // For individual recipient, get their authentication
-                                    const recipient = recipients.find(r => r.id === authModalForRecipientId);
-                                    return parseAuthentication(recipient?.authentication);
-                                  }
-                                  return [];
-                                })()}
-                                onMethodSelect={handleAuthMethodSelect}
-                                onSelectionChange={(methodIds) => {
-                                  setTempAuthSelection(methodIds);
-                                  setHasUserChangedSelection(true);
-                                }}
-                                showSaveButton={false}
-                                riskLevel="medium"
-                                complianceRequirements={[]}
-                              />
                             </div>
                           </div>
                         </div>
@@ -7728,42 +7677,29 @@ if (isPublicFlow) {
 
       {/* Authentication Method Selection Modal (Global) */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={() => {
-              setShowAuthModal(false);
-              setAuthModalForRecipientId(null);
-              setAuthModalForBulk(false);
-              setTempAuthSelection(undefined);
-              setHasUserChangedSelection(false);
-            }}
+            onClick={closeAuthModal}
           />
-          <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">
+          <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <h2 className={`font-semibold text-foreground ${authModalScrolled ? 'text-base' : 'text-xl'}`}>
                 Select Authentication Method
               </h2>
               <div className="flex items-center gap-3">
+                {!authModalScrolled && (
+                  <button
+                    type="button"
+                    onClick={saveAuthModalSelection}
+                    className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    Save
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => {
-                    const methodsToSave = tempAuthSelection || [];
-                    handleAuthMethodSelect(methodsToSave);
-                  }}
-                  className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAuthModal(false);
-                    setAuthModalForRecipientId(null);
-                    setAuthModalForBulk(false);
-                    setTempAuthSelection(undefined);
-                    setHasUserChangedSelection(false);
-                  }}
+                  onClick={closeAuthModal}
                   className="z-10 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   aria-label="Close"
                 >
@@ -7771,39 +7707,39 @@ if (isPublicFlow) {
                 </button>
               </div>
             </div>
-            <div className="mt-2">
+
+            <div
+              ref={authModalScrollRef}
+              onScroll={handleAuthModalScroll}
+              className="flex-1 overflow-y-auto px-6 py-4"
+            >
               <AdvancedAuthenticationSelector
-                selectedMethods={(() => {
-                  // If user has made a change, always use tempAuthSelection
-                  if (hasUserChangedSelection) {
-                    return tempAuthSelection || [];
-                  }
-                  // Otherwise, use the current recipient's authentication
-                  if (authModalForBulk) {
-                    const firstAuth = recipients.length > 0 ? recipients[0]?.authentication : null;
-                    if (!firstAuth) return [];
-                    const firstAuthArray = parseAuthentication(firstAuth);
-                    const allSame = recipients.every(r => {
-                      const rAuth = parseAuthentication(r.authentication);
-                      return JSON.stringify(rAuth.sort()) === JSON.stringify(firstAuthArray.sort());
-                    });
-                    return allSame ? firstAuthArray : [];
-                  } else if (authModalForRecipientId) {
-                    const recipient = recipients.find(r => r.id === authModalForRecipientId);
-                    return parseAuthentication(recipient?.authentication);
-                  }
-                  return [];
-                })()}
+                selectedMethods={getAuthModalSelectedMethods()}
                 onMethodSelect={handleAuthMethodSelect}
                 onSelectionChange={(methodIds) => {
                   setTempAuthSelection(methodIds);
                   setHasUserChangedSelection(true);
                 }}
                 showSaveButton={false}
+                compact
                 riskLevel="medium"
                 complianceRequirements={[]}
               />
             </div>
+
+            {authModalScrolled && (
+              <div className="border-t border-border bg-card px-6 py-4">
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={saveAuthModalSelection}
+                    className="rounded-lg bg-primary px-6 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
