@@ -2407,46 +2407,58 @@ const envelopeStats = async (req, res) => {
 const getAllEnvelopeStats = async (req, res) => {
   try {
     const { userType } = req.params;
-    const id = req?.user?.data?.id
-    const { startDate, endDate, range } = req.query;
+    const id = req?.user?.data?.id || req?.user?.id;
+    const { startDate, endDate } = req.query;
     const organizationId = req.headers['x-organization-id'];
 
     if (!userType) {
       return res.status(400).json({ message: 'userType is required' });
     }
+
     let query = {};
     if (userType === 'user') {
-      query = { sender: new mongoose.Types.ObjectId(id) };
+      if (!id || !mongoose.Types.ObjectId.isValid(String(id))) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+      query = { sender: new mongoose.Types.ObjectId(String(id)) };
     } else if (userType === 'admin') {
-      // Admin can see all envelopes, no additional filter needed
       query = {};
     } else if (userType === 'organization') {
-        query = {
-          isOrganization: true,
-          organizationId: new mongoose.Types.ObjectId(organizationId), // org id
-          sender: new mongoose.Types.ObjectId(req.user.data.id),
-        };
+      if (
+        !id ||
+        !organizationId ||
+        !mongoose.Types.ObjectId.isValid(String(id)) ||
+        !mongoose.Types.ObjectId.isValid(String(organizationId))
+      ) {
+        return res.status(400).json({ message: 'Valid organization context required' });
       }
+      query = {
+        isOrganization: true,
+        organizationId: new mongoose.Types.ObjectId(String(organizationId)),
+        sender: new mongoose.Types.ObjectId(String(id)),
+      };
+    } else {
+      return res.status(400).json({ message: 'Invalid userType' });
+    }
 
-    // Count envelopes based on userType
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = new Date(startDate);
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
+
     const totalEnvelopes = await Envelope.countDocuments(query);
     const completedEnvelopes = await Envelope.countDocuments({ ...query, status: 'completed' });
     const pendingEnvelopes = await Envelope.countDocuments({ ...query, status: 'in-progress' });
     const expiredEnvelopes = await Envelope.countDocuments({ ...query, status: 'expired' });
-    //Total Recipients (aggregate from Envelope)
     const recipientAgg = await Envelope.aggregate([
       { $match: query },
       {
         $group: {
           _id: null,
-          totalRecipients: { $sum: { $size: { $ifNull: ["$recipientIds", []] } } }
-        }
-      }
+          totalRecipients: { $sum: { $size: { $ifNull: ['$recipientIds', []] } } },
+        },
+      },
     ]);
     const totalRecipients = recipientAgg.length ? recipientAgg[0].totalRecipients : 0;
 
@@ -2455,11 +2467,11 @@ const getAllEnvelopeStats = async (req, res) => {
       completedEnvelopes,
       pendingEnvelopes,
       expiredEnvelopes,
-      totalRecipients
+      totalRecipients,
     });
   } catch (error) {
     console.error('Error fetching envelope stats:', error);
-    throw new Error('Internal Server Error');
+    return res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 };
 const getAllRecipients = async (req, res) => {

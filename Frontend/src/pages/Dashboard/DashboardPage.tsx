@@ -51,12 +51,21 @@ const DashboardPage: React.FC = () => {
   const [envStatesLoading, setEnvStatesLoading] = React.useState(true);
   const [envelopeStats, setEnvelopeStats] = React.useState<any>(null);
   const [userPlan, setUserPlan] = React.useState<any>(null);
+  const [chartsReady, setChartsReady] = React.useState(false);
 
   React.useEffect(() => {
-    // get All envelope stats
+    if (loading) {
+      setChartsReady(false);
+      return undefined;
+    }
+    const frame = window.requestAnimationFrame(() => setChartsReady(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [loading, usage.length]);
+
+  React.useEffect(() => {
     fetchAllEnvelopeStats();
-  }
-    , [accountType]);
+  }, [accountType]);
+
   const fetchAllEnvelopeStats = async () => {
     try {
       setEnvStatesLoading(true);
@@ -270,6 +279,12 @@ const DashboardPage: React.FC = () => {
     Other: 'var(--chart-5)',
   };
 
+  const hasChartMetrics = useMemo(() => {
+    const hasModuleUsage = moduleBarData.some((entry) => entry.value > 0);
+    const hasCreditActivity = chartData.some((entry: any) => entry.used > 0 || entry.added > 0);
+    return hasModuleUsage || hasCreditActivity;
+  }, [moduleBarData, chartData]);
+
   return (
     <div className=" space-y-8">
       {/* Advanced Tutorial Modal */}
@@ -479,13 +494,13 @@ const DashboardPage: React.FC = () => {
               <p className="text-sm font-medium text-foreground mb-1">No recent usage</p>
               <p className="text-xs text-muted-foreground">Your credit transactions will appear here</p>
             </div>
-          ) : chartData.length > 0 ? (
+          ) : hasChartMetrics && chartsReady ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                <div className="xl:col-span-6 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4">
+                <div className="xl:col-span-6 min-w-0 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4">
                   <h3 className="text-sm font-bold text-foreground mb-3">Module Usage</h3>
-                  <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <div className="h-72 w-full min-w-0">
+                    <ResponsiveContainer width="100%" height={288} minWidth={0}>
                       <BarChart data={moduleBarData} layout="vertical" margin={{ left: 14, right: 10, top: 6, bottom: 6 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.55} />
                         <XAxis type="number" stroke="var(--muted-foreground)" style={{ fontSize: '11px' }} />
@@ -520,10 +535,10 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
               
-                <div className="xl:col-span-6 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4">
+                <div className="xl:col-span-6 min-w-0 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4">
                   <h3 className="text-sm font-bold text-foreground mb-3">Credit Usage</h3>
-                  <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <div className="h-72 w-full min-w-0">
+                    <ResponsiveContainer width="100%" height={288} minWidth={0}>
                       <RadarChart data={radarData}>
                         <PolarGrid stroke="var(--border)" />
                         <PolarAngleAxis dataKey="metric" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} />
