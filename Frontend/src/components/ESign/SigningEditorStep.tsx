@@ -8,6 +8,7 @@ import {
   Settings,
   Copy,
   FileStack,
+  ChevronUp,
   MoreHorizontal,
   Loader2,
 } from "lucide-react";
@@ -56,9 +57,9 @@ export type SignatureField = {
   fieldId?: string; // link back to power form field
   options?: string[]; // for select/dropdown fields
   value?: string | boolean; // for checkbox default/value or generic value
-  /** Links copies created via "apply to all pages" in the editor. */
+  /** Links copies created via page placement actions in the editor. */
   placementGroupId?: string;
-  placementMode?: 'all_pages' | 'last_page_only';
+  placementMode?: 'all_pages' | 'last_page_only' | 'above_pages' | 'below_pages';
 };
 
 export type PowerFormSlot = {
@@ -1136,30 +1137,32 @@ export default function SigningEditorStep({
     setShowPropertiesSidebar(true);
   };
 
-  // Remove signature field from database and frontend
   const removeSignatureField = async (field: SignatureField) => {
-    const fieldId = field._id || field.id;
+    const mode = getPlacementMode(field);
+    const fieldsToDelete = mode ? fieldsInPlacementGroup(field) : [field];
 
-    // Check if field has a database ID (MongoDB ObjectId is 24 hex chars)
-    const isDbRecord = field._id && /^[a-fA-F0-9]{24}$/.test(field._id);
-
-    if (isDbRecord) {
+    for (const target of fieldsToDelete) {
+      const isDbRecord = target._id && /^[a-fA-F0-9]{24}$/.test(target._id);
+      if (!isDbRecord) continue;
       try {
-        await eSignApi.post(`/api/e-sign/envelope/remove-signature-field/${field._id}`);
-        console.log(`Field ${field._id} deleted from DB successfully.`);
+        await eSignApi.post(`/api/e-sign/envelope/remove-signature-field/${target._id}`);
       } catch (error: any) {
         console.error('Failed to delete field from DB:', error);
         toast.error(error?.response?.data?.message || 'Failed to delete field from database');
-        return; // Don't remove from frontend if DB deletion failed
+        return;
       }
     }
 
-    // Remove from frontend state
-    setSignatureFields(prev => prev.filter(f => (f.id ?? f._id) !== fieldId));
-    if (onFieldsChange) {
-      const updatedFields = signatureFields.filter(f => (f.id ?? f._id) !== fieldId);
-      onFieldsChange(updatedFields);
+    const deleteKeys = new Set(fieldsToDelete.map((f) => getFieldKey(f)));
+    const updatedFields = signatureFields.filter((f) => !deleteKeys.has(getFieldKey(f)));
+    setSignatureFields(updatedFields);
+    if (onFieldsChange) onFieldsChange(updatedFields);
+    if (selectedField && deleteKeys.has(getFieldKey(selectedField))) {
+      setSelectedField(null);
+      setShowPropertiesSidebar(false);
     }
+    setFieldActionsMenuId(null);
+    toast.success(fieldsToDelete.length > 1 ? 'All placement copies deleted' : 'Field deleted');
   };
 
   // Save field label to database
@@ -1232,35 +1235,65 @@ export default function SigningEditorStep({
 
   const getFieldKey = (field: SignatureField) => String(field.id ?? field._id ?? '');
 
+  const fieldsMatchPlacement = (a: SignatureField, b: SignatureField) => {
+    if ((a.docId ?? a.documentId) !== (b.docId ?? b.documentId)) return false;
+    if (a.type !== b.type) return false;
+    if ((a.recipientId ?? '') !== (b.recipientId ?? '')) return false;
+    if (a.placementGroupId && b.placementGroupId && a.placementGroupId === b.placementGroupId) {
+      return true;
+    }
+    return (
+      Math.round(a.x) === Math.round(b.x) &&
+      Math.round(a.y) === Math.round(b.y) &&
+      Math.round(a.width) === Math.round(b.width) &&
+      Math.round(a.height) === Math.round(b.height) &&
+      (a.label || '') === (b.label || '')
+    );
+  };
+
   const getDocumentPageCount = useCallback(() => {
     return Math.max(1, numPages || activeDoc?.pages || 1);
   }, [numPages, activeDoc?.pages]);
 
   const getPlacementGroupId = (field: SignatureField) =>
-    field.placementGroupId || getFieldKey(field);
+    field.placementGroupId ||
+    `${field.docId ?? field.documentId}-${field.type}-${field.recipientId ?? 'none'}-${Math.round(field.x)}-${Math.round(field.y)}-${Math.round(field.width)}-${Math.round(field.height)}-${field.label || ''}`;
 
   const fieldsInPlacementGroup = useCallback(
-    (field: SignatureField, fields: SignatureField[] = signatureFields) => {
-      const docId = field.docId ?? field.documentId;
-      const groupId = getPlacementGroupId(field);
-      return fields.filter((f) => {
-        if ((f.docId ?? f.documentId) !== docId) return false;
-        return getPlacementGroupId(f) === groupId;
-      });
-    },
+    (field: SignatureField, fields: SignatureField[] = signatureFields) =>
+      fields.filter((f) => fieldsMatchPlacement(field, f)),
     [signatureFields],
   );
 
+  type PlacementMode = NonNullable<SignatureField['placementMode']>;
+
   const getPlacementMode = useCallback(
-    (field: SignatureField): 'all_pages' | 'last_page_only' | null => {
-      if (field.placementMode === 'all_pages' || field.placementMode === 'last_page_only') {
-        return field.placementMode;
-      }
+    (field: SignatureField): PlacementMode | null => {
+      if (field.placementMode) return field.placementMode;
+
       const totalPages = getDocumentPageCount();
       const group = fieldsInPlacementGroup(field);
-      if (totalPages > 1 && group.length >= totalPages) {
-        return 'all_pages';
-      }
+      if (group.length <= 1) return null;
+
+      const pages = new Set(group.map((f) => f.page));
+      const anchorPage = field.page;
+
+      if (pages.size >= totalPages) return 'all_pages';
+      if (pages.size === 1 && pages.has(totalPages)) return 'last_page_only';
+
+      const abovePages = Array.from({ length: anchorPage - 1 }, (_, i) => i + 1);
+      const belowPages = Array.from(
+        { length: totalPages - anchorPage },
+        (_, i) => anchorPage + 1 + i,
+      );
+      const hasAllAbove =
+        abovePages.length > 0 && abovePages.every((page) => pages.has(page)) && pages.has(anchorPage);
+      const hasAllBelow =
+        belowPages.length > 0 && belowPages.every((page) => pages.has(page)) && pages.has(anchorPage);
+
+      if (hasAllAbove && !belowPages.some((page) => pages.has(page))) return 'above_pages';
+      if (hasAllBelow && !abovePages.some((page) => pages.has(page))) return 'below_pages';
+
       return null;
     },
     [fieldsInPlacementGroup, getDocumentPageCount],
@@ -1269,19 +1302,17 @@ export default function SigningEditorStep({
   const applyPlacementModeToGroup = (
     fields: SignatureField[],
     field: SignatureField,
-    mode: 'all_pages' | 'last_page_only' | null,
+    mode: PlacementMode | null,
   ) => {
     const groupId = getPlacementGroupId(field);
-    const docId = field.docId ?? field.documentId;
     return fields.map((f) => {
-      if ((f.docId ?? f.documentId) !== docId) return f;
-      if (getPlacementGroupId(f) !== groupId) return f;
+      if (!fieldsMatchPlacement(field, f)) return f;
+      const next = { ...f, placementGroupId: groupId };
       if (!mode) {
-        const next = { ...f };
         delete next.placementMode;
         return next;
       }
-      return { ...f, placementMode: mode };
+      return { ...next, placementMode: mode };
     });
   };
 
@@ -1320,21 +1351,35 @@ export default function SigningEditorStep({
     await eSignApi.post(`/api/e-sign/envelope/remove-signature-field/${field._id}`);
   };
 
-  const applyFieldToAllPages = async (field: SignatureField) => {
+  const applyFieldToPageRange = async (
+    field: SignatureField,
+    targetPages: number[],
+    mode: PlacementMode,
+    successLabel: string,
+  ) => {
     const totalPages = getDocumentPageCount();
     if (totalPages <= 1) {
       toast.error('This document has only one page');
       return;
     }
 
+    const pages = [...new Set(targetPages)].filter((page) => page >= 1 && page <= totalPages);
+    if (pages.length === 0) {
+      toast.error('No pages available for this placement');
+      return;
+    }
+
     setIsApplyingPlacement(true);
     try {
       const groupId = getPlacementGroupId(field);
-      const docId = field.docId ?? field.documentId;
       const sourceKey = getFieldKey(field);
 
-      let workingFields = signatureFields.map((f) =>
-        getFieldKey(f) === sourceKey ? { ...f, placementGroupId: groupId } : f,
+      let workingFields = applyPlacementModeToGroup(
+        signatureFields.map((f) =>
+          getFieldKey(f) === sourceKey ? { ...f, placementGroupId: groupId } : f,
+        ),
+        field,
+        mode,
       );
 
       const template =
@@ -1342,29 +1387,25 @@ export default function SigningEditorStep({
 
       const occupiedPages = new Set(
         workingFields
-          .filter(
-            (f) =>
-              (f.docId ?? f.documentId) === docId &&
-              getPlacementGroupId(f) === groupId,
-          )
+          .filter((f) => fieldsMatchPlacement(field, f))
           .map((f) => f.page),
       );
 
       const newFields: SignatureField[] = [];
-      for (let page = 1; page <= totalPages; page += 1) {
+      for (const page of pages) {
         if (!occupiedPages.has(page)) {
           newFields.push(cloneFieldForPage(template, page, groupId));
         }
       }
 
       if (newFields.length === 0) {
-        const withMode = applyPlacementModeToGroup(workingFields, field, 'all_pages');
+        const withMode = applyPlacementModeToGroup(workingFields, field, mode);
         setSignatureFields(withMode);
         saveToHistory(withMode);
         if (onFieldsChange) onFieldsChange(withMode);
         setSelectedField(withMode.find((f) => getFieldKey(f) === sourceKey) ?? template);
         setFieldActionsMenuId(null);
-        toast.success('Field is already on all pages');
+        toast.success('Field is already on the selected pages');
         return;
       }
 
@@ -1383,34 +1424,68 @@ export default function SigningEditorStep({
             ...newFields.map((nf) => {
               const sf = savedByPage.get(nf.page);
               return sf
-                ? { ...nf, ...sf, docId: nf.docId ?? sf.documentId }
-                : nf;
+                ? { ...nf, ...sf, docId: nf.docId ?? sf.documentId, placementGroupId: groupId, placementMode: mode }
+                : { ...nf, placementGroupId: groupId, placementMode: mode };
             }),
           ];
         }
       }
 
-      const withMode = applyPlacementModeToGroup(finalFields, field, 'all_pages');
+      const withMode = applyPlacementModeToGroup(finalFields, field, mode);
       setSignatureFields(withMode);
       saveToHistory(withMode);
       if (onFieldsChange) onFieldsChange(withMode);
-      setSelectedField(
-        withMode.find((f) => getFieldKey(f) === sourceKey) ?? template,
-      );
+      setSelectedField(withMode.find((f) => getFieldKey(f) === sourceKey) ?? template);
       setFieldActionsMenuId(null);
-      toast.success(`Field applied to ${newFields.length} more page(s)`);
+      toast.success(successLabel.replace('{count}', String(newFields.length)));
     } catch (error: any) {
-      console.error('applyFieldToAllPages failed:', error);
-      toast.error(error?.response?.data?.message || 'Failed to apply field to all pages');
+      console.error('applyFieldToPageRange failed:', error);
+      toast.error(error?.response?.data?.message || 'Failed to apply field placement');
     } finally {
       setIsApplyingPlacement(false);
     }
   };
 
+  const applyFieldToAllPages = async (field: SignatureField) => {
+    const totalPages = getDocumentPageCount();
+    await applyFieldToPageRange(
+      field,
+      Array.from({ length: totalPages }, (_, i) => i + 1),
+      'all_pages',
+      'Field applied to {count} more page(s)',
+    );
+  };
+
+  const applyFieldToPagesAbove = async (field: SignatureField) => {
+    if (field.page <= 1) {
+      toast.error('There are no pages above the current page');
+      return;
+    }
+    await applyFieldToPageRange(
+      field,
+      Array.from({ length: field.page - 1 }, (_, i) => i + 1),
+      'above_pages',
+      'Field applied to {count} page(s) above',
+    );
+  };
+
+  const applyFieldToPagesBelow = async (field: SignatureField) => {
+    const totalPages = getDocumentPageCount();
+    if (field.page >= totalPages) {
+      toast.error('There are no pages below the current page');
+      return;
+    }
+    await applyFieldToPageRange(
+      field,
+      Array.from({ length: totalPages - field.page }, (_, i) => field.page + 1 + i),
+      'below_pages',
+      'Field applied to {count} page(s) below',
+    );
+  };
+
   const applyFieldToLastPageOnly = async (field: SignatureField) => {
     const totalPages = getDocumentPageCount();
     const groupId = getPlacementGroupId(field);
-    const docId = field.docId ?? field.documentId;
     const sourceKey = getFieldKey(field);
     const related = fieldsInPlacementGroup(field);
 
@@ -1425,13 +1500,7 @@ export default function SigningEditorStep({
       const template = related.find((f) => getFieldKey(f) === sourceKey) ?? field;
       const existingOnLast = related.find((f) => f.page === totalPages);
 
-      const withoutGroup = signatureFields.filter(
-        (f) =>
-          !(
-            (f.docId ?? f.documentId) === docId &&
-            getPlacementGroupId(f) === groupId
-          ),
-      );
+      const withoutGroup = signatureFields.filter((f) => !fieldsMatchPlacement(field, f));
 
       let lastPageField: SignatureField = {
         ...template,
@@ -1502,25 +1571,15 @@ export default function SigningEditorStep({
 
     setIsApplyingPlacement(true);
     try {
-      const groupId = getPlacementGroupId(field);
-      const docId = field.docId ?? field.documentId;
-      const keepPage = field.page;
+      const sourceKey = getFieldKey(field);
       const related = fieldsInPlacementGroup(field);
+      const keptField = related.find((f) => getFieldKey(f) === sourceKey) ?? field;
 
-      if (mode === 'all_pages') {
-        for (const f of related) {
-          if (f.page !== keepPage) {
-            await deleteFieldFromDb(f);
-          }
+      for (const f of related) {
+        if (getFieldKey(f) !== sourceKey) {
+          await deleteFieldFromDb(f);
         }
       }
-
-      const keptField = related.find((f) => f.page === keepPage) ?? field;
-      const remaining = signatureFields.filter((f) => {
-        if ((f.docId ?? f.documentId) !== docId) return true;
-        if (getPlacementGroupId(f) !== groupId) return true;
-        return f.page === keepPage;
-      });
 
       const singleField: SignatureField = {
         ...keptField,
@@ -1528,10 +1587,9 @@ export default function SigningEditorStep({
         placementMode: undefined,
       };
 
-      const finalFields = [
-        ...remaining.filter((f) => getFieldKey(f) !== getFieldKey(keptField)),
-        singleField,
-      ];
+      const finalFields = signatureFields
+        .filter((f) => !fieldsMatchPlacement(field, f) || getFieldKey(f) === sourceKey)
+        .map((f) => (getFieldKey(f) === sourceKey ? singleField : f));
 
       if (envelopeId && singleField._id) {
         await eSignApi.post(saveSignatureFieldsPath, {
@@ -1545,7 +1603,7 @@ export default function SigningEditorStep({
       if (onFieldsChange) onFieldsChange(finalFields);
       setSelectedField(singleField);
       setFieldActionsMenuId(null);
-      toast.success('Placement removed');
+      toast.success('Placement copies removed');
     } catch (error: any) {
       console.error('removePlacementExpansion failed:', error);
       toast.error(error?.response?.data?.message || 'Failed to remove placement');
@@ -1553,6 +1611,42 @@ export default function SigningEditorStep({
       setIsApplyingPlacement(false);
     }
   };
+
+  const getPlacementModeLabel = (mode: PlacementMode) => {
+    switch (mode) {
+      case 'all_pages':
+        return 'Applied to all pages';
+      case 'last_page_only':
+        return 'Applied to last page only';
+      case 'above_pages':
+        return 'Applied to pages above';
+      case 'below_pages':
+        return 'Applied to pages below';
+      default:
+        return 'Placement applied';
+    }
+  };
+
+  const renderDeleteFieldAction = (
+    field: SignatureField,
+    variant: 'sidebar' | 'menu',
+    actionBtnClass: string,
+    run: (action: () => void | Promise<void>) => void,
+  ) => (
+    <button
+      type="button"
+      onClick={() => run(() => removeSignatureField(field))}
+      disabled={isApplyingPlacement}
+      className={`${actionBtnClass} ${
+        variant === 'sidebar'
+          ? 'border border-destructive/30 text-destructive hover:bg-destructive/10'
+          : 'text-destructive hover:bg-destructive/10'
+      }`}
+    >
+      <Trash2 className="w-4 h-4" />
+      Delete field
+    </button>
+  );
 
   const renderPagePlacementActions = (
     field: SignatureField,
@@ -1568,6 +1662,11 @@ export default function SigningEditorStep({
         ? 'w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed'
         : 'w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-foreground hover:bg-muted transition-colors disabled:opacity-50';
 
+    const outlineBtnClass =
+      variant === 'sidebar'
+        ? `${actionBtnClass} border border-muted text-foreground hover:bg-muted`
+        : actionBtnClass;
+
     const activeClass =
       variant === 'sidebar'
         ? 'w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-semibold bg-[#1B4D3E] text-white'
@@ -1578,13 +1677,10 @@ export default function SigningEditorStep({
       closeMenu?.();
     };
 
-    if (mode === 'all_pages') {
+    if (mode) {
       return (
         <div className={variant === 'sidebar' ? 'space-y-2' : 'py-1'}>
-          <div className={activeClass}>
-            <Copy className="w-4 h-4" />
-            Applied to all pages
-          </div>
+          <div className={activeClass}>{getPlacementModeLabel(mode)}</div>
           <button
             type="button"
             onClick={() => run(() => removePlacementExpansion(field))}
@@ -1592,28 +1688,9 @@ export default function SigningEditorStep({
             className={`${actionBtnClass} ${variant === 'sidebar' ? 'border border-muted text-foreground hover:bg-muted' : 'text-destructive hover:bg-destructive/10'}`}
           >
             <Trash2 className="w-4 h-4" />
-            Remove from all pages
+            Remove placement copies
           </button>
-        </div>
-      );
-    }
-
-    if (mode === 'last_page_only') {
-      return (
-        <div className={variant === 'sidebar' ? 'space-y-2' : 'py-1'}>
-          <div className={activeClass}>
-            <FileStack className="w-4 h-4" />
-            Last page only
-          </div>
-          <button
-            type="button"
-            onClick={() => run(() => removePlacementExpansion(field))}
-            disabled={isApplyingPlacement}
-            className={`${actionBtnClass} ${variant === 'sidebar' ? 'border border-muted text-foreground hover:bg-muted' : 'text-destructive hover:bg-destructive/10'}`}
-          >
-            <Trash2 className="w-4 h-4" />
-            Remove last page placement
-          </button>
+          {renderDeleteFieldAction(field, variant, actionBtnClass, run)}
         </div>
       );
     }
@@ -1624,20 +1701,43 @@ export default function SigningEditorStep({
           type="button"
           onClick={() => run(() => applyFieldToAllPages(field))}
           disabled={isApplyingPlacement}
-          className={`${actionBtnClass} ${variant === 'sidebar' ? 'bg-[#1B4D3E] text-white hover:bg-[#163f34]' : ''}`}
+          className={outlineBtnClass}
         >
           <Copy className="w-4 h-4" />
           {isApplyingPlacement ? 'Applying...' : 'Apply to all pages'}
         </button>
+        {field.page > 1 && (
+          <button
+            type="button"
+            onClick={() => run(() => applyFieldToPagesAbove(field))}
+            disabled={isApplyingPlacement}
+            className={outlineBtnClass}
+          >
+            <ChevronUp className="w-4 h-4" />
+            Apply above all pages
+          </button>
+        )}
+        {field.page < totalPages && (
+          <button
+            type="button"
+            onClick={() => run(() => applyFieldToPagesBelow(field))}
+            disabled={isApplyingPlacement}
+            className={outlineBtnClass}
+          >
+            <ChevronDown className="w-4 h-4" />
+            Apply below all pages
+          </button>
+        )}
         <button
           type="button"
           onClick={() => run(() => applyFieldToLastPageOnly(field))}
           disabled={isApplyingPlacement}
-          className={`${actionBtnClass} ${variant === 'sidebar' ? 'border border-muted text-foreground hover:bg-muted' : ''}`}
+          className={outlineBtnClass}
         >
           <FileStack className="w-4 h-4" />
           Last page only
         </button>
+        {renderDeleteFieldAction(field, variant, actionBtnClass, run)}
       </div>
     );
   };

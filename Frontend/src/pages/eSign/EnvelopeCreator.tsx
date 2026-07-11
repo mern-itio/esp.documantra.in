@@ -1476,7 +1476,16 @@ const isPublicFlow =
   const FAN_CARD_WIDTH = 112;
   const FAN_CARD_HEIGHT = 168;
   const FAN_CARD_OVERLAP = 78;
-  const FAN_CARD_PEEK = FAN_CARD_WIDTH - FAN_CARD_OVERLAP;
+  const MAX_FAN_CARDS_PER_ROW = 8;
+  const UPLOAD_INLINE_MIN_WIDTH = 140;
+
+  const chunkDocuments = (docs: typeof documents, size: number) => {
+    const rows: (typeof documents)[] = [];
+    for (let i = 0; i < docs.length; i += size) {
+      rows.push(docs.slice(i, i + size));
+    }
+    return rows;
+  };
 
   const getUploadZoneMode = (docCount: number): 'full' | 'shrinking' | 'compact' => {
     if (docCount === 0) return 'full';
@@ -1594,13 +1603,17 @@ const isPublicFlow =
     </div>
   );
 
-  const renderDocumentFanCard = (doc: (typeof documents)[number], index: number) => (
+  const renderDocumentFanCard = (
+    doc: (typeof documents)[number],
+    globalIndex: number,
+    indexInRow: number,
+  ) => (
     <div
       key={doc.id}
       className="group relative flex-shrink-0 cursor-pointer transition-transform duration-200 hover:z-[60] hover:-translate-y-3"
       style={{
-        marginLeft: index === 0 ? 0 : -FAN_CARD_OVERLAP,
-        zIndex: index + 1,
+        marginLeft: indexInRow === 0 ? 0 : -FAN_CARD_OVERLAP,
+        zIndex: indexInRow + 1,
       }}
       onClick={() => {
         if (!doc.isUploading && doc.url) {
@@ -1614,7 +1627,7 @@ const isPublicFlow =
         style={{ width: FAN_CARD_WIDTH, height: FAN_CARD_HEIGHT }}
       >
         <span className="absolute left-1.5 top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#1B4D3E] text-[10px] font-bold text-white shadow-sm">
-          {index + 1}
+          {globalIndex + 1}
         </span>
         {!doc.isUploading && (
           <button
@@ -1657,29 +1670,51 @@ const isPublicFlow =
   const renderDocumentFanLayout = () => {
     const docCount = documents.length;
     const uploadMode = getUploadZoneMode(docCount);
-    const fanWidth = docCount > 0 ? FAN_CARD_WIDTH + (docCount - 1) * FAN_CARD_PEEK + 8 : 0;
+
+    if (docCount === 0) {
+      return <div className="space-y-2">{renderDocumentUploadDropzone('full')}</div>;
+    }
+
+    const rows = chunkDocuments(documents, MAX_FAN_CARDS_PER_ROW);
+    const lastRowIndex = rows.length - 1;
+    const lastRowFull = rows[lastRowIndex].length >= MAX_FAN_CARDS_PER_ROW;
 
     return (
       <div className="space-y-2">
-        <div className="flex w-full items-end gap-3">
-          {docCount > 0 && (
-            <div
-              className="inline-flex flex-shrink-0 items-end pl-1 pt-3 pb-1 transition-all duration-300 ease-out"
-              style={{ width: fanWidth }}
-            >
-              {documents.map((doc, index) => renderDocumentFanCard(doc, index))}
+        <div className="space-y-3">
+          {rows.map((rowDocs, rowIndex) => {
+            const rowStartIndex = rowIndex * MAX_FAN_CARDS_PER_ROW;
+            const isLastRow = rowIndex === lastRowIndex;
+            const showInlineUpload = isLastRow && !lastRowFull;
+
+            return (
+              <div
+                key={`doc-fan-row-${rowStartIndex}`}
+                className="flex w-full min-w-0 flex-wrap items-end gap-3"
+              >
+                <div className="inline-flex flex-shrink-0 items-end pl-1 pb-1 pt-2">
+                  {rowDocs.map((doc, indexInRow) =>
+                    renderDocumentFanCard(doc, rowStartIndex + indexInRow, indexInRow)
+                  )}
+                </div>
+                {showInlineUpload && (
+                  <div
+                    className="min-w-[140px] flex-1 basis-[160px] transition-all duration-300 ease-out"
+                    style={{ minWidth: UPLOAD_INLINE_MIN_WIDTH }}
+                  >
+                    {renderDocumentUploadDropzone(uploadMode)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {lastRowFull && (
+            <div className="w-full transition-all duration-300 ease-out">
+              {renderDocumentUploadDropzone(uploadMode)}
             </div>
           )}
-          <div
-            className="min-w-[108px] flex-1 transition-all duration-300 ease-out"
-            style={docCount > 0 ? { flexBasis: `calc(100% - ${fanWidth + 12}px)` } : undefined}
-          >
-            {renderDocumentUploadDropzone(uploadMode)}
-          </div>
         </div>
-        {docCount > 0 && (
-          <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
-        )}
+        <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
       </div>
     );
   };
@@ -2783,6 +2818,11 @@ if (isPublicFlow) {
       toast.error('Failed to update authentication method');
     }
   };
+
+  const clearRecipientAuthentication = async (recipientId: string) => {
+    await handleAuthMethodSelect([], { forceRecipientId: recipientId });
+  };
+
   const handleEmailOnBlur = async (id: string, email: string) => {
     if (!email || !envelopeId) return;
     try {
@@ -7216,6 +7256,16 @@ if (isPublicFlow) {
                                       <div className="absolute inset-0 rounded-md bg-primary opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300 z-0"></div>
                                       <Edit className='w-3.5 h-3.5 relative z-10 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 group-active:rotate-0 group-active:scale-100' />
                                       <div className="absolute inset-0 rounded-md ring-2 ring-primary/40 ring-offset-1 ring-offset-background opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"></div>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      title="Cancel authentication method"
+                                      onClick={() => void clearRecipientAuthentication(recipient.id)}
+                                      className="group relative inline-flex items-center justify-center w-7 h-7 rounded-md text-destructive border border-transparent hover:border-destructive/40 hover:bg-destructive/10 transition-all duration-300 flex-shrink-0 shadow-sm hover:shadow-md hover:shadow-destructive/20 hover:scale-110 active:scale-95 hover:-translate-y-0.5 ring-offset-background"
+                                    >
+                                      <div className="absolute inset-0 rounded-md bg-destructive opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300 z-0"></div>
+                                      <X className="w-3.5 h-3.5 relative z-10 transition-transform duration-300 group-hover:scale-110 group-active:scale-100" />
+                                      <div className="absolute inset-0 rounded-md ring-2 ring-destructive/40 ring-offset-1 ring-offset-background opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"></div>
                                     </button>
                                   </div>
                                 </div>
