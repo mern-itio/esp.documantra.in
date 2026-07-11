@@ -1473,13 +1473,21 @@ const isPublicFlow =
   const formatFileSize = formatUploadFileSize;
   const totalUploadedBytes = (documents || []).reduce((sum, doc) => sum + (doc.size || 0), 0);
   const uploadLimitHint = getEsignUploadLimitHint();
-  const FAN_CARD_WIDTH = 96;
-  const FAN_CARD_HEIGHT = 176;
-  const FAN_CARD_OVERLAP = 72;
+  const FAN_CARD_WIDTH = 112;
+  const FAN_CARD_HEIGHT = 200;
+  const FAN_CARD_OVERLAP = 78;
+  const FAN_UPLOAD_COMPACT_WIDTH = 132;
+  const FAN_UPLOAD_COMPACT_AT = 5;
 
   const getUploadZoneMode = (docCount: number): 'full' | 'shrinking' | 'compact' => {
     if (docCount === 0) return 'full';
-    return 'compact';
+    if (docCount >= FAN_UPLOAD_COMPACT_AT) return 'compact';
+    return 'shrinking';
+  };
+
+  const getFanCardsWidth = (docCount: number) => {
+    if (docCount <= 0) return 0;
+    return FAN_CARD_WIDTH + (docCount - 1) * (FAN_CARD_WIDTH - FAN_CARD_OVERLAP);
   };
 
   const renderDocumentUploadDropzone = (mode: 'full' | 'shrinking' | 'compact' = 'full') => {
@@ -1487,7 +1495,7 @@ const isPublicFlow =
     const isCompact = mode === 'compact';
 
     return (
-      <div data-tour="ec-upload" className={isFull ? undefined : 'h-[176px]'}>
+      <div data-tour="ec-upload" className={isFull ? undefined : 'h-[200px]'}>
         <div
           onClick={() => fileInputRef.current?.click()}
           onDragOver={handleDragOver}
@@ -1498,11 +1506,12 @@ const isPublicFlow =
             isDragOver ? 'border-primary bg-primary/5' : 'border-border'
           } ${
             isFull
-              ? 'min-h-[220px] rounded-2xl p-8 sm:p-12'
+              ? 'min-h-[240px] rounded-2xl p-8 sm:p-12'
               : isCompact
-                ? 'h-[176px] w-[120px] rounded-lg p-3 hover:border-[#1B4D3E] hover:bg-[#1B4D3E]/5'
-                : 'rounded-xl px-4 py-3 hover:border-[#1B4D3E] hover:bg-[#1B4D3E]/5'
+                ? 'h-[200px] rounded-lg p-3 hover:border-[#1B4D3E] hover:bg-[#1B4D3E]/5'
+                : 'h-[200px] rounded-xl px-4 py-3 hover:border-[#1B4D3E] hover:bg-[#1B4D3E]/5'
           }`}
+          style={isCompact ? { width: FAN_UPLOAD_COMPACT_WIDTH } : undefined}
         >
           <input
             ref={fileInputRef}
@@ -1551,16 +1560,16 @@ const isPublicFlow =
               <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
             </div>
           ) : isCompact ? (
-            <div className="flex flex-col items-center justify-center space-y-2 text-center">
-              <div className="rounded-xl bg-[#1B4D3E] p-2.5">
+            <div className="flex flex-col items-center justify-center space-y-2.5 text-center">
+              <div className="rounded-xl bg-[#1B4D3E] p-3">
                 <Upload className="h-5 w-5 text-white" />
               </div>
-              <p className="text-[11px] font-semibold leading-tight text-foreground">Add files</p>
-              <p className="text-[9px] leading-tight text-muted-foreground">Drop here</p>
+              <p className="text-xs font-semibold leading-tight text-foreground">Add files</p>
+              <p className="text-[10px] leading-tight text-muted-foreground">Drop here</p>
             </div>
           ) : (
-            <div className="flex w-full min-w-0 items-center justify-center gap-3 overflow-hidden">
-              <div className="rounded-xl bg-[#1B4D3E] p-2.5">
+            <div className="flex w-full min-w-0 items-center justify-center gap-4 overflow-hidden px-2">
+              <div className="rounded-xl bg-[#1B4D3E] p-3">
                 <Upload className="h-5 w-5 text-white" />
               </div>
               <div className="min-w-0 flex-1 text-left">
@@ -1573,7 +1582,7 @@ const isPublicFlow =
                   e.stopPropagation();
                   fileInputRef.current?.click();
                 }}
-                className="hidden flex-shrink-0 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm text-white transition-colors hover:opacity-90 sm:flex"
+                className="hidden flex-shrink-0 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm text-white transition-colors hover:opacity-90 md:flex"
                 style={{ backgroundColor: '#260559' }}
               >
                 <span>Upload</span>
@@ -1631,16 +1640,16 @@ const isPublicFlow =
         <div className="ml-4 flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-gradient-to-b from-[#F7F3EE] to-white p-1">
             {!doc.isUploading && doc.url ? (
-              <DocumentUploadThumbnail doc={doc} pdfWidth={68} minHeight="108px" />
+              <DocumentUploadThumbnail doc={doc} pdfWidth={78} minHeight="120px" />
             ) : (
               <LoaderPlaceholder doc={doc} />
             )}
           </div>
           <div className="border-t border-border/80 bg-[#FDFBF7] px-1 py-1">
-            <p className="truncate text-[8px] font-semibold text-foreground" title={doc.name}>
+            <p className="truncate text-[9px] font-semibold text-foreground" title={doc.name}>
               {doc.name}
             </p>
-            <p className="text-[7px] text-muted-foreground">
+            <p className="text-[8px] text-muted-foreground">
               {doc.isUploading
                 ? `${doc.uploadProgress ?? 0}%`
                 : `${doc.pages}p · ${formatFileSize(doc.size)}`}
@@ -1663,16 +1672,32 @@ const isPublicFlow =
       return <div className="space-y-2">{renderDocumentUploadDropzone('full')}</div>;
     }
 
+    const uploadMode = getUploadZoneMode(docCount);
+    const cardsWidth = getFanCardsWidth(docCount);
+
     return (
       <div className="space-y-2">
         <div className="flex w-full min-w-0 items-end gap-3">
-          <div className="min-w-0 flex-1 overflow-x-auto pb-2 pt-3">
-            <div className="inline-flex items-end pl-1 pr-2">
-              {documents.map((doc, index) => renderDocumentFanCard(doc, index))}
-            </div>
+          <div
+            className={`inline-flex items-end pl-1 pt-3 pb-2 ${
+              uploadMode === 'compact' ? 'min-w-0 max-w-[calc(100%-148px)] overflow-x-auto' : 'flex-shrink-0'
+            }`}
+          >
+            {documents.map((doc, index) => renderDocumentFanCard(doc, index))}
           </div>
-          <div className="flex-shrink-0">
-            {renderDocumentUploadDropzone(getUploadZoneMode(docCount))}
+          <div
+            className={`pb-2 transition-all duration-300 ease-out ${
+              uploadMode === 'compact'
+                ? 'flex-shrink-0'
+                : 'min-w-[140px] flex-1'
+            }`}
+            style={
+              uploadMode === 'shrinking'
+                ? { width: `max(140px, calc(100% - ${cardsWidth + 24}px))` }
+                : undefined
+            }
+          >
+            {renderDocumentUploadDropzone(uploadMode)}
           </div>
         </div>
         <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
