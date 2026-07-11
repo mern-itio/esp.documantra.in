@@ -251,6 +251,10 @@ const EnvelopeDetails: React.FC = () => {
           if (email) {
             sessionStorage.setItem('recipientPortalPrefillEmail', email);
           }
+          const recipientName = (rowcurrentRecipient?.name || '').toString().trim();
+          if (recipientName) {
+            sessionStorage.setItem('recipientPortalPrefillName', recipientName);
+          }
         }else{
           await fetchCurrentRecipient(recipientId);
         }
@@ -294,6 +298,10 @@ const EnvelopeDetails: React.FC = () => {
       const email = (response.data.currentRecipient?.email || '').toString().trim().toLowerCase();
       if (email) {
         sessionStorage.setItem('recipientPortalPrefillEmail', email);
+      }
+      const recipientName = (response.data.currentRecipient?.name || '').toString().trim();
+      if (recipientName) {
+        sessionStorage.setItem('recipientPortalPrefillName', recipientName);
       }
     }
   }

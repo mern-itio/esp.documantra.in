@@ -181,11 +181,13 @@ const verifyRecipientPortalCode = async (req, res) => {
     await otpRecord.save();
 
     const token = signRecipientPortalToken(email);
+    const recipientName = await getRecipientDisplayName(email);
     return res.status(200).json({
       status: 'success',
       token,
       email,
       maskedEmail: maskEmail(email),
+      recipientName,
       expiresInHours: 24,
     });
   } catch (error) {
@@ -232,6 +234,14 @@ async function fetchSenderNameMap(senderIds) {
   );
 
   return senderMap;
+}
+
+async function getRecipientDisplayName(email) {
+  const recipient = await Recipient.findOne({ email })
+    .sort({ updatedAt: -1 })
+    .select('name')
+    .lean();
+  return String(recipient?.name || '').trim();
 }
 
 const listRecipientPortalDocuments = async (req, res) => {
@@ -301,6 +311,10 @@ const listRecipientPortalDocuments = async (req, res) => {
 
     rows.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
+    const recipientName =
+      recipients.find((r) => String(r.name || '').trim())?.name?.trim() ||
+      (await getRecipientDisplayName(email));
+
     return res.status(200).json({
       status: 'success',
       data: rows,
@@ -308,6 +322,7 @@ const listRecipientPortalDocuments = async (req, res) => {
       tab,
       email,
       maskedEmail: maskEmail(email),
+      recipientName,
     });
   } catch (error) {
     console.error('listRecipientPortalDocuments error:', error);

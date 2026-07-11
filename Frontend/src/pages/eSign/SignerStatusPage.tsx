@@ -347,9 +347,12 @@ export default function SignerStatusPage() {
       .toString()
       .trim()
       .toLowerCase();
-    return email
-      ? `/e-sign/recipient-portal?email=${encodeURIComponent(email)}`
-      : '/e-sign/recipient-portal';
+    const name = (currentRecipient?.name || '').toString().trim();
+    const params = new URLSearchParams();
+    if (email) params.set('email', email);
+    if (name) params.set('name', name);
+    const query = params.toString();
+    return query ? `/e-sign/recipient-portal?${query}` : '/e-sign/recipient-portal';
   }, [currentRecipient]);
 
   const currentUserIsCc = useMemo(
