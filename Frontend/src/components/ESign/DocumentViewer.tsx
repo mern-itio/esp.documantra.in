@@ -207,6 +207,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   const {
     comments: envelopeComments,
     openComments,
+    loading: commentsLoading,
     submitting: commentSubmitting,
     error: commentError,
     pendingSelection,
@@ -3317,6 +3318,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-5">
+              {commentsLoading ? (
+                <p className="text-sm text-gray-500">Loading suggestions...</p>
+              ) : null}
+              {commentError ? (
+                <p className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {commentError}
+                </p>
+              ) : null}
               <EnvelopeCommentsPanel
                 comments={envelopeComments}
                 writeEnabled={commentsWriteEnabled}

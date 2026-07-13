@@ -95,12 +95,18 @@ export const authApi = createApiInstance(
 );
 
 export const documentApi = createApiInstance(
-  import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'https://esp.documantra.in/document',
+  resolveServiceUrl(import.meta.env.VITE_DOCUMENT_SERVICE_URL, {
+    productionPath: '/document',
+    localUrl: 'http://localhost:2102',
+  }),
   'Document'
 );
 
 export const eSignApi = createApiInstance(
-  import.meta.env.VITE_ESIGN_SERVICE_URL || 'https://esp.documantra.in/esign',
+  resolveServiceUrl(import.meta.env.VITE_ESIGN_SERVICE_URL, {
+    productionPath: '/esign',
+    localUrl: 'http://localhost:2103',
+  }),
   'E-Sign'
 );
 
