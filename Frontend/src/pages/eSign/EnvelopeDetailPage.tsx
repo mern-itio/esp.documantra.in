@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
-import { Download, Printer, ChevronLeft, ExternalLink, CheckCircle2, PenLine, ListOrdered, Info, ArrowLeft, Copy, Check } from 'lucide-react';
+import { Download, Printer, ChevronLeft, ExternalLink, CheckCircle2, PenLine, ListOrdered, Info, ArrowLeft, Copy, Check, MessageSquare } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
+import { EnvelopeCommentsSenderPanel } from '../../components/ESign/EnvelopeCommentLayer';
 
 declare global {
     interface Window { pdfjsLib: any }
@@ -49,6 +50,8 @@ const formatDateTime = (value?: string) => {
 const EnvelopeDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const commentsSectionRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string>('');
     const [envelope, setEnvelope] = useState<EnvelopeDetailsResponse | null>(null);
@@ -108,6 +111,14 @@ const EnvelopeDetailPage: React.FC = () => {
         };
         load();
     }, [id]);
+
+    useEffect(() => {
+        if (searchParams.get('section') !== 'comments') return;
+        const timer = window.setTimeout(() => {
+            commentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 400);
+        return () => window.clearTimeout(timer);
+    }, [searchParams, loading, envelope]);
 
     // Build preview:
     // - iframe uses signer route so fields are visible
@@ -864,6 +875,16 @@ const EnvelopeDetailPage: React.FC = () => {
                         )}
                     </div>
 
+                    <hr className="border-gray-300 mb-6" />
+                    {id && (
+                      <div ref={commentsSectionRef} id="document-suggestions" className="mb-8 scroll-mt-24">
+                        <div className="mb-3 flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4 text-[#248567]" />
+                          <h2 className="text-[15px] font-semibold text-gray-900">Document suggestions</h2>
+                        </div>
+                        <EnvelopeCommentsSenderPanel envelopeId={id} />
+                      </div>
+                    )}
                     <hr className="border-gray-300 mb-6" />
                     {/* Custom fields */}
                     <div className="mb-8">

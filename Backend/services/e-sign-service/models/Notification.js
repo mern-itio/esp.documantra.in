@@ -27,7 +27,7 @@ const NotificationSchema = new mongoose.Schema({
   },
   type: { 
     type: String, 
-    enum: ['signature_completed', 'envelope_completed', 'reminder'], 
+    enum: ['signature_completed', 'envelope_completed', 'reminder', 'document_comment'], 
     default: 'signature_completed' 
   },
   message: { 

@@ -152,6 +152,39 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
       return () => clearInterval(interval);
     }
   }, [user, fetchNotifications, fetchOrganizations]);
+  const getNotificationTarget = (notification: any) => {
+    const envelopeId =
+      notification?.envelopeId?._id ||
+      notification?.envelopeId ||
+      notification?.metadata?.envelopeId?._id ||
+      notification?.metadata?.envelopeId;
+
+    if (notification?.type === 'document_comment' && envelopeId) {
+      return `/e-sign/envelope/${envelopeId}?section=comments`;
+    }
+    if (envelopeId) {
+      return `/e-sign/envelope/${envelopeId}`;
+    }
+    return '/notifications';
+  };
+
+  const handleNotificationItemClick = async (notification: any) => {
+    const target = getNotificationTarget(notification);
+    if (!notification.isRead && notification._id) {
+      try {
+        await apiGateway.post(`/mark-read/${notification._id}`, { source: notification.source });
+        setNotifications((prev) =>
+          prev.map((n) => (n._id === notification._id ? { ...n, isRead: true } : n)),
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      } catch {
+        // ignore mark-read errors; still navigate
+      }
+    }
+    navigate(target);
+    setShowNotif(false);
+  };
+
   // Mark all notifications as read
   const handleMarkAllAsRead = async () => {
     try {
@@ -443,10 +476,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   hover:bg-accent/80
   ${!notification.isRead ? 'bg-muted/80 border-l-4 border-primary' : 'hover:bg-muted/50'}
   `}
-                          onClick={() => {
-                            navigate('/notifications');
-                            setShowNotif(false);
-                          }}
+                          onClick={() => handleNotificationItemClick(notification)}
                         >
                           <div className="flex items-start gap-3">
                             <div className="flex-1 min-w-0">

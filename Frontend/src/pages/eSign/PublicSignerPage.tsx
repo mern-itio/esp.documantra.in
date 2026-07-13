@@ -32,6 +32,7 @@ import {
   Printer,
   Download,
   Share2,
+  MessageSquare,
 } from "lucide-react";
 
 interface UISchema {
@@ -206,6 +207,7 @@ const EnvelopeDetails: React.FC = () => {
   const [signerAccessToken, setSignerAccessToken] = useState<string | null>(null);
   const [accessVerified, setAccessVerified] = useState(false);
   const [showCookieCenter, setShowCookieCenter] = useState(false);
+  const [showCommentsPanel, setShowCommentsPanel] = useState(false);
 
   const [redirectCountdown, setRedirectCountdown] = useState<number>(5);
   const [skipMessage, setSkipMessage] = useState<string>(''); // If current method can't be used, show message then auto-advance
@@ -1364,6 +1366,17 @@ const EnvelopeDetails: React.FC = () => {
         <Share2 className="h-4 w-4" />
         {shareLinkCopied ? "Link copied" : "Share link"}
       </button>
+      <button
+        type="button"
+        onClick={() => {
+          setShowOtherOptions(false);
+          setShowCommentsPanel(true);
+        }}
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
+      >
+        <MessageSquare className="h-4 w-4" />
+        Document suggestions
+      </button>
       <div className="my-1 border-t border-gray-200" />
       <button
         type="button"
@@ -1665,6 +1678,15 @@ const EnvelopeDetails: React.FC = () => {
                 }
                 documentTitle={envelopeDisplayTitle}
                 senderName={envelopeSenderName}
+                getSignerAccessHeaders={getSignerAccessHeaders}
+                commentAuthorName={
+                  (currentRecipient as any)?.name ||
+                  (currentRecipient as any)?.fullname ||
+                  envelopeSenderName ||
+                  "Signer"
+                }
+                showCommentsPanel={showCommentsPanel}
+                onCommentsPanelClose={() => setShowCommentsPanel(false)}
                 onRecipientComplete={() => {
                   if (isInPerson) handleRecipientComplete();
                   handleSigningCompleted();

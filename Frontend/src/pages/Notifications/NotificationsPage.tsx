@@ -19,7 +19,7 @@ interface Notification {
               redirectUrl:string
             }
   envelopeSubject: string;
-  type: 'signature_completed' | 'envelope_completed' | 'reminder' | 'ORG_INVITATION';
+  type: 'signature_completed' | 'envelope_completed' | 'reminder' | 'document_comment' | 'ORG_INVITATION';
   message: string;
   isRead: boolean;
   readAt?: string;
@@ -85,21 +85,34 @@ const NotificationsPage: React.FC = () => {
     }
   };
 
+  const getNotificationTarget = (notification: Notification) => {
+    const envelopeId =
+      typeof notification?.metadata?.envelopeId === 'object'
+        ? notification.metadata.envelopeId?._id
+        : notification?.metadata?.envelopeId || (notification as any)?.envelopeId?._id || (notification as any)?.envelopeId;
+
+    if (notification?.type === 'ORG_INVITATION') {
+      return notification?.metadata?.redirectUrl || null;
+    }
+    if (notification?.type === 'document_comment' && envelopeId) {
+      return `/e-sign/envelope/${envelopeId}?section=comments`;
+    }
+    if (envelopeId) {
+      return `/e-sign/envelope/${envelopeId}`;
+    }
+    return null;
+  };
+
   const handleNotificationClick = async(notification: Notification) => {
     if (!notification.isRead) {
       await handleMarkAsRead(notification?._id || notification?.id, notification?.source);
     }
-    if (notification?.metadata?.envelopeId?._id) {
-      navigate(`/e-sign/envelope/${notification?.metadata?.envelopeId._id}`);
-    }
-    if(notification?.type=='ORG_INVITATION'){
-      const url = notification?.metadata?.redirectUrl;
-
-      if (url?.startsWith("http") ||url?.startsWith("https")  ) {
-        window.location.href = url;
-      } else {
-        navigate(url);
-      }
+    const target = getNotificationTarget(notification);
+    if (!target) return;
+    if (target.startsWith('http')) {
+      window.location.href = target;
+    } else {
+      navigate(target);
     }
   };
 
@@ -132,6 +145,8 @@ const NotificationsPage: React.FC = () => {
         return '✓✓';
       case 'reminder':
         return '⏰';
+      case 'document_comment':
+        return '💬';
       case 'ORG_INVITATION':
         return '🏢'
       default:
@@ -147,6 +162,8 @@ const NotificationsPage: React.FC = () => {
         return 'bg-green-100 text-green-700';
       case 'reminder':
         return 'bg-yellow-100 text-yellow-700';
+      case 'document_comment':
+        return 'bg-emerald-100 text-emerald-700';
       default:
         return 'bg-gray-100 text-gray-700';
     }

@@ -28,7 +28,12 @@ const {
          markAllNotificationsAsRead,
          fetchBulkEnvelopes,
          getEnvelopesExcludingIds,
-        downloadCompletionZip  } = require('../controllers/mainController');
+         downloadCompletionZip  } = require('../controllers/mainController');
+const {
+  listEnvelopeCommentsForSender,
+  resolveEnvelopeCommentBySender,
+  replyToEnvelopeCommentBySender,
+} = require('../controllers/envelopeCommentController');
 const { listRecipients, createRecipient, updateRecipient, deleteRecipient } = require('../controllers/recipientController');
 const { upload } = require('../utils/secureUpload');
 const { viewDocument } = require('../controllers/documentViewController');
@@ -65,6 +70,9 @@ router.post('/envelope/permanent-delete/:envelopeId', senderAccess, envelopePerm
 router.post('/envelope/reminder/:envelopeId', senderAccess, envelopeReminder);
 router.get('/envelope/duplicate/:envelopeId', senderAccess, duplicateEnvelope);
 router.get('/envelope/activity-log/:envelopeId', readAccess, activityLogs);
+router.get('/envelope/:envelopeId/comments', readAccess, listEnvelopeCommentsForSender);
+router.patch('/envelope/:envelopeId/comments/:commentId/resolve', senderAccess, resolveEnvelopeCommentBySender);
+router.post('/envelope/:envelopeId/comments/:commentId/reply', senderAccess, replyToEnvelopeCommentBySender);
 router.post('/envelope/remove-recipient/:recipientId/:envelopeId', senderAccess, removeRecFromEnvelope);
 router.post('/envelope/remove-document/:documentId/:envelopeId', senderAccess, removeDocFromEnvelope);
 router.get('/envelope/get-signature-fields/:envelopeId', readAccess, getEnvSignFields);

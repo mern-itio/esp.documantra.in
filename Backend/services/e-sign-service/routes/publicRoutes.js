@@ -41,7 +41,14 @@ const {
   requestSignerAccessCode,
   verifySignerAccessCode,
 } = require('../controllers/signerAccessController');
+const {
+  listEnvelopeComments,
+  createEnvelopeComment,
+  resolveEnvelopeComment,
+  replyToEnvelopeCommentByRecipient,
+} = require('../controllers/envelopeCommentController');
 const recipientPortalAuth = require('../middleware/recipientPortalAuth');
+const requireSignerAccess = require('../middleware/requireSignerAccess');
 const vSignController = require('../controllers/vSignController');
 const { upload } = require('../utils/secureUpload');
 const { viewDocument } = require('../controllers/documentViewController');
@@ -90,6 +97,26 @@ router.post('/link-user-recipient', LinkUserRecipient);
 router.post('/envelope/assign-to-someone-else', assignEnvelopeToSomeoneElsePublic);
 router.post('/envelope/decline', declineEnvelopePublic);
 router.get('/envelope/:envelopeId/recipient/:recipientId/audit-trail', getRecipientAuditTrail);
+router.get(
+  '/envelope/:envelopeId/recipient/:recipientId/comments',
+  requireSignerAccess,
+  listEnvelopeComments,
+);
+router.post(
+  '/envelope/:envelopeId/recipient/:recipientId/comments',
+  requireSignerAccess,
+  createEnvelopeComment,
+);
+router.patch(
+  '/envelope/:envelopeId/recipient/:recipientId/comments/:commentId/resolve',
+  requireSignerAccess,
+  resolveEnvelopeComment,
+);
+router.post(
+  '/envelope/:envelopeId/recipient/:recipientId/comments/:commentId/reply',
+  requireSignerAccess,
+  replyToEnvelopeCommentByRecipient,
+);
 router.post('/recipients/update-verification-status',updateAuthStatus);
 router.post('/signing-evidence', patchSigningEvidence);
 router.post('/recipients/validate',validateRecipient);

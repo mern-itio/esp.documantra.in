@@ -199,6 +199,60 @@ const reassignedSignRequestTemplate = ({
   `);
 };
 
+const documentCommentNotificationTemplate = ({
+  ownerName,
+  envelopeSubject,
+  authorName,
+  commentMessage,
+  selectedText,
+  viewLink,
+}) => {
+  const safeOwner = escapeHtml(ownerName || 'there');
+  const safeSubject = escapeHtml(envelopeSubject || 'Document');
+  const safeAuthor = escapeHtml(authorName || 'A signer');
+  const safeMessage = escapeHtml(commentMessage || '');
+  const safeSelected = escapeHtml(selectedText || '');
+  const safeViewLinkText = escapeHtml(viewLink);
+
+  return wrapEmailBody(`
+    <p style="font-size: 16px; color: ${TEXT_PRIMARY}; line-height: 1.75; margin: 0 0 8px; text-align: left;">Hello <strong>${safeOwner}</strong>,</p>
+    <p style="font-size: 15px; color: ${TEXT_SECONDARY}; line-height: 1.65; margin: 0 0 16px; text-align: left;">
+      <strong>${safeAuthor}</strong> added a comment on <strong>${safeSubject}</strong>.
+    </p>
+    ${safeSelected ? `<p style="font-size: 14px; color: ${TEXT_SECONDARY}; line-height: 1.65; margin: 0 0 12px; font-style: italic; text-align: left; background:#fff8e6; padding:12px; border-radius:4px;">&ldquo;${safeSelected}&rdquo;</p>` : ''}
+    <p style="font-size: 14px; color: ${TEXT_PRIMARY}; line-height: 1.65; margin: 0 0 24px; text-align: left;">${safeMessage}</p>
+    ${emailCtaButton(viewLink, 'View suggestions', BRAND_GREEN)}
+    ${emailFallbackLink(viewLink, safeViewLinkText)}
+  `);
+};
+
+const documentCommentReplyTemplate = ({
+  recipientName,
+  envelopeSubject,
+  senderName,
+  replyMessage,
+  selectedText,
+  signLink,
+}) => {
+  const safeName = escapeHtml(recipientName || 'Signer');
+  const safeSubject = escapeHtml(envelopeSubject || 'Document');
+  const safeSender = escapeHtml(senderName || 'Sender');
+  const safeReply = escapeHtml(replyMessage || '');
+  const safeSelected = escapeHtml(selectedText || '');
+  const safeLinkText = escapeHtml(signLink);
+
+  return wrapEmailBody(`
+    <p style="font-size: 16px; color: ${TEXT_PRIMARY}; line-height: 1.75; margin: 0 0 8px; text-align: left;">Hello <strong>${safeName}</strong>,</p>
+    <p style="font-size: 15px; color: ${TEXT_SECONDARY}; line-height: 1.65; margin: 0 0 16px; text-align: left;">
+      <strong>${safeSender}</strong> replied to your comment on <strong>${safeSubject}</strong>.
+    </p>
+    ${safeSelected ? `<p style="font-size: 14px; color: ${TEXT_SECONDARY}; line-height: 1.65; margin: 0 0 12px; font-style: italic; text-align: left; background:#fff8e6; padding:12px; border-radius:4px;">&ldquo;${safeSelected}&rdquo;</p>` : ''}
+    <p style="font-size: 14px; color: ${TEXT_PRIMARY}; line-height: 1.65; margin: 0 0 24px; text-align: left;">${safeReply}</p>
+    ${emailCtaButton(signLink, 'Open the document', BRAND_GREEN)}
+    ${emailFallbackLink(signLink, safeLinkText)}
+  `);
+};
+
 const reassignedOwnerCcTemplate = ({
   ownerName,
   envelopeSubject,
@@ -232,4 +286,6 @@ module.exports = {
   reassignedSignRequestTemplate,
   reassignedOwnerCcTemplate,
   recipientPortalOtpTemplate,
+  documentCommentNotificationTemplate,
+  documentCommentReplyTemplate,
 };

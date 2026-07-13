@@ -6,11 +6,18 @@ import { eSignApi } from "../../services/apiHelper";
 import type { SignerData, ActiveField } from "../../types/documentTypes";
 import confetti from "canvas-confetti";
 import { Link, useNavigate } from "react-router-dom";
-import { Upload, Stamp as StampIcon, X, Pencil, Check, ChevronDown, ArrowUp, FileText } from "lucide-react";
+import { Upload, Stamp as StampIcon, X, Pencil, Check, ChevronDown, ArrowUp, FileText, PanelLeft, PenLine, MessageSquare } from "lucide-react";
 import BrandLogo from "../BrandLogo";
 import { toTitleCase } from "../../utils/formatName";
 import { resolveEsignDocumentFileProp } from "../../utils/esignDocumentUrl";
 import { collectSigningContext } from "../../utils/signingContext";
+import {
+  CommentHighlight,
+  EnvelopeCommentComposer,
+  EnvelopeCommentsPanel,
+  useEnvelopeComments,
+} from "./EnvelopeCommentLayer";
+import type { EnvelopeComment } from "../../services/envelopeCommentService";
 
 interface Props {
   // Backward compatible single document
@@ -41,6 +48,13 @@ interface Props {
   senderName?: string;
   /** Public signer link — use unauthenticated document view API */
   isPublicFlow?: boolean;
+  /** Optional signer JWT headers for public comment APIs */
+  getSignerAccessHeaders?: () => Record<string, string> | undefined;
+  /** Display name for new document comments */
+  commentAuthorName?: string;
+  /** Open resolved-suggestions panel from parent menu */
+  showCommentsPanel?: boolean;
+  onCommentsPanelClose?: () => void;
   signatureProvider:string
   signatureMethod:string
 }
@@ -50,6 +64,16 @@ Modal.setAppElement("#root");
 const BASE_PAGE_WIDTH = 800;
 const MIN_FIELD_WIDTH = 16;
 const MIN_FIELD_HEIGHT = 14;
+
+const getPersonInitials = (name?: string, email?: string) => {
+  const source = (name || email || "").trim();
+  if (!source) return "?";
+  const parts = source.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return source.slice(0, 2).toUpperCase();
+};
+
+const AVATAR_COLORS = ["#dbeafe", "#ede9fe", "#fce7f3", "#dcfce7", "#ffedd5"];
 
 // Mode constants
 const MODE = {
@@ -85,6 +109,67 @@ const normalizeMongoId = (id: any) => {
   return String(id);
 };
 
+type SignerDocSidebarItemProps = {
+  doc: any;
+  docIndex: number;
+  envelopeID?: string;
+  currentUserId: string;
+  isPublicFlow?: boolean;
+  displayTitle: string;
+  onPageSelect: (pageNum: number) => void;
+};
+
+const SignerDocSidebarItem: React.FC<SignerDocSidebarItemProps> = ({
+  doc,
+  docIndex,
+  envelopeID,
+  currentUserId,
+  isPublicFlow = false,
+  displayTitle,
+  onPageSelect,
+}) => {
+  const [numPages, setNumPages] = useState(0);
+
+  return (
+    <div>
+      <p className="truncate text-sm font-semibold text-gray-900" title={displayTitle}>
+        {displayTitle}
+      </p>
+      <Document
+        file={resolveEsignDocumentFileProp(doc, {
+          envelopeId: envelopeID,
+          recipientId: currentUserId,
+          isPublicFlow,
+        })}
+        onLoadSuccess={({ numPages: total }) => setNumPages(total)}
+        loading={<p className="mt-1 text-xs text-gray-400">Loading pages…</p>}
+      >
+        <p className="mt-1 text-xs text-gray-500">
+          {numPages || "…"} page{numPages === 1 ? "" : "s"}
+        </p>
+        <div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
+          {Array.from({ length: numPages }, (_, index) => {
+            const pageNum = index + 1;
+            return (
+              <button
+                key={`${docIndex}-${pageNum}`}
+                type="button"
+                onClick={() => onPageSelect(pageNum)}
+                className="block w-full rounded border border-gray-200 bg-gray-50 p-1 text-left hover:border-[#248567] hover:bg-white"
+              >
+                <Page pageNumber={pageNum} width={88} renderTextLayer={false} renderAnnotationLayer={false} />
+                <span className="mt-1 block text-center text-[10px] font-medium text-gray-600">
+                  {pageNum}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Document>
+    </div>
+  );
+};
+
 const DocumentViewerContent: React.FC<Props> = ({
   document,
   documents,
@@ -103,6 +188,10 @@ const DocumentViewerContent: React.FC<Props> = ({
   documentTitle,
   senderName,
   isPublicFlow = false,
+  getSignerAccessHeaders,
+  commentAuthorName,
+  showCommentsPanel = false,
+  onCommentsPanelClose,
   signatureProvider,
   signatureMethod
 }) => {
@@ -111,6 +200,53 @@ const DocumentViewerContent: React.FC<Props> = ({
   const toolbarTitle = headerTitle || (isViewOnly ? "View only" : "Review and complete");
   const displayTitle = documentTitle || toolbarTitle;
   const displaySender = senderName?.trim() || "Sender";
+  const commentsReadEnabled = isPublicFlow && !!envelopeID && !!currentUserId;
+  const commentsWriteEnabled = commentsReadEnabled && !isViewOnly;
+  const commentAuthor = commentAuthorName?.trim() || "Signer";
+
+  const {
+    comments: envelopeComments,
+    openComments,
+    submitting: commentSubmitting,
+    error: commentError,
+    pendingSelection,
+    beginSelectionFromMouseUp,
+    cancelPendingComment,
+    submitPendingComment,
+    resolveComment,
+    replyToComment,
+  } = useEnvelopeComments({
+    envelopeId: envelopeID,
+    recipientId: currentUserId,
+    enabled: commentsReadEnabled,
+    writeEnabled: commentsWriteEnabled,
+    getAuthHeaders: getSignerAccessHeaders,
+    authorName: commentAuthor,
+  });
+
+  const [commentsDrawerOpen, setCommentsDrawerOpen] = useState(false);
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+
+  const jumpToComment = useCallback(
+    (comment: EnvelopeComment) => {
+      setActiveCommentId(comment._id);
+      const docList =
+        documents && documents.length > 0 ? documents : document ? [document] : [];
+      const docIdx = docList.findIndex(
+        (doc) =>
+          String((doc as any)?.id || (doc as any)?._id || (doc as any)?.documentId || '') ===
+          String(comment.documentId),
+      );
+      const safeDocIdx = docIdx >= 0 ? docIdx : 0;
+      const el = window.document.getElementById(`doc-${safeDocIdx}-page-${comment.page}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+    [documents, document],
+  );
+
+  useEffect(() => {
+    if (showCommentsPanel) setCommentsDrawerOpen(true);
+  }, [showCommentsPanel]);
   const urlParams = new URLSearchParams(window.location.search);
   const selfValue = urlParams.get("self");
   const mode: SigningMode = (selfValue === MODE.SELF_SIGNER ? MODE.SELF_SIGNER : MODE.RECIPIENT) as SigningMode;
@@ -523,6 +659,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   const activeInputIdRef = useRef<string | null>(null);
   const currentFieldIdRef = useRef<string | null>(null);
   const [buttonStyle, setButtonStyle] = useState<React.CSSProperties>({});
+  const [showDocumentsSidebar, setShowDocumentsSidebar] = useState(true);
   const buttonUpdateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastButtonPositionRef = useRef<{ top: number; left: number } | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -762,7 +899,26 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   }, [signatureFields, selfSigner, mode, currentUserId, localSignedMap, localFieldValues, isViewOnly]);
 
   const showRequiredFieldsBanner =
-    !isViewOnly && actionableFields.length > 0 && !showCompleteButton;
+    !isViewOnly && (actionableFields.length > 0 || showCompleteButton);
+
+  const participantAvatars = useMemo(() => {
+    const list = (allRecipients || []).filter((r: any) => {
+      const role = (r?.role || "").toString().toLowerCase();
+      return role !== "carbon_copy" && role !== "cc";
+    });
+    return list.slice(0, 4);
+  }, [allRecipients]);
+
+  const docsForSidebar = useMemo(() => {
+    if (documents && documents.length > 0) return documents;
+    if (document) return [document];
+    return [];
+  }, [documents, document]);
+
+  const scrollToPageAnchor = (anchorId: string) => {
+    const el = window.document.getElementById(anchorId);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   // Track if there were fields initially
   useEffect(() => {
@@ -1729,6 +1885,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     activeInputIdRef: React.MutableRefObject<string | null>;
     envelopeID?: string;
     isPublicFlow?: boolean;
+    docIndex?: number;
+    currentNavFieldKey?: string | null;
+    envelopeComments?: EnvelopeComment[];
+    commentsReadEnabled?: boolean;
+    activeCommentId?: string | null;
+    onCommentHighlightClick?: (comment: EnvelopeComment) => void;
   };
 
   const SingleDoc = useMemo(() => {
@@ -1771,8 +1933,15 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         activeInputIdRef,
         envelopeID,
         isPublicFlow = false,
+        docIndex = 0,
+        currentNavFieldKey = null,
+        envelopeComments = [],
+        commentsReadEnabled = false,
+        activeCommentId = null,
+        onCommentHighlightClick,
       } = props;
       const [numPages, setNumPages] = useState<number>(0);
+      const docId = String(doc?.id || doc?._id || doc?.documentId || '');
 
       const isFieldForDoc = (field: any) => {
         const fieldDoc = (field?.documentId || field?.docId || field?.document?.id);
@@ -1792,9 +1961,36 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           {Array.from({ length: numPages }, (_, i) => {
             const pageNum = i + 1;
             return (
-              <div key={`p-${pageNum}`} className="relative mb-8 flex justify-center py-6 bg-gray-100">
+              <div
+                key={`p-${pageNum}`}
+                id={`doc-${docIndex}-page-${pageNum}`}
+                data-comment-page={pageNum}
+                data-comment-doc-index={docIndex}
+                data-comment-document-id={docId}
+                className="relative mb-8 flex justify-center scroll-mt-28 bg-gray-100 py-6"
+              >
                 <div className="relative" style={{ width: pageWidth }}>
-                  <Page pageNumber={pageNum} width={pageWidth} />
+                  <Page
+                    pageNumber={pageNum}
+                    width={pageWidth}
+                    renderTextLayer={commentsReadEnabled}
+                    renderAnnotationLayer={false}
+                  />
+
+                  {envelopeComments
+                    .filter(
+                      (comment) =>
+                        comment.page === pageNum &&
+                        String(comment.documentId) === docId,
+                    )
+                    .map((comment) => (
+                      <CommentHighlight
+                        key={comment._id}
+                        comment={comment}
+                        active={activeCommentId === comment._id}
+                        onClick={() => onCommentHighlightClick?.(comment)}
+                      />
+                    ))}
 
                   {/* per-page overlay */}
                   <div
@@ -1974,6 +2170,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             }
                           }
                           const allowSigning = isCurrentUser && !isSigned && allFilled && !isSigning;
+                          const isActiveNavField = currentNavFieldKey === keyId;
                           return (
                             <div
                               key={field._id?.$oid || field._id}
@@ -1984,9 +2181,21 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 left: rawX * pageScale,
                                 width: scaledWidth,
                                 height: scaledHeight + labelOffset,
-                                zIndex: 10
+                                zIndex: isActiveNavField ? 20 : 10
                               }}
                             >
+                              {isCurrentUser && isActiveNavField && (
+                                <div className="absolute -top-7 left-0 z-30 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-[10px] font-medium text-white shadow">
+                                  {isSigned ? (
+                                    <span className="inline-flex items-center gap-1">
+                                      <Check className="h-3 w-3 text-emerald-400" />
+                                      Signature applied
+                                    </span>
+                                  ) : (
+                                    "* Required • Sign here"
+                                  )}
+                                </div>
+                              )}
                               <div
                                 style={{
                                   position: "absolute",
@@ -1999,16 +2208,19 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   fontSize: fieldFontSize,
                                   padding: `0px ${boxPaddingX-15}px`,
                                 }}
-                                className={`flex items-center justify-center cursor-pointer font-semibold rounded ${isSigned
-                                  ? "border-0"
-                                  : isViewOnly && isCurrentUser
-                                    ? "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-80 cursor-pointer"
-                                  : isCurrentUser
-                                    ? isSigning
-                                      ? "bg-blue-100 border-2 border-blue-400 text-blue-600 cursor-progress"
-                                      : "bg-blue-100 border-2 border-blue-500 text-blue-700 cursor-pointer hover:bg-blue-200"
-                                    : "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-50"
-                                  }`}
+                                className={`flex items-center justify-center gap-1 cursor-pointer font-semibold rounded ${
+                                  isSigned
+                                    ? "border-2 border-rose-300 bg-white"
+                                    : isViewOnly && isCurrentUser
+                                      ? "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-80 cursor-pointer"
+                                      : isCurrentUser
+                                        ? isSigning
+                                          ? "bg-rose-100 border-2 border-rose-400 text-rose-600 cursor-progress"
+                                          : isActiveNavField
+                                            ? "bg-rose-50 border-2 border-rose-500 text-rose-700 cursor-pointer shadow-sm ring-2 ring-rose-200"
+                                            : "bg-rose-50 border-2 border-rose-400 text-rose-600 cursor-pointer hover:bg-rose-100"
+                                        : "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-50"
+                                }`}
                                 onClick={() => {
                                   if (isViewOnly) {
                                     openAuditTrailModal();
@@ -2053,10 +2265,18 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 ) : !allFilled ? (
                                   "Fill all other fields first"
                                 ) : isCurrentUser && recipientSignature ? (
-                                  "Click to sign"
-                                ) : isCurrentUser && !recipientSignature ?(
-                                  "Click to Save"
-                                ):("Signature")}
+                                  <span className="inline-flex items-center gap-1">
+                                    <PenLine className="h-3.5 w-3.5" />
+                                    Click to sign
+                                  </span>
+                                ) : isCurrentUser && !recipientSignature ? (
+                                  <span className="inline-flex items-center gap-1">
+                                    <PenLine className="h-3.5 w-3.5" />
+                                    Signature
+                                  </span>
+                                ) : (
+                                  "Signature"
+                                )}
                               </div>
                               {assignee && (
                                 <div
@@ -2600,6 +2820,25 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
+              {participantAvatars.length > 0 && (
+                <div className="hidden items-center -space-x-1.5 sm:flex">
+                  {participantAvatars.map((person: any, idx: number) => {
+                    const personId = person?.id || person?._id || idx;
+                    const initials = getPersonInitials(person?.name, person?.email);
+                    return (
+                      <span
+                        key={personId}
+                        title={person?.name || person?.email || "Participant"}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-gray-700"
+                        style={{ backgroundColor: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
+                      >
+                        {initials}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
               {actionsMenuVisible && onRequestActions && (
                 <button
                   type="button"
@@ -2611,60 +2850,73 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                   <ChevronDown className="h-4 w-4" />
                 </button>
               )}
-
-              {!isViewOnly && showCompleteButton && (
-                <div className={`relative ${shouldHighlightCompleteCta ? "z-[70]" : ""}`}>
-                  {shouldHighlightCompleteCta && (
-                    <div className="pointer-events-none absolute top-full mt-2 right-0 flex flex-col items-center rounded-md bg-amber-100 px-3 py-1.5 text-[11px] font-semibold text-gray-900 shadow-md whitespace-nowrap">
-                      <ArrowUp className="h-3.5 w-3.5 animate-bounce" />
-                      <span>Click here to complete signing</span>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (completeCtaState === "done") return;
-                      completeSignature(envelopeID, currentUserId)
-                      setCompleteCtaState("done");
-                    }}
-                    className={
-                      completeCtaState === "done"
-                        ? "inline-flex items-center justify-center gap-2 rounded bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white"
-                        : shouldHighlightCompleteCta
-                          ? "inline-flex items-center justify-center rounded bg-[#f5c518] px-3 py-1.5 text-sm font-bold text-gray-900 shadow-sm animate-pulse"
-                          : "inline-flex items-center justify-center rounded border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                    }
-                  >
-                    {completeCtaState === "done" ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Completed
-                      </>
-                    ) : (
-                      "Complete"
-                    )}
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
 
         {!showRequiredFieldsBanner ? null : (
           <div className="pointer-events-auto fixed top-14 left-0 right-0 z-[55] flex h-12 items-center gap-3 border-b border-gray-200 bg-white px-4 sm:px-6">
-            <FileText className="h-4 w-4 shrink-0 text-gray-400" />
-            <p className="min-w-0 flex-1 text-center text-sm text-gray-700">
-              <span className="inline-block rounded bg-sky-50 px-2.5 py-1">
-                Please fill in {actionableFields.length} required field{actionableFields.length === 1 ? '' : 's'}.
-              </span>
-            </p>
             <button
               type="button"
-              onClick={goToNext}
-              className="inline-flex shrink-0 items-center justify-center rounded bg-[#f5c518] px-5 py-2 text-sm font-bold text-gray-900 shadow-sm hover:bg-[#e6b800]"
+              onClick={() => setShowDocumentsSidebar((v) => !v)}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50 sm:hidden"
+              aria-label="Toggle documents panel"
             >
-              {hasStarted ? 'Next field' : 'Start'}
+              <PanelLeft className="h-4 w-4" />
             </button>
+            <FileText className="hidden h-4 w-4 shrink-0 text-gray-400 sm:block" />
+            <p className="min-w-0 flex-1 text-center text-sm text-gray-700">
+              <span className="inline-block rounded bg-sky-50 px-2.5 py-1">
+                {showCompleteButton
+                  ? "All required fields are complete."
+                  : hasStarted
+                    ? `${actionableFields.length} field${actionableFields.length === 1 ? "" : "s"} required.`
+                    : `Please fill in ${actionableFields.length} required field${actionableFields.length === 1 ? "" : "s"}.`}
+              </span>
+            </p>
+            {showCompleteButton ? (
+              <div className={`relative shrink-0 ${shouldHighlightCompleteCta ? "z-[70]" : ""}`}>
+                {shouldHighlightCompleteCta && (
+                  <div className="pointer-events-none absolute bottom-full right-0 mb-2 flex flex-col items-center rounded-md bg-amber-100 px-3 py-1.5 text-[11px] font-semibold text-gray-900 shadow-md whitespace-nowrap">
+                    <ArrowUp className="h-3.5 w-3.5 animate-bounce" />
+                    <span>Click Finish to complete signing</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (completeCtaState === "done") return;
+                    completeSignature(envelopeID, currentUserId);
+                    setCompleteCtaState("done");
+                  }}
+                  disabled={completeCtaState === "done"}
+                  className={
+                    completeCtaState === "done"
+                      ? "inline-flex items-center justify-center gap-2 rounded bg-emerald-600 px-5 py-2 text-sm font-bold text-white"
+                      : shouldHighlightCompleteCta
+                        ? "inline-flex items-center justify-center rounded bg-[#f5c518] px-5 py-2 text-sm font-bold text-gray-900 shadow-sm animate-pulse hover:bg-[#e6b800]"
+                        : "inline-flex items-center justify-center rounded bg-[#f5c518] px-5 py-2 text-sm font-bold text-gray-900 shadow-sm hover:bg-[#e6b800]"
+                  }
+                >
+                  {completeCtaState === "done" ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Finished
+                    </>
+                  ) : (
+                    "Finish"
+                  )}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={goToNext}
+                className="inline-flex shrink-0 items-center justify-center rounded bg-[#f5c518] px-5 py-2 text-sm font-bold text-gray-900 shadow-sm hover:bg-[#e6b800]"
+              >
+                {hasStarted ? "Next field" : "Start"}
+              </button>
+            )}
           </div>
         )}
 
@@ -2676,15 +2928,108 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           />
         )}
 
+        <div
+          className={`flex w-full flex-1 ${
+            !showRequiredFieldsBanner ? "mt-16" : "mt-[6.5rem]"
+          }`}
+        >
+          {/* Left utility rail */}
+          <div className="pointer-events-auto fixed bottom-0 left-0 top-28 z-[50] hidden w-10 flex-col items-center border-r border-gray-200 bg-[#eef0f2] py-3 sm:flex">
+            <button
+              type="button"
+              onClick={() => setShowDocumentsSidebar((v) => !v)}
+              className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded ${
+                showDocumentsSidebar ? "bg-white text-[#248567] shadow-sm" : "text-gray-500 hover:bg-white/80"
+              }`}
+              aria-label="Toggle documents panel"
+              title="Documents"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-white/80"
+              aria-label="Documents"
+              title="Documents"
+            >
+              <FileText className="h-4 w-4" />
+            </button>
+            {commentsReadEnabled && (
+              <button
+                type="button"
+                onClick={() => setCommentsDrawerOpen(true)}
+                className={`relative mt-2 inline-flex h-8 w-8 items-center justify-center rounded ${
+                  commentsDrawerOpen
+                    ? "bg-white text-[#248567] shadow-sm"
+                    : "text-gray-400 hover:bg-white/80"
+                }`}
+                aria-label="Document comments"
+                title="Comments and suggestions"
+              >
+                <MessageSquare className="h-4 w-4" />
+                {openComments.length > 0 && (
+                  <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#248567] px-1 text-[9px] font-bold text-white">
+                    {openComments.length}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Documents sidebar */}
+          {showDocumentsSidebar && docsForSidebar.length > 0 && (
+            <>
+              <button
+                type="button"
+                className="fixed inset-0 z-[58] bg-black/40 sm:hidden"
+                onClick={() => setShowDocumentsSidebar(false)}
+                aria-label="Close documents panel"
+              />
+              <aside className="pointer-events-auto fixed bottom-0 left-0 top-28 z-[59] w-64 overflow-y-auto border-r border-gray-200 bg-white sm:left-10 sm:w-56">
+              <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-700">
+                  Documents: {docsForSidebar.length}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowDocumentsSidebar(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Close documents panel"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="space-y-4 p-3">
+                {docsForSidebar.map((doc, dIdx) => (
+                  <SignerDocSidebarItem
+                    key={doc.id || doc._id || dIdx}
+                    doc={doc}
+                    docIndex={dIdx}
+                    envelopeID={envelopeID}
+                    currentUserId={currentUserId}
+                    isPublicFlow={isPublicFlow}
+                    displayTitle={doc.fileName || doc.name || displayTitle}
+                    onPageSelect={(pageNum) =>
+                      scrollToPageAnchor(`doc-${dIdx}-page-${pageNum}`)
+                    }
+                  />
+                ))}
+              </div>
+            </aside>
+            </>
+          )}
+
       {/* PDF(s) container */}
       <div
         ref={pdfContainerRef}
         className={`relative flex-1 w-full max-w-full sm:max-w-3xl lg:max-w-4xl border border-gray-200 rounded-lg shadow-sm bg-white overflow-auto self-center mb-20 px-3 sm:px-4 py-4 ${
-          !showRequiredFieldsBanner
-            ? "mt-16"
-            : "mt-[6.5rem]"
+          showDocumentsSidebar ? "sm:ml-[17.5rem]" : "sm:ml-10"
         } ${shouldHighlightCompleteCta ? "pointer-events-none" : ""}`}
         style={{ maxHeight: "calc(100vh - 160px)" }}
+        onMouseUp={() => {
+          if (!commentsWriteEnabled) return;
+          beginSelectionFromMouseUp(pdfContainerRef.current);
+        }}
         onKeyDown={(e) => {
           // Prevent Enter key from submitting any form anywhere in the container
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT' && (e.target as HTMLInputElement).type !== 'submit') {
@@ -2746,6 +3091,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 activeInputIdRef={activeInputIdRef}
                 envelopeID={envelopeID}
                 isPublicFlow={isPublicFlow}
+                docIndex={dIdx}
+                currentNavFieldKey={currentNavFieldKey}
+                envelopeComments={envelopeComments}
+                commentsReadEnabled={commentsReadEnabled}
+                activeCommentId={activeCommentId}
+                onCommentHighlightClick={jumpToComment}
               />
 
               {/* separator between documents with next document name */}
@@ -2919,6 +3270,69 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         );
       })()}
       </div>
+        </div>
+
+      <EnvelopeCommentComposer
+        open={!!pendingSelection}
+        authorName={commentAuthor}
+        selectedText={pendingSelection?.selectedText || ""}
+        top={pendingSelection?.composerTop || 120}
+        left={pendingSelection?.composerLeft || 120}
+        submitting={commentSubmitting}
+        error={commentError}
+        onCancel={cancelPendingComment}
+        onSubmit={submitPendingComment}
+      />
+
+      {commentsReadEnabled && commentsDrawerOpen && (
+        <div className="fixed inset-0 z-[74] flex justify-end bg-black/30">
+          <button
+            type="button"
+            className="flex-1"
+            aria-label="Close comments panel"
+            onClick={() => {
+              setCommentsDrawerOpen(false);
+              onCommentsPanelClose?.();
+            }}
+          />
+          <aside className="flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Document suggestions</h3>
+                <p className="text-xs text-gray-500">
+                  {commentsWriteEnabled
+                    ? 'Select text on the document to add a comment.'
+                    : 'View suggestions left on this document.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCommentsDrawerOpen(false);
+                  onCommentsPanelClose?.();
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              <EnvelopeCommentsPanel
+                comments={envelopeComments}
+                writeEnabled={commentsWriteEnabled}
+                activeCommentId={activeCommentId}
+                onResolve={resolveComment}
+                onJumpToComment={(comment) => {
+                  jumpToComment(comment);
+                  setCommentsDrawerOpen(false);
+                  onCommentsPanelClose?.();
+                }}
+                onReply={commentsWriteEnabled ? replyToComment : undefined}
+              />
+            </div>
+          </aside>
+        </div>
+      )}
 
       {/* SignPad Modal - never show for CC view-only */}
       {activeField && !isViewOnly && (
@@ -3303,6 +3717,8 @@ const DocumentViewer: React.FC<Props> = React.memo(
       prevProps.headerTitle === nextProps.headerTitle &&
       prevProps.documentTitle === nextProps.documentTitle &&
       prevProps.senderName === nextProps.senderName &&
+      prevProps.showCommentsPanel === nextProps.showCommentsPanel &&
+      prevProps.commentAuthorName === nextProps.commentAuthorName &&
       prevProps.isPublicFlow === nextProps.isPublicFlow
     );
   }
