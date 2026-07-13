@@ -6,7 +6,8 @@ import { eSignApi } from "../../services/apiHelper";
 import type { SignerData, ActiveField } from "../../types/documentTypes";
 import confetti from "canvas-confetti";
 import { Link, useNavigate } from "react-router-dom";
-import { Upload, Stamp as StampIcon, X, Pencil, Check, ChevronDown, ArrowUp } from "lucide-react";
+import { Upload, Stamp as StampIcon, X, Pencil, Check, ChevronDown, ArrowUp, FileText } from "lucide-react";
+import BrandLogo from "../BrandLogo";
 import { toTitleCase } from "../../utils/formatName";
 import { resolveEsignDocumentFileProp } from "../../utils/esignDocumentUrl";
 import { collectSigningContext } from "../../utils/signingContext";
@@ -34,6 +35,10 @@ interface Props {
   showActionsMenu?: boolean;
   /** Override header title in the signer toolbar */
   headerTitle?: string;
+  /** PandaDoc-style document title in toolbar */
+  documentTitle?: string;
+  /** Sender name shown in "My documents · by …" */
+  senderName?: string;
   /** Public signer link — use unauthenticated document view API */
   isPublicFlow?: boolean;
   signatureProvider:string
@@ -95,6 +100,8 @@ const DocumentViewerContent: React.FC<Props> = ({
   onRequestActions,
   showActionsMenu,
   headerTitle,
+  documentTitle,
+  senderName,
   isPublicFlow = false,
   signatureProvider,
   signatureMethod
@@ -102,6 +109,8 @@ const DocumentViewerContent: React.FC<Props> = ({
   const navigate = useNavigate();
   const actionsMenuVisible = showActionsMenu ?? !isViewOnly;
   const toolbarTitle = headerTitle || (isViewOnly ? "View only" : "Review and complete");
+  const displayTitle = documentTitle || toolbarTitle;
+  const displaySender = senderName?.trim() || "Sender";
   const urlParams = new URLSearchParams(window.location.search);
   const selfValue = urlParams.get("self");
   const mode: SigningMode = (selfValue === MODE.SELF_SIGNER ? MODE.SELF_SIGNER : MODE.RECIPIENT) as SigningMode;
@@ -2578,21 +2587,25 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       }}
       style={{ display: 'contents' }}
     >
-      <div className="relative flex flex-col items-stretch min-h-screen bg-[#F5F2EE]">
-        {/* Header (sticky full-width) */}
-        <div className="pointer-events-auto fixed top-0 left-0 right-0 z-[60] flex h-12 items-center bg-[#1b0c3e] px-4 text-white">
-          <div className="w-full flex items-center justify-between">
-            <div className="text-sm font-medium">
-              {toolbarTitle}
+      <div className="relative flex flex-col items-stretch min-h-screen bg-[#f3f4f6]">
+        {/* PandaDoc-style main header */}
+        <div className="pointer-events-auto fixed top-0 left-0 right-0 z-[60] border-b border-gray-200 bg-white">
+          <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <BrandLogo className="h-7 w-auto shrink-0" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-gray-900">{displayTitle}</p>
+                <p className="truncate text-xs text-gray-500">My documents · by {displaySender}</p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               {actionsMenuVisible && onRequestActions && (
                 <button
                   type="button"
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={() => onRequestActions?.()}
-                  className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#F7F3EE] px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-[#F7F3EE]/90"
+                  className="inline-flex items-center justify-center gap-1.5 rounded border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   More actions
                   <ChevronDown className="h-4 w-4" />
@@ -2602,7 +2615,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
               {!isViewOnly && showCompleteButton && (
                 <div className={`relative ${shouldHighlightCompleteCta ? "z-[70]" : ""}`}>
                   {shouldHighlightCompleteCta && (
-                    <div className="pointer-events-none absolute top-full mt-2 right-0 flex flex-col items-center rounded-full bg-amber-300 px-3 py-1.5 text-[11px] font-semibold text-[#1b0c3e] shadow-md whitespace-nowrap">
+                    <div className="pointer-events-none absolute top-full mt-2 right-0 flex flex-col items-center rounded-md bg-amber-100 px-3 py-1.5 text-[11px] font-semibold text-gray-900 shadow-md whitespace-nowrap">
                       <ArrowUp className="h-3.5 w-3.5 animate-bounce" />
                       <span>Click here to complete signing</span>
                     </div>
@@ -2616,10 +2629,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                     }}
                     className={
                       completeCtaState === "done"
-                        ? "inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white"
+                        ? "inline-flex items-center justify-center gap-2 rounded bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white"
                         : shouldHighlightCompleteCta
-                          ? "inline-flex items-center justify-center rounded-lg bg-amber-300 px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] shadow-[0_0_0_3px_rgba(251,191,36,0.65)] animate-pulse"
-                          : "inline-flex items-center justify-center rounded-lg bg-[#F7F3EE] px-3 py-1.5 text-sm font-semibold text-[#1b0c3e] hover:bg-[#F7F3EE]/90"
+                          ? "inline-flex items-center justify-center rounded bg-[#f5c518] px-3 py-1.5 text-sm font-bold text-gray-900 shadow-sm animate-pulse"
+                          : "inline-flex items-center justify-center rounded border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
                     }
                   >
                     {completeCtaState === "done" ? (
@@ -2638,14 +2651,17 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         </div>
 
         {!showRequiredFieldsBanner ? null : (
-          <div className="pointer-events-auto fixed top-12 left-0 right-0 z-[55] flex h-11 items-center justify-between border-b border-amber-200/80 bg-[#FFF8E6] px-4 text-[#1b0c3e]">
-            <p className="text-sm font-medium">
-              Please fill in {actionableFields.length} required field{actionableFields.length === 1 ? '' : 's'}.
+          <div className="pointer-events-auto fixed top-14 left-0 right-0 z-[55] flex h-12 items-center gap-3 border-b border-gray-200 bg-white px-4 sm:px-6">
+            <FileText className="h-4 w-4 shrink-0 text-gray-400" />
+            <p className="min-w-0 flex-1 text-center text-sm text-gray-700">
+              <span className="inline-block rounded bg-sky-50 px-2.5 py-1">
+                Please fill in {actionableFields.length} required field{actionableFields.length === 1 ? '' : 's'}.
+              </span>
             </p>
             <button
               type="button"
               onClick={goToNext}
-              className="inline-flex items-center justify-center rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-[#1b0c3e] shadow-sm hover:bg-amber-300"
+              className="inline-flex shrink-0 items-center justify-center rounded bg-[#f5c518] px-5 py-2 text-sm font-bold text-gray-900 shadow-sm hover:bg-[#e6b800]"
             >
               {hasStarted ? 'Next field' : 'Start'}
             </button>
@@ -2654,7 +2670,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
         {shouldHighlightCompleteCta && (
           <div
-            className="fixed left-0 right-0 top-12 bottom-0 z-[45] bg-black/45"
+            className="fixed left-0 right-0 top-14 bottom-0 z-[45] bg-black/45"
             onMouseDown={() => setIsCompleteCtaGuidanceDismissed(true)}
             aria-hidden="true"
           />
@@ -2663,10 +2679,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       {/* PDF(s) container */}
       <div
         ref={pdfContainerRef}
-        className={`relative flex-1 w-full max-w-full sm:max-w-3xl lg:max-w-4xl border border-gray-200 rounded-lg shadow-sm bg-[#F7F3EE] overflow-auto self-center mb-20 px-3 sm:px-4 py-4 ${
+        className={`relative flex-1 w-full max-w-full sm:max-w-3xl lg:max-w-4xl border border-gray-200 rounded-lg shadow-sm bg-white overflow-auto self-center mb-20 px-3 sm:px-4 py-4 ${
           !showRequiredFieldsBanner
-            ? "mt-14 sm:mt-16 lg:mt-20"
-            : "mt-[5.75rem]"
+            ? "mt-16"
+            : "mt-[6.5rem]"
         } ${shouldHighlightCompleteCta ? "pointer-events-none" : ""}`}
         style={{ maxHeight: "calc(100vh - 160px)" }}
         onKeyDown={(e) => {
@@ -2684,6 +2700,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
           return docs.map((doc, dIdx) => (
             <div key={doc.id || doc._id || dIdx} className="mb-6">
+              <div className="mb-3 flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
+                <h2 className="min-w-0 flex-1 text-base font-semibold text-gray-900">
+                  {doc.fileName || doc.name || displayTitle}
+                </h2>
+                <span className="shrink-0 text-xs text-gray-500">
+                  {dIdx + 1} of {docs.length} document{docs.length === 1 ? '' : 's'}
+                </span>
+              </div>
               <SingleDoc
                 doc={doc}
                 mode={mode}
@@ -3277,6 +3301,8 @@ const DocumentViewer: React.FC<Props> = React.memo(
       prevProps.isViewOnly === nextProps.isViewOnly &&
       prevProps.showActionsMenu === nextProps.showActionsMenu &&
       prevProps.headerTitle === nextProps.headerTitle &&
+      prevProps.documentTitle === nextProps.documentTitle &&
+      prevProps.senderName === nextProps.senderName &&
       prevProps.isPublicFlow === nextProps.isPublicFlow
     );
   }

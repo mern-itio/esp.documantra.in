@@ -1339,11 +1339,11 @@ const EnvelopeDetails: React.FC = () => {
   };
 
   const renderSignerActionsMenu = () => (
-    <div className="w-56 overflow-auto rounded-md border border-gray-200 bg-[#F7F3EE] shadow-lg max-h-80">
+    <div className="w-56 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg max-h-80">
       <button
         type="button"
         onClick={handlePrintDocument}
-        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
       >
         <Printer className="h-4 w-4" />
         Print
@@ -1351,7 +1351,7 @@ const EnvelopeDetails: React.FC = () => {
       <button
         type="button"
         onClick={handleDownloadDocument}
-        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
       >
         <Download className="h-4 w-4" />
         Download
@@ -1359,7 +1359,7 @@ const EnvelopeDetails: React.FC = () => {
       <button
         type="button"
         onClick={handleShareSigningLink}
-        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
       >
         <Share2 className="h-4 w-4" />
         {shareLinkCopied ? "Link copied" : "Share link"}
@@ -1371,8 +1371,9 @@ const EnvelopeDetails: React.FC = () => {
           setShowOtherOptions(false);
           setShowAssignModal(true);
         }}
-        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
       >
+        <ArrowRight className="h-4 w-4" />
         Forward document
       </button>
       {envelope?.canDecline !== false && (
@@ -1382,9 +1383,9 @@ const EnvelopeDetails: React.FC = () => {
             setShowOtherOptions(false);
             setShowDeclineModal(true);
           }}
-          className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+          className="block w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
         >
-          Reject Request
+          Decline to sign
         </button>
       )}
       <button
@@ -1393,7 +1394,7 @@ const EnvelopeDetails: React.FC = () => {
           setShowOtherOptions(false);
           setShowCookieCenter(true);
         }}
-        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
       >
         Cookie preferences
       </button>
@@ -1403,7 +1404,7 @@ const EnvelopeDetails: React.FC = () => {
           setShowOtherOptions(false);
           setShowSessionInfoModal(true);
         }}
-        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-[#F5F2EE]"
+        className="block w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50"
       >
         Session Details
       </button>
@@ -1614,10 +1615,21 @@ const EnvelopeDetails: React.FC = () => {
     window.setTimeout(() => setSessionCopyStatus(""), ok ? 1500 : 2200);
   };
 
+  const envelopeDisplayTitle =
+    (envelope?.subject && String(envelope.subject).trim()) ||
+    (envelope?.name && String(envelope.name).trim()) ||
+    "Document";
+  const envelopeSenderName =
+    envelope?.sender?.name ||
+    envelope?.senderName ||
+    envelope?.createdBy?.name ||
+    envelope?.owner?.name ||
+    "";
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-blue-50 px-3 py-6 sm:px-6 lg:px-10">
-      <DocumentSignatureBackground />
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col">
+    <div className="relative min-h-screen overflow-hidden bg-[#f3f4f6] px-0 py-0 sm:px-0">
+      {!canBrowseDocument && <DocumentSignatureBackground />}
+      <div className="relative z-10 mx-auto flex w-full max-w-none flex-1 flex-col">
         <div className="flex-1">
           {/* Render DocumentViewer in preview mode always; otherwise follow signing/auth flow */}
           {shouldRenderDocumentInBackground && (
@@ -1651,6 +1663,8 @@ const EnvelopeDetails: React.FC = () => {
                       ? "Review and complete"
                       : "View document"
                 }
+                documentTitle={envelopeDisplayTitle}
+                senderName={envelopeSenderName}
                 onRecipientComplete={() => {
                   if (isInPerson) handleRecipientComplete();
                   handleSigningCompleted();
@@ -1665,26 +1679,23 @@ const EnvelopeDetails: React.FC = () => {
           )}
 
           {showOtherOptions && !showTermsModal && (
-            <div ref={otherOptionsRef} className="fixed right-4 top-10 z-50">
+            <div ref={otherOptionsRef} className="fixed right-4 top-16 z-[70]">
               {renderSignerActionsMenu()}
             </div>
           )}
 
           {inDocumentReviewPhase && (
             <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] flex justify-center px-4 pb-4">
-              <div className="pointer-events-auto flex w-full max-w-3xl flex-col gap-3 rounded-xl border border-[#260559]/15 bg-[#F7F3EE] px-4 py-4 shadow-lg sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Review the document first</p>
-                  <p className="mt-1 text-xs text-gray-600">
-                    Read, print, download, or share using Actions. Verify your identity before signing.
-                  </p>
-                </div>
+              <div className="pointer-events-auto flex w-full max-w-3xl items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-lg">
+                <p className="text-sm text-gray-700">
+                  Review the document, then verify your identity to start signing.
+                </p>
                 <button
                   type="button"
                   onClick={beginIdentityVerification}
-                  className="inline-flex items-center justify-center rounded-lg bg-[#260559] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#260559]/90"
+                  className="inline-flex shrink-0 items-center justify-center rounded bg-[#f5c518] px-5 py-2 text-sm font-bold text-gray-900 hover:bg-[#e6b800]"
                 >
-                  Continue to verification
+                  Start
                 </button>
               </div>
             </div>
@@ -1695,116 +1706,95 @@ const EnvelopeDetails: React.FC = () => {
       {/* ---------- TERMS MODAL (shown first, before auth) ---------- */}
       {!isPreviewMode && showTermsModal && (envelope?.status || "").toString().toLowerCase() !== "completed" && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b164a]/55 backdrop-blur-[2px] px-4 py-10"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px] px-4 py-10"
           onClick={() => setShowOtherOptions(false)}
         >
           <div
-            className="w-full max-w-[760px] rounded-lg bg-[#F7F3EE] shadow-2xl"
+            className="w-full max-w-[640px] rounded-lg bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-8 pt-7">
-              <div className="flex items-center gap-2 border-b border-gray-400 pb-2">
-                <span className="mx-auto">
-                  <BrandLogo className="h-15 w-auto " />
+            <div className="border-b border-gray-200 px-8 py-5">
+              <div className="flex justify-center">
+                <BrandLogo className="h-8 w-auto" />
+              </div>
+            </div>
+
+            <div className="px-8 py-6">
+              <h2 className="text-lg font-semibold text-gray-900">Review and continue</h2>
+
+              <div className="mt-4 text-sm text-gray-600">
+                Message from{" "}
+                <span className="font-semibold text-gray-900">
+                  {capitalizeWords(envelopeSenderName || "Sender")}
                 </span>
-
               </div>
-
-              <div className="mt-6 text-[20px] thankyou-heading font-semibold text-gray-900">
-                Review and continue
-              </div>
-
-              <div className=" text-sm text-gray-700">
-                <div className="text-xs text-gray-500">
-                  Message from <b>{
-                    capitalizeWords(
-                      envelope?.sender?.name ||
-                      envelope?.senderName ||
-                      envelope?.createdBy?.name ||
-                      envelope?.owner?.name ||
-                      "Sender"
-                    )
-                  }</b>
+              {(envelope?.message || envelope?.note || envelope?.emailMessage) && (
+                <div className="mt-2 rounded bg-sky-50 px-3 py-2 text-sm text-gray-700">
+                  {(envelope?.message || envelope?.note || envelope?.emailMessage).toString()}
                 </div>
-                {(envelope?.message || envelope?.note || envelope?.emailMessage) && (
-                  <div className="mt-2 h-8 p-1 bg-emerald-100 rounded-sm text-sm text-gray-700">
-                    {(envelope?.message || envelope?.note || envelope?.emailMessage).toString()}
-                  </div>
-                )}
-              </div>
+              )}
 
-              <div className="mt-12 aadhar-heading text-sm text-gray-700">
+              <p className="mt-8 text-sm text-gray-700">
                 Please read the{" "}
                 <a
                   href="/terms-of-service"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-gray-800 underline hover:text-blue-900"
+                  className="text-[#248567] underline hover:text-[#1f7158]"
                 >
                   Electronic Record and Signature Disclosure
                 </a>
                 .
-              </div>
+              </p>
 
-              <div className="mt-3 flex items-start gap-2">
+              <label className="mt-4 flex items-start gap-2">
                 <input
                   type="checkbox"
-                  className="mt-[3px] h-4 w-4 accent-[#260559]"
+                  className="mt-[3px] h-4 w-4 accent-[#248567]"
                   checked={termsChecked}
                   onChange={(e) => setTermsChecked(e.target.checked)}
                 />
-                <div className="aadhar-heading text-sm text-gray-700">
-                  <span>I agree to use electronic records and signatures.</span>{" "}
+                <span className="text-sm text-gray-700">
+                  I agree to use electronic records and signatures.{" "}
                   <span className="text-red-600">*</span>
                   <div className="mt-1 text-xs text-gray-500">
-                    <a
-                      href="/terms-of-service"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mr-3 text-gray-700 underline hover:text-blue-900"
-                    >
+                    <a href="/terms-of-service" target="_blank" rel="noreferrer" className="underline hover:text-gray-700">
                       Terms and Conditions
                     </a>
                     {" | "}
-                    <a
-                      href="/privacy-policy"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="ml-3 text-gray-700 underline hover:text-blue-900"
-                    >
+                    <a href="/privacy-policy" target="_blank" rel="noreferrer" className="underline hover:text-gray-700">
                       Privacy Policy
                     </a>
                   </div>
-                </div>
-              </div>
+                </span>
+              </label>
 
-              <div className="mt-6 flex items-center justify-end pb-8">
-
-                <div className="relative flex items-center gap-3">
+              <div className="mt-6 flex items-center justify-end gap-3 pb-2">
+                <div className="relative">
                   <button
                     type="button"
                     onClick={() => setShowOtherOptions((v) => !v)}
-                    className="inline-flex items-center gap-2 rounded bg-gray-100 px-4 py-2 text-sm text-gray-800 hover:bg-gray-200"
+                    className="inline-flex items-center gap-2 rounded border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   >
-                    Other Options
-                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                    More actions
+                    <ChevronDown className="h-4 w-4 text-gray-500" />
                   </button>
 
                   {showOtherOptions && (
-                    <div className="absolute right-0 top-full mt-2 z-50">
+                    <div className="absolute right-0 top-full z-50 mt-2">
                       {renderSignerActionsMenu()}
                     </div>
                   )}
-
-                  <button
-                    type="button"
-                    onClick={acceptTerms}
-                    disabled={!termsChecked}
-                    className="rounded bg-[#260559] px-5 py-2 text-sm font-semibold text-white hover:bg-[#260559]/90 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Continue
-                  </button>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={acceptTerms}
+                  disabled={!termsChecked}
+                  className="rounded bg-[#248567] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1f7158] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Continue
+                </button>
               </div>
             </div>
           </div>
@@ -1815,13 +1805,11 @@ const EnvelopeDetails: React.FC = () => {
       {showAssignModal && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-[2px] px-4 py-10">
           <div
-            className="w-full max-w-2xl rounded-lg bg-[#F7F3EE] shadow-2xl"
+            className="w-full max-w-lg rounded-lg bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b px-8 py-5">
-              <h2 className="text-xl thankyou-heading">
-                Assign to Someone Else
-              </h2>
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <h2 className="text-lg font-semibold text-gray-900">Forward document</h2>
               <button
                 type="button"
                 onClick={() => setShowAssignModal(false)}
@@ -1831,54 +1819,43 @@ const EnvelopeDetails: React.FC = () => {
               </button>
             </div>
 
-            <div className="px-8 py-6 space-y-5">
-              <div>
-                <label className="thankyou-para block text-sm font-medium">
-                  New Signer's Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={assignName}
-                  onChange={(e) => setAssignName(e.target.value)}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-[#260559] focus:outline-none focus:ring-1 focus:ring-[#260559]"
-                />
-              </div>
+            <div className="space-y-4 px-6 py-5">
+              <label className="flex items-start gap-3 rounded bg-[#fff8d6] px-4 py-3 text-sm text-gray-800">
+                <input type="checkbox" defaultChecked className="mt-0.5 h-4 w-4 accent-[#248567]" />
+                <span>Allow this person to sign the document instead of me.</span>
+              </label>
 
-              <div>
-                <label className="block text-sm font-medium thankyou-para">
-                  New Signer's Email <span className="text-red-500">*</span>
-                </label>
+              <div className="flex items-center gap-3 border-b border-gray-200 pb-3">
+                <span className="w-10 text-xs font-semibold uppercase tracking-wide text-gray-500">To</span>
                 <input
                   type="email"
                   value={assignEmail}
                   onChange={(e) => setAssignEmail(e.target.value)}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-[#260559] focus:outline-none focus:ring-1 focus:ring-[#260559]"
+                  placeholder="Email"
+                  className="min-w-0 flex-1 border-0 bg-transparent px-0 py-1 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0"
                 />
               </div>
 
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500">
-                    💬
-                  </span>
-                  Provide a reason for assigning to someone else
-                </label>
-                <textarea
-                  maxLength={250}
-                  value={assignReason}
-                  onChange={(e) => setAssignReason(e.target.value)}
-                  rows={4}
-                  className="mt-2 w-full resize-none rounded border border-gray-300 px-3 py-2 text-sm focus:border-[#260559] focus:outline-none focus:ring-1 focus:ring-[#260559]"
-                />
-                <div className="mt-1 thankyou-para text-xs text-gray-500">
-                  {250 - assignReason.length} characters remaining
-                </div>
-              </div>
-
-              <p className="text-xs thankyou-para text-gray-500">
-                The sender and the new signer will be notified of these changes.
-                You will be added as a Carbon Copy (CC) recipient.
+              <p className="text-sm font-semibold text-gray-900">
+                {(currentRecipient as any)?.name || "You"} forwarded &ldquo;{envelopeDisplayTitle}&rdquo; to you.
               </p>
+
+              <textarea
+                maxLength={250}
+                value={assignReason}
+                onChange={(e) => setAssignReason(e.target.value)}
+                rows={4}
+                placeholder="Optional private message (to person you're forwarding this to)..."
+                className="w-full resize-none rounded border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#248567] focus:outline-none focus:ring-1 focus:ring-[#248567]"
+              />
+
+              <input
+                type="text"
+                value={assignName}
+                onChange={(e) => setAssignName(e.target.value)}
+                placeholder="Recipient name"
+                className="w-full rounded border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#248567] focus:outline-none focus:ring-1 focus:ring-[#248567]"
+              />
 
               {assignSubmitError && (
                 <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -1887,26 +1864,26 @@ const EnvelopeDetails: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t bg-[#F5F2EE] px-8 py-4">
+            <div className="flex items-center justify-between border-t border-gray-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setShowAssignModal(false)}
+                disabled={isAssignSubmitting}
+                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                Cancel
+              </button>
               <button
                 type="button"
                 onClick={submitAssignToSomeoneElse}
                 disabled={!isAssignFormValid || isAssignSubmitting}
                 className={
                   !isAssignFormValid || isAssignSubmitting
-                    ? "inline-flex items-center justify-center rounded bg-yellow-200 px-6 py-2 text-sm font-semibold text-gray-500 cursor-not-allowed"
-                    : "inline-flex items-center justify-center rounded bg-yellow-300 px-6 py-2 text-sm font-semibold text-black hover:bg-yellow-200"
+                    ? "inline-flex items-center justify-center rounded bg-gray-200 px-6 py-2 text-sm font-semibold text-gray-500 cursor-not-allowed"
+                    : "inline-flex items-center justify-center rounded bg-[#248567] px-6 py-2 text-sm font-semibold text-white hover:bg-[#1f7158]"
                 }
               >
-                {isAssignSubmitting ? "ASSIGNING..." : "ASSIGN"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAssignModal(false)}
-                disabled={isAssignSubmitting}
-                className="text-sm font-medium text-gray-700 hover:text-gray-900"
-              >
-                CANCEL
+                {isAssignSubmitting ? "Forwarding..." : "Forward"}
               </button>
             </div>
           </div>

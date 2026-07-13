@@ -1626,10 +1626,8 @@ const isPublicFlow =
         className="relative flex flex-col overflow-hidden rounded-lg border border-border/90 bg-[#FDFBF7] shadow-[2px_2px_6px_rgba(0,0,0,0.12)] transition-all group-hover:border-[#1B4D3E] group-hover:shadow-lg"
         style={{ width: FAN_CARD_WIDTH, height: FAN_CARD_HEIGHT }}
       >
-        <div className="pointer-events-none absolute inset-y-3 left-1 flex w-4 flex-col items-center justify-between">
-          <span className="text-[11px] font-bold leading-none text-[#1B4D3E]">{index + 1}</span>
-          <FileText className="h-3 w-3 text-[#1B4D3E]/70" />
-          <span className="rotate-180 text-[11px] font-bold leading-none text-[#1B4D3E]">{index + 1}</span>
+        <div className="pointer-events-none absolute left-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#1B4D3E] text-[9px] font-bold text-white shadow-sm">
+          {index + 1}
         </div>
         {!doc.isUploading && (
           <button

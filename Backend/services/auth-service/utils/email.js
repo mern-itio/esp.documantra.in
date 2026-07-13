@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const { getBrandName, renderEmailLogoHeader } = require('@draftnsign/validators/brandConfig');
+const { getBrandName, wrapBrandedEmailBody } = require('@draftnsign/validators/brandConfig');
 
 const APP_NAME = getBrandName();
 
@@ -58,23 +58,10 @@ async function sendEmail({ to, subject, html }) {
  * Build HTML body for password reset email (responsive, modern template).
  */
 function simpleEmailHtml(title, bodyHtml) {
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)}</title>
-</head>
-<body style="margin:0; padding:32px 16px; background-color:#eceff1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <div style="max-width:560px; margin:0 auto; background:#ffffff; border-radius:8px; padding:36px 32px 28px; box-shadow:0 1px 4px rgba(15,23,42,0.08);">
-    ${renderEmailLogoHeader()}
-    <h1 style="margin:0 0 20px; font-size:22px; font-weight:700; color:#1f2937; text-align:center; line-height:1.3;">${escapeHtml(title)}</h1>
+  return wrapBrandedEmailBody(`
+    <h1 style="margin:0 0 16px;font-size:20px;font-weight:700;color:#333333;text-align:center;line-height:1.3;">${escapeHtml(title)}</h1>
     ${bodyHtml}
-    <p style="margin: 28px 0 0; font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.5;">Sent via ${escapeHtml(APP_NAME)}</p>
-  </div>
-</body>
-</html>`.trim();
+  `);
 }
 
 function getPasswordResetHtml(resetLink, recipientEmail, expiresInMinutes = 60) {
@@ -82,7 +69,7 @@ function getPasswordResetHtml(resetLink, recipientEmail, expiresInMinutes = 60) 
     <p style="margin: 0 0 12px; font-size: 16px; line-height: 1.6; color: #1f2937;">Hello${recipientEmail ? ` <strong>${escapeHtml(recipientEmail)}</strong>` : ''},</p>
     <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #6b7280;">We received a request to reset the password for your ${escapeHtml(APP_NAME)} account. This link expires in <strong>${expiresInMinutes} minutes</strong>.</p>
     <p style="text-align:center; margin: 0 0 24px;">
-      <a href="${resetLink}" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:14px 32px; font-size:13px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:#ffffff; background:#4D0080; text-decoration:none; border-radius:4px;">Reset password</a>
+      <a href="${resetLink}" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:16px 40px; font-size:14px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#ffffff; background:#248567; text-decoration:none; border-radius:4px;">Reset password</a>
     </p>
     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; text-align:center;">If you did not request this, you can safely ignore this email.</p>
     <p style="margin: 12px 0 0; font-size: 12px; word-break: break-all; color: #4D0080; text-align:center;"><a href="${resetLink}" rel="noopener noreferrer" style="color: #4D0080;">${escapeHtml(resetLink)}</a></p>

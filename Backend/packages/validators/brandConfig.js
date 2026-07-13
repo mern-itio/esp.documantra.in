@@ -108,18 +108,22 @@ function escapeHtml(value) {
 const renderEmailLogoHeader = () => {
   const logoUrl = escapeHtml(getBrandLogoUrl());
   const brandName = escapeHtml(BRAND_NAME);
-  return `<div style="text-align:center;margin:0 0 28px;">
-    <img src="${logoUrl}" alt="${brandName}" width="200" style="max-width:200px;height:auto;display:inline-block;" />
+  return `<div style="text-align:center;margin:0 0 24px;">
+    <img src="${logoUrl}" alt="${brandName}" width="180" style="max-width:180px;height:auto;display:inline-block;" />
   </div>`;
 };
 
-/** Shared outer wrapper for branded transactional emails. */
+/** Shared outer wrapper for branded transactional emails (PandaDoc-style). */
 const wrapBrandedEmailBody = (contentHtml) => `
-  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #eceff1; padding: 32px 16px; margin: 0;">
-    <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; padding: 36px 32px 28px; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);">
+  <div style="font-family: Helvetica, Arial, sans-serif; background-color: #efefef; padding: 32px 16px 40px; margin: 0;">
+    <div style="max-width: 600px; margin: 0 auto;">
       ${renderEmailLogoHeader()}
-      ${contentHtml}
-      <p style="margin: 28px 0 0; font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.5;">Sent via ${escapeHtml(BRAND_NAME)}</p>
+      <div style="background-color: #ffffff; padding: 36px 28px; text-align: left;">
+        ${contentHtml}
+      </div>
+      <p style="margin: 20px 0 0; font-size: 11px; color: #999999; text-align: center; line-height: 1.5;">
+        ${escapeHtml(BRAND_NAME)} to create, send, track, and eSign documents — quickly and securely.
+      </p>
     </div>
   </div>`;
 
