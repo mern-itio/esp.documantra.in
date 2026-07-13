@@ -185,7 +185,7 @@ const requestRecipientPortalCode = async (req, res) => {
     try {
       await dispatchPortalEmail({
         toEmail: email,
-        subject: 'Your document access code',
+        subject: 'Complete your sign-in',
         html,
       });
     } catch (mailErr) {

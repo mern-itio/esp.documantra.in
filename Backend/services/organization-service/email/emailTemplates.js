@@ -1,79 +1,46 @@
-const { getBrandName, renderEmailLogoHeader } = require('@draftnsign/validators/brandConfig');
+const { getBrandName, wrapBrandedEmailBody } = require('@draftnsign/validators/brandConfig');
 
-const inviteTemplate = (recipientName, emailSubject, emailMessage, link, LinkButtonText='Click Here') => `
-  <div style="
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: #f4f4f7;
-    padding: 40px 0;
-    margin: 0;
-  ">
-    <div style="
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: #ffffff;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      overflow: hidden;
-    ">
-      <div style="padding: 24px 24px 0; text-align: center;">
-        ${renderEmailLogoHeader()}
-      </div>
-      <div style="
-        background: linear-gradient(90deg, #4D0080, #8E2DE2);
-        color: #ffffff;
-        text-align: center;
-        padding: 20px 10px;
-      ">
-        <h2 style="margin: 0; font-weight: 600;">${emailSubject}</h2>
-      </div>
+function escapeHtml(value) {
+  if (value == null) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-      <div style="padding: 30px;">
-        <p style="font-size: 16px; color: #333;">Hello <strong>${recipientName}</strong>,</p>
+const inviteTemplate = (recipientName, emailSubject, emailMessage, link, LinkButtonText = 'Click Here') => {
+  const safeName = escapeHtml(recipientName);
+  const safeSubject = escapeHtml(emailSubject);
+  const safeMessage = escapeHtml(emailMessage) || 'No message provided.';
+  const safeButton = escapeHtml(LinkButtonText || 'Click Here');
+  const safeLinkText = escapeHtml(link);
 
-        <p style="font-size: 15px; color: #555; line-height: 1.6;">
-          <strong style="color: #4D0080;">${emailSubject}</strong>.
-        </p>
-
-        <p style="font-size: 15px; color: #555; line-height: 1.6;">
-          <em>Message from sender:</em><br>
-          <span style="display: inline-block; background: #f9f9f9; padding: 10px 14px; border-left: 4px solid #4D0080; border-radius: 4px;">
-            ${emailMessage || "No message provided."}
-          </span>
-        </p>
-
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${link}" target="_blank" style="
-            background: linear-gradient(90deg, #4D0080, #8E2DE2);
-            color: #ffffff;
-            padding: 12px 24px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 600;
-            display: inline-block;
-            font-size: 16px;
-          ">
-            ${LinkButtonText || 'Click Here'}
-          </a>
-        </div>
-
-        <p style="font-size: 14px; color: #777; text-align: center; line-height: 1.5;">
-          If the button doesn’t work, copy and paste this link into your browser:<br>
-          <a href="${link}" target="_blank" style="color: #4D0080;">${link}</a>
-        </p>
-      </div>
-
-      <div style="
-        background-color: #f4f4f7;
-        text-align: center;
-        padding: 15px;
-        font-size: 13px;
-        color: #888;
-      ">
-        © ${new Date().getFullYear()} ${getBrandName()}. All rights reserved.
-      </div>
+  return wrapBrandedEmailBody(`
+    <h2 style="margin: 0 0 20px; font-size: 22px; font-weight: 700; color: #1f2937; text-align: center; line-height: 1.3;">${safeSubject}</h2>
+    <p style="font-size: 16px; color: #1f2937; line-height: 1.6; margin: 0 0 12px;">Hello <strong>${safeName}</strong>,</p>
+    <p style="font-size: 15px; color: #6b7280; line-height: 1.65; margin: 0 0 20px;">
+      You have been invited to join an organization on <strong style="color: #4D0080;">${escapeHtml(getBrandName())}</strong>.
+    </p>
+    <p style="font-size: 15px; color: #6b7280; line-height: 1.65; margin: 0 0 20px;">
+      <span style="color: #1f2937; font-weight: 600;">Message from sender</span><br>
+      <span style="display: block; margin-top: 8px; background: #f9fafb; padding: 14px 16px; border-left: 3px solid #4D0080; border-radius: 4px; color: #1f2937;">
+        ${safeMessage}
+      </span>
+    </p>
+    <div style="text-align: center; margin: 28px 0 20px;">
+      <a href="${link}" target="_blank" rel="noopener noreferrer" style="background-color: #4D0080; color: #ffffff; padding: 14px 32px; border-radius: 4px; text-decoration: none; font-weight: 700; display: inline-block; font-size: 13px; letter-spacing: 0.4px; text-transform: uppercase;">
+        ${safeButton}
+      </a>
     </div>
-  </div>
-`;
+    <p style="font-size: 13px; color: #6b7280; text-align: center; line-height: 1.6; margin: 16px 0 0;">
+      If the button does not work, copy and paste this link into your browser:<br>
+      <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: #4D0080; word-break: break-all;">${safeLinkText}</a>
+    </p>
+  `);
+};
+
 module.exports = {
-  inviteTemplate
+  inviteTemplate,
 };

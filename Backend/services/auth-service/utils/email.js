@@ -66,12 +66,12 @@ function simpleEmailHtml(title, bodyHtml) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
 </head>
-<body style="margin:0; padding:24px 16px; background-color:#f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <div style="max-width:520px; margin:0 auto; background:#ffffff; border-radius:12px; padding:32px 28px; border:1px solid #e2e8f0;">
+<body style="margin:0; padding:32px 16px; background-color:#eceff1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <div style="max-width:560px; margin:0 auto; background:#ffffff; border-radius:8px; padding:36px 32px 28px; box-shadow:0 1px 4px rgba(15,23,42,0.08);">
     ${renderEmailLogoHeader()}
-    <h1 style="margin:0 0 20px; font-size:20px; font-weight:700; color:#0f172a;">${escapeHtml(title)}</h1>
+    <h1 style="margin:0 0 20px; font-size:22px; font-weight:700; color:#1f2937; text-align:center; line-height:1.3;">${escapeHtml(title)}</h1>
     ${bodyHtml}
-    <p style="margin: 24px 0 0; font-size: 13px; color: #94a3b8; text-align: center;">Sent via ${escapeHtml(APP_NAME)}</p>
+    <p style="margin: 28px 0 0; font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.5;">Sent via ${escapeHtml(APP_NAME)}</p>
   </div>
 </body>
 </html>`.trim();
@@ -79,13 +79,13 @@ function simpleEmailHtml(title, bodyHtml) {
 
 function getPasswordResetHtml(resetLink, recipientEmail, expiresInMinutes = 60) {
   return simpleEmailHtml('Reset your password', `
-    <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientEmail ? ` <strong>${escapeHtml(recipientEmail)}</strong>` : ''},</p>
-    <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #475569;">We received a request to reset the password for your ${escapeHtml(APP_NAME)} account. This link expires in <strong>${expiresInMinutes} minutes</strong>.</p>
+    <p style="margin: 0 0 12px; font-size: 16px; line-height: 1.6; color: #1f2937;">Hello${recipientEmail ? ` <strong>${escapeHtml(recipientEmail)}</strong>` : ''},</p>
+    <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #6b7280;">We received a request to reset the password for your ${escapeHtml(APP_NAME)} account. This link expires in <strong>${expiresInMinutes} minutes</strong>.</p>
     <p style="text-align:center; margin: 0 0 24px;">
-      <a href="${resetLink}" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:14px 32px; font-size:15px; font-weight:600; color:#ffffff; background:#4D0080; text-decoration:none; border-radius:10px;">Reset password</a>
+      <a href="${resetLink}" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:14px 32px; font-size:13px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:#ffffff; background:#4D0080; text-decoration:none; border-radius:4px;">Reset password</a>
     </p>
-    <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #64748b;">If you did not request this, you can safely ignore this email.</p>
-    <p style="margin: 12px 0 0; font-size: 12px; word-break: break-all; color: #4D0080;"><a href="${resetLink}" style="color: #4D0080;">${resetLink}</a></p>
+    <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; text-align:center;">If you did not request this, you can safely ignore this email.</p>
+    <p style="margin: 12px 0 0; font-size: 12px; word-break: break-all; color: #4D0080; text-align:center;"><a href="${resetLink}" rel="noopener noreferrer" style="color: #4D0080;">${escapeHtml(resetLink)}</a></p>
   `);
 }
 
@@ -93,11 +93,14 @@ function getPasswordResetHtml(resetLink, recipientEmail, expiresInMinutes = 60) 
  * Build HTML body for signup verification OTP email.
  */
 function getVerificationOtpHtml(otpCode, recipientName = null, expiresInMinutes = 10) {
-  return simpleEmailHtml('Verify your email', `
-    <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientName ? ` <strong>${escapeHtml(recipientName)}</strong>` : ''},</p>
-    <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #475569;">Use the code below to verify your ${escapeHtml(APP_NAME)} account. This code expires in <strong>${expiresInMinutes} minutes</strong>.</p>
-    <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px; font-size: 28px; font-weight: 700; letter-spacing: 8px; color: #4D0080;">${otpCode}</div>
-    <p style="margin: 24px 0 0; font-size: 13px; color: #94a3b8;">If you did not sign up, you can safely ignore this email.</p>
+  const safeOtp = escapeHtml(otpCode);
+  return simpleEmailHtml('Complete your sign-in', `
+    <p style="margin: 0 0 12px; font-size: 16px; line-height: 1.6; color: #1f2937;">Hello${recipientName ? ` <strong>${escapeHtml(recipientName)}</strong>` : ''},</p>
+    <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #6b7280;">Use the code below to verify your ${escapeHtml(APP_NAME)} account. This code expires in <strong>${expiresInMinutes} minutes</strong>.</p>
+    <div style="text-align: center; margin: 28px 0 24px;">
+      <div style="display: inline-block; letter-spacing: 8px; font-size: 32px; font-weight: 700; color: #1f2937; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 28px; font-family: 'Courier New', Courier, monospace;">${safeOtp}</div>
+    </div>
+    <p style="margin: 0; font-size: 13px; color: #6b7280; text-align:center;">If you did not sign up, you can safely ignore this email.</p>
   `);
 }
 
@@ -213,15 +216,15 @@ function getNewLoginAlertHtml(recipientName, deviceInfo, ipAddress, time, userTi
   const formattedTime = formatTimeInZone(time, userTimezone);
 
   return simpleEmailHtml('New login detected', `
-    <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155;">Hi${recipientName ? ` <strong>${escapeHtml(recipientName)}</strong>` : ''},</p>
-    <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #475569;">We noticed a new login to your ${escapeHtml(APP_NAME)} account.</p>
-    <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #f44336; margin: 0 0 24px;">
-      <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Device/Browser:</strong> <span style="color: #64748b;">${escapeHtml(deviceInfo || 'Unknown Device')}</span></p>
-      <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>IP Address:</strong> <span style="color: #64748b;">${escapeHtml(ipAddress || 'Unknown IP')}</span></p>
-      <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Time:</strong> <span style="color: #64748b;">${formattedTime}</span></p>
+    <p style="margin: 0 0 12px; font-size: 16px; line-height: 1.6; color: #1f2937;">Hello${recipientName ? ` <strong>${escapeHtml(recipientName)}</strong>` : ''},</p>
+    <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.65; color: #6b7280;">We noticed a new login to your ${escapeHtml(APP_NAME)} account.</p>
+    <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border-left: 3px solid #ef4444; margin: 0 0 24px;">
+      <p style="margin: 0 0 8px; font-size: 14px; color: #1f2937;"><strong>Device/Browser:</strong> <span style="color: #6b7280;">${escapeHtml(deviceInfo || 'Unknown Device')}</span></p>
+      <p style="margin: 0 0 8px; font-size: 14px; color: #1f2937;"><strong>IP Address:</strong> <span style="color: #6b7280;">${escapeHtml(ipAddress || 'Unknown IP')}</span></p>
+      <p style="margin: 0; font-size: 14px; color: #1f2937;"><strong>Time:</strong> <span style="color: #6b7280;">${formattedTime}</span></p>
     </div>
-    <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.65; color: #475569;">If this was you, you can safely ignore this email.</p>
-    <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #d32f2f; font-weight: bold;">If this was not you, review active sessions and change your password immediately.</p>
+    <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.65; color: #6b7280; text-align:center;">If this was you, you can safely ignore this email.</p>
+    <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #dc2626; font-weight: 600; text-align:center;">If this was not you, review active sessions and change your password immediately.</p>
   `);
 }
 

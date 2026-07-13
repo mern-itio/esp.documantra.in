@@ -108,18 +108,18 @@ function escapeHtml(value) {
 const renderEmailLogoHeader = () => {
   const logoUrl = escapeHtml(getBrandLogoUrl());
   const brandName = escapeHtml(BRAND_NAME);
-  return `<div style="text-align:center;margin:0 0 24px;">
-    <img src="${logoUrl}" alt="${brandName}" width="180" style="max-width:180px;height:auto;display:inline-block;" />
+  return `<div style="text-align:center;margin:0 0 28px;">
+    <img src="${logoUrl}" alt="${brandName}" width="200" style="max-width:200px;height:auto;display:inline-block;" />
   </div>`;
 };
 
 /** Shared outer wrapper for branded transactional emails. */
 const wrapBrandedEmailBody = (contentHtml) => `
-  <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 24px 16px; margin: 0;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; padding: 28px 24px; border: 1px solid #e2e8f0;">
+  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #eceff1; padding: 32px 16px; margin: 0;">
+    <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; padding: 36px 32px 28px; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);">
       ${renderEmailLogoHeader()}
       ${contentHtml}
-      <p style="margin: 24px 0 0; font-size: 13px; color: #94a3b8; text-align: center;">Sent via ${escapeHtml(BRAND_NAME)}</p>
+      <p style="margin: 28px 0 0; font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.5;">Sent via ${escapeHtml(BRAND_NAME)}</p>
     </div>
   </div>`;
 
