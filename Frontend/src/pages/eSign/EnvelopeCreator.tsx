@@ -1472,22 +1472,29 @@ const isPublicFlow =
 
   const formatFileSize = formatUploadFileSize;
   const totalUploadedBytes = (documents || []).reduce((sum, doc) => sum + (doc.size || 0), 0);
+  const totalDocumentPages = (documents || []).reduce((sum, doc) => sum + (doc.pages || 0), 0);
   const uploadLimitHint = getEsignUploadLimitHint();
   const FAN_CARD_WIDTH = 112;
   const FAN_CARD_HEIGHT = 200;
   const FAN_CARD_OVERLAP = 78;
-  const FAN_UPLOAD_COMPACT_WIDTH = 132;
-  const FAN_UPLOAD_COMPACT_AT = 5;
-
-  const getUploadZoneMode = (docCount: number): 'full' | 'shrinking' | 'compact' => {
-    if (docCount === 0) return 'full';
-    if (docCount >= FAN_UPLOAD_COMPACT_AT) return 'compact';
-    return 'shrinking';
-  };
+  const FAN_UPLOAD_MIN_WIDTH = 120;
+  const FAN_UPLOAD_COMPACT_UI_AT = 6;
 
   const getFanCardsWidth = (docCount: number) => {
     if (docCount <= 0) return 0;
     return FAN_CARD_WIDTH + (docCount - 1) * (FAN_CARD_WIDTH - FAN_CARD_OVERLAP);
+  };
+
+  const getUploadZoneMode = (docCount: number): 'full' | 'shrinking' | 'compact' => {
+    if (docCount === 0) return 'full';
+    if (docCount >= FAN_UPLOAD_COMPACT_UI_AT) return 'compact';
+    return 'shrinking';
+  };
+
+  const getUploadContainerWidth = (docCount: number) => {
+    if (docCount <= 0) return '100%';
+    const cardsWidth = getFanCardsWidth(docCount);
+    return `clamp(${FAN_UPLOAD_MIN_WIDTH}px, calc(100% - ${cardsWidth + 24}px), 100%)`;
   };
 
   const renderDocumentUploadDropzone = (mode: 'full' | 'shrinking' | 'compact' = 'full') => {
@@ -1511,7 +1518,6 @@ const isPublicFlow =
                 ? 'h-[200px] rounded-lg p-3 hover:border-[#1B4D3E] hover:bg-[#1B4D3E]/5'
                 : 'h-[200px] rounded-xl px-4 py-3 hover:border-[#1B4D3E] hover:bg-[#1B4D3E]/5'
           }`}
-          style={isCompact ? { width: FAN_UPLOAD_COMPACT_WIDTH } : undefined}
         >
           <input
             ref={fileInputRef}
@@ -1650,9 +1656,7 @@ const isPublicFlow =
               {doc.name}
             </p>
             <p className="text-[8px] text-muted-foreground">
-              {doc.isUploading
-                ? `${doc.uploadProgress ?? 0}%`
-                : `${doc.pages}p · ${formatFileSize(doc.size)}`}
+              {doc.isUploading ? `${doc.uploadProgress ?? 0}%` : formatFileSize(doc.size)}
             </p>
           </div>
         </div>
@@ -1673,34 +1677,22 @@ const isPublicFlow =
     }
 
     const uploadMode = getUploadZoneMode(docCount);
-    const cardsWidth = getFanCardsWidth(docCount);
+    const uploadWidth = getUploadContainerWidth(docCount);
 
     return (
-      <div className="space-y-2">
-        <div className="flex w-full min-w-0 items-end gap-3">
-          <div
-            className={`inline-flex items-end pl-1 pt-3 pb-2 ${
-              uploadMode === 'compact' ? 'min-w-0 max-w-[calc(100%-148px)] overflow-x-auto' : 'flex-shrink-0'
-            }`}
-          >
-            {documents.map((doc, index) => renderDocumentFanCard(doc, index))}
-          </div>
-          <div
-            className={`pb-2 transition-all duration-300 ease-out ${
-              uploadMode === 'compact'
-                ? 'flex-shrink-0'
-                : 'min-w-[140px] flex-1'
-            }`}
-            style={
-              uploadMode === 'shrinking'
-                ? { width: `max(140px, calc(100% - ${cardsWidth + 24}px))` }
-                : undefined
-            }
-          >
-            {renderDocumentUploadDropzone(uploadMode)}
-          </div>
+      <div className="flex w-full min-w-0 items-end gap-3">
+        <div
+          className="inline-flex min-w-0 flex-shrink items-end overflow-x-auto pl-1 pt-3 pb-2"
+          style={{ maxWidth: `calc(100% - ${FAN_UPLOAD_MIN_WIDTH + 16}px)` }}
+        >
+          {documents.map((doc, index) => renderDocumentFanCard(doc, index))}
         </div>
-        <p className="text-xs text-muted-foreground">{uploadLimitHint}</p>
+        <div
+          className="flex-shrink-0 pb-2 transition-all duration-300 ease-out"
+          style={{ width: uploadWidth, minWidth: FAN_UPLOAD_MIN_WIDTH }}
+        >
+          {renderDocumentUploadDropzone(uploadMode)}
+        </div>
       </div>
     );
   };
@@ -4064,6 +4056,7 @@ if (isPublicFlow) {
                 {documents.length > 0 && (
                   <p className="text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">{documents.length}</span> file{documents.length !== 1 ? 's' : ''} ·{' '}
+                    <span className="font-medium text-foreground">{totalDocumentPages}</span> page{totalDocumentPages !== 1 ? 's' : ''} ·{' '}
                     <span className="font-medium text-foreground">{formatFileSize(totalUploadedBytes)}</span> total
                   </p>
                 )}
