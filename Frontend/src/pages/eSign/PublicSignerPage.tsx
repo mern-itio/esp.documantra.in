@@ -1687,6 +1687,9 @@ const EnvelopeDetails: React.FC = () => {
                 }
                 showCommentsPanel={showCommentsPanel}
                 onCommentsPanelClose={() => setShowCommentsPanel(false)}
+                allowDocumentComments={
+                  !isPreviewMode && !isViewOnly && canBrowseDocument
+                }
                 onRecipientComplete={() => {
                   if (isInPerson) handleRecipientComplete();
                   handleSigningCompleted();

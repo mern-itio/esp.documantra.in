@@ -55,6 +55,8 @@ interface Props {
   /** Open resolved-suggestions panel from parent menu */
   showCommentsPanel?: boolean;
   onCommentsPanelClose?: () => void;
+  /** Allow PDF text selection comments even when fields are view-only (pre-auth review) */
+  allowDocumentComments?: boolean;
   signatureProvider:string
   signatureMethod:string
 }
@@ -192,6 +194,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   commentAuthorName,
   showCommentsPanel = false,
   onCommentsPanelClose,
+  allowDocumentComments,
   signatureProvider,
   signatureMethod
 }) => {
@@ -201,7 +204,9 @@ const DocumentViewerContent: React.FC<Props> = ({
   const displayTitle = documentTitle || toolbarTitle;
   const displaySender = senderName?.trim() || "Sender";
   const commentsReadEnabled = isPublicFlow && !!envelopeID && !!currentUserId;
-  const commentsWriteEnabled = commentsReadEnabled && !isViewOnly;
+  const commentsWriteEnabled =
+    commentsReadEnabled &&
+    (typeof allowDocumentComments === 'boolean' ? allowDocumentComments : !isViewOnly);
   const commentAuthor = commentAuthorName?.trim() || "Signer";
 
   const {
@@ -2840,6 +2845,27 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 </div>
               )}
 
+              {commentsReadEnabled && (
+                <button
+                  type="button"
+                  onClick={() => setCommentsDrawerOpen(true)}
+                  className={`relative inline-flex h-9 w-9 items-center justify-center rounded border sm:hidden ${
+                    commentsDrawerOpen
+                      ? 'border-[#248567] bg-[#248567]/10 text-[#248567]'
+                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                  aria-label="Document comments"
+                  title="Comments and suggestions"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  {openComments.length > 0 ? (
+                    <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#248567] px-1 text-[9px] font-bold text-white">
+                      {openComments.length}
+                    </span>
+                  ) : null}
+                </button>
+              )}
+
               {actionsMenuVisible && onRequestActions && (
                 <button
                   type="button"
@@ -2865,6 +2891,26 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             >
               <PanelLeft className="h-4 w-4" />
             </button>
+            {commentsReadEnabled ? (
+              <button
+                type="button"
+                onClick={() => setCommentsDrawerOpen(true)}
+                className={`relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border sm:hidden ${
+                  commentsDrawerOpen
+                    ? 'border-[#248567] bg-[#248567]/10 text-[#248567]'
+                    : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                }`}
+                aria-label="Document comments"
+                title="Comments and suggestions"
+              >
+                <MessageSquare className="h-4 w-4" />
+                {openComments.length > 0 ? (
+                  <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#248567] px-1 text-[9px] font-bold text-white">
+                    {openComments.length}
+                  </span>
+                ) : null}
+              </button>
+            ) : null}
             <FileText className="hidden h-4 w-4 shrink-0 text-gray-400 sm:block" />
             <p className="min-w-0 flex-1 text-center text-sm text-gray-700">
               <span className="inline-block rounded bg-sky-50 px-2.5 py-1">
@@ -3727,6 +3773,7 @@ const DocumentViewer: React.FC<Props> = React.memo(
       prevProps.documentTitle === nextProps.documentTitle &&
       prevProps.senderName === nextProps.senderName &&
       prevProps.showCommentsPanel === nextProps.showCommentsPanel &&
+      prevProps.allowDocumentComments === nextProps.allowDocumentComments &&
       prevProps.commentAuthorName === nextProps.commentAuthorName &&
       prevProps.isPublicFlow === nextProps.isPublicFlow
     );
