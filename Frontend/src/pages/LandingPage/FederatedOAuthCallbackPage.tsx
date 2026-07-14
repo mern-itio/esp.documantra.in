@@ -11,6 +11,7 @@ import {
 } from '../../components/AuthService/FederatedLoginButtons';
 
 const ENDPOINTS: Record<string, string> = {
+  google: `${API_CONFIG.BASE_URL}/google-login`,
   facebook: `${API_CONFIG.BASE_URL}/facebook-login`,
   linkedin: `${API_CONFIG.BASE_URL}/linkedin-login`,
   twitter: `${API_CONFIG.BASE_URL}/twitter-login`,

@@ -5,6 +5,7 @@ const { getAccessTokenCookieOptions } = require('../utils/cookieOptions');
 const { shouldRequireTwoFaSetup } = require('../utils/twoFaPolicy');
 const {
   verifyGoogleIdToken,
+  exchangeGoogleCode,
   verifyFacebookAccessToken,
   exchangeFacebookCode,
   exchangeLinkedInCode,
@@ -119,10 +120,16 @@ async function handleOAuthLogin(req, res, identity, providerLabel, referral) {
 }
 
 async function googleLoginFederated(req, res) {
-  const { token, ref, referrerUserId } = req.body || {};
-  if (!token) return res.status(400).json({ message: 'Google token required' });
+  const { token, code, redirectUri, ref, referrerUserId } = req.body || {};
   try {
-    const identity = await verifyGoogleIdToken(token);
+    let identity;
+    if (code && redirectUri) {
+      identity = await exchangeGoogleCode(code, redirectUri);
+    } else if (token) {
+      identity = await verifyGoogleIdToken(token);
+    } else {
+      return res.status(400).json({ message: 'Google token or authorization code required' });
+    }
     return handleOAuthLogin(req, res, identity, 'Google', { ref, referrerUserId });
   } catch (error) {
     console.error('Google login error:', error);

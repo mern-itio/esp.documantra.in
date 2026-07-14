@@ -1,18 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { FaFacebookF, FaLinkedinIn, FaTwitter } from 'react-icons/fa';
 import {
   fetchFederatedLoginProviders,
-  getGoogleClientIdFromProviders,
-  isGoogleOAuthConfigured,
   type PublicFederatedProvider,
   type FederatedProviderId,
 } from '../../services/federatedLoginService';
-import { loadGoogleIdentityScript } from '../../utils/loadGoogleIdentityScript';
 
 type Props = {
   mode: 'login' | 'signup';
   disabled?: boolean;
-  onGoogleSuccess: (credential: string) => void | Promise<void>;
+  onGoogleSuccess?: (credential: string) => void | Promise<void>;
   onGoogleError?: () => void;
   onError?: (message: string) => void;
 };
@@ -44,6 +41,19 @@ function storeOAuthSession(state: string, codeVerifier: string, referrer?: strin
   sessionStorage.setItem(OAUTH_STATE_KEY, state);
   sessionStorage.setItem(OAUTH_PKCE_KEY, codeVerifier);
   if (referrer) sessionStorage.setItem(OAUTH_REFERRER_KEY, referrer);
+}
+
+function buildGoogleAuthUrl(provider: PublicFederatedProvider, state: string) {
+  const params = new URLSearchParams({
+    client_id: provider.clientId,
+    redirect_uri: provider.callbackUrl,
+    response_type: 'code',
+    scope: provider.scopes || 'openid email profile',
+    state,
+    access_type: 'online',
+    prompt: 'select_account',
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
 function buildFacebookAuthUrl(provider: PublicFederatedProvider, state: string) {
@@ -151,118 +161,9 @@ function CircularSocialButton({
   );
 }
 
-function GoogleCircleButton({
-  clientId,
-  mode,
-  disabled,
-  onSuccess,
-  onError,
-  onSetupError,
-}: {
-  clientId: string;
-  mode: 'login' | 'signup';
-  disabled?: boolean;
-  onSuccess: (credential: string) => void | Promise<void>;
-  onError?: () => void;
-  onSetupError?: (message: string) => void;
-}) {
-  const hiddenGoogleRef = useRef<HTMLDivElement>(null);
-  const [ready, setReady] = useState(false);
-  const [opening, setOpening] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const setup = async () => {
-      if (!clientId || !hiddenGoogleRef.current) return;
-      try {
-        await loadGoogleIdentityScript();
-        if (cancelled || !hiddenGoogleRef.current || !window.google?.accounts?.id) return;
-
-        hiddenGoogleRef.current.innerHTML = '';
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: (response: { credential?: string }) => {
-            setOpening(false);
-            if (response.credential) {
-              void onSuccess(response.credential);
-            } else {
-              onError?.();
-            }
-          },
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          ux_mode: 'popup',
-        });
-
-        window.google.accounts.id.renderButton(hiddenGoogleRef.current, {
-          type: 'icon',
-          shape: 'circle',
-          size: 'large',
-          theme: 'outline',
-        });
-
-        if (!cancelled) setReady(true);
-      } catch {
-        if (!cancelled) {
-          setReady(false);
-          onSetupError?.('Google sign-in could not be loaded. Check your connection or try email login.');
-        }
-      }
-    };
-
-    void setup();
-    return () => {
-      cancelled = true;
-    };
-  }, [clientId, onError, onSetupError, onSuccess]);
-
-  const openGoogle = () => {
-    if (disabled || opening) return;
-    if (!ready) {
-      onSetupError?.('Google sign-in is still loading. Please wait a moment and try again.');
-      return;
-    }
-
-    const googleButton = hiddenGoogleRef.current?.querySelector(
-      '[role="button"], iframe, div[id^="gsi"]',
-    ) as HTMLElement | null;
-
-    if (!googleButton) {
-      onSetupError?.('Google sign-in is unavailable. Please use email login or refresh the page.');
-      onError?.();
-      return;
-    }
-
-    setOpening(true);
-    googleButton.click();
-    window.setTimeout(() => setOpening(false), 4000);
-  };
-
-  return (
-    <div className="relative">
-      <div
-        ref={hiddenGoogleRef}
-        className="pointer-events-none absolute left-0 top-0 h-12 w-12 overflow-hidden opacity-0"
-        aria-hidden
-      />
-      <CircularSocialButton
-        label={providerLabel('google', mode)}
-        provider="google"
-        disabled={disabled || opening}
-        onClick={openGoogle}
-      >
-        <ProviderGlyph provider="google" />
-      </CircularSocialButton>
-    </div>
-  );
-}
-
 export function FederatedLoginButtons({
   mode,
   disabled,
-  onGoogleSuccess,
-  onGoogleError,
   onError,
 }: Props) {
   const [providers, setProviders] = useState<PublicFederatedProvider[]>([]);
@@ -285,20 +186,15 @@ export function FederatedLoginButtons({
     };
   }, []);
 
-  const googleClientId = useMemo(() => getGoogleClientIdFromProviders(providers), [providers]);
-  const googleReady = useMemo(() => isGoogleOAuthConfigured(providers), [providers]);
-
   const orderedProviders = useMemo(() => {
     const enabled = new Map(providers.map((row) => [row.provider, row]));
     const rows: PublicFederatedProvider[] = [];
     for (const id of PROVIDER_ORDER) {
       const row = enabled.get(id);
-      if (!row) continue;
-      if (id === 'google' && !googleReady) continue;
-      rows.push(row);
+      if (row) rows.push(row);
     }
     return rows;
-  }, [providers, googleReady]);
+  }, [providers]);
 
   const startRedirect = useCallback(
     async (provider: PublicFederatedProvider) => {
@@ -306,7 +202,10 @@ export function FederatedLoginButtons({
       const state = randomString(16);
       try {
         let url = '';
-        if (provider.provider === 'facebook') {
+        if (provider.provider === 'google') {
+          storeOAuthSession(state, '');
+          url = buildGoogleAuthUrl(provider, state);
+        } else if (provider.provider === 'facebook') {
           storeOAuthSession(state, '');
           url = buildFacebookAuthUrl(provider, state);
         } else if (provider.provider === 'linkedin') {
@@ -345,33 +244,17 @@ export function FederatedLoginButtons({
     <div className="relative z-10 w-full">
       <p className="mb-4 text-center text-sm font-medium text-slate-500">{heading}</p>
       <div className="flex flex-wrap items-center justify-center gap-4">
-        {orderedProviders.map((provider) => {
-          if (provider.provider === 'google') {
-            return (
-              <GoogleCircleButton
-                key="google"
-                clientId={googleClientId}
-                mode={mode}
-                disabled={disabled}
-                onSuccess={onGoogleSuccess}
-                onError={onGoogleError}
-                onSetupError={onError}
-              />
-            );
-          }
-
-          return (
-            <CircularSocialButton
-              key={provider.provider}
-              label={providerLabel(provider.provider, mode)}
-              provider={provider.provider}
-              disabled={disabled}
-              onClick={() => void startRedirect(provider)}
-            >
-              <ProviderGlyph provider={provider.provider} />
-            </CircularSocialButton>
-          );
-        })}
+        {orderedProviders.map((provider) => (
+          <CircularSocialButton
+            key={provider.provider}
+            label={providerLabel(provider.provider, mode)}
+            provider={provider.provider}
+            disabled={disabled}
+            onClick={() => void startRedirect(provider)}
+          >
+            <ProviderGlyph provider={provider.provider} />
+          </CircularSocialButton>
+        ))}
       </div>
     </div>
   );

@@ -131,7 +131,7 @@ function toAdminProviderView(row, includeSecret = false) {
   const meta = PROVIDER_META[row.provider] || {};
   const clientId = resolveClientId(row);
   const secret = resolveSecret(row);
-  const configured = Boolean(clientId && (secret || row.provider === 'google'));
+  const configured = Boolean(clientId && secret);
   return {
     provider: row.provider,
     label: meta.label,
@@ -144,7 +144,7 @@ function toAdminProviderView(row, includeSecret = false) {
     scopes: row.scopes || meta.defaultScopes,
     developerUrl: meta.developerUrl,
     configured,
-    ready: Boolean(row.enabled && clientId && (secret || row.provider === 'google')),
+    ready: Boolean(row.enabled && clientId && secret),
   };
 }
 
@@ -165,7 +165,7 @@ async function getAdminFederatedLoginConfig() {
 async function getPublicFederatedProviders() {
   const providers = await getEffectiveProviders();
   return providers
-    .filter((row) => row.enabled && resolveClientId(row))
+    .filter((row) => row.enabled && resolveClientId(row) && resolveSecret(row))
     .map((row) => ({
       provider: row.provider,
       label: PROVIDER_META[row.provider]?.label || row.provider,

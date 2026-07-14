@@ -71,6 +71,25 @@ async function exchangeFacebookCode(code, redirectUri) {
   return verifyFacebookAccessToken(accessToken, row);
 }
 
+async function exchangeGoogleCode(code, redirectUri) {
+  const row = await getProviderRow('google');
+  if (!row.clientSecret) {
+    const err = new Error('Google client secret is not configured');
+    err.status = 503;
+    throw err;
+  }
+  const { OAuth2Client } = require('google-auth-library');
+  const client = new OAuth2Client(row.clientId, row.clientSecret, redirectUri);
+  const { tokens } = await client.getToken(code);
+  const idToken = tokens?.id_token;
+  if (!idToken) {
+    const err = new Error('Google token exchange failed');
+    err.status = 400;
+    throw err;
+  }
+  return verifyGoogleIdToken(idToken);
+}
+
 async function verifyFacebookAccessToken(accessToken, rowOverride) {
   const row = rowOverride || (await getProviderRow('facebook'));
   if (!row.clientSecret) {
@@ -215,6 +234,7 @@ function buildOAuthState() {
 module.exports = {
   getProviderRow,
   verifyGoogleIdToken,
+  exchangeGoogleCode,
   verifyFacebookAccessToken,
   exchangeFacebookCode,
   exchangeLinkedInCode,
