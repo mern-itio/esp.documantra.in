@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { FaFacebookF, FaLinkedinIn, FaTwitter } from 'react-icons/fa';
 import {
   fetchFederatedLoginProviders,
@@ -8,6 +7,7 @@ import {
   type PublicFederatedProvider,
   type FederatedProviderId,
 } from '../../services/federatedLoginService';
+import { loadGoogleIdentityScript } from '../../utils/loadGoogleIdentityScript';
 
 type Props = {
   mode: 'login' | 'signup';
@@ -144,7 +144,7 @@ function CircularSocialButton({
       disabled={disabled}
       onClick={onClick}
       aria-label={label}
-      className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-50 ${providerCircleClass(provider)}`}
+      className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-50 ${providerCircleClass(provider)}`}
     >
       {children}
     </button>
@@ -157,43 +157,99 @@ function GoogleCircleButton({
   disabled,
   onSuccess,
   onError,
+  onSetupError,
 }: {
   clientId: string;
   mode: 'login' | 'signup';
   disabled?: boolean;
   onSuccess: (credential: string) => void | Promise<void>;
   onError?: () => void;
+  onSetupError?: (message: string) => void;
 }) {
   const hiddenGoogleRef = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
+  const [opening, setOpening] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const setup = async () => {
+      if (!clientId || !hiddenGoogleRef.current) return;
+      try {
+        await loadGoogleIdentityScript();
+        if (cancelled || !hiddenGoogleRef.current || !window.google?.accounts?.id) return;
+
+        hiddenGoogleRef.current.innerHTML = '';
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response: { credential?: string }) => {
+            setOpening(false);
+            if (response.credential) {
+              void onSuccess(response.credential);
+            } else {
+              onError?.();
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          ux_mode: 'popup',
+        });
+
+        window.google.accounts.id.renderButton(hiddenGoogleRef.current, {
+          type: 'icon',
+          shape: 'circle',
+          size: 'large',
+          theme: 'outline',
+        });
+
+        if (!cancelled) setReady(true);
+      } catch {
+        if (!cancelled) {
+          setReady(false);
+          onSetupError?.('Google sign-in could not be loaded. Check your connection or try email login.');
+        }
+      }
+    };
+
+    void setup();
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId, onError, onSetupError, onSuccess]);
 
   const openGoogle = () => {
-    if (disabled) return;
-    const googleButton = hiddenGoogleRef.current?.querySelector('[role="button"]') as HTMLElement | null;
-    googleButton?.click();
+    if (disabled || opening) return;
+    if (!ready) {
+      onSetupError?.('Google sign-in is still loading. Please wait a moment and try again.');
+      return;
+    }
+
+    const googleButton = hiddenGoogleRef.current?.querySelector(
+      '[role="button"], iframe, div[id^="gsi"]',
+    ) as HTMLElement | null;
+
+    if (!googleButton) {
+      onSetupError?.('Google sign-in is unavailable. Please use email login or refresh the page.');
+      onError?.();
+      return;
+    }
+
+    setOpening(true);
+    googleButton.click();
+    window.setTimeout(() => setOpening(false), 4000);
   };
 
   return (
     <div className="relative">
       <div
         ref={hiddenGoogleRef}
-        className="pointer-events-none absolute left-1/2 top-1/2 h-px w-px -translate-x-1/2 -translate-y-1/2 overflow-hidden opacity-0"
+        className="pointer-events-none absolute left-0 top-0 h-12 w-12 overflow-hidden opacity-0"
         aria-hidden
-      >
-        <GoogleOAuthProvider clientId={clientId}>
-          <GoogleLogin
-            onSuccess={(res) => void onSuccess(res.credential || '')}
-            onError={onError}
-            useOneTap={false}
-            type="icon"
-            shape="circle"
-            size="large"
-          />
-        </GoogleOAuthProvider>
-      </div>
+      />
       <CircularSocialButton
         label={providerLabel('google', mode)}
         provider="google"
-        disabled={disabled}
+        disabled={disabled || opening}
         onClick={openGoogle}
       >
         <ProviderGlyph provider="google" />
@@ -266,7 +322,7 @@ export function FederatedLoginButtons({
         onError?.('Could not start sign-in. Please try again.');
       }
     },
-    [disabled, onError]
+    [disabled, onError],
   );
 
   if (loading) {
@@ -286,7 +342,7 @@ export function FederatedLoginButtons({
   const heading = mode === 'signup' ? 'Or Sign Up Using' : 'Or Sign In Using';
 
   return (
-    <div className="w-full">
+    <div className="relative z-10 w-full">
       <p className="mb-4 text-center text-sm font-medium text-slate-500">{heading}</p>
       <div className="flex flex-wrap items-center justify-center gap-4">
         {orderedProviders.map((provider) => {
@@ -299,6 +355,7 @@ export function FederatedLoginButtons({
                 disabled={disabled}
                 onSuccess={onGoogleSuccess}
                 onError={onGoogleError}
+                onSetupError={onError}
               />
             );
           }
