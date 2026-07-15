@@ -33,7 +33,8 @@ import {
   Save,
   GripVertical,
   Mail,
-  Sparkles
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
@@ -1623,6 +1624,39 @@ const isPublicFlow =
     </div>
   );
 
+  const renderUploadOverlay = () => {
+    if (!nextLoading || !processingProgress || currentStep !== 1) return null;
+    const { message, completed, total, remaining, percent } = processingProgress;
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[2px]">
+        <div className="w-full max-w-md rounded-2xl border border-[#E6D8C9] bg-white p-6 shadow-2xl">
+          <div className="mb-4 flex items-center gap-3">
+            <Loader2 className="h-8 w-8 shrink-0 animate-spin text-[#1B4D3E]" />
+            <div>
+              <p className="text-base font-semibold text-foreground">Uploading documents</p>
+              <p className="text-sm text-muted-foreground">{message}</p>
+            </div>
+          </div>
+          <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              <strong className="text-[#1B4D3E]">{completed}</strong> of <strong>{total}</strong> done
+            </span>
+            <span>
+              <strong className="text-amber-700">{remaining}</strong> remaining
+            </span>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-[#F7F3EE]">
+            <div
+              className="h-full rounded-full bg-[#1B4D3E] transition-all duration-300"
+              style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+            />
+          </div>
+          <p className="mt-2 text-center text-sm font-medium text-foreground">{percent}% complete</p>
+        </div>
+      </div>
+    );
+  };
+
   const renderBatchUploadProgress = () => {
     if (!processingProgress || processingProgress.total <= 0) return null;
     const { message, completed, total, remaining, percent } = processingProgress;
@@ -2530,6 +2564,19 @@ if (isPublicFlow) {
     }
 
     setNextLoading(true);
+    if (currentStep === 1) {
+      const totalUploads = documents.filter((doc) => doc.file).length;
+      setProcessingProgress({
+        message: 'Preparing upload…',
+        completed: 0,
+        total: totalUploads,
+        remaining: totalUploads,
+        percent: 0,
+      });
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
+    }
     try {
       if (currentStep === 1) {
         const success = await uploadDocuments(currentStep);
@@ -6350,6 +6397,7 @@ if (isPublicFlow) {
 
   return (
     <div className="bg-card min-h-screentext-foreground">
+      {renderUploadOverlay()}
       {/* Header */}
       <div className="bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
@@ -6609,40 +6657,19 @@ if (isPublicFlow) {
                   <button
                     onClick={handleNext}
                     disabled={nextLoading}
-                    className="flex min-w-[220px] flex-col items-end gap-2 px-6 py-2 bg-[#260559] text-white rounded-lg hover:bg-[#260559]/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#260559] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#260559]/90 disabled:cursor-not-allowed disabled:opacity-60"
                     data-tour="ec-next-button"
                   >
                     {nextLoading ? (
-                      processingProgress ? (
-                        <>
-                          <div className="flex w-full items-center gap-2">
-                            <svg className="h-4 w-4 shrink-0 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                            </svg>
-                            <span className="truncate text-sm">
-                              {processingProgress.completed}/{processingProgress.total} done · {processingProgress.remaining} left
-                            </span>
-                          </div>
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/25">
-                            <div
-                              className="h-full rounded-full bg-white transition-all duration-300"
-                              style={{ width: `${processingProgress.percent}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-white/80">{processingProgress.percent}%</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                          </svg>
-                          Processing...
-                        </>
-                      )
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {processingProgress ? `Uploading ${processingProgress.percent}%` : 'Processing…'}
+                      </>
                     ) : (
-                      <>Next<ArrowLeft className="w-4 h-4 rotate-180" /></>
+                      <>
+                        Next
+                        <ArrowLeft className="h-4 w-4 rotate-180" />
+                      </>
                     )}
                   </button>
                 ) : (

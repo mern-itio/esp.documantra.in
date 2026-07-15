@@ -1349,6 +1349,38 @@ export default function SigningEditorStep({
     [fieldsInPlacementGroup, getDocumentPageCount],
   );
 
+  const isSigningFieldType = (type: string) =>
+    ['signature', 'initial', 'stamp'].includes((type || '').toLowerCase());
+
+  const applyAllSignatureCandidate = useMemo(() => {
+    const totalPages = getDocumentPageCount();
+    if (totalPages <= 1 || !activeDocId) return null;
+
+    const onDoc = signatureFields.filter((f) => (f.docId ?? f.documentId) === activeDocId);
+    const candidate =
+      selectedField && isSigningFieldType(selectedField.type)
+        ? selectedField
+        : onDoc.find(
+            (f) =>
+              isSigningFieldType(f.type) &&
+              !getPlacementMode(f) &&
+              fieldsInPlacementGroup(f).length < totalPages,
+          );
+
+    if (!candidate || !isSigningFieldType(candidate.type)) return null;
+    const placed = fieldsInPlacementGroup(candidate).length;
+    if (placed >= totalPages || getPlacementMode(candidate)) return null;
+
+    return { field: candidate, totalPages, placed };
+  }, [
+    activeDocId,
+    fieldsInPlacementGroup,
+    getDocumentPageCount,
+    getPlacementMode,
+    selectedField,
+    signatureFields,
+  ]);
+
   const applyPlacementModeToGroup = (
     fields: SignatureField[],
     field: SignatureField,
@@ -1754,7 +1786,7 @@ export default function SigningEditorStep({
           className={outlineBtnClass}
         >
           <Copy className="w-4 h-4" />
-          {isApplyingPlacement ? 'Applying...' : 'Apply to all pages'}
+          {isApplyingPlacement ? 'Applying...' : 'Apply signature to all pages'}
         </button>
         {field.page > 1 && (
           <button
@@ -2439,6 +2471,28 @@ export default function SigningEditorStep({
           </div>
         </div>
       </div>
+
+      {applyAllSignatureCandidate && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1B4D3E]/25 bg-[#F0F7F4] px-4 py-2.5">
+          <p className="text-sm text-foreground">
+            <span className="font-semibold text-[#1B4D3E]">
+              {applyAllSignatureCandidate.placed} of {applyAllSignatureCandidate.totalPages} pages
+            </span>{' '}
+            have a signature field. Apply the same position to every page?
+          </p>
+          <button
+            type="button"
+            onClick={() => void applyFieldToAllPages(applyAllSignatureCandidate.field)}
+            disabled={isApplyingPlacement}
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#1B4D3E] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#164032] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Copy className="h-4 w-4" />
+            {isApplyingPlacement
+              ? 'Applying…'
+              : `Apply signature to all ${applyAllSignatureCandidate.totalPages} pages`}
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden bg-muted pb-24">
