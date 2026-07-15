@@ -129,6 +129,81 @@ function recipientListRowMatchesQuery(
   return phoneDigits.length > 0 && phoneDigits.includes(queryDigits);
 }
 
+const UPLOAD_BATCH_MAX_FILES = 4;
+const UPLOAD_BATCH_MAX_BYTES = 28 * 1024 * 1024;
+
+type UploadProgressState = {
+  message: string;
+  completed: number;
+  total: number;
+  remaining: number;
+  uploadingCount: number;
+  percent: number;
+  envelopeTotal: number;
+  alreadySaved: number;
+  overallReady: number;
+};
+
+function buildUploadBatches(docs: ESDocument[]) {
+  const batches: ESDocument[][] = [];
+  let current: ESDocument[] = [];
+  let currentBytes = 0;
+
+  for (const doc of docs) {
+    const size = doc.size || doc.file?.size || 0;
+    const wouldExceedFiles = current.length >= UPLOAD_BATCH_MAX_FILES;
+    const wouldExceedBytes =
+      current.length > 0 && currentBytes + size > UPLOAD_BATCH_MAX_BYTES;
+
+    if (wouldExceedFiles || wouldExceedBytes) {
+      batches.push(current);
+      current = [];
+      currentBytes = 0;
+    }
+
+    current.push(doc);
+    currentBytes += size;
+  }
+
+  if (current.length > 0) batches.push(current);
+  return batches;
+}
+
+function buildUploadProgressState({
+  message,
+  completed,
+  totalNew,
+  batchSize = 0,
+  batchLoadedRatio = 0,
+  envelopeTotal,
+  alreadySaved,
+}: {
+  message: string;
+  completed: number;
+  totalNew: number;
+  batchSize?: number;
+  batchLoadedRatio?: number;
+  envelopeTotal: number;
+  alreadySaved: number;
+}): UploadProgressState {
+  const inFlight = batchSize > 0 ? batchLoadedRatio * batchSize : 0;
+  const percent =
+    totalNew > 0 ? Math.min(100, Math.round(((completed + inFlight) / totalNew) * 100)) : 100;
+  const queued = Math.max(0, totalNew - completed - batchSize);
+
+  return {
+    message,
+    completed,
+    total: totalNew,
+    remaining: queued,
+    uploadingCount: batchSize,
+    percent,
+    envelopeTotal,
+    alreadySaved,
+    overallReady: Math.min(envelopeTotal, alreadySaved + completed + Math.floor(inFlight)),
+  };
+}
+
 const EnvelopeCreator: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -176,13 +251,7 @@ const isPublicFlow =
   const [signatureFields, setSignatureFields] = useState<EditorSignatureFieldExt[]>([]);
   const [sending, setSending] = useState(false);
   const [nextLoading, setNextLoading] = useState(false);
-  const [processingProgress, setProcessingProgress] = useState<{
-    message: string;
-    completed: number;
-    total: number;
-    remaining: number;
-    percent: number;
-  } | null>(null);
+  const [processingProgress, setProcessingProgress] = useState<UploadProgressState | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const hasAutoAddedRecipient = useRef(false);
   const [isOnlySigner, setIsOnlySigner] = useState(false);
@@ -1626,23 +1695,55 @@ const isPublicFlow =
 
   const renderUploadOverlay = () => {
     if (!nextLoading || !processingProgress || currentStep !== 1) return null;
-    const { message, completed, total, remaining, percent } = processingProgress;
+    const {
+      message,
+      completed,
+      total,
+      remaining,
+      uploadingCount,
+      percent,
+      envelopeTotal,
+      alreadySaved,
+      overallReady,
+    } = processingProgress;
     return (
       <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[2px]">
         <div className="w-full max-w-md rounded-2xl border border-[#E6D8C9] bg-white p-6 shadow-2xl">
           <div className="mb-4 flex items-center gap-3">
             <Loader2 className="h-8 w-8 shrink-0 animate-spin text-[#1B4D3E]" />
-            <div>
+            <div className="min-w-0">
               <p className="text-base font-semibold text-foreground">Uploading documents</p>
-              <p className="text-sm text-muted-foreground">{message}</p>
+              <p className="truncate text-sm text-muted-foreground">{message}</p>
             </div>
           </div>
-          <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
+          <p className="mb-3 text-sm text-foreground">
+            <strong className="text-[#1B4D3E]">{overallReady}</strong> of{' '}
+            <strong>{envelopeTotal}</strong> documents ready
+            {alreadySaved > 0 ? (
+              <span className="text-muted-foreground"> ({alreadySaved} already saved)</span>
+            ) : null}
+          </p>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
             <span>
-              <strong className="text-[#1B4D3E]">{completed}</strong> of <strong>{total}</strong> done
+              <strong className="text-[#1B4D3E]">{completed}</strong> of <strong>{total}</strong> new
+              uploaded
             </span>
             <span>
-              <strong className="text-amber-700">{remaining}</strong> remaining
+              {uploadingCount > 0 ? (
+                <>
+                  <strong className="text-[#1B4D3E]">{uploadingCount}</strong> uploading
+                  {remaining > 0 ? (
+                    <>
+                      {' · '}
+                      <strong className="text-amber-700">{remaining}</strong> queued
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <strong className="text-amber-700">{remaining}</strong> queued
+                </>
+              )}
             </span>
           </div>
           <div className="h-2.5 overflow-hidden rounded-full bg-[#F7F3EE]">
@@ -1651,7 +1752,9 @@ const isPublicFlow =
               style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
             />
           </div>
-          <p className="mt-2 text-center text-sm font-medium text-foreground">{percent}% complete</p>
+          <p className="mt-2 text-center text-sm font-medium text-foreground">
+            {percent}% of new uploads
+          </p>
         </div>
       </div>
     );
@@ -1659,15 +1762,34 @@ const isPublicFlow =
 
   const renderBatchUploadProgress = () => {
     if (!processingProgress || processingProgress.total <= 0) return null;
-    const { message, completed, total, remaining, percent } = processingProgress;
+    const {
+      message,
+      completed,
+      total,
+      remaining,
+      uploadingCount,
+      percent,
+      envelopeTotal,
+      overallReady,
+      alreadySaved,
+    } = processingProgress;
     return (
       <div className="rounded-lg border border-[#1B4D3E]/20 bg-[#F7F3EE] px-4 py-3">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
           <span className="font-medium text-foreground">{message}</span>
           <span className="text-muted-foreground">
-            <span className="font-semibold text-[#1B4D3E]">{completed}</span> of {total} done
-            {' · '}
-            <span className="font-semibold text-amber-700">{remaining}</span> remaining
+            <strong className="text-[#1B4D3E]">{overallReady}</strong>/{envelopeTotal} ready
+            {alreadySaved > 0 ? ` · ${alreadySaved} saved` : ''}
+          </span>
+        </div>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>
+            {completed} of {total} new uploaded
+          </span>
+          <span>
+            {uploadingCount > 0
+              ? `${uploadingCount} uploading · ${remaining} queued`
+              : `${remaining} queued`}
           </span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-white">
@@ -1676,7 +1798,7 @@ const isPublicFlow =
             style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
           />
         </div>
-        <p className="mt-1.5 text-xs text-muted-foreground">{percent}% complete</p>
+        <p className="mt-1.5 text-xs text-muted-foreground">{percent}% of new uploads</p>
       </div>
     );
   };
@@ -1896,42 +2018,43 @@ const isPublicFlow =
       return false; // failure
     }
 
-    // mark as uploading — progress tracked per file in the loop below
+    // Only local files need uploading; server-side docs are already saved on the envelope.
     const uploadableDocs = documents.filter((doc) => doc.file);
     const totalUploads = uploadableDocs.length;
+    const envelopeTotal = documents.length;
+    const alreadySaved = envelopeTotal - totalUploads;
     let loopEnvelopeId = envelopeId;
     let completedUploads = 0;
     let uploadFailed = false;
     let lastUploadError = '';
 
-    setProcessingProgress({
-      message: 'Preparing upload…',
-      completed: 0,
-      total: totalUploads,
-      remaining: totalUploads,
-      percent: 0,
-    });
+    if (totalUploads === 0) {
+      if (loopEnvelopeId) {
+        await getEnvelopeDetail(loopEnvelopeId);
+        if (isPublicFlow) {
+          navigate(`/public-sign/editor?step=2&envelopeId=${loopEnvelopeId}&public=true`);
+        } else {
+          navigate(`/e-sign/create?step=2&envelopeId=${loopEnvelopeId}`);
+        }
+        return true;
+      }
+      return false;
+    }
 
-    for (const doc of uploadableDocs) {
-      setDocuments((prev) =>
-        prev.map((d) =>
-          d.id === doc.id ? { ...d, isUploading: true, uploadProgress: 0 } : d
-        )
-      );
+    const uploadBatches = buildUploadBatches(uploadableDocs);
 
-      setProcessingProgress({
-        message: `Uploading ${doc.name}`,
-        completed: completedUploads,
-        total: totalUploads,
-        remaining: totalUploads - completedUploads,
-        percent: totalUploads > 0 ? Math.round((completedUploads / totalUploads) * 100) : 0,
-      });
+    setProcessingProgress(
+      buildUploadProgressState({
+        message: 'Preparing upload…',
+        completed: 0,
+        totalNew: totalUploads,
+        envelopeTotal,
+        alreadySaved,
+      }),
+    );
 
-      const formData = new FormData();
-      formData.append('files', doc.file!, doc.name);
-
+    const appendEnvelopeMetadata = (formData: FormData) => {
       if (loopEnvelopeId) formData.append('envelopeId', loopEnvelopeId);
-      // Include name, subject, message and envelopetype from Step 1
       if (documentTitle && documentTitle.trim()) {
         formData.append('name', documentTitle.trim());
       }
@@ -1940,32 +2063,63 @@ const isPublicFlow =
       if (selectedEnvelopeType) {
         formData.append('envelopetype', selectedEnvelopeType);
       }
+    };
+
+    for (const batch of uploadBatches) {
+      const batchIds = new Set(batch.map((doc) => doc.id));
+      const batchLabel =
+        batch.length === 1
+          ? batch[0].name
+          : `${batch[0].name} + ${batch.length - 1} more`;
+
+      setDocuments((prev) =>
+        prev.map((d) =>
+          batchIds.has(d.id) ? { ...d, isUploading: true, uploadProgress: 0 } : d
+        )
+      );
+
+      setProcessingProgress(
+        buildUploadProgressState({
+          message: `Uploading ${batchLabel}`,
+          completed: completedUploads,
+          totalNew: totalUploads,
+          batchSize: batch.length,
+          batchLoadedRatio: 0,
+          envelopeTotal,
+          alreadySaved,
+        }),
+      );
+
+      const formData = new FormData();
+      for (const doc of batch) {
+        formData.append('files', doc.file!, doc.name);
+      }
+      appendEnvelopeMetadata(formData);
 
       try {
         const response = await eSignApi.post('/api/e-sign/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-            if (progressEvent.total && progressEvent.loaded) {
-              const percent = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              const overallPercent = totalUploads > 0
-                ? Math.round(((completedUploads + percent / 100) / totalUploads) * 100)
-                : percent;
+            if (!progressEvent.total || !progressEvent.loaded) return;
+            const batchRatio = progressEvent.loaded / progressEvent.total;
+            const batchPercent = Math.round(batchRatio * 100);
 
-              setDocuments((prev) =>
-                prev.map((d) =>
-                  d.id === doc.id ? { ...d, uploadProgress: percent } : d
-                )
-              );
-              setProcessingProgress({
-                message: `Uploading ${doc.name}`,
+            setDocuments((prev) =>
+              prev.map((d) =>
+                batchIds.has(d.id) ? { ...d, uploadProgress: batchPercent } : d
+              )
+            );
+            setProcessingProgress(
+              buildUploadProgressState({
+                message: `Uploading ${batchLabel}`,
                 completed: completedUploads,
-                total: totalUploads,
-                remaining: Math.max(0, totalUploads - completedUploads - 1),
-                percent: overallPercent,
-              });
-            }
+                totalNew: totalUploads,
+                batchSize: batch.length,
+                batchLoadedRatio: batchRatio,
+                envelopeTotal,
+                alreadySaved,
+              }),
+            );
           },
         });
 
@@ -1973,32 +2127,36 @@ const isPublicFlow =
           loopEnvelopeId = response.data.data.envelopeId;
         }
 
-        completedUploads += 1;
+        completedUploads += batch.length;
         setDocuments((prev) =>
           prev.map((d) =>
-            d.id === doc.id
+            batchIds.has(d.id)
               ? { ...d, isUploading: false, uploadProgress: 100 }
               : d
           )
         );
-        setProcessingProgress({
-          message: completedUploads === totalUploads ? 'Finalizing…' : 'Uploading next file…',
-          completed: completedUploads,
-          total: totalUploads,
-          remaining: totalUploads - completedUploads,
-          percent: totalUploads > 0 ? Math.round((completedUploads / totalUploads) * 100) : 100,
-        });
+        setProcessingProgress(
+          buildUploadProgressState({
+            message:
+              completedUploads === totalUploads ? 'Finalizing…' : 'Preparing next batch…',
+            completed: completedUploads,
+            totalNew: totalUploads,
+            envelopeTotal,
+            alreadySaved,
+          }),
+        );
       } catch (err) {
-        console.error('Upload failed for', doc.name, err);
+        console.error('Upload failed for batch:', batchLabel, err);
         uploadFailed = true;
-        lastUploadError = getEsignUploadErrorMessage(err, doc.name);
+        lastUploadError = getEsignUploadErrorMessage(err, batch[0]?.name || 'batch');
         setDocuments((prev) =>
           prev.map((d) =>
-            d.id === doc.id
+            batchIds.has(d.id)
               ? { ...d, isUploading: false, uploadProgress: 0 }
               : d
           )
         );
+        break;
       }
     }
 
@@ -2566,13 +2724,17 @@ if (isPublicFlow) {
     setNextLoading(true);
     if (currentStep === 1) {
       const totalUploads = documents.filter((doc) => doc.file).length;
-      setProcessingProgress({
-        message: 'Preparing upload…',
-        completed: 0,
-        total: totalUploads,
-        remaining: totalUploads,
-        percent: 0,
-      });
+      const envelopeTotal = documents.length;
+      const alreadySaved = envelopeTotal - totalUploads;
+      setProcessingProgress(
+        buildUploadProgressState({
+          message: 'Preparing upload…',
+          completed: 0,
+          totalNew: totalUploads,
+          envelopeTotal,
+          alreadySaved,
+        }),
+      );
       await new Promise<void>((resolve) => {
         requestAnimationFrame(() => resolve());
       });
@@ -6663,7 +6825,9 @@ if (isPublicFlow) {
                     {nextLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        {processingProgress ? `Uploading ${processingProgress.percent}%` : 'Processing…'}
+                        {processingProgress
+                          ? `${processingProgress.overallReady}/${processingProgress.envelopeTotal} ready · ${processingProgress.percent}%`
+                          : 'Processing…'}
                       </>
                     ) : (
                       <>
