@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { RouterProvider } from "react-router-dom";
 import router from "./routes/index";
 import publicSignRouter from "./routes/publicSignRouter";
@@ -6,7 +6,6 @@ import { isPublicSignOnlyApp } from "./config/appMode";
 import ThemeConfig from "./theme/index";
 import { SidebarProvider } from "./context/SidebarContext";
 import { AuthProvider } from "./components/AuthService/AuthContext";
-import Loader from "./components/common/loader";
 import { AppProvider } from "./context/AppContext";
 import { APIProvider } from '../src/context/ApiContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
@@ -14,10 +13,11 @@ import { SupportChatProvider } from './context/SupportChatContext';
 import { Toaster } from "react-hot-toast"; 
 import SubscriptionPlansModal from './components/common/SubscriptionPlansModal';
 import CreditPurchaseModal from './components/common/CreditPurchaseModal';
-import CustomerChatWidget from './components/SupportChat/CustomerChatWidget';
-import AIAssistantButton from './components/AIAssistant/AIAssistantButton';
 import BrandingHead from './components/BrandingHead';
 import { useSubscription } from './context/SubscriptionContext';
+
+const CustomerChatWidget = lazy(() => import('./components/SupportChat/CustomerChatWidget'));
+const AIAssistantButton = lazy(() => import('./components/AIAssistant/AIAssistantButton'));
 
 const ConditionalWidgets: React.FC = () => {
   const [shouldHide, setShouldHide] = useState(false);
@@ -69,23 +69,17 @@ const ConditionalWidgets: React.FC = () => {
 
   return (
     <div className="fixed right-6 bottom-85 flex flex-col gap-4 z-50">
-      <CustomerChatWidget />
-      <AIAssistantButton />
+      <Suspense fallback={null}>
+        <CustomerChatWidget />
+        <AIAssistantButton />
+      </Suspense>
     </div>
   );
 };
 
 const App: React.FC = () => {
-  const [loading, setLoading] = useState(true);
   const publicSignOnly = isPublicSignOnlyApp();
   const activeRouter = publicSignOnly ? publicSignRouter : router;
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (loading) return <Loader />;
 
   return (
     <APIProvider>

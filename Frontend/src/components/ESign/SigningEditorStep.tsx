@@ -11,10 +11,12 @@ import {
   ChevronUp,
   MoreHorizontal,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import type { Recipient } from "../../types";
 import { eSignApi } from "../../services/apiHelper";
 import toast from "react-hot-toast"
+import Swal from "sweetalert2";
 import { useAuth } from "../AuthService/AuthContext";
 import { fetchEsignDocumentData } from "../../utils/esignDocumentUrl";
 
@@ -487,6 +489,54 @@ export default function SigningEditorStep({
     slotsToUse.forEach((s, idx) => (map[s.slotId] = getRecipientBorderStyle(idx + sortedRecipients.length))); // avoid collision
     return map;
   }, [recipients, slotsToUse]);
+
+  const documentFieldCoverage = useMemo(() => {
+    const perDocument = documents.map((doc) => {
+      const fieldsOnDoc = signatureFields.filter(
+        (f) => (f.docId ?? f.documentId) === doc.id
+      );
+      return {
+        doc,
+        fieldCount: fieldsOnDoc.length,
+        hasActivity: fieldsOnDoc.length > 0,
+      };
+    });
+    const total = documents.length;
+    const withActivity = perDocument.filter((d) => d.hasActivity).length;
+    return {
+      perDocument,
+      total,
+      withActivity,
+      withoutActivity: total - withActivity,
+      pendingDocuments: perDocument.filter((d) => !d.hasActivity).map((d) => d.doc),
+    };
+  }, [documents, signatureFields]);
+
+  const warnPendingDocumentsBeforeProceed = useCallback(async () => {
+    const pending = documentFieldCoverage.pendingDocuments;
+    if (pending.length === 0) return true;
+
+    const fileList = pending
+      .map(
+        (doc) =>
+          `<li style="margin-bottom:8px;"><strong>${doc.name}</strong><br/><span style="color:#92400e;">Signature/field place nahi hua — is file par action pending hai.</span></li>`
+      )
+      .join('');
+
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Action required',
+      html: `
+        <p style="margin-bottom:12px;text-align:left;">
+          <strong>${documentFieldCoverage.withoutActivity}</strong> of
+          <strong>${documentFieldCoverage.total}</strong> files par abhi tak koi signature ya field place nahi hua:
+        </p>
+        <ul style="text-align:left;padding-left:18px;margin:0;">${fileList}</ul>
+      `,
+      confirmButtonText: 'OK',
+    });
+    return false;
+  }, [documentFieldCoverage]);
 
   // initialize when docs/recipients/slots change
   useEffect(() => {
@@ -2199,9 +2249,26 @@ export default function SigningEditorStep({
             )}
           </div>
 
-          {/* Document chooser */}
-          {documents.length > 1 && (
-            <div className="p-3 flex-shrink-0 relative document-dropdown">
+          {/* Document chooser + file coverage summary */}
+          {documents.length > 0 && (
+            <div className="flex-shrink-0 border-b border-muted px-3 py-2 space-y-2">
+              <div
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-[#F7F3EE] px-2.5 py-1.5 text-[11px] text-muted-foreground"
+                data-tour="editor-document-stats"
+              >
+                <span>
+                  <strong className="text-foreground">{documentFieldCoverage.total}</strong> files
+                </span>
+                <span className="text-[#1B4D3E]">
+                  <strong>{documentFieldCoverage.withActivity}</strong> with fields
+                </span>
+                <span className="text-amber-700">
+                  <strong>{documentFieldCoverage.withoutActivity}</strong> pending
+                </span>
+              </div>
+
+              {documents.length > 1 ? (
+            <div className="relative document-dropdown">
               <button
                 onClick={() => setShowDocDropdown(!showDocDropdown)}
                 className="w-60 flex items-center justify-between gap-2 px-2 py-1 bg-card hover:bg-muted rounded border border-muted transition-colors"
@@ -2219,24 +2286,42 @@ export default function SigningEditorStep({
                 <ChevronDown className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" />
               </button>
               {showDocDropdown && (
-                <div className="absolute top-full left-3 right-3 mt-1 bg-card border border-muted rounded shadow-lg z-50 max-h-60 overflow-y-auto">
-                  {documents.map((d) => (
+                <div className="absolute top-full left-0 mt-1 w-60 bg-card border border-muted rounded shadow-lg z-50 max-h-60 overflow-y-auto">
+                  {documentFieldCoverage.perDocument.map(({ doc, hasActivity, fieldCount }) => (
                     <button
-                      key={d.id}
+                      key={doc.id}
                       onClick={() => {
-                        setActiveDocId(d.id);
+                        setActiveDocId(doc.id);
                         setCurrentPage(1);
                         setShowDocDropdown(false);
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-muted flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 hover:bg-muted flex items-center gap-2"
                     >
                       <div className="w-6 h-6 rounded bg-muted border border-muted flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                        {hasActivity ? (
+                          <Check className="w-3.5 h-3.5 text-[#1B4D3E]" />
+                        ) : (
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                        )}
                       </div>
-                      <span className="text-xs font-medium text-muted-foreground truncate" style={{ fontSize: '12px' }}>{d.name}</span>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-medium text-muted-foreground truncate block" style={{ fontSize: '12px' }}>{doc.name}</span>
+                        <span className={`text-[10px] ${hasActivity ? 'text-[#1B4D3E]' : 'text-amber-700'}`}>
+                          {hasActivity ? `${fieldCount} field${fieldCount !== 1 ? 's' : ''} placed` : 'No action yet'}
+                        </span>
+                      </div>
                     </button>
                   ))}
                 </div>
+              )}
+            </div>
+              ) : (
+                <p className="truncate text-xs text-muted-foreground" title={documents[0]?.name}>
+                  {documents[0]?.name}
+                  {documentFieldCoverage.perDocument[0]?.hasActivity
+                    ? ` · ${documentFieldCoverage.perDocument[0].fieldCount} field(s)`
+                    : ' · No action yet'}
+                </p>
               )}
             </div>
           )}
@@ -3109,11 +3194,14 @@ export default function SigningEditorStep({
           )}
           <button
             type="button"
-            onClick={(e) => {
+            onClick={async (e) => {
               e.preventDefault();
               e.stopPropagation();
               if (onSend && !sending) {
-                onSend();
+                const canProceed = await warnPendingDocumentsBeforeProceed();
+                if (canProceed) {
+                  onSend();
+                }
               }
             }}
             disabled={!!sending}

@@ -2,7 +2,195 @@ import React, { useEffect, useState } from 'react';
 import { createBrowserRouter, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../components/AuthService/AuthContext';
-import PublicPDFTools from '../pages/PublicPDFTools/PublicPDFTools';
+import {
+  PublicPDFTools,
+  PublicWizard,
+  PDFToolsMergePDFPage,
+  PDFToolsSplitPDFPage,
+  PDFToolsExtractPDFPage,
+  PDFToolsDeletePDFPage,
+  PDFToolsReorderPDFPage,
+  PDFToolsRotatePDFPage,
+  PDFToolsCropPDFPage,
+  PDFToolsInsertPDFPage,
+  PDFToolsAddPageNumbersPage,
+  PDFToolsAddHeaderFooterPage,
+  PDFToolsAddPasswordPage,
+  PDFToolsRemovePasswordPage,
+  PDFToolsDigitalSignaturePage,
+  PDFToolsSetPermissionsPage,
+  PDFToolsRemoveMetadataPage,
+  PDFToolsEditMetadataPage,
+  SmartConversion,
+  PDFToolsSpellCheckPage,
+  PDFToolsFindReplacePage,
+  PDFToolsRedactContentPage,
+  PDFToolsAddStampsPage,
+  PDFToolsDBAddCommentsPage,
+  PDFToolsSharedDocumentPage,
+  PDFToolsCompressPDFPage,
+  PDFToolsOptimizeImagePage,
+  PDFToolsOptimizeFontPage,
+  PDFToolsRemoveUnusedObjectsPage,
+  PDFToolsLinearizePDFPage,
+  PDFToolsColorOptimizationPage,
+  PDFToolsQualityAnalysisPage,
+  PDFToolsDocumentTrackingPage,
+  PDFToolsBatchOptimizationPage,
+  PDFToolsOCRPage,
+  PDFToolsMakeSearchablePage,
+  PDFToolsExtractTablesPage,
+  HandwritingRecognition,
+  FillPdfFormPage,
+  FormRecognitionPage,
+  CalculateFieldsPage,
+  PdfInfoPage,
+  PdfValidatorPage,
+  PdfComparePage,
+  PdfRepairPage,
+  PdfBookmarksPage,
+  PdfStatisticsPage,
+  SharedDocumentPage,
+  SharedDocument,
+  StatusPage,
+  ContactSales,
+  BlogPage,
+  AboutPage,
+  WhyDocuSignerPage,
+  LoginPage,
+  SignupPage,
+  FederatedOAuthCallbackPage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
+  PrivacyPolicyPage,
+  CookiePolicyPage,
+  TermsOfServicePage,
+  UseCasesPage,
+  WorkspacePage,
+  FeatureComparisonPage,
+  SitemapPage,
+  ChoosePlanPage,
+  NotFoundPage,
+  DashboardPage,
+  AuditTrailPage,
+  CreditsUsagePage,
+  CompliancePage,
+  RiskManagementPage,
+  SharedPDFPage,
+  FoldersPage,
+  RecentPage,
+  FavoritesPage,
+  ArchivedPage,
+  TrashPage,
+  EsignDashboard,
+  EsignSigningPage,
+  EsignAnalytics,
+  EsignSettings,
+  EsignEnterpriseSettings,
+  EsignESignatureAdmin,
+  AITemplateGenerator,
+  UserProfile,
+  RewardsPage,
+  SessionManagementPage,
+  AuthMethodsPage,
+  AddWatermark,
+  ApiServiceDashboard,
+  ApiServiceAnalytics,
+  ApiServiceProjects,
+  ApiServiceKey,
+  ApiServiceExplorer,
+  ApiServiceDocumentation,
+  ApiServiceWebhooks,
+  ApiServiceSDK,
+  ApiServiceTesting,
+  ApiServiceMarketPlace,
+  ApiServiceCommunity,
+  ApiServiceSupport,
+  PublicSignerPage,
+  RecipientPortalPage,
+  CreatePdfFormPage,
+  OAuthCallback,
+  AdvancedPDFEditor,
+  SecurityOverviewPage,
+  ESignServiceWebAppPage,
+  AIPoweredFeaturesPage,
+  EnvelopeDetailPage,
+  EnvelopeCreator,
+  AgreementPage,
+  EnvelopeTypes,
+  ManageRecipients,
+  EnvelopeGuideSupport,
+  HelpSupportPage,
+  PowerFormCreate,
+  SubscriptionManagementPage,
+  InvoicePage,
+  ThankYouPage,
+  SignerStatusPage,
+  FinishLaterPage,
+  NotificationsPage,
+  SignerCycle,
+  CreateOrganizationPage,
+  MyOrganizationPage,
+  OrganizationFolder,
+  BookDemoPage,
+  EmailPage,
+  EmailTemplatesBuilder,
+  InvitationPage,
+  FolderDetailPage,
+  RolePage,
+  CouponPage,
+  SharedDocumentsPage,
+  PowerFormEmbed,
+  TemplateDashboard,
+  TemplateDesigner,
+  AdvancedTemplateDesigner,
+  AITemplateStudio,
+  TemplateLibrary,
+  FormBuilder,
+  TemplateMarketplace,
+  TemplateAnylytics,
+  APIManagement,
+  WorkflowAutomation,
+  TemplateAdminDashboard,
+  FormsList,
+  FormView,
+  FormEmbed,
+  FormSubmissions,
+  ToolsGrid,
+  HelpSystem,
+  CloudConnector,
+  WorkflowDesigner,
+  Analytics,
+  Header,
+  PdftoDoc,
+  DoctoPdf,
+  PdfToExcel,
+  ExcelToPdf,
+  PdftoPpt,
+  PptToPdf,
+  PdftoText,
+  TextToPdf,
+  PdfToHtml,
+  HtmlToPdf,
+  PdfToImage,
+  ImageToPDF,
+  PdfToEpub,
+  BatchConversion,
+  PdfEditorPage,
+  PowerForm,
+  AccessibilityPage,
+  AIFeatures,
+  AllInOnePlatformPage,
+  APIDocumentationPage,
+  BugBountyPage,
+  DataResidencyPage,
+  DocuSignerVsAdobeSignPage,
+  DocuSignerVsDocuSignPage,
+  DocuSignerVsHelloSignPage,
+  DocuSignerVsPandaDocPage,
+  UploadDocumentPage,
+  SignerPage,
+} from './lazyPages';
 // Layouts
 import RootLayout from '../layouts/RootLayout';
 import DashboardNoSidebarLayout from '../layouts/DashboardNoSidebarLayout';
@@ -19,81 +207,9 @@ import SignatureExperienceSection from '../components/LandingPage/SignatureExper
 // import LandingCTA from '../components/LandingPage/LandingCTA';
 import FAQ from '../components/LandingPage/FAQ';
 import Pricing from '../components/LandingPage/Pricing';
-import PublicWizard from '../pages/PublicFlow/PublicWizard';
-import PDFToolsMergePDFPage from '../pages/PDFTools/MergePDFPage';
-import PDFToolsSplitPDFPage from '../pages/PDFTools/SplitPDFPage';
-import PDFToolsExtractPDFPage from '../pages/PDFTools/ExtractPDFPage';
-import PDFToolsDeletePDFPage from '../pages/PDFTools/DeletePDFPage';
-import PDFToolsReorderPDFPage from '../pages/PDFTools/ReorderPDFPage';
-import PDFToolsRotatePDFPage from '../pages/PDFTools/RotatePDFPage';
-import PDFToolsCropPDFPage from '../pages/PDFTools/CropPDFPage';
-import PDFToolsInsertPDFPage from '../pages/PDFTools/InsertPDFPage';
-import PDFToolsAddPageNumbersPage from '../pages/PDFTools/AddPageNumbersPage';
-import PDFToolsAddHeaderFooterPage from '../pages/PDFTools/AddHeaderFooterPage';
-import PDFToolsAddPasswordPage from '../pages/PDFTools/AddPasswordPage';
-import PDFToolsRemovePasswordPage from '../pages/PDFTools/RemovePasswordPage';
-import PDFToolsDigitalSignaturePage from '../pages/PDFTools/DigitalSignaturePage';
-import PDFToolsSetPermissionsPage from '../pages/PDFTools/SetPermissions';
-import PDFToolsRemoveMetadataPage from '../pages/PDFTools/RemoveMetadataPage';
-import PDFToolsEditMetadataPage from '../pages/PDFTools/EditMetadataPage';
-import SmartConversion from '../components/PDFService/SmartConversion';
-import PDFToolsSpellCheckPage from '../pages/PDFTools/SpellCheckPage';
-import PDFToolsFindReplacePage from '../pages/PDFTools/FindReplacePage';
-import PDFToolsRedactContentPage from '../pages/PDFTools/RedactContentPage';
-import PDFToolsAddStampsPage from '../pages/PDFTools/AddStampsPage';
-import PDFToolsDBAddCommentsPage from '../pages/PDFTools/DBAddCommentsPage';
-import PDFToolsSharedDocumentPage from '../pages/PDFTools/SharedDocumentPage';
-import PDFToolsCompressPDFPage from '../pages/PDFTools/CompressPDFPage';
-import PDFToolsOptimizeImagePage from '../pages/PDFTools/OptimizeImagePage';
-import PDFToolsOptimizeFontPage from '../pages/PDFTools/OptimizeFontPage';
-import PDFToolsRemoveUnusedObjectsPage from '../pages/PDFTools/RemoveUnusedObjectsPage';
-import PDFToolsLinearizePDFPage from '../pages/PDFTools/LinearizePDFPage';
-import PDFToolsColorOptimizationPage from '../pages/PDFTools/ColorOptimizationPage';
-import PDFToolsQualityAnalysisPage from '../pages/PDFTools/QualityAnalysisPage';
-import PDFToolsDocumentTrackingPage from '../pages/PDFTools/DocumentTrackingPage';
-import PDFToolsBatchOptimizationPage from '../pages/PDFTools/BatchOptimizationPage';
-import PDFToolsOCRPage from '../pages/PDFTools/OCRPage';
-import PDFToolsMakeSearchablePage from '../pages/PDFTools/MakeSearchablePage';
-import PDFToolsExtractTablesPage from '../pages/PDFTools/ExtractTablesPage';
-import HandwritingRecognition from '../pages/PDFTools/HandwritingRecognitionPage';
-import FillPdfFormPage from '../pages/PDFTools/FillPdfFormPage';
-import FormRecognitionPage from '../pages/PDFTools/FormRecognitionPage';
-import CalculateFieldsPage from '../pages/PDFTools/CalculateFieldsPage';
-import PdfInfoPage from '../pages/PDFTools/PdfInfoPage';
-import PdfValidatorPage from '../pages/PDFTools/PdfValidatorPage';
-import PdfComparePage from '../pages/PDFTools/PdfComparePage';
-import PdfRepairPage from '../pages/PDFTools/PdfRepairPage';
-import PdfBookmarksPage from '../pages/PDFTools/PdfBookmarksPage';
-import PdfStatisticsPage from '../pages/PDFTools/PdfStatisticsPage';
-import SharedDocumentPage from '../pages/DocumentService/SharedDocumentPage';
-import SharedDocument from '../pages/SharedDocument';
 // import HowItWorksPage from '../pages/LandingPage/HowItWorks';
-import StatusPage from '../pages/LandingPage/StatusPage';
-import ContactSales from '../pages/LandingPage/ContactSales';
-import BlogPage from '../pages/LandingPage/BlogPage';
-import AboutPage from '../pages/LandingPage/AboutPage';
-import WhyDocuSignerPage from '../pages/LandingPage/WhyDocuSignerPage';
-import LoginPage from '../pages/LandingPage/LoginPage';
-import SignupPage from '../pages/LandingPage/SignupPage';
-import FederatedOAuthCallbackPage from '../pages/LandingPage/FederatedOAuthCallbackPage';
-import ForgotPasswordPage from '../pages/LandingPage/ForgotPasswordPage';
-import ResetPasswordPage from '../pages/LandingPage/ResetPasswordPage';
-import PrivacyPolicyPage from '../pages/LandingPage/PrivacyPolicyPage';
-import CookiePolicyPage from '../pages/LandingPage/CookiePolicyPage';
-import TermsOfServicePage from '../pages/LandingPage/TermsOfServicePage';
-import UseCasesPage from '../pages/LandingPage/UseCasesPage';
-import WorkspacePage from '../pages/LandingPage/WorkspacePage';
-import FeatureComparisonPage from '../pages/LandingPage/FeatureComparisonPage';
-import SitemapPage from '../pages/LandingPage/SitemapPage';
-import ChoosePlanPage from '../pages/LandingPage/ChoosePlanPage';
-import NotFoundPage from '../pages/LandingPage/NotFoundPage';
 
 // Dashboard Pages
-import DashboardPage from '../pages/Dashboard/DashboardPage';
-import AuditTrailPage from '../pages/Dashboard/AuditTrailPage';
-import CreditsUsagePage from '../pages/Dashboard/CreditsUsagePage';
-import CompliancePage from '../pages/Dashboard/CompliancePage';
-import RiskManagementPage from '../pages/Dashboard/RiskManagementPage';
 import { useDocumentStore } from '../components/common/store/documentStore';
 import { EnhancedDocumentGrid } from '../components/DocumentService/documents/EnhancedDocumentGrid';
 import { DocumentList } from '../components/DocumentService/documents/DocumentList';
@@ -102,48 +218,14 @@ import { DocumentLayout } from '../components/DocumentService/layout/DocumentLay
 import { UploadModal } from '../components/DocumentService/modals/UploadModal';
 import { CollaborationHub } from '../components/DocumentService/collaboration/CollaborationHub';
 
-import { SharedDocumentsPage } from '../pages/DocumentService/SharedDocumentsPage';
-import SharedPDFPage from '../pages/DocumentService/SharedPDFPage';
-import FoldersPage from '../pages/DocumentService/FoldersPage';
-import RecentPage from '../pages/DocumentService/RecentPage';
-import FavoritesPage from '../pages/DocumentService/FavoritesPage';
-import ArchivedPage from '../pages/DocumentService/ArchivedPage';
-import TrashPage from '../pages/DocumentService/TrashPage';
 
 // E-Signature Pages Started
-import EsignDashboard from '../pages/eSign/Dashboard';
 // import EsignEnvelopeCreator from '../pages/eSign/EnvelopeCreator';
 // import EsignEnvelopeDetails from '../pages/eSign/EnvelopeDetails';
-import EsignSigningPage from '../pages/eSign/SigningPage';
-import EsignAnalytics from '../pages/eSign/Analytics';
-import EsignSettings from '../pages/eSign/Settings';
-import EsignEnterpriseSettings from '../pages/eSign/EnterpriseSettings';
-import EsignESignatureAdmin from '../pages/eSign/ESignatureAdmin';
-import { PowerFormEmbed } from '../pages/eSign/PowerFormEmbed';
 // E-Signature Pages Ended
 
 // Template Pages Started
 // import { Navigation } from './components/Navigation';
-import { Dashboard as TemplateDashboard } from '../pages/Template/Dashboard';
-import { TemplateDesigner } from '../pages/Template/TemplateDesigner';
-import { AdvancedTemplateDesigner } from '../pages/Template/AdvancedTemplateDesigner';
-import { AITemplateStudio } from '../pages/Template/AITemplateStudio';
-import { TemplateLibrary } from '../pages/Template/TemplateLibrary';
-import { FormBuilder } from '../pages/Template/FormBuilder';
-import { TemplateMarketplace } from '../pages/Template/TemplateMarketplace';
-import { Analytics as TemplateAnylytics } from '../pages/Template/Analytics';
-import { APIManagement } from '../pages/Template/APIManagement';
-import { WorkflowAutomation } from '../pages/Template/WorkflowAutomation';
-import { TemplateAdminDashboard } from '../pages/Template/TemplateAdminDashboard';
-import { FormsList } from '../pages/Template/FormList';
-import { FormView } from '../pages/Template/FormView';
-import { FormEmbed } from '../pages/Template/FormEmbed';
-import { FormSubmissions } from '../pages/Template/FormSubmissions';
-import AITemplateGenerator from '../pages/Template/AITemplateGenerator';
-import UserProfile from '../pages/Account/UserProfile';
-import RewardsPage from '../pages/Account/RewardsPage';
-import SessionManagementPage from '../pages/Account/SessionManagementPage';
-import AuthMethodsPage from '../pages/Account/AuthMethodsPage';
 // Template Pages Ended
 
 
@@ -152,87 +234,18 @@ import type { PDFTool, ProcessingStats } from '../types';
 import { mockPDFTools, mockProcessingStats, getActiveMockTools } from '../data/pdfMockData';
 import { toolCatalogService } from '../services/toolCatalogService';
 import { adminServiceApi } from '../services/apiHelper';
-import { ToolsGrid } from '../components/PDFService/ToolsGrid';
-import { HelpSystem } from '../components/PDFService/HelpSystem';
-import { CloudConnector } from '../components/PDFService/CloudConnector';
-import { WorkflowDesigner } from '../components/PDFService/WorkflowDesigner';
-import { Analytics } from '../components/PDFService/Analytics';
 // import { PDFEditor } from '../components/PDFService/PDFEditor';
 // import { PDFViewer } from '../components/PDFService/PDFViewer';
-import { Header } from '../components/PDFService/Header';
-import { PdftoDoc } from '../pages/PDFTools/PDFtoDoc';
-import { DoctoPdf } from '../pages/PDFTools/DoctoPdf';
-import { PdfToExcel } from '../pages/PDFTools/PdftoExcel';
-import { ExcelToPdf } from '../pages/PDFTools/ExceltoPdf';
-import { PdftoPpt } from '../pages/PDFTools/PdftoPpt';
-import { PptToPdf } from '../pages/PDFTools/PpttoPDF';
-import { PdftoText } from '../pages/PDFTools/PdftoText';
-import { TextToPdf } from '../pages/PDFTools/TextToPDF';
-import { PdfToHtml } from '../pages/PDFTools/PdfToHtml';
-import { HtmlToPdf } from '../pages/PDFTools/HtmltoPdf';
-import { PdfToImage } from '../pages/PDFTools/PdftoImage';
-import { ImageToPDF } from '../pages/PDFTools/ImageToPdf';
-import { PdfToEpub } from '../pages/PDFTools/PdfToEpub';
-import { BatchConversion } from '../pages/PDFTools/BatchConversion';
-import AddWatermark from '../components/PDFService/AddWatermark';
 
 // Api-service imports started 
-import ApiServiceDashboard from '../pages/ApiService/Dashboard/main';
-import ApiServiceAnalytics from '../pages/ApiService/Analytics/Main';
-import ApiServiceProjects from '../pages/ApiService/Projects/Main';
-import ApiServiceKey from '../pages/ApiService/Key/Main';
-import ApiServiceExplorer from '../pages/ApiService/Explorer/ApiExplorer';
-import ApiServiceDocumentation from '../pages/ApiService/Documentation/Main';
-import ApiServiceWebhooks from '../pages/ApiService/Webhooks/Main';
-import ApiServiceSDK from '../pages/ApiService/Sdk/main';
-import ApiServiceTesting from '../pages/ApiService/Testing/Main';
-import ApiServiceMarketPlace from '../pages/ApiService/MarketPlace/Main';
-import ApiServiceCommunity from '../pages/ApiService/Community/Main';
-import ApiServiceSupport from '../pages/ApiService/Support/Main';
-import PublicSignerPage from '../pages/eSign/PublicSignerPage';
-import RecipientPortalPage from '../pages/eSign/RecipientPortalPage';
-import CreatePdfFormPage from '../pages/PDFTools/CreatePdfFormPage';
-import OAuthCallback from '../pages/OAuthCallback';
-import { PdfEditorPage } from '../pages/PDFTools/PdfEditor';
-import { PowerForm } from '../pages/eSign/PowerForm';
-import AdvancedPDFEditor from '../components/PDFService/AdvancedPDFEditor';
-import { AccessibilityPage, AIFeatures, AllInOnePlatformPage, APIDocumentationPage, BugBountyPage, DataResidencyPage, DocuSignerVsAdobeSignPage, DocuSignerVsDocuSignPage, DocuSignerVsHelloSignPage, DocuSignerVsPandaDocPage, UploadDocumentPage, SignerPage } from '../pages/LandingPage';
-import SecurityOverviewPage from '../pages/LandingPage/SecurityOverviewPage';
-import ESignServiceWebAppPage from '../pages/LandingPage/InsidePages/ESignServiceWebAppPage';
-import AIPoweredFeaturesPage from '../pages/LandingPage/AIPoweredFeaturesPage';
-import EnvelopeDetailPage from '../pages/eSign/EnvelopeDetailPage';
-import EnvelopeCreator from '../pages/eSign/EnvelopeCreator';
-import AgreementPage from '../pages/eSign/AgreementPage';
-import EnvelopeTypes from '../pages/eSign/EnvelopeTypes';
-import ManageRecipients from '../pages/eSign/ManageRecipients';
-import EnvelopeGuideSupport from '../pages/eSign/EnvelopeGuideSupport';
-import HelpSupportPage from '../pages/LandingPage/HelpSupportPage';
 // import { elements } from 'chart.js';
-import PowerFormCreate from '../pages/eSign/PowerFormCreate';
-import SubscriptionManagementPage from '../pages/Account/SubscriptionManagementPage';
-import InvoicePage from '../pages/Account/InvoicePage';
-import ThankYouPage from '../pages/eSign/ThankYou';
-import SignerStatusPage from '../pages/eSign/SignerStatusPage';
-import FinishLaterPage from '../pages/eSign/FinishLaterPage';
-import NotificationsPage from '../pages/Notifications/NotificationsPage';
-import SignerCycle from '../pages/eSign/SignerCycle';
-import CreateOrganizationPage from '../pages/Organization/CreateOrganizationPage';
-import MyOrganizationPage from '../pages/Organization/MyOrganizationPage';
-import OrganizationFolder from '../pages/Organization/organizationFolder';
 
 import ClientsSection from '../components/LandingPage/clientSection';
 import IndustriesSection from '../components/LandingPage/IndustriesSection';
-import BookDemoPage from '../pages/LandingPage/BookDemoPage';
 
-import EmailPage from '../pages/EmailService/EmailPage';
-import EmailTemplatesBuilder from '../pages/EmailService/EmailTemplatesBuilder';
-import InvitationPage from '../pages/Organization/invitaionPage';
-import FolderDetailPage from '../pages/Organization/folderDetailPage';
-import RolePage from '../pages/Organization/RolePage';
 import AadhaarSignatureJourneySection from '../components/LandingPage/AadhaarSignatureJourneySection';
 import ContractManagementSection from '../components/LandingPage/ContractManagementSection';
 import DigitaCertificate from '../components/LandingPage/DigitaCertificate';
-import CouponPage from '../pages/Account/CouponPage';
 
 // Lightweight wrapper to show PDF header on individual tool pages
 //const PDFToolHeaderWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {

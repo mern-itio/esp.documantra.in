@@ -42,6 +42,19 @@ server {
     proxy_connect_timeout 60s;
     proxy_send_timeout 300s;
 
+    # Compress text assets — critical for ~11MB JS bundle on first load
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_comp_level 5;
+    gzip_types
+        text/plain
+        text/css
+        application/json
+        application/javascript
+        application/xml
+        image/svg+xml;
+
     # VAPT L22/L25 — security headers (server block only; do NOT repeat HSTS in location {})
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
@@ -160,6 +173,22 @@ server {
         root /var/www/draft-and-sign;
         add_header Cache-Control "no-store, no-cache, must-revalidate, private" always;
         include /etc/nginx/snippets/vapt-user-spa-headers.conf;
+    }
+
+    # Hashed Vite assets — long cache (filename changes on each build)
+    location ^~ /assets/ {
+        root /var/www/draft-and-sign;
+        expires 1y;
+        add_header Cache-Control "public, immutable" always;
+        try_files $uri =404;
+    }
+
+    # Static media/fonts — moderate cache
+    location ~* \.(avif|webp|woff2?|ttf|svg|ico|mp4|mjs)$ {
+        root /var/www/draft-and-sign;
+        expires 30d;
+        add_header Cache-Control "public" always;
+        try_files $uri =404;
     }
 
     location = /404.html {

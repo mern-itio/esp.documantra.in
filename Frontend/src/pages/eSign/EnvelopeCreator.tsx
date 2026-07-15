@@ -175,6 +175,13 @@ const isPublicFlow =
   const [signatureFields, setSignatureFields] = useState<EditorSignatureFieldExt[]>([]);
   const [sending, setSending] = useState(false);
   const [nextLoading, setNextLoading] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState<{
+    message: string;
+    completed: number;
+    total: number;
+    remaining: number;
+    percent: number;
+  } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const hasAutoAddedRecipient = useRef(false);
   const [isOnlySigner, setIsOnlySigner] = useState(false);
@@ -1602,10 +1609,43 @@ const isPublicFlow =
   };
 
   const LoaderPlaceholder = ({ doc }: { doc: (typeof documents)[number] }) => (
-    <div className="flex h-full w-full items-center justify-center p-2 text-center">
-      <p className="line-clamp-4 text-[10px] text-muted-foreground">{doc.name}</p>
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-2 text-center">
+      {doc.isUploading && (
+        <svg className="h-5 w-5 animate-spin text-[#1B4D3E]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+        </svg>
+      )}
+      <p className="line-clamp-3 text-[10px] text-muted-foreground">{doc.name}</p>
+      {doc.isUploading && (
+        <p className="text-[9px] font-semibold text-[#1B4D3E]">{doc.uploadProgress ?? 0}%</p>
+      )}
     </div>
   );
+
+  const renderBatchUploadProgress = () => {
+    if (!processingProgress || processingProgress.total <= 0) return null;
+    const { message, completed, total, remaining, percent } = processingProgress;
+    return (
+      <div className="rounded-lg border border-[#1B4D3E]/20 bg-[#F7F3EE] px-4 py-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+          <span className="font-medium text-foreground">{message}</span>
+          <span className="text-muted-foreground">
+            <span className="font-semibold text-[#1B4D3E]">{completed}</span> of {total} done
+            {' · '}
+            <span className="font-semibold text-amber-700">{remaining}</span> remaining
+          </span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-white">
+          <div
+            className="h-full rounded-full bg-[#1B4D3E] transition-all duration-300"
+            style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+          />
+        </div>
+        <p className="mt-1.5 text-xs text-muted-foreground">{percent}% complete</p>
+      </div>
+    );
+  };
 
   const renderDocumentFanCard = (doc: (typeof documents)[number], index: number) => (
     <div
@@ -1822,23 +1862,39 @@ const isPublicFlow =
       return false; // failure
     }
 
-    // mark as uploading
-    setDocuments((prev) =>
-      prev.map((doc) => ({ ...doc, isUploading: true, uploadProgress: 0 }))
-    );
-
-    let loopEnvelopeId = envelopeId; // local variable
+    // mark as uploading — progress tracked per file in the loop below
+    const uploadableDocs = documents.filter((doc) => doc.file);
+    const totalUploads = uploadableDocs.length;
+    let loopEnvelopeId = envelopeId;
+    let completedUploads = 0;
     let uploadFailed = false;
     let lastUploadError = '';
 
-    for (const doc of documents) {
+    setProcessingProgress({
+      message: 'Preparing upload…',
+      completed: 0,
+      total: totalUploads,
+      remaining: totalUploads,
+      percent: 0,
+    });
+
+    for (const doc of uploadableDocs) {
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === doc.id ? { ...d, isUploading: true, uploadProgress: 0 } : d
+        )
+      );
+
+      setProcessingProgress({
+        message: `Uploading ${doc.name}`,
+        completed: completedUploads,
+        total: totalUploads,
+        remaining: totalUploads - completedUploads,
+        percent: totalUploads > 0 ? Math.round((completedUploads / totalUploads) * 100) : 0,
+      });
+
       const formData = new FormData();
-      if (doc.file) {
-        formData.append('files', doc.file, doc.name);
-      } else {
-        console.warn('Skipping document with no file:', doc.name);
-        continue;
-      }
+      formData.append('files', doc.file!, doc.name);
 
       if (loopEnvelopeId) formData.append('envelopeId', loopEnvelopeId);
       // Include name, subject, message and envelopetype from Step 1
@@ -1859,12 +1915,22 @@ const isPublicFlow =
               const percent = Math.round(
                 (progressEvent.loaded * 100) / progressEvent.total
               );
+              const overallPercent = totalUploads > 0
+                ? Math.round(((completedUploads + percent / 100) / totalUploads) * 100)
+                : percent;
 
               setDocuments((prev) =>
                 prev.map((d) =>
                   d.id === doc.id ? { ...d, uploadProgress: percent } : d
                 )
               );
+              setProcessingProgress({
+                message: `Uploading ${doc.name}`,
+                completed: completedUploads,
+                total: totalUploads,
+                remaining: Math.max(0, totalUploads - completedUploads - 1),
+                percent: overallPercent,
+              });
             }
           },
         });
@@ -1873,6 +1939,7 @@ const isPublicFlow =
           loopEnvelopeId = response.data.data.envelopeId;
         }
 
+        completedUploads += 1;
         setDocuments((prev) =>
           prev.map((d) =>
             d.id === doc.id
@@ -1880,6 +1947,13 @@ const isPublicFlow =
               : d
           )
         );
+        setProcessingProgress({
+          message: completedUploads === totalUploads ? 'Finalizing…' : 'Uploading next file…',
+          completed: completedUploads,
+          total: totalUploads,
+          remaining: totalUploads - completedUploads,
+          percent: totalUploads > 0 ? Math.round((completedUploads / totalUploads) * 100) : 100,
+        });
       } catch (err) {
         console.error('Upload failed for', doc.name, err);
         uploadFailed = true;
@@ -1893,6 +1967,8 @@ const isPublicFlow =
         );
       }
     }
+
+    setProcessingProgress(null);
 
     if (uploadFailed) {
       await Swal.fire({
@@ -2506,6 +2582,10 @@ if (isPublicFlow) {
         }
       }
       if (currentStep === 3) {
+        if (!(await warnPendingDocumentsWithoutFields())) {
+          setNextLoading(false);
+          return;
+        }
         if (signatureFields.length === 0) {
           alert('Please add at least one signature field.');
           return;
@@ -2538,8 +2618,7 @@ if (isPublicFlow) {
       console.error('handleNext error:', err);
       // optionally surface error to user
     } finally {
-      // small delay to avoid flicker (optional)
-      // await new Promise(r => setTimeout(r, 150));
+      setProcessingProgress(null);
       setNextLoading(false);
     }
   };
@@ -3008,11 +3087,48 @@ if (response.status == 200) {
     return { valid: true };
   };
 
+  const getPendingDocumentsWithoutFields = () =>
+    (documents || []).filter(
+      (doc) => !signatureFields.some((f) => (f.docId ?? f.documentId) === doc.id)
+    );
+
+  const warnPendingDocumentsWithoutFields = async () => {
+    const pending = getPendingDocumentsWithoutFields();
+    if (pending.length === 0) return true;
+
+    const total = documents?.length || 0;
+    const withFields = total - pending.length;
+    const fileList = pending
+      .map(
+        (doc) =>
+          `<li style="margin-bottom:8px;"><strong>${doc.name}</strong><br/><span style="color:#92400e;">Signature/field place nahi hua — is file par action pending hai.</span></li>`
+      )
+      .join('');
+
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Action required',
+      html: `
+        <p style="margin-bottom:12px;text-align:left;">
+          <strong>${pending.length}</strong> of <strong>${total}</strong> files par abhi tak koi signature ya field place nahi hua
+          (${withFields} complete, ${pending.length} pending):
+        </p>
+        <ul style="text-align:left;padding-left:18px;margin:0;">${fileList}</ul>
+      `,
+      confirmButtonText: 'OK',
+    });
+    return false;
+  };
+
   const handleSendEnvelope = async () => {
     console.log('handleSendEnvelope called', { envelopeId, mode });
     if (!envelopeId) {
       toast.error('Envelope ID is missing. Please save the envelope first.');
       console.error('Cannot send envelope: envelopeId is missing');
+      return;
+    }
+
+    if (!(await warnPendingDocumentsWithoutFields())) {
       return;
     }
 
@@ -4058,6 +4174,7 @@ if (isPublicFlow) {
                     <span className="font-medium text-foreground">{formatFileSize(totalUploadedBytes)}</span> total
                   </p>
                 )}
+                {renderBatchUploadProgress()}
                 {renderDocumentFanLayout()}
               </div>
             )}
@@ -6492,17 +6609,38 @@ if (isPublicFlow) {
                   <button
                     onClick={handleNext}
                     disabled={nextLoading}
-                    className="flex items-center gap-2 px-6 py-2 bg-[#260559] text-white rounded-lg hover:bg-[#260559]/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex min-w-[220px] flex-col items-end gap-2 px-6 py-2 bg-[#260559] text-white rounded-lg hover:bg-[#260559]/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     data-tour="ec-next-button"
                   >
                     {nextLoading ? (
-                      <>
-                        <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                        </svg>
-                        Processing...
-                      </>
+                      processingProgress ? (
+                        <>
+                          <div className="flex w-full items-center gap-2">
+                            <svg className="h-4 w-4 shrink-0 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                            </svg>
+                            <span className="truncate text-sm">
+                              {processingProgress.completed}/{processingProgress.total} done · {processingProgress.remaining} left
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/25">
+                            <div
+                              className="h-full rounded-full bg-white transition-all duration-300"
+                              style={{ width: `${processingProgress.percent}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-white/80">{processingProgress.percent}%</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                          </svg>
+                          Processing...
+                        </>
+                      )
                     ) : (
                       <>Next<ArrowLeft className="w-4 h-4 rotate-180" /></>
                     )}
