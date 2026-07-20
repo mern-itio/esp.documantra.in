@@ -178,7 +178,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return (
       path.includes('/e-sign/signer/') ||
       path.startsWith('/e-sign/recipient-portal') ||
-      path.startsWith('/public-sign')
+      path.startsWith('/public-sign') ||
+      path === '/login' ||
+      path === '/signup' ||
+      path === '/forgot-password' ||
+      path === '/reset-password' ||
+      path.startsWith('/oauth/callback/')
     );
   };
 

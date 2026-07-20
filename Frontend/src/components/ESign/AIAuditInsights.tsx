@@ -163,7 +163,12 @@ const AIAuditInsights: React.FC = () => {
   const pieData = [
     { name: 'AI Generated', value: insightsData.aiGeneratedVsManual.aiGenerated },
     { name: 'Manual', value: insightsData.aiGeneratedVsManual.manual }
-  ];
+  ].filter((entry) => Number(entry.value) > 0);
+
+  const pieTotal = pieData.reduce((sum, entry) => sum + Number(entry.value || 0), 0);
+  const monthlyHasData = insightsData.monthlyComparison.some(
+    (entry) => Number(entry.aiGenerated) > 0 || Number(entry.manual) > 0
+  );
 
   const pieColors = ['var(--chart-1)', 'var(--chart-2)'];
 
@@ -294,6 +299,7 @@ const AIAuditInsights: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {pieTotal > 0 ? (
         <div className="bg-card rounded-xl shadow-sm border border-border p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">AI Generated vs Manual Documents</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -316,7 +322,13 @@ const AIAuditInsights: React.FC = () => {
             </PieChart>
           </ResponsiveContainer>
         </div>
+        ) : (
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6 flex items-center justify-center min-h-[300px]">
+            <p className="text-sm text-muted-foreground">No document activity yet for AI vs manual comparison.</p>
+          </div>
+        )}
 
+        {monthlyHasData ? (
         <div className="bg-card rounded-xl shadow-sm border border-border p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">Monthly Trend (Last 6 Months)</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -331,6 +343,11 @@ const AIAuditInsights: React.FC = () => {
             </BarChart>
           </ResponsiveContainer>
         </div>
+        ) : (
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6 flex items-center justify-center min-h-[300px]">
+            <p className="text-sm text-muted-foreground">No monthly document trend data yet.</p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

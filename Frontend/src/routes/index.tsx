@@ -517,7 +517,8 @@ const PrivateRoute = ({ children }: { children: React.ReactElement }) => {
 
 // Guest Route Wrapper
 const GuestRoute = ({ children }: { children: React.ReactElement }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return null;
   return !isAuthenticated ? children : <Navigate to="/dashboard" />;
 };
 function DocumentView() {

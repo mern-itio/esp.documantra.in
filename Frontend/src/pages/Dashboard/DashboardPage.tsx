@@ -240,9 +240,15 @@ const DashboardPage: React.FC = () => {
 
   const moduleBarData = useMemo(() => {
     return Object.entries(moduleTotals)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ name, value: Number(value) || 0 }))
+      .filter((entry) => Boolean(entry.name))
       .sort((a, b) => b.value - a.value);
   }, [moduleTotals]);
+
+  const moduleBarChartData = useMemo(
+    () => moduleBarData.filter((entry) => entry.value > 0),
+    [moduleBarData]
+  );
 
   const radarData = useMemo(() => {
     const used = chartData.reduce((sum: number, d: any) => sum + d.used, 0);
@@ -280,10 +286,10 @@ const DashboardPage: React.FC = () => {
   };
 
   const hasChartMetrics = useMemo(() => {
-    const hasModuleUsage = moduleBarData.some((entry) => entry.value > 0);
-    const hasCreditActivity = chartData.some((entry: any) => entry.used > 0 || entry.added > 0);
-    return hasModuleUsage || hasCreditActivity;
-  }, [moduleBarData, chartData]);
+    const hasModuleUsage = moduleBarChartData.length > 0;
+    const hasRadarMetrics = radarData.some((entry) => Number(entry.value) > 0);
+    return hasModuleUsage || hasRadarMetrics;
+  }, [moduleBarChartData, radarData]);
 
   return (
     <div className=" space-y-8">
@@ -497,11 +503,12 @@ const DashboardPage: React.FC = () => {
           ) : hasChartMetrics && chartsReady ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                {moduleBarChartData.length > 0 ? (
                 <div className="xl:col-span-6 min-w-0 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4">
                   <h3 className="text-sm font-bold text-foreground mb-3">Module Usage</h3>
                   <div className="h-72 w-full min-w-0">
                     <ResponsiveContainer width="100%" height={288} minWidth={0}>
-                      <BarChart data={moduleBarData} layout="vertical" margin={{ left: 14, right: 10, top: 6, bottom: 6 }}>
+                      <BarChart data={moduleBarChartData} layout="vertical" margin={{ left: 14, right: 10, top: 6, bottom: 6 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.55} />
                         <XAxis type="number" stroke="var(--muted-foreground)" style={{ fontSize: '11px' }} />
                         <YAxis dataKey="name" type="category" width={90} stroke="var(--muted-foreground)" style={{ fontSize: '11px' }} />
@@ -526,7 +533,7 @@ const DashboardPage: React.FC = () => {
                           }}
                         />
                         <Bar dataKey="value"  barSize={45} radius={[0, 6, 6, 0]}>
-                        {moduleBarData.map((entry, index) => (
+                        {moduleBarChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={moduleChartColors[entry.name] || 'var(--chart-1)'} />
                         ))}
                       </Bar>
@@ -534,8 +541,10 @@ const DashboardPage: React.FC = () => {
                     </ResponsiveContainer>
                   </div>
                 </div>
+                ) : null}
               
-                <div className="xl:col-span-6 min-w-0 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4">
+                {radarData.some((entry) => Number(entry.value) > 0) ? (
+                <div className={`${moduleBarChartData.length > 0 ? 'xl:col-span-6' : 'xl:col-span-12'} min-w-0 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4`}>
                   <h3 className="text-sm font-bold text-foreground mb-3">Credit Usage</h3>
                   <div className="h-72 w-full min-w-0">
                     <ResponsiveContainer width="100%" height={288} minWidth={0}>
@@ -548,6 +557,7 @@ const DashboardPage: React.FC = () => {
                     </ResponsiveContainer>
                   </div>
                 </div>
+                ) : null}
               </div>
             </div>
           ) : (
