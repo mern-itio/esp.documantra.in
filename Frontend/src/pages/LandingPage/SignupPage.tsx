@@ -880,7 +880,7 @@ const SignupPage = () => {
 
                       <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isLoading || !formData.agreeToTerms}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#155E4B] to-emerald-700 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#155E4B]/30 transition hover:shadow-xl hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isLoading ? (
