@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import AIAuditInsights from '../../components/ESign/AIAuditInsights';
+import { ChartErrorBoundary, CHART_HEX } from '../../components/common/ChartErrorBoundary';
 
 const DashboardPage: React.FC = () => {
   const { user, accountType, dismissFirstLogin } = useAuth();
@@ -240,49 +241,54 @@ const DashboardPage: React.FC = () => {
 
   const moduleBarData = useMemo(() => {
     return Object.entries(moduleTotals)
-      .map(([name, value]) => ({ name, value: Number(value) || 0 }))
-      .filter((entry) => Boolean(entry.name))
+      .map(([name, value]) => ({
+        name: String(name || '').trim(),
+        value: Number(value) || 0,
+      }))
+      .filter((entry) => entry.name.length > 0)
       .sort((a, b) => b.value - a.value);
   }, [moduleTotals]);
 
   const moduleBarChartData = useMemo(
-    () => moduleBarData.filter((entry) => entry.value > 0),
+    () => moduleBarData.filter((entry) => entry.value > 0 && entry.name),
     [moduleBarData]
   );
 
   const radarData = useMemo(() => {
-    const used = chartData.reduce((sum: number, d: any) => sum + d.used, 0);
-    const added = chartData.reduce((sum: number, d: any) => sum + d.added, 0);
+    const used = chartData.reduce((sum: number, d: any) => sum + (Number(d?.used) || 0), 0);
+    const added = chartData.reduce((sum: number, d: any) => sum + (Number(d?.added) || 0), 0);
     const total = Number(envelopeStats?.totalEnvelopes || 0);
     const completed = Number(envelopeStats?.completedEnvelopes || 0);
     const pending = Number(envelopeStats?.pendingEnvelopes || 0);
+    const creditBalance = Number(balance || 0);
     const dynamic = {
       volumeMax: Math.max(10, total, completed + pending),
       queueMax: Math.max(5, pending, Math.ceil(total * 0.6)),
-      creditMax: Math.max(50, Number(balance || 0), used, added),
+      creditMax: Math.max(50, creditBalance, used, added),
       usageMax: Math.max(20, used, added),
     };
     const normalize = (n: number, max: number) => {
-      const scaled = Math.min(100, Math.round((n / Math.max(1, max)) * 100));
+      const safeN = Number.isFinite(n) ? Math.max(0, n) : 0;
+      const scaled = Math.min(100, Math.round((safeN / Math.max(1, max)) * 100));
       // Keep non-zero metrics visible in radar so "small but real" values are not invisible.
-      return n > 0 ? Math.max(12, scaled) : 0;
+      return safeN > 0 ? Math.max(12, scaled) : 0;
     };
     return [
       { metric: 'Volume', value: normalize(total, dynamic.volumeMax) },
       { metric: 'Completed', value: normalize(completed, Math.max(1, total)) },
       { metric: 'Queue', value: normalize(pending, dynamic.queueMax) },
-      { metric: 'Credits', value: normalize(Number(balance || 0), dynamic.creditMax) },
+      { metric: 'Credits', value: normalize(creditBalance, dynamic.creditMax) },
       { metric: 'Usage', value: normalize(used, dynamic.usageMax) },
       { metric: 'Topups', value: normalize(added, dynamic.usageMax) },
-    ];
+    ].filter((entry) => typeof entry.metric === 'string' && entry.metric.length > 0);
   }, [chartData, envelopeStats, balance]);
 
   const moduleChartColors: Record<string, string> = {
-    'E-Sign': 'var(--chart-1)',
-    'PDF Tools': 'var(--chart-2)',
-    Document: 'var(--chart-3)',
-    Authentication: 'var(--chart-4)',
-    Other: 'var(--chart-5)',
+    'E-Sign': CHART_HEX.chart1,
+    'PDF Tools': CHART_HEX.chart2,
+    Document: CHART_HEX.chart3,
+    Authentication: CHART_HEX.chart4,
+    Other: CHART_HEX.chart5,
   };
 
   const hasChartMetrics = useMemo(() => {
@@ -492,15 +498,8 @@ const DashboardPage: React.FC = () => {
               <Loader2 className="w-6 h-6 text-primary animate-spin" />
               <span className="ml-3 text-sm text-muted-foreground">Loading usage history...</span>
             </div>
-          ) : usage.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="p-4 rounded-full bg-muted mb-3">
-                <Zap className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium text-foreground mb-1">No recent usage</p>
-              <p className="text-xs text-muted-foreground">Your credit transactions will appear here</p>
-            </div>
           ) : hasChartMetrics && chartsReady ? (
+            <ChartErrorBoundary>
             <div className="space-y-6">
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
                 {moduleBarChartData.length > 0 ? (
@@ -509,11 +508,11 @@ const DashboardPage: React.FC = () => {
                   <div className="h-72 w-full min-w-0">
                     <ResponsiveContainer width="100%" height={288} minWidth={0}>
                       <BarChart data={moduleBarChartData} layout="vertical" margin={{ left: 14, right: 10, top: 6, bottom: 6 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.55} />
-                        <XAxis type="number" stroke="var(--muted-foreground)" style={{ fontSize: '11px' }} />
-                        <YAxis dataKey="name" type="category" width={90} stroke="var(--muted-foreground)" style={{ fontSize: '11px' }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_HEX.grid} opacity={0.55} />
+                        <XAxis type="number" scale="linear" stroke={CHART_HEX.axis} tick={{ fill: CHART_HEX.axis, fontSize: 11 }} />
+                        <YAxis dataKey="name" type="category" scale="band" width={90} stroke={CHART_HEX.axis} tick={{ fill: CHART_HEX.axis, fontSize: 11 }} />
                         <Tooltip
-                          cursor={{ fill: 'var(--muted)', opacity: 0.2 }}
+                          cursor={{ fill: CHART_HEX.muted, opacity: 0.2 }}
                           content={({ active, payload, label }) => {
                             if (!active || !payload?.length) return null;
                             const raw = payload[0]?.value;
@@ -521,7 +520,7 @@ const DashboardPage: React.FC = () => {
                             const display = Number.isFinite(n) ? n.toLocaleString() : String(raw ?? '—');
                             return (
                               <div className="rounded-lg border border-border bg-card px-3 py-2.5 text-sm shadow-lg">
-                                <p className="font-semibold leading-tight text-foreground">{label}</p>
+                                <p className="font-semibold leading-tight text-foreground">{String(label ?? '—')}</p>
                                 <p className="mt-1.5 text-xs">
                                   <span className="text-muted-foreground">Usage: </span>
                                   <span className="font-semibold tabular-nums text-foreground">
@@ -532,9 +531,9 @@ const DashboardPage: React.FC = () => {
                             );
                           }}
                         />
-                        <Bar dataKey="value"  barSize={45} radius={[0, 6, 6, 0]}>
+                        <Bar dataKey="value" barSize={45} radius={[0, 6, 6, 0]}>
                         {moduleBarChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={moduleChartColors[entry.name] || 'var(--chart-1)'} />
+                          <Cell key={`cell-${index}`} fill={moduleChartColors[entry.name] || CHART_HEX.chart1} />
                         ))}
                       </Bar>
                       </BarChart>
@@ -549,16 +548,25 @@ const DashboardPage: React.FC = () => {
                   <div className="h-72 w-full min-w-0">
                     <ResponsiveContainer width="100%" height={288} minWidth={0}>
                       <RadarChart data={radarData}>
-                        <PolarGrid stroke="var(--border)" />
-                        <PolarAngleAxis dataKey="metric" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} />
-                        <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar dataKey="value" stroke="var(--chart-5)" fill="var(--chart-4)" fillOpacity={0.35} />
+                        <PolarGrid stroke={CHART_HEX.grid} />
+                        <PolarAngleAxis dataKey="metric" type="category" tick={{ fill: CHART_HEX.axis, fontSize: 10 }} />
+                        <PolarRadiusAxis scale="linear" domain={[0, 100]} tick={false} axisLine={false} />
+                        <Radar dataKey="value" stroke={CHART_HEX.chart5} fill={CHART_HEX.chart4} fillOpacity={0.35} isAnimationActive={false} />
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
                 ) : null}
               </div>
+            </div>
+            </ChartErrorBoundary>
+          ) : usage.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="p-4 rounded-full bg-muted mb-3">
+                <Zap className="w-6 h-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">No recent usage</p>
+              <p className="text-xs text-muted-foreground">Your credit transactions will appear here</p>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -585,7 +593,9 @@ const DashboardPage: React.FC = () => {
         )}
       </div>
       <div className="bg-muted/40 rounded-xl p-6 border border-border">
-        <AIAuditInsights />
+        <ChartErrorBoundary>
+          <AIAuditInsights />
+        </ChartErrorBoundary>
       </div>
     </div>
   );

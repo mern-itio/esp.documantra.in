@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { ChartErrorBoundary, CHART_HEX } from '../common/ChartErrorBoundary';
 
 interface AIInsightsData {
   mostUsedTemplates: Array<{ name: string; count: number; percentage: number }>;
@@ -163,23 +164,24 @@ const AIAuditInsights: React.FC = () => {
   const pieData = [
     { name: 'AI Generated', value: insightsData.aiGeneratedVsManual.aiGenerated },
     { name: 'Manual', value: insightsData.aiGeneratedVsManual.manual }
-  ].filter((entry) => Number(entry.value) > 0);
+  ].filter((entry) => Number(entry.value) > 0 && entry.name);
 
   const pieTotal = pieData.reduce((sum, entry) => sum + Number(entry.value || 0), 0);
   const monthlyHasData = insightsData.monthlyComparison.some(
     (entry) => Number(entry.aiGenerated) > 0 || Number(entry.manual) > 0
   );
 
-  const pieColors = ['var(--chart-1)', 'var(--chart-2)'];
+  const pieColors = [CHART_HEX.chart1, CHART_HEX.chart2];
 
   const chartTooltipStyle = {
-    backgroundColor: 'var(--card)',
-    border: '1px solid var(--border)',
+    backgroundColor: '#ffffff',
+    border: `1px solid ${CHART_HEX.grid}`,
     borderRadius: '0.5rem',
-    color: 'var(--foreground)',
+    color: '#0f172a',
   };
 
   return (
+    <ChartErrorBoundary>
     <div className="space-y-6 text-card-foreground">
       <div className="p-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -309,10 +311,11 @@ const AIAuditInsights: React.FC = () => {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
+                label={({ name, percent }) => `${name ?? 'Item'}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                 outerRadius={80}
-                fill="var(--chart-1)"
+                fill={CHART_HEX.chart1}
                 dataKey="value"
+                isAnimationActive={false}
               >
                 {pieData.map((_entry, index) => (
                   <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
@@ -333,13 +336,13 @@ const AIAuditInsights: React.FC = () => {
           <h3 className="text-lg font-semibold text-foreground mb-4">Monthly Trend (Last 6 Months)</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={insightsData.monthlyComparison}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.6} />
-              <XAxis dataKey="month" stroke="var(--muted-foreground)" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} />
-              <YAxis stroke="var(--muted-foreground)" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_HEX.grid} opacity={0.6} />
+              <XAxis dataKey="month" type="category" scale="band" stroke={CHART_HEX.axis} tick={{ fill: CHART_HEX.axis, fontSize: 11 }} />
+              <YAxis type="number" scale="linear" stroke={CHART_HEX.axis} tick={{ fill: CHART_HEX.axis, fontSize: 11 }} />
               <Tooltip contentStyle={chartTooltipStyle} />
-              <Legend wrapperStyle={{ color: 'var(--foreground)' }} />
-              <Bar dataKey="aiGenerated" fill="var(--chart-1)" name="AI Generated" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="manual" fill="var(--chart-2)" name="Manual" radius={[4, 4, 0, 0]} />
+              <Legend wrapperStyle={{ color: '#0f172a' }} />
+              <Bar dataKey="aiGenerated" fill={CHART_HEX.chart1} name="AI Generated" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="manual" fill={CHART_HEX.chart2} name="Manual" radius={[4, 4, 0, 0]} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -434,6 +437,7 @@ const AIAuditInsights: React.FC = () => {
         </div>
       </div>
     </div>
+    </ChartErrorBoundary>
   );
 };
 
