@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { authenticator } = require('otplib');
 const User  = require('../models/User');
+const SignupEmailVerification = require('../models/SignupEmailVerification');
 const { attachReferralOnSignup } = require('./referralController');
 const { isEmailValid, getPasswordPolicyError, getPlainTextFieldError } = require('@draftnsign/validators');
 const { sendPasswordResetEmail, sendVerificationOtpEmail, sendNewLoginAlertEmail } = require('../utils/email');
@@ -216,6 +217,114 @@ function decodeSignupToken(signupToken) {
   }
   return decoded;
 }
+
+function issueEmailVerificationToken(email) {
+  return jwt.sign(
+    { email: String(email).trim().toLowerCase(), purpose: 'signup_email_verified' },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: '30m' }
+  );
+}
+
+function decodeEmailVerificationToken(token, expectedEmail) {
+  const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+  const normalizedEmail = String(expectedEmail || '').trim().toLowerCase();
+  if (decoded?.purpose !== 'signup_email_verified' || !decoded?.email) {
+    throw new Error('Invalid email verification token');
+  }
+  if (decoded.email !== normalizedEmail) {
+    throw new Error('Email verification token does not match this email');
+  }
+  return decoded;
+}
+
+/** Pre-signup: check if email exists; if new, send OTP. */
+const requestSignupEmailVerification = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+  if (!isEmailValid(email)) return res.status(400).json({ message: 'Invalid email format' });
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  try {
+    const existing = await User.findOne({ email: normalizedEmail }).select('_id status');
+    if (existing && existing.status !== false) {
+      return res.status(409).json({
+        exists: true,
+        message: 'An account with this email already exists. Please sign in instead.',
+      });
+    }
+
+    const otp = generateOtp();
+    const otpExpires = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+    await SignupEmailVerification.findOneAndUpdate(
+      { email: normalizedEmail },
+      { email: normalizedEmail, otpHash: hashOtp(otp), otpExpires, verified: false },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const sent = await sendVerificationOtpEmail(normalizedEmail, otp, null, OTP_EXPIRY_MINUTES);
+    if (!sent) {
+      return res.status(503).json({
+        message: 'Unable to send verification email right now. Please try again in a few minutes.',
+      });
+    }
+
+    return res.status(200).json({
+      exists: false,
+      otpSent: true,
+      message: 'Verification code sent to your email.',
+    });
+  } catch (err) {
+    console.error('requestSignupEmailVerification', err);
+    return res.status(500).json({ message: 'Something went wrong. Please try again.' });
+  }
+};
+
+/** Pre-signup: confirm email OTP before account creation. */
+const confirmSignupEmailVerification = async (req, res) => {
+  const { email, emailOtp } = req.body;
+  if (!email || !emailOtp) {
+    return res.status(400).json({ message: 'Email and verification code are required' });
+  }
+  if (!isEmailValid(email)) return res.status(400).json({ message: 'Invalid email format' });
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const code = String(emailOtp).replace(/\D/g, '').slice(0, 6);
+  if (code.length !== 6) {
+    return res.status(400).json({ message: 'Please enter the 6-digit verification code' });
+  }
+
+  try {
+    const existing = await User.findOne({ email: normalizedEmail }).select('_id status');
+    if (existing && existing.status !== false) {
+      return res.status(409).json({
+        exists: true,
+        message: 'An account with this email already exists. Please sign in instead.',
+      });
+    }
+
+    const record = await SignupEmailVerification.findOne({ email: normalizedEmail });
+    if (!record?.otpExpires || record.otpExpires < new Date()) {
+      return res.status(400).json({ message: 'Verification code expired. Please request a new one.' });
+    }
+    if (record.otpHash !== hashOtp(code)) {
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+
+    record.verified = true;
+    record.otpHash = null;
+    record.otpExpires = null;
+    await record.save();
+
+    return res.status(200).json({
+      message: 'Email verified successfully',
+      emailVerificationToken: issueEmailVerificationToken(normalizedEmail),
+    });
+  } catch (err) {
+    console.error('confirmSignupEmailVerification', err);
+    return res.status(500).json({ message: 'Something went wrong. Please try again.' });
+  }
+};
 
 async function sendEmailOtp(user) {
   const emailOtp = generateOtp();
@@ -992,6 +1101,7 @@ const register = async (req, res) => {
     termsVersion,
     privacyVersion,
     marketingVersion,
+    emailVerificationToken,
   } = req.body;
 
   if (!agreeToTerms) {
@@ -1039,7 +1149,105 @@ const register = async (req, res) => {
     return res.status(400).json({ message: passwordError });
   }
 
+  let emailPreVerified = false;
+  if (emailVerificationToken) {
+    try {
+      decodeEmailVerificationToken(emailVerificationToken, normalizedEmail);
+      const pending = await SignupEmailVerification.findOne({ email: normalizedEmail, verified: true });
+      emailPreVerified = Boolean(pending);
+    } catch (tokenErr) {
+      return res.status(400).json({ message: 'Please verify your email address before creating an account.' });
+    }
+  }
+  if (!emailPreVerified) {
+    return res.status(400).json({ message: 'Please verify your email address before creating an account.' });
+  }
+
   try {
+    if (emailPreVerified) {
+      const user = await User.create({
+        fullname: normalizedFullname,
+        email: normalizedEmail,
+        phone: normalizedPhone || '',
+        password,
+        company: company ? String(company).trim() : '',
+        address: address ? String(address).trim() : '',
+        plan: 'free',
+        emailVerified: true,
+        phoneVerified: true,
+        emailOtpHash: null,
+        emailOtpExpires: null,
+        phoneOtpHash: null,
+        phoneOtpExpires: null,
+      });
+
+      await recordConsentEntries(req, [
+        {
+          consentType: CONSENT_TYPES.TERMS_OF_SERVICE,
+          consentVersion: termsVersion || DEFAULT_CONSENT_VERSIONS.terms_of_service,
+          granted: true,
+          subjectType: SUBJECT_TYPES.USER,
+          subjectId: user._id,
+          userId: user._id,
+          source: CONSENT_SOURCES.SIGNUP,
+        },
+        {
+          consentType: CONSENT_TYPES.PRIVACY_POLICY,
+          consentVersion: privacyVersion || DEFAULT_CONSENT_VERSIONS.privacy_policy,
+          granted: true,
+          subjectType: SUBJECT_TYPES.USER,
+          subjectId: user._id,
+          userId: user._id,
+          source: CONSENT_SOURCES.SIGNUP,
+        },
+        {
+          consentType: CONSENT_TYPES.MARKETING_EMAIL,
+          consentVersion: marketingVersion || DEFAULT_CONSENT_VERSIONS.marketing_email,
+          granted: Boolean(subscribeNewsletter),
+          subjectType: SUBJECT_TYPES.USER,
+          subjectId: user._id,
+          userId: user._id,
+          source: CONSENT_SOURCES.SIGNUP,
+        },
+      ]);
+
+      try {
+        await axios.post(`${process.env.ESING_SERVICE_URL}/api/e-sign/public/link-user-recipient`, {
+          email: user.email,
+          userId: user._id,
+        }, { timeout: 5000 });
+      } catch (linkErr) {
+        console.warn('E-sign link-user-recipient failed:', linkErr?.message);
+      }
+
+      try {
+        await attachReferralOnSignup(user._id, ref || referrerUserId);
+      } catch (refErr) {
+        console.warn('Referral attach failed:', refErr?.message);
+      }
+
+      await SignupEmailVerification.deleteOne({ email: normalizedEmail });
+
+      const tokenPayload = await maybeIssueAccessTokenIfVerified(user, res, req);
+      if (tokenPayload) {
+        return res.status(201).json({
+          ...tokenPayload,
+          user_id: tokenPayload.user_id?.toString?.() ?? tokenPayload.user_id,
+          loggedIn: true,
+          message: 'Account created successfully',
+        });
+      }
+
+      const signupToken = issueSignupToken(user._id);
+      return res.status(201).json({
+        message: 'Account created successfully',
+        signupToken,
+        emailSent: true,
+        loggedIn: false,
+        ...verificationState(user),
+      });
+    }
+
     // Sequential verification: send email OTP first; phone OTP is sent only after email verification.
     const emailOtp = generateOtp();
     const emailOtpExpires = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
@@ -2037,6 +2245,8 @@ module.exports = {
   verifyAuthenticatorTwoFaSetup,
   regenerateAuthenticatorBackupCodes,
   register,
+  requestSignupEmailVerification,
+  confirmSignupEmailVerification,
   // Sequential signup verification
   sendSignupEmailOtp,
   verifySignupEmailOtp,

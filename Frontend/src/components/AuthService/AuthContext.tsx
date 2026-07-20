@@ -49,9 +49,8 @@ interface AuthContextType {
     fullname: string;
     email: string;
     phone: string;
-    address: string;
-    company: string;
     password: string;
+    emailVerificationToken: string;
     recaptchaToken?: string;
     referrerUserId?: string;
     agreeToTerms?: boolean;
@@ -59,7 +58,9 @@ interface AuthContextType {
     termsVersion?: string;
     privacyVersion?: string;
     marketingVersion?: string;
-  }) => Promise<{ signupToken: string }>;
+  }) => Promise<{ signupToken?: string; loggedIn: boolean }>;
+  requestSignupEmailVerification: (email: string) => Promise<{ exists: boolean; otpSent?: boolean; message: string }>;
+  confirmSignupEmailVerification: (email: string, emailOtp: string) => Promise<{ emailVerificationToken: string; message: string }>;
   sendSignupEmailOtp: (signupToken: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean }>;
   verifySignupEmailOtp: (signupToken: string, emailOtp: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean; loggedIn: boolean }>;
   sendSignupPhoneOtp: (signupToken: string) => Promise<{ emailVerified: boolean; phoneVerified: boolean; canSendPhoneOtp: boolean }>;
@@ -610,13 +611,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const requestSignupEmailVerification = async (email: string) => {
+    try {
+      const res = await authApi.post('/signup/request-email-verification', {
+        email: email.trim().toLowerCase(),
+      });
+      return {
+        exists: false,
+        otpSent: !!res.data?.otpSent,
+        message: res.data?.message || 'Verification code sent to your email.',
+      };
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        return {
+          exists: true,
+          message:
+            error.response?.data?.message ||
+            'An account with this email already exists. Please sign in instead.',
+        };
+      }
+      throw new Error(error.response?.data?.message || error.message || 'Failed to verify email');
+    }
+  };
+
+  const confirmSignupEmailVerification = async (email: string, emailOtp: string) => {
+    try {
+      const res = await authApi.post('/signup/confirm-email-verification', {
+        email: email.trim().toLowerCase(),
+        emailOtp: emailOtp.trim(),
+      });
+      if (!res.data?.emailVerificationToken) {
+        throw new Error('Email verification succeeded but no token was returned');
+      }
+      return {
+        emailVerificationToken: res.data.emailVerificationToken,
+        message: res.data.message || 'Email verified successfully',
+      };
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        throw new Error(
+          error.response?.data?.message ||
+            'An account with this email already exists. Please sign in instead.'
+        );
+      }
+      throw new Error(error.response?.data?.message || error.message || 'Invalid verification code');
+    }
+  };
+
   const signup = async (userData: {
     fullname: string;
     email: string;
     phone: string;
-    address: string;
-    company: string;
     password: string;
+    emailVerificationToken: string;
     recaptchaToken?: string;
     referrerUserId?: string;
     agreeToTerms?: boolean;
@@ -625,12 +672,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     privacyVersion?: string;
     marketingVersion?: string;
   }) => {
-    const data = await apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
+    const data = unwrapAuthJson(await apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
       method: 'POST',
       body: JSON.stringify(userData),
-    });
+    }));
+    if (data.loggedIn && (data.user_id || data.token)) {
+      await applyLoginPayload(data);
+      return { loggedIn: true, signupToken: data.signupToken };
+    }
     if (!data.signupToken) throw new Error('Signup succeeded but no verification token received');
-    return { signupToken: data.signupToken, emailSent: data.emailSent !== false };
+    return { signupToken: data.signupToken, loggedIn: false };
   };
 
   const sendSignupEmailOtp = async (signupToken: string) => {
@@ -721,6 +772,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     applyLoginFromOAuthPayload,
     logout,
     signup,
+    requestSignupEmailVerification,
+    confirmSignupEmailVerification,
     sendSignupEmailOtp,
     verifySignupEmailOtp,
     sendSignupPhoneOtp,

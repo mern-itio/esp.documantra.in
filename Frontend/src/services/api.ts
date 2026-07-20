@@ -16,6 +16,8 @@ export const API_ENDPOINTS = {
     VERIFY_2FA_RECOVERY_ANSWERS: `${API_CONFIG.BASE_URL}/2fa/recovery/verify-answers`,
     VERIFY_2FA_RECOVERY_OTP: `${API_CONFIG.BASE_URL}/2fa/recovery/verify-otp`,
     REGISTER: `${API_CONFIG.BASE_URL}/register`,
+    SIGNUP_REQUEST_EMAIL_VERIFICATION: `${API_CONFIG.BASE_URL}/signup/request-email-verification`,
+    SIGNUP_CONFIRM_EMAIL_VERIFICATION: `${API_CONFIG.BASE_URL}/signup/confirm-email-verification`,
     SIGNUP_SEND_EMAIL_OTP: `${API_CONFIG.BASE_URL}/signup/send-email-otp`,
     SIGNUP_VERIFY_EMAIL_OTP: `${API_CONFIG.BASE_URL}/signup/verify-email-otp`,
     SIGNUP_SEND_PHONE_OTP: `${API_CONFIG.BASE_URL}/signup/send-phone-otp`,

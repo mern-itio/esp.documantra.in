@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { login, getLoginPublicKey, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoverySingleAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp, sendRecoveryEmailOtp, verifyRecoveryEmailOtp, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, regenerateAuthenticatorBackupCodes, register, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, changePassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, getSecurityPolicy, verifyActiveSession, validateSessionEndpoint, logout } = require('../controllers/authController');
+const { login, getLoginPublicKey, verifyTwoFaLogin, getTwoFaRecoveryQuestions, verifyTwoFaRecoverySingleAnswer, verifyTwoFaRecoveryAnswers, verifyTwoFaRecoveryOtp, sendRecoveryEmailOtp, verifyRecoveryEmailOtp, getTwoFaSettings, updateTwoFaSettings, setupAuthenticatorTwoFa, verifyAuthenticatorTwoFaSetup, regenerateAuthenticatorBackupCodes, register, requestSignupEmailVerification, confirmSignupEmailVerification, sendSignupEmailOtp, verifySignupEmailOtp, sendSignupPhoneOtp, verifySignupPhoneOtp, getMe, switchAccount, getUsersList, forgotPassword, resetPassword, changePassword, updateProfile, sendProfileEmailOtp, verifyProfileEmailOtp, sendProfilePhoneOtp, verifyProfilePhoneOtp, getSessions, revokeSession, getSecurityPolicy, verifyActiveSession, validateSessionEndpoint, logout } = require('../controllers/authController');
 const { getMyReferral, listRewards, onFirstDocumentSentInternal } = require('../controllers/referralController');
 const {adminLogin, adminVerifyTwoFaLogin, getAdminTwoFaSettings, setupAdminAuthenticatorTwoFa, verifyAdminAuthenticatorTwoFaSetup, adminForgotPassword, adminResetPassword, adminChangePassword, getAdminMe, adminLogout, getAdminSocketToken, validateAdminSessionEndpoint} = require('../controllers/adminAuthController');
 const { userDetails,findUserByEmail,insertNotifications,getNotifications,markNotificationReadById,markAllNotificationAsRead } = require('../controllers/mainController');
@@ -70,6 +70,8 @@ router.post('/admin-reset-password', resetPasswordLimiter, adminResetPassword);
 router.post('/admin/change-password', verifyJWT('admin'), adminChangePassword);
 router.post('/admin-change-password', verifyJWT('admin'), adminChangePassword);
 router.post('/register', otpLimiter, register);
+router.post('/signup/request-email-verification', otpLimiter, requestSignupEmailVerification);
+router.post('/signup/confirm-email-verification', otpLimiter, confirmSignupEmailVerification);
 router.post('/signup/send-email-otp', otpLimiter, sendSignupEmailOtp);
 router.post('/signup/verify-email-otp', verifySignupEmailOtp);
 router.post('/signup/send-phone-otp', otpLimiter, sendSignupPhoneOtp);
