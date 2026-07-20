@@ -612,27 +612,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const requestSignupEmailVerification = async (email: string) => {
-    try {
-      const res = await authApi.post('/signup/request-email-verification', {
-        email: email.trim().toLowerCase(),
-      });
+    const res = await authApi.post(
+      '/signup/request-email-verification',
+      { email: email.trim().toLowerCase() },
+      { validateStatus: (status) => status === 200 || status === 409 || status === 503 },
+    )
+
+    if (res.status === 409) {
       return {
-        exists: false,
-        otpSent: !!res.data?.otpSent,
-        message: res.data?.message || 'Verification code sent to your email.',
-      };
-    } catch (error: any) {
-      if (error.response?.status === 409) {
-        return {
-          exists: true,
-          message:
-            error.response?.data?.message ||
-            'An account with this email already exists. Please sign in instead.',
-        };
+        exists: true,
+        message:
+          res.data?.message ||
+          'An account with this email already exists. Please sign in instead.',
       }
-      throw new Error(error.response?.data?.message || error.message || 'Failed to verify email');
     }
-  };
+
+    if (res.status === 503) {
+      throw new Error(res.data?.message || 'Unable to send verification email right now.')
+    }
+
+    return {
+      exists: false,
+      otpSent: !!res.data?.otpSent,
+      message: res.data?.message || 'Verification code sent to your email.',
+    }
+  }
 
   const confirmSignupEmailVerification = async (email: string, emailOtp: string) => {
     try {
