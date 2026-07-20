@@ -130,12 +130,14 @@ async function googleLoginFederated(req, res) {
     } else {
       return res.status(400).json({ message: 'Google token or authorization code required' });
     }
-    return handleOAuthLogin(req, res, identity, 'Google', { ref, referrerUserId });
+    return await handleOAuthLogin(req, res, identity, 'Google', { ref, referrerUserId });
   } catch (error) {
     console.error('Google login error:', error);
-    return res.status(error.status || 500).json({
-      message: error.message || 'Google login failed',
-    });
+    if (!res.headersSent) {
+      return res.status(error.status || 500).json({
+        message: error.message || 'Google login failed',
+      });
+    }
   }
 }
 
@@ -150,12 +152,14 @@ async function facebookLoginFederated(req, res) {
     } else {
       return res.status(400).json({ message: 'Facebook access token or authorization code required' });
     }
-    return handleOAuthLogin(req, res, identity, 'Facebook', { ref, referrerUserId });
+    return await handleOAuthLogin(req, res, identity, 'Facebook', { ref, referrerUserId });
   } catch (error) {
     console.error('Facebook login error:', error);
-    return res.status(error.status || 500).json({
-      message: error.message || 'Facebook login failed',
-    });
+    if (!res.headersSent) {
+      return res.status(error.status || 500).json({
+        message: error.message || 'Facebook login failed',
+      });
+    }
   }
 }
 
@@ -166,12 +170,14 @@ async function linkedinLoginFederated(req, res) {
   }
   try {
     const identity = await exchangeLinkedInCode(code, redirectUri);
-    return handleOAuthLogin(req, res, identity, 'LinkedIn', { ref, referrerUserId });
+    return await handleOAuthLogin(req, res, identity, 'LinkedIn', { ref, referrerUserId });
   } catch (error) {
     console.error('LinkedIn login error:', error);
-    return res.status(error.status || 500).json({
-      message: error.message || 'LinkedIn login failed',
-    });
+    if (!res.headersSent) {
+      return res.status(error.status || 500).json({
+        message: error.message || 'LinkedIn login failed',
+      });
+    }
   }
 }
 
@@ -182,12 +188,14 @@ async function twitterLoginFederated(req, res) {
   }
   try {
     const identity = await exchangeTwitterCode(code, redirectUri, codeVerifier);
-    return handleOAuthLogin(req, res, identity, 'X', { ref, referrerUserId });
+    return await handleOAuthLogin(req, res, identity, 'X', { ref, referrerUserId });
   } catch (error) {
     console.error('X login error:', error);
-    return res.status(error.status || 500).json({
-      message: error.message || 'X login failed',
-    });
+    if (!res.headersSent) {
+      return res.status(error.status || 500).json({
+        message: error.message || 'X login failed',
+      });
+    }
   }
 }
 

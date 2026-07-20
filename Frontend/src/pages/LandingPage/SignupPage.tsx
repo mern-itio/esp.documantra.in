@@ -737,6 +737,8 @@ const SignupPage = () => {
                         )}
                       </div>
 
+                      {emailPreVerified ? (
+                        <>
                       <div className="grid gap-3.5 sm:grid-cols-2">
                         <div className="space-y-1.5">
                           <label htmlFor="password" className="block text-xs font-semibold text-slate-800">
@@ -878,7 +880,7 @@ const SignupPage = () => {
 
                       <button
                         type="submit"
-                        disabled={isLoading || !emailPreVerified}
+                        disabled={isLoading}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#155E4B] to-emerald-700 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#155E4B]/30 transition hover:shadow-xl hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isLoading ? (
@@ -893,6 +895,12 @@ const SignupPage = () => {
                           </>
                         )}
                       </button>
+                        </>
+                      ) : (
+                        <p className="rounded-xl border border-dashed border-[#E6D8C9] bg-[#F7F3EE]/50 px-4 py-3 text-center text-xs text-slate-500">
+                          Verify your email above to unlock password fields and finish creating your account.
+                        </p>
+                      )}
 
                       <div className="relative py-1">
                         <div className="absolute inset-0 flex items-center">
