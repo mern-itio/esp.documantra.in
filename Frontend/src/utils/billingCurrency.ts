@@ -1,12 +1,17 @@
-/** Billing display defaults to INR for DocuMantra. */
+/** Billing currency helpers — display exactly what admin/package stores. */
 
 export const DEFAULT_BILLING_CURRENCY = 'INR'
 
+const LOCALE_BY_CURRENCY: Record<string, string> = {
+  INR: 'en-IN',
+  USD: 'en-US',
+  EUR: 'en-IE',
+  GBP: 'en-GB',
+}
+
 export function normalizeBillingCurrency(currency?: string | null): string {
-  const curr = String(currency || DEFAULT_BILLING_CURRENCY).trim().toUpperCase()
-  // Legacy rows / packages often stored USD while product is INR-priced.
-  if (!curr || curr === 'USD') return DEFAULT_BILLING_CURRENCY
-  return curr
+  const curr = String(currency || '').trim().toUpperCase()
+  return curr || DEFAULT_BILLING_CURRENCY
 }
 
 export function formatBillingAmount(
@@ -17,15 +22,16 @@ export function formatBillingAmount(
   const curr = normalizeBillingCurrency(currency)
   if (!Number.isFinite(n)) return `— ${curr}`
 
+  const locale = LOCALE_BY_CURRENCY[curr] || 'en-US'
   try {
-    return new Intl.NumberFormat('en-IN', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: curr,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(n)
   } catch {
-    const symbol = curr === 'INR' ? '₹' : `${curr} `
+    const symbol = curr === 'INR' ? '₹' : curr === 'USD' ? '$' : `${curr} `
     return `${symbol}${n.toFixed(2)}`
   }
 }

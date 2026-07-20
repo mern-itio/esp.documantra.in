@@ -21,6 +21,7 @@ export interface FlexibleCreditPackage {
   _id: string;
   name: string;
   description?: string;
+  currency?: string;
   ranges: FlexibleCreditRange[];
 }
 
@@ -257,6 +258,7 @@ static async getCreditPackages(): Promise<any[]> {
         _id: payload._id,
         name: payload.name || 'Flexible Credit Plan',
         description: payload.description || '',
+        currency: String(payload.currency || 'INR').toUpperCase(),
         ranges: payload.ranges
           .map((range: any) => ({
             min: Number(range?.min),

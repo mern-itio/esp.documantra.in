@@ -6,7 +6,7 @@ import {
   SubscriptionService,
   type FlexibleCreditRange,
 } from '../../services/subscriptionService';
-import { formatBillingAmount, normalizeBillingCurrency } from '../../utils/billingCurrency';
+import { formatBillingAmount } from '../../utils/billingCurrency';
 
 interface CreditPurchaseModalProps {
   open: boolean;
@@ -24,6 +24,7 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
   const [purchaseMode, setPurchaseMode] = useState<'package' | 'desired'>('package');
   const [desiredCreditPriceTiers, setDesiredCreditPriceTiers] = useState<FlexibleCreditRange[]>([]);
   const [flexiblePackageId, setFlexiblePackageId] = useState<string>('');
+  const [flexibleCurrency, setFlexibleCurrency] = useState<string>('INR');
 
   useEffect(() => {
     if (!open) return;
@@ -41,6 +42,7 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
         if (flexiblePackage?.ranges?.length) {
           setDesiredCreditPriceTiers(flexiblePackage.ranges);
           setFlexiblePackageId(flexiblePackage._id || '');
+          setFlexibleCurrency(String(flexiblePackage.currency || 'INR').toUpperCase());
         }
         const preferred = nextPackages.find((p) => p.isPopular) || nextPackages[0];
         setSelectedPackageId((preferred?._id || preferred?.id || '').toString());
@@ -137,7 +139,7 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
   };
 
   const formatCurrency = (currency: string | undefined, amount: number) =>
-    formatBillingAmount(amount, normalizeBillingCurrency(currency));
+    formatBillingAmount(amount, currency);
 
   const selectedPackage = useMemo(() => {
     if (!packages.length) return null;
@@ -146,6 +148,11 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
       packages[0]
     );
   }, [packages, selectedPackageId]);
+
+  const displayCurrency =
+    purchaseMode === 'desired'
+      ? flexibleCurrency || selectedPackage?.currency || 'INR'
+      : selectedPackage?.currency || 'INR';
 
   const pricingInfo = useMemo(() => {
     if (!selectedPackage) return null;
@@ -305,9 +312,9 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                   <div className="mt-1 text-3xl font-extrabold text-foreground">
                     {purchaseMode === 'desired'
                       ? normalizedDesiredCredits
-                        ? formatCurrency(selectedPackage.currency, desiredCreditPricing?.total || 0)
+                        ? formatCurrency(displayCurrency, desiredCreditPricing?.total || 0)
                         : 'Enter credits'
-                      : formatCurrency(selectedPackage.currency, selectedPackage.price)}
+                      : formatCurrency(displayCurrency, selectedPackage.price)}
                     {purchaseMode === 'package' && (
                       <span className="text-base font-semibold text-muted-foreground"> only</span>
                     )}
@@ -315,8 +322,8 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                   {purchaseMode === 'desired' && normalizedDesiredCredits && desiredCreditPricing && (
                     <p className="mt-1 text-xs text-muted-foreground">
                       {desiredCreditPricing.breakdown
-                        ? /* tiered */ <>Effective rate: <span className="font-semibold text-foreground">{formatCurrency(selectedPackage.currency, desiredCreditPricing.perCredit)}/credit</span> (blended across tiers)</>
-                        : /* slab   */ <>{normalizedDesiredCredits.toLocaleString()} credits × {formatCurrency(selectedPackage.currency, desiredCreditPricing.perCredit)}/credit</>
+                        ? /* tiered */ <>Effective rate: <span className="font-semibold text-foreground">{formatCurrency(displayCurrency, desiredCreditPricing.perCredit)}/credit</span> (blended across tiers)</>
+                        : /* slab   */ <>{normalizedDesiredCredits.toLocaleString()} credits × {formatCurrency(displayCurrency, desiredCreditPricing.perCredit)}/credit</>
                       }
                     </p>
                   )}
@@ -465,8 +472,8 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                                           </span>
                                         </td>
                                         <td className="px-3 py-2 text-right font-medium text-foreground">{creditsInTier.toLocaleString()}</td>
-                                        <td className="px-3 py-2 text-right text-muted-foreground">{formatCurrency(selectedPackage.currency, row.rate)}</td>
-                                        <td className="px-3 py-2 text-right font-semibold text-foreground">{formatCurrency(selectedPackage.currency, row.cost)}</td>
+                                        <td className="px-3 py-2 text-right text-muted-foreground">{formatCurrency(displayCurrency, row.rate)}</td>
+                                        <td className="px-3 py-2 text-right font-semibold text-foreground">{formatCurrency(displayCurrency, row.cost)}</td>
                                       </tr>
                                     );
                                   })}
@@ -476,12 +483,12 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
                                     <td colSpan={2} className="px-3 py-2.5 text-xs font-bold text-foreground">
                                       Total
                                       <span className="ml-2 text-[10px] font-normal text-muted-foreground">
-                                        (eff. {formatCurrency(selectedPackage.currency, desiredCreditPricing.perCredit)}/credit)
+                                        (eff. {formatCurrency(displayCurrency, desiredCreditPricing.perCredit)}/credit)
                                       </span>
                                     </td>
                                     <td className="px-3 py-2.5 text-right text-[10px] text-muted-foreground">{normalizedDesiredCredits?.toLocaleString()} credits</td>
                                     <td className="px-3 py-2.5 text-right text-sm font-extrabold text-primary">
-                                      {formatCurrency(selectedPackage.currency, desiredCreditPricing.total)}
+                                      {formatCurrency(displayCurrency, desiredCreditPricing.total)}
                                     </td>
                                   </tr>
                                 </tfoot>
