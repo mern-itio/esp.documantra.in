@@ -5,6 +5,7 @@ import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { useAuth } from '../../components/AuthService/AuthContext'
 import { FederatedLoginButtons } from '../../components/AuthService/FederatedLoginButtons'
+import { getPasswordChecks, getPasswordPolicyError } from '../../utils/passwordPolicy'
 
 type SignupStep = 'form' | 'verify'
 const OTP_EXPIRY_SECONDS = 10 * 60
@@ -48,7 +49,13 @@ const SignupPage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState('')
   const [errors, setErrors] = useState<{ [k: string]: string }>({})
-  const [passwordChecks, setPasswordChecks] = useState({ letter: false, number: false, length: false })
+  const [passwordChecks, setPasswordChecks] = useState({
+    lowercase: false,
+    uppercase: false,
+    number: false,
+    special: false,
+    length: false,
+  })
   const [passwordFocused, setPasswordFocused] = useState(false)
   const [bookOpen, setBookOpen] = useState(false)
   const [referralInviteBannerDismissed, setReferralInviteBannerDismissed] = useState(false)
@@ -114,13 +121,8 @@ const SignupPage = () => {
         return ''
       }
       case 'password': {
-        const v = String(value)
-        if (!v) return 'Password is required'
-        if (v.length < 8) return 'Password must be at least 8 characters'
-        if (!/[A-Z]/.test(v)) return 'Must include an uppercase letter'
-        if (!/[a-z]/.test(v)) return 'Must include a lowercase letter'
-        if (!/\d/.test(v)) return 'Must include a number'
-        return ''
+        const policyError = getPasswordPolicyError(String(value))
+        return policyError || ''
       }
       case 'confirmPassword': {
         const v = String(value)
@@ -322,12 +324,7 @@ const SignupPage = () => {
       [name]: type === 'checkbox' ? checked : value
     }))
     if (name === 'password') {
-      const v = String(value)
-      setPasswordChecks({
-        letter: /[A-Za-z]/.test(v),
-        number: /\d/.test(v),
-        length: v.length >= 8,
-      })
+      setPasswordChecks(getPasswordChecks(String(value)))
     }
     // Validate on change (lightweight)
     const msg = validateField(name, type === 'checkbox' ? checked : value, {
@@ -754,14 +751,22 @@ const SignupPage = () => {
                   </div>
                   {passwordFocused && formData.password.length > 0 && (
                     <div className="mt-2 p-2 bg-[#F5F2EE] rounded-lg animate-fade-in">
-                      <div className="grid grid-cols-3 gap-1.5 text-xs">
-                        <div className={`flex items-center gap-1 transition-all duration-300 ${passwordChecks.letter ? 'text-green-600' : 'text-gray-500'}`}>
-                          {passwordChecks.letter ? (
+                      <div className="grid grid-cols-2 gap-1.5 text-xs sm:grid-cols-3">
+                        <div className={`flex items-center gap-1 transition-all duration-300 ${passwordChecks.uppercase ? 'text-green-600' : 'text-gray-500'}`}>
+                          {passwordChecks.uppercase ? (
                             <CheckCircle2 className="h-3 w-3 text-green-600" />
                           ) : (
                             <span className="inline-block w-1 h-1 rounded-full bg-gray-400" />
                           )}
-                          <span>Add atleast one letter</span>
+                          <span>Uppercase letter</span>
+                        </div>
+                        <div className={`flex items-center gap-1 transition-all duration-300 ${passwordChecks.lowercase ? 'text-green-600' : 'text-gray-500'}`}>
+                          {passwordChecks.lowercase ? (
+                            <CheckCircle2 className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <span className="inline-block w-1 h-1 rounded-full bg-gray-400" />
+                          )}
+                          <span>Lowercase letter</span>
                         </div>
                         <div className={`flex items-center gap-1 transition-all duration-300 ${passwordChecks.length ? 'text-green-600' : 'text-gray-500'}`}>
                           {passwordChecks.length ? (
@@ -769,7 +774,7 @@ const SignupPage = () => {
                           ) : (
                             <span className="inline-block w-1 h-1 rounded-full bg-gray-400" />
                           )}
-                          <span>Min. length 8 characters</span>
+                          <span>Min. 8 characters</span>
                         </div>
                         <div className={`flex items-center gap-1 transition-all duration-300 ${passwordChecks.number ? 'text-green-600' : 'text-gray-500'}`}>
                           {passwordChecks.number ? (
@@ -777,7 +782,15 @@ const SignupPage = () => {
                           ) : (
                             <span className="inline-block w-1 h-1 rounded-full bg-gray-400" />
                           )}
-                          <span>Add a number</span>
+                          <span>Number</span>
+                        </div>
+                        <div className={`flex items-center gap-1 transition-all duration-300 sm:col-span-2 ${passwordChecks.special ? 'text-green-600' : 'text-gray-500'}`}>
+                          {passwordChecks.special ? (
+                            <CheckCircle2 className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <span className="inline-block w-1 h-1 rounded-full bg-gray-400" />
+                          )}
+                          <span>Special character (@$!%*?&)</span>
                         </div>
                       </div>
                     </div>

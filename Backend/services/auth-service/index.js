@@ -2,6 +2,11 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 dotenv.config();
+
+// Auth-service hosts /admin/validate-session; skip auth-lib self-call via public nginx URL.
+if (!process.env.SKIP_ADMIN_TOKEN_REVOCATION_CHECK) {
+  process.env.SKIP_ADMIN_TOKEN_REVOCATION_CHECK = 'true';
+}
 const cors = require('cors');
 const { getCorsOptions, createErrorHandler, applySecurityHeaders } = require('@draftnsign/validators');
 const { connectDB } = require('./config/db');
