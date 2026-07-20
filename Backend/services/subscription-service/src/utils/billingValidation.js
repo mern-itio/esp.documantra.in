@@ -180,9 +180,23 @@ const validateCreditPackagePayload = (payload = {}, { isUpdate = false } = {}) =
     return { ok: false, message: 'price cannot be negative' };
   }
 
+  const allowedCurrencies = new Set(['INR', 'USD', 'EUR', 'GBP']);
+  let currency;
+  if (payload.currency !== undefined && payload.currency !== null && payload.currency !== '') {
+    const normalized = String(payload.currency).trim().toUpperCase();
+    if (!allowedCurrencies.has(normalized)) {
+      return { ok: false, message: 'currency must be one of INR, USD, EUR, GBP' };
+    }
+    currency = normalized;
+  }
+
+  const sanitized = sanitizeCreditPackagePayload(payload);
+  if (currency) sanitized.currency = currency;
+  else if (!isUpdate) sanitized.currency = 'INR';
+
   return {
     ok: true,
-    sanitized: sanitizeCreditPackagePayload(payload),
+    sanitized,
   };
 };
 

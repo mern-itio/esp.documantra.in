@@ -67,8 +67,8 @@ const updateCreditPackage = async (req, res) => {
     try {
         const { id } = req.params;
         const payload = req.body;
-        if (!payload.name && !payload.credits && !payload.price) {
-            return res.status(400).json({ message: 'At least one field (name, credits, or price) is required to update' });
+        if (!payload.name && !payload.credits && payload.price === undefined && !payload.currency) {
+            return res.status(400).json({ message: 'At least one field (name, credits, price, or currency) is required to update' });
         }
         const result = await servicePut(req, 'subscription', {
             url: `/admin/credit-packages/${id}`,
