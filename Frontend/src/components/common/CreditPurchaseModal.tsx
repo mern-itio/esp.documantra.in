@@ -6,6 +6,7 @@ import {
   SubscriptionService,
   type FlexibleCreditRange,
 } from '../../services/subscriptionService';
+import { formatBillingAmount, normalizeBillingCurrency } from '../../utils/billingCurrency';
 
 interface CreditPurchaseModalProps {
   open: boolean;
@@ -14,7 +15,7 @@ interface CreditPurchaseModalProps {
   lowCredits?: boolean;
 }
 
-export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, onClose, lowCredits = false }) => {
+export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, onClose, onPurchased: _onPurchased, lowCredits = false }) => {
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [loading, setLoading] = useState(false);
   const [purchasingPackageId, setPurchasingPackageId] = useState<string | null>(null);
@@ -53,16 +54,16 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
             _id: 'pkg-100',
             name: 'Starter',
             credits: 100,
-            price: 9.99,
-            currency: 'USD',
+            price: 499,
+            currency: 'INR',
             description: 'Perfect for getting started'
           },
           {
             _id: 'pkg-500',
             name: 'Professional',
             credits: 500,
-            price: 39.99,
-            currency: 'USD',
+            price: 1999,
+            currency: 'INR',
             description: 'Most popular choice',
             isPopular: true,
             discount: 15
@@ -71,8 +72,8 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
             _id: 'pkg-1000',
             name: 'Enterprise',
             credits: 1000,
-            price: 69.99,
-            currency: 'USD',
+            price: 3499,
+            currency: 'INR',
             description: 'For power users',
             discount: 25
           },
@@ -135,11 +136,8 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
     }
   };
 
-  const formatCurrency = (currency: string | undefined, amount: number) => {
-    const curr = (currency || 'USD').toUpperCase();
-    const symbol = curr === 'USD' ? '$' : `${curr} `;
-    return `${symbol}${amount.toFixed(2)}`;
-  };
+  const formatCurrency = (currency: string | undefined, amount: number) =>
+    formatBillingAmount(amount, normalizeBillingCurrency(currency));
 
   const selectedPackage = useMemo(() => {
     if (!packages.length) return null;

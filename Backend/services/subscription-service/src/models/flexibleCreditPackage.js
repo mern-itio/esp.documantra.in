@@ -26,7 +26,12 @@ const flexibleCreditPackageSchema = new mongoose.Schema({
     default: ''
   },
 
-  ranges: [creditRangeSchema]
+  ranges: [creditRangeSchema],
+
+  currency: {
+    type: String,
+    default: 'INR',
+  },
 
 }, { timestamps: true });
 

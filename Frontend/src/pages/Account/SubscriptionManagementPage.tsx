@@ -20,6 +20,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import type { Invoice } from '../../types';
 import { SubscriptionService } from '../../services/subscriptionService';
 import toast from 'react-hot-toast';
+import { formatBillingAmount } from '../../utils/billingCurrency';
 
 const SubscriptionManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -319,11 +320,8 @@ const SubscriptionManagementPage: React.FC = () => {
                           </div>
                           <div className="rounded-lg border border-border bg-muted/40 p-3">
                             <div className="text-xs text-muted-foreground">Amount</div>
-                            <div className="mt-1 text-sm font-semibold text-foreground">
-                              {latestInvoice.currency || 'USD'}{' '}
-                              {typeof latestInvoice.amount === 'number'
-                                ? latestInvoice.amount.toFixed(2)
-                                : latestInvoice.amount}
+                            <div className="mt-1 text-sm font-semibold tabular-nums text-foreground">
+                              {formatBillingAmount(latestInvoice.amount, latestInvoice.currency)}
                             </div>
                           </div>
                           <div className="rounded-lg border border-border bg-muted/40 p-3">

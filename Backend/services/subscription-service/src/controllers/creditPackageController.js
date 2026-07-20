@@ -105,8 +105,9 @@ const createCheckoutSession = async (req, res) => {
     if (!creditPackage) {
       return res.status(404).json({ status: 404, message: 'Credit package not found', data: null });
     }
-    const amount = Math.round(creditPackage.price * 100); // Convert to cents
-    const currency = (  creditPackage.currency || 'USD').toLowerCase();
+    const amount = Math.round(creditPackage.price * 100); // Convert to smallest currency unit
+    const rawCurrency = String(creditPackage.currency || 'INR').toLowerCase();
+    const currency = !rawCurrency || rawCurrency === 'usd' ? 'inr' : rawCurrency;
     const frontendBase = process.env.FRONTEND_BASE_URL ||
       process.env.BASE_URL ||
       'https://esp.documantra.in/';
@@ -172,7 +173,8 @@ const createFlexCheckoutSession = async (req, res)=>{
       return res.status(404).json({ status: 404, message: 'Flexible Credit package not found', data: null });
     }
     const amount = Math.round(Number(desiredCreditPricing) * 100);
-    const currency = (flexiblePackage?.currency || 'USD').toLowerCase();
+    const rawCurrency = String(flexiblePackage?.currency || 'INR').toLowerCase();
+    const currency = !rawCurrency || rawCurrency === 'usd' ? 'inr' : rawCurrency;
     const frontendBase = process.env.FRONTEND_BASE_URL ||
       process.env.BASE_URL ||
       'https://esp.documantra.in/';

@@ -6,6 +6,7 @@ import { SubscriptionService } from '../../services/subscriptionService';
 import { subscriptionApi } from '../../services/apiHelper';
 import { Button } from '../../components/DocumentService/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/DocumentService/ui/card';
+import { formatBillingAmount } from '../../utils/billingCurrency';
 
 const formatDate = (value?: string) => {
   if (!value) return '—';
@@ -143,11 +144,8 @@ const InvoicePage: React.FC = () => {
               </div>
               <div className="text-right">
                 <p className="mb-0.5 text-xs text-muted-foreground">Amount</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {invoice.currency || 'USD'}{' '}
-                  {typeof invoice.amount === 'number'
-                    ? invoice.amount.toFixed(2)
-                    : invoice.amount}
+                <p className="text-2xl font-bold tabular-nums text-foreground">
+                  {formatBillingAmount(invoice.amount, invoice.currency)}
                 </p>
               </div>
             </div>
