@@ -26,6 +26,15 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// OAuth callback is a single-use code exchange — allow more headroom than password login.
+const federatedLoginLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 15,
+  message: { status: 429, message: 'Too many sign-in attempts from this IP, please try again after a minute' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const otpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 10, // limit each IP to 10 OTP requests per windowMs
@@ -47,10 +56,10 @@ router.get('/login/public-key', getLoginPublicKey);
 router.get('/federated-login-providers', listPublicFederatedProviders);
 router.get('/api/auth/security-policy', getSecurityPolicy);
 router.post('/login', decryptLoginBodyMiddleware, login);
-router.post('/google-login', loginLimiter, googleLoginFederated);
-router.post('/facebook-login', loginLimiter, facebookLoginFederated);
-router.post('/linkedin-login', loginLimiter, linkedinLoginFederated);
-router.post('/twitter-login', loginLimiter, twitterLoginFederated);
+router.post('/google-login', federatedLoginLimiter, googleLoginFederated);
+router.post('/facebook-login', federatedLoginLimiter, facebookLoginFederated);
+router.post('/linkedin-login', federatedLoginLimiter, linkedinLoginFederated);
+router.post('/twitter-login', federatedLoginLimiter, twitterLoginFederated);
 router.post('/2fa/verify-login', loginLimiter, verifyTwoFaLogin);
 router.post('/2fa/recovery/questions', loginLimiter, getTwoFaRecoveryQuestions);
 router.post('/2fa/recovery/verify-answer', loginLimiter, verifyTwoFaRecoverySingleAnswer);

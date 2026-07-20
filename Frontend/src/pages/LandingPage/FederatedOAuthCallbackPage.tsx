@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { API_CONFIG } from '../../config/environment';
@@ -23,8 +23,12 @@ export default function FederatedOAuthCallbackPage() {
   const navigate = useNavigate();
   const { applyLoginFromOAuthPayload } = useAuth();
   const [error, setError] = useState('');
+  const exchangeStartedRef = useRef(false);
 
   useEffect(() => {
+    if (exchangeStartedRef.current) return;
+    exchangeStartedRef.current = true;
+
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const oauthError = searchParams.get('error');
@@ -76,6 +80,12 @@ export default function FederatedOAuthCallbackPage() {
             navigate(data?.setupPath || '/account/security', { replace: true });
             return;
           }
+          if (resp.status === 429) {
+            throw new Error(data?.message || 'Too many sign-in attempts. Wait a minute and try again from the login page.');
+          }
+          if (resp.status === 502 || resp.status === 503) {
+            throw new Error('Sign-in service is temporarily unavailable. Please try again in a moment.');
+          }
           throw new Error(data?.message || 'OAuth sign-in failed');
         }
         await applyLoginFromOAuthPayload(data);
@@ -87,7 +97,7 @@ export default function FederatedOAuthCallbackPage() {
         setError(err?.message || 'OAuth sign-in failed');
       }
     })();
-  }, [applyLoginFromOAuthPayload, navigate, provider, searchParams]);
+  }, [applyLoginFromOAuthPayload, navigate, provider, searchParams.toString()]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F7F3EE] px-4">
