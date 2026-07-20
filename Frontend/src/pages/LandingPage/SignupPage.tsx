@@ -355,7 +355,7 @@ const SignupPage = () => {
 
     if (!validateAll(formData)) {
       setFormError(
-        'Please fix the highlighted fields. Password must include uppercase, lowercase, a number, and a special character (@$!%*?&).'
+        'Please fix the highlighted fields. Password must include uppercase, lowercase, a number, and a special character.'
       )
       return
     }
@@ -373,7 +373,7 @@ const SignupPage = () => {
         password: formData.password,
         emailVerificationToken,
         recaptchaToken: 'disabled',
-        agreeToTerms: formData.agreeToTerms,
+        agreeToTerms: true,
         subscribeNewsletter: formData.subscribeNewsletter,
         termsVersion: 'v1',
         privacyVersion: 'v1',
@@ -389,7 +389,22 @@ const SignupPage = () => {
 
       if (result.loggedIn) navigate('/dashboard')
     } catch (error) {
-      setFormError((error as Error)?.message || 'An error occurred during signup. Please try again.')
+      const message =
+        (error as Error)?.message || 'An error occurred during signup. Please try again.'
+      setFormError(message)
+      if (/already exists|sign in instead/i.test(message)) {
+        setEmailAlreadyExists(true)
+        setEmailStatusType('err')
+        setEmailStatusMessage(message)
+      } else if (/verif/i.test(message) || /expired/i.test(message)) {
+        // Verification token may be stale after OTP resend / expiry — force re-verify.
+        resetEmailVerification()
+        setEmailStatusType('err')
+        setEmailStatusMessage('Please verify your email again, then create your account.')
+      }
+      requestAnimationFrame(() => {
+        document.getElementById('signup-form-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
     } finally {
       setIsLoading(false)
     }
@@ -559,7 +574,11 @@ const SignupPage = () => {
                     <SignupProgress step={signupStep} />
 
                     {formError && (
-                      <div className="mb-4 flex gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700">
+                      <div
+                        id="signup-form-error"
+                        role="alert"
+                        className="mb-4 flex gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700"
+                      >
                         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                         <span>{formError}</span>
                       </div>
@@ -786,7 +805,7 @@ const SignupPage = () => {
                                 ['uppercase', 'Uppercase'],
                                 ['lowercase', 'Lowercase'],
                                 ['number', 'Number'],
-                                ['special', 'Special (@$!%*?&)'],
+                                ['special', 'Special character'],
                                 ['length', 'Min 8 chars'],
                               ].map(([key, label]) => (
                                 <div

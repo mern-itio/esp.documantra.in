@@ -38,7 +38,8 @@ class ValidationResult {
  */
 const PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+  // Require mixed case, digit, and a special char. Allow common password-manager symbols.
+  PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d\s]).{8,128}$/,
   PHONE: /^\+?[\d\s\-\(\)]{10,15}$/,
   URL: /^https?:\/\/.+/,
   DATE: /^\d{4}-\d{2}-\d{2}$/,
@@ -269,7 +270,7 @@ function isPasswordValid(password) {
 }
 
 const PASSWORD_POLICY_MESSAGE =
-  'Password must be at least 8 characters and include uppercase, lowercase, number, and special character (@$!%*?&)';
+  'Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character';
 
 function getPasswordPolicyError(password) {
   if (!password || typeof password !== 'string') {
@@ -277,6 +278,12 @@ function getPasswordPolicyError(password) {
   }
   if (password.length < 8) {
     return 'Password must be at least 8 characters long';
+  }
+  if (password.length > 128) {
+    return 'Password must be at most 128 characters';
+  }
+  if (/\s/.test(password)) {
+    return 'Password cannot contain spaces';
   }
   if (!PATTERNS.PASSWORD.test(password)) {
     return PASSWORD_POLICY_MESSAGE;

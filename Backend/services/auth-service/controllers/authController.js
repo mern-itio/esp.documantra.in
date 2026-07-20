@@ -1149,14 +1149,18 @@ const register = async (req, res) => {
     return res.status(400).json({ message: passwordError });
   }
 
+  // JWT from confirm-email-verification is the source of truth (30m). Do not also require a
+  // SignupEmailVerification.verified row — that check races with OTP resend / replica lag and
+  // caused 400s while the UI still showed "Verified".
   let emailPreVerified = false;
   if (emailVerificationToken) {
     try {
       decodeEmailVerificationToken(emailVerificationToken, normalizedEmail);
-      const pending = await SignupEmailVerification.findOne({ email: normalizedEmail, verified: true });
-      emailPreVerified = Boolean(pending);
+      emailPreVerified = true;
     } catch (tokenErr) {
-      return res.status(400).json({ message: 'Please verify your email address before creating an account.' });
+      return res.status(400).json({
+        message: 'Your email verification expired or is invalid. Please request a new code and verify again.',
+      });
     }
   }
   if (!emailPreVerified) {
@@ -1165,10 +1169,45 @@ const register = async (req, res) => {
 
   try {
     if (emailPreVerified) {
+      const existingUser = await User.findOne({ email: normalizedEmail });
+      if (existingUser) {
+        const passwordOk = await existingUser.isPasswordCorrect(password);
+        if (passwordOk) {
+          if (!existingUser.emailVerified) {
+            existingUser.emailVerified = true;
+            existingUser.phoneVerified = true;
+            await existingUser.save({ validateBeforeSave: false });
+          }
+          await SignupEmailVerification.deleteOne({ email: normalizedEmail }).catch(() => {});
+          const tokenPayload = await maybeIssueAccessTokenIfVerified(existingUser, res, req);
+          if (tokenPayload) {
+            return res.status(200).json({
+              ...tokenPayload,
+              user_id: tokenPayload.user_id?.toString?.() ?? tokenPayload.user_id,
+              loggedIn: true,
+              message: 'Account already exists — you are signed in.',
+            });
+          }
+        }
+        return res.status(409).json({
+          exists: true,
+          message: 'An account with this email already exists. Please sign in instead.',
+        });
+      }
+
+      if (normalizedPhone) {
+        const phoneTaken = await User.findOne({ phone: normalizedPhone }).select('_id');
+        if (phoneTaken) {
+          return res.status(400).json({
+            message: 'This phone number is already linked to another account. Use a different number or leave it blank.',
+          });
+        }
+      }
+
       const user = await User.create({
         fullname: normalizedFullname,
         email: normalizedEmail,
-        phone: normalizedPhone || '',
+        phone: normalizedPhone || undefined,
         password,
         company: company ? String(company).trim() : '',
         address: address ? String(address).trim() : '',
@@ -1181,35 +1220,39 @@ const register = async (req, res) => {
         phoneOtpExpires: null,
       });
 
-      await recordConsentEntries(req, [
-        {
-          consentType: CONSENT_TYPES.TERMS_OF_SERVICE,
-          consentVersion: termsVersion || DEFAULT_CONSENT_VERSIONS.terms_of_service,
-          granted: true,
-          subjectType: SUBJECT_TYPES.USER,
-          subjectId: user._id,
-          userId: user._id,
-          source: CONSENT_SOURCES.SIGNUP,
-        },
-        {
-          consentType: CONSENT_TYPES.PRIVACY_POLICY,
-          consentVersion: privacyVersion || DEFAULT_CONSENT_VERSIONS.privacy_policy,
-          granted: true,
-          subjectType: SUBJECT_TYPES.USER,
-          subjectId: user._id,
-          userId: user._id,
-          source: CONSENT_SOURCES.SIGNUP,
-        },
-        {
-          consentType: CONSENT_TYPES.MARKETING_EMAIL,
-          consentVersion: marketingVersion || DEFAULT_CONSENT_VERSIONS.marketing_email,
-          granted: Boolean(subscribeNewsletter),
-          subjectType: SUBJECT_TYPES.USER,
-          subjectId: user._id,
-          userId: user._id,
-          source: CONSENT_SOURCES.SIGNUP,
-        },
-      ]);
+      try {
+        await recordConsentEntries(req, [
+          {
+            consentType: CONSENT_TYPES.TERMS_OF_SERVICE,
+            consentVersion: termsVersion || DEFAULT_CONSENT_VERSIONS.terms_of_service,
+            granted: true,
+            subjectType: SUBJECT_TYPES.USER,
+            subjectId: user._id,
+            userId: user._id,
+            source: CONSENT_SOURCES.SIGNUP,
+          },
+          {
+            consentType: CONSENT_TYPES.PRIVACY_POLICY,
+            consentVersion: privacyVersion || DEFAULT_CONSENT_VERSIONS.privacy_policy,
+            granted: true,
+            subjectType: SUBJECT_TYPES.USER,
+            subjectId: user._id,
+            userId: user._id,
+            source: CONSENT_SOURCES.SIGNUP,
+          },
+          {
+            consentType: CONSENT_TYPES.MARKETING_EMAIL,
+            consentVersion: marketingVersion || DEFAULT_CONSENT_VERSIONS.marketing_email,
+            granted: Boolean(subscribeNewsletter),
+            subjectType: SUBJECT_TYPES.USER,
+            subjectId: user._id,
+            userId: user._id,
+            source: CONSENT_SOURCES.SIGNUP,
+          },
+        ]);
+      } catch (consentErr) {
+        console.warn('Signup consent recording failed:', consentErr?.message);
+      }
 
       try {
         await axios.post(`${process.env.ESING_SERVICE_URL}/api/e-sign/public/link-user-recipient`, {
@@ -1226,7 +1269,7 @@ const register = async (req, res) => {
         console.warn('Referral attach failed:', refErr?.message);
       }
 
-      await SignupEmailVerification.deleteOne({ email: normalizedEmail });
+      await SignupEmailVerification.deleteOne({ email: normalizedEmail }).catch(() => {});
 
       const tokenPayload = await maybeIssueAccessTokenIfVerified(user, res, req);
       if (tokenPayload) {
@@ -1327,13 +1370,20 @@ const register = async (req, res) => {
     });
   } catch (error) {
     if (error.code === 11000) {
-      console.error('Email or phone already exists');
-      return res.status(400).json({
-        message: 'Unable to create account. If you already have an account, try logging in or resetting your password.',
+      const key = Object.keys(error.keyPattern || error.keyValue || {})[0] || '';
+      console.error('Duplicate key on register:', key || error.message);
+      if (key === 'phone') {
+        return res.status(400).json({
+          message: 'This phone number is already linked to another account. Use a different number or leave it blank.',
+        });
+      }
+      return res.status(409).json({
+        exists: true,
+        message: 'An account with this email already exists. Please sign in instead.',
       });
     }
     console.error('Server error', error);
-    return res.status(500).json({ message: 'Server error', error });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 

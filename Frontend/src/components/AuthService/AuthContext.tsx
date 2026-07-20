@@ -685,7 +685,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       method: 'POST',
       body: JSON.stringify(userData),
     }));
-    if (data.loggedIn && (data.user_id || data.token)) {
+    if ((data.loggedIn || data.user_id || data.token) && (data.user_id || data.token)) {
       await applyLoginPayload(data);
       return { loggedIn: true, signupToken: data.signupToken };
     }
