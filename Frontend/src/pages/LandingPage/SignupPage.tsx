@@ -105,7 +105,7 @@ const SignupPage = () => {
       case 'firstName': {
         const v = String(value).trim()
         if (!v) return 'Name is required'
-        if (!/^[a-zA-Z\s]{3,}$/.test(v)) return 'Name must be at least 3 letters'
+        if (!/^[a-zA-Z\s'.-]{3,}$/.test(v)) return 'Name must be at least 3 letters'
         return ''
       }
       case 'phone': {
@@ -153,12 +153,15 @@ const SignupPage = () => {
     e.preventDefault()
     setFormError('')
 
-    if (!validateAll(formData)) return
-    
+    if (!validateAll(formData)) {
+      setFormError('Please fix the highlighted fields below. Password must include uppercase, lowercase, a number, and a special character (@$!%*?&).')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
 
     setIsLoading(true)
     try {
-      const { signupToken: token } = await signup({
+      const { signupToken: token, emailSent } = await signup({
         fullname: formData.firstName,
         email: formData.email,
         phone: formData.phone,
@@ -183,6 +186,9 @@ const SignupPage = () => {
       setPhoneOtpSent(false)
       setPhoneOtpExpiresAt(null)
       setStep('verify')
+      if (emailSent === false) {
+        setFormError('Account created, but we could not send the verification email yet. Tap the resend button below or try again in a minute.')
+      }
     } catch (error) {setFormError((error as Error)?.message || 'An error occurred during signup. Please try again.')
     } finally {
       setIsLoading(false)

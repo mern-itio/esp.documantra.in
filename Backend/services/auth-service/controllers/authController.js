@@ -1090,7 +1090,7 @@ const register = async (req, res) => {
       },
     ]);
 
-    await sendVerificationOtpEmail(user.email, emailOtp, user.fullname, OTP_EXPIRY_MINUTES);
+    const emailSent = await sendVerificationOtpEmail(user.email, emailOtp, user.fullname, OTP_EXPIRY_MINUTES);
 
     const signupToken = issueSignupToken(user._id);
 
@@ -1110,8 +1110,11 @@ const register = async (req, res) => {
     }
 
     res.status(201).json({
-      message: 'Please verify your email with the code we sent.',
+      message: emailSent
+        ? 'Please verify your email with the code we sent.'
+        : 'Account created. We could not send the verification email yet — use Resend on the next screen.',
       signupToken,
+      emailSent,
       ...verificationState(user),
     });
   } catch (error) {
@@ -1526,7 +1529,13 @@ const forgotPassword = async (req, res) => {
     const frontendBase = process.env.FRONTEND_BASE_URL || process.env.BASE_URL || 'https://esp.documantra.in/';
     const resetLink = `${frontendBase.replace(/\/$/, '')}/reset-password?token=${token}`;
 
-    await sendPasswordResetEmail(user.email, resetLink, user.fullname || null);
+    const sent = await sendPasswordResetEmail(user.email, resetLink, user.fullname || null);
+    if (!sent) {
+      console.error('Forgot password: reset email was not sent for', user.email);
+      return res.status(503).json({
+        message: 'Unable to send the reset email right now. Please try again in a few minutes or contact support.',
+      });
+    }
 
     return res.status(200).json(genericSuccess);
   } catch (err) {

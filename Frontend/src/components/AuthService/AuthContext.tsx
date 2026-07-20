@@ -630,7 +630,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       body: JSON.stringify(userData),
     });
     if (!data.signupToken) throw new Error('Signup succeeded but no verification token received');
-    return { signupToken: data.signupToken };
+    return { signupToken: data.signupToken, emailSent: data.emailSent !== false };
   };
 
   const sendSignupEmailOtp = async (signupToken: string) => {

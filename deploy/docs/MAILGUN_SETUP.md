@@ -59,9 +59,11 @@ If admin Mailgun is not enabled, the system falls back to:
 Set on each service `.env`:
 
 ```env
-EMAIL_SERVICE_URL=http://email-service:2112/email
+EMAIL_SERVICE_URL=http://email-service:2112
 APP_NAME=DocuMantra
 ```
+
+On the production host (services calling via nginx): `EMAIL_SERVICE_URL=https://esp.documantra.in/email`
 
 Remove legacy Gmail vars (`EMAIL_USER`, `EMAIL_PASS`, `EMAIL_PROVIDER=smtp`) from auth-service so nothing falls back to Gmail.
 

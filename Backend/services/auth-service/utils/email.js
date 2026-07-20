@@ -101,20 +101,18 @@ async function sendVerificationOtpEmail(toEmail, otpCode, recipientName = null, 
   }
   if (!isEmailConfigured()) {
     console.warn('Verification OTP email not sent: EMAIL_SERVICE_URL not configured');
-    console.log(`[EMAIL OTP fallback] To ${toEmail}: Your verification code is ${otpCode}`);
-    return true;
+    return false;
   }
   const html = getVerificationOtpHtml(otpCode, recipientName, expiresInMinutes);
   try {
-    await sendEmail({
+    const sent = await sendEmail({
       to: toEmail,
       subject: `Verify your email – ${APP_NAME}`,
       html,
     });
-    return true;
+    return sent;
   } catch (err) {
     console.error('Send verification OTP email error:', err);
-    console.log(`[EMAIL OTP fallback] To ${toEmail}: Your verification code is ${otpCode}`);
     return false;
   }
 }
@@ -131,12 +129,12 @@ async function sendPasswordResetEmail(toEmail, resetLink, recipientName = null) 
   const html = getPasswordResetHtml(resetLink, recipientName || toEmail, 60);
 
   try {
-    await sendEmail({
+    const sent = await sendEmail({
       to: toEmail,
       subject: `Reset your password - ${APP_NAME}`,
       html,
     });
-    return true;
+    return sent;
   } catch (err) {
     console.error('Send password reset email error:', err);
     return false;
