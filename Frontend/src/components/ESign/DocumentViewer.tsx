@@ -34,6 +34,12 @@ interface Props {
   setSignatureFields: (fields: any[] | ((prev: any[]) => any[])) => void;
   /** When true (e.g. CC recipient), all signing and form fields are view-only */
   isViewOnly?: boolean;
+  /**
+   * When false, signer may review the PDF but cannot open SignPad yet
+   * (e.g. before identity / Start). Must NOT be conflated with isViewOnly —
+   * that incorrectly opened the CC audit-trail modal on "Click to sign".
+   */
+  signingEnabled?: boolean;
   /** Called when current recipient completes all required signing actions (fieldRemmaning === false) */
   onRecipientComplete?: () => void;
   /** Opens the terms/conditions modal (with the same options dropdown) */
@@ -183,6 +189,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   allRecipients,
   setSignatureFields,
   isViewOnly = false,
+  signingEnabled = true,
   onRecipientComplete,
   onRequestActions,
   showActionsMenu,
@@ -487,6 +494,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [signBatchProgress, setSignBatchProgress] = useState<string | null>(null);
 
   const openAuditTrailModal = async () => {
+    // Only carbon-copy / true view-only recipients — never pre-Start signers.
     if (!isViewOnly) return;
     if (!envelopeID || !currentUserId) return;
 
@@ -997,6 +1005,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     if (isViewOnly) {
       // CC recipients are view-only: show recipient reassignment/audit timeline.
       openAuditTrailModal();
+      return;
+    }
+    if (!signingEnabled) {
+      // Review phase / identity not started — do not open SignPad or audit modal.
       return;
     }
     let field = fieldOrId;
@@ -2175,7 +2187,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               break;
                             }
                           }
-                          const allowSigning = isCurrentUser && !isSigned && allFilled && !isSigning;
+                          const allowSigning = isCurrentUser && !isSigned && allFilled && !isSigning && signingEnabled;
                           const isActiveNavField = currentNavFieldKey === keyId;
                           return (
                             <div
@@ -2190,7 +2202,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 zIndex: isActiveNavField ? 20 : 10
                               }}
                             >
-                              {isCurrentUser && isActiveNavField && (
+                              {isCurrentUser && isActiveNavField && signingEnabled && (
                                 <div className="absolute -top-7 left-0 z-30 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-[10px] font-medium text-white shadow">
                                   {isSigned ? (
                                     <span className="inline-flex items-center gap-1">
@@ -2222,7 +2234,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                       : isCurrentUser
                                         ? isSigning
                                           ? "bg-rose-100 border-2 border-rose-400 text-rose-600 cursor-progress"
-                                          : isActiveNavField
+                                          : !signingEnabled
+                                            ? "bg-rose-50 border-2 border-rose-300 text-rose-500 opacity-70 cursor-default"
+                                            : isActiveNavField
                                             ? "bg-rose-50 border-2 border-rose-500 text-rose-700 cursor-pointer shadow-sm ring-2 ring-rose-200"
                                             : "bg-rose-50 border-2 border-rose-400 text-rose-600 cursor-pointer hover:bg-rose-100"
                                         : "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-50"
@@ -2232,7 +2246,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     openAuditTrailModal();
                                     return;
                                   }
-                                  if (isSigning) return;
+                                  if (!signingEnabled || isSigning) return;
                                   if (isCurrentUser && !recipientSignature) {
                                     onFieldClick(field);
                                   } else if (isCurrentUser && recipientSignature) {
@@ -3768,6 +3782,7 @@ const DocumentViewer: React.FC<Props> = React.memo(
       prevProps.cycleId === nextProps.cycleId &&
       prevProps.allRecipients === nextProps.allRecipients &&
       prevProps.isViewOnly === nextProps.isViewOnly &&
+      prevProps.signingEnabled === nextProps.signingEnabled &&
       prevProps.showActionsMenu === nextProps.showActionsMenu &&
       prevProps.headerTitle === nextProps.headerTitle &&
       prevProps.documentTitle === nextProps.documentTitle &&

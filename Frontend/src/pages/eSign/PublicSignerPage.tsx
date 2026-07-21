@@ -1667,7 +1667,8 @@ const EnvelopeDetails: React.FC = () => {
                 onSignatureSave={handleSignatureSave}
                 cycleId={cycleId || ""}
                 setSignatureFields={setSignatureFields}
-                isViewOnly={isViewOnly || !canSignDocument}
+                isViewOnly={isViewOnly}
+                signingEnabled={canSignDocument}
                 showActionsMenu={!isPreviewMode && canBrowseDocument}
                 headerTitle={
                   inDocumentReviewPhase
