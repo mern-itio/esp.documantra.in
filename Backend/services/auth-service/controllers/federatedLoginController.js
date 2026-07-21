@@ -11,6 +11,7 @@ const {
   exchangeLinkedInCode,
   exchangeTwitterCode,
 } = require('../utils/federatedOAuthService');
+const { makeOptionalPhonePlaceholder, publicPhoneValue } = require('../utils/ensurePhoneIndex');
 
 async function linkEsignRecipient(user) {
   try {
@@ -64,6 +65,7 @@ async function findOrCreateOAuthUser({
       [providerField]: providerId,
       emailVerified: emailFromProvider,
       phoneVerified: false,
+      phone: makeOptionalPhonePlaceholder(),
       plan: 'free',
       isFirstLogin: true,
     });
@@ -115,7 +117,7 @@ async function issueOAuthLoginResponse(req, res, user, providerLabel) {
       fullname: user.fullname,
       token: generateToken,
       type: 'user',
-      phone: user.phone || '',
+      phone: publicPhoneValue(user.phone) || '',
       plan: user.plan || 'free',
       isFirstLogin,
     });

@@ -1,45 +1,58 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 
 const PHONE_INDEX_NAME = 'phone_unique_valid';
+const OPTIONAL_PHONE_PREFIX = '__opt_';
+
+function isPlaceholderPhone(phone) {
+  return String(phone || '').startsWith(OPTIONAL_PHONE_PREFIX);
+}
+
+/** Unique stand-in so optional-phone signups never collide on legacy unique(null) indexes. */
+function makeOptionalPhonePlaceholder(userId) {
+  const id = userId ? String(userId) : new mongoose.Types.ObjectId().toString();
+  return `${OPTIONAL_PHONE_PREFIX}${id}`;
+}
 
 function phoneDigitCount(phone) {
+  if (isPlaceholderPhone(phone)) return 0;
   return String(phone || '').replace(/\D/g, '').length;
 }
 
-/** Remove blank / country-code-only / null phones that collide on unique indexes. */
-async function cleanupInvalidUserPhones() {
-  const coll = User.collection;
-
-  // Unset null / empty string phones first (legacy unique indexes treat these as duplicates).
-  const unsetNull = await coll.updateMany(
-    { $or: [{ phone: null }, { phone: '' }] },
-    { $unset: { phone: 1 } }
-  );
-
-  const rows = await User.find({ phone: { $exists: true, $type: 'string' } })
-    .select('_id phone')
-    .lean();
-  const badIds = rows
-    .filter((row) => phoneDigitCount(row.phone) < 10)
-    .map((row) => row._id);
-
-  let clearedShort = 0;
-  if (badIds.length) {
-    const result = await User.updateMany(
-      { _id: { $in: badIds } },
-      { $unset: { phone: 1 } }
-    );
-    clearedShort = result.modifiedCount || 0;
-  }
-
-  const cleared = (unsetNull.modifiedCount || 0) + clearedShort;
-  if (cleared) {
-    console.log(`[auth] Cleared ${cleared} invalid/blank/null user phone value(s)`);
-  }
-  return cleared;
+function publicPhoneValue(phone) {
+  if (!phone || isPlaceholderPhone(phone)) return '';
+  return String(phone);
 }
 
-/** Drop every index whose key is only `phone`. */
+/** Normalize blank/null/short phones to unique placeholders (never leave null/"" ). */
+async function cleanupInvalidUserPhones() {
+  const rows = await User.find({
+    $or: [
+      { phone: null },
+      { phone: '' },
+      { phone: { $exists: true } },
+    ],
+  })
+    .select('_id phone')
+    .lean();
+
+  let fixed = 0;
+  for (const row of rows) {
+    if (isPlaceholderPhone(row.phone)) continue;
+    if (row.phone && phoneDigitCount(row.phone) >= 10) continue;
+    await User.updateOne(
+      { _id: row._id },
+      { $set: { phone: makeOptionalPhonePlaceholder(row._id) } }
+    );
+    fixed += 1;
+  }
+
+  if (fixed) {
+    console.log(`[auth] Normalized ${fixed} invalid/blank/null user phone value(s) to unique placeholders`);
+  }
+  return fixed;
+}
+
 async function dropAllPhoneIndexes() {
   const coll = User.collection;
   const indexes = await coll.indexes();
@@ -59,10 +72,6 @@ async function dropAllPhoneIndexes() {
   return dropped;
 }
 
-/**
- * Ensure phone uniqueness only applies to real 10–15 digit numbers.
- * Legacy unique indexes on null/""/"91" block optional-phone signups.
- */
 async function ensureUserPhoneIndex() {
   try {
     await cleanupInvalidUserPhones();
@@ -73,7 +82,6 @@ async function ensureUserPhoneIndex() {
       {
         unique: true,
         name: PHONE_INDEX_NAME,
-        // Only index real numbers — missing/null/blank/"91" must NOT be unique-checked.
         partialFilterExpression: {
           phone: { $type: 'string', $regex: /^\d{10,15}$/ },
         },
@@ -87,7 +95,6 @@ async function ensureUserPhoneIndex() {
   }
 }
 
-/** Cleanup + rebuild phone index, then caller can retry User.create. */
 async function repairPhoneUniqueness() {
   await cleanupInvalidUserPhones();
   return ensureUserPhoneIndex();
@@ -98,5 +105,9 @@ module.exports = {
   ensureUserPhoneIndex,
   repairPhoneUniqueness,
   phoneDigitCount,
+  isPlaceholderPhone,
+  makeOptionalPhonePlaceholder,
+  publicPhoneValue,
+  OPTIONAL_PHONE_PREFIX,
   PHONE_INDEX_NAME,
 };

@@ -6,7 +6,6 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   address: { type: String, required: false, default: '' },
   company: { type: String, required: false, default: '' },
-  // Uniqueness is enforced via partial index phone_unique_valid (real numbers only).
   phone: { type: String, required: false },
   aadharNumber:{type: String, required:false},
   password: { type: String, required: false },
@@ -87,6 +86,16 @@ const userSchema = new mongoose.Schema({
   /** Set when this user registered via a referral link (referrer's User id). */
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
 }, { timestamps: true });
+
+function hideOptionalPhonePlaceholder(_doc, ret) {
+  if (ret.phone && String(ret.phone).startsWith('__opt_')) {
+    ret.phone = '';
+  }
+  return ret;
+}
+
+userSchema.set('toJSON', { transform: hideOptionalPhonePlaceholder });
+userSchema.set('toObject', { transform: hideOptionalPhonePlaceholder });
 
 // 🔐 Hash password before saving
 userSchema.pre('save', async function (next) {

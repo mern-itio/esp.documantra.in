@@ -17,7 +17,7 @@ const { enforceConcurrentSessionLimit, getMaxConcurrentSessions } = require('../
 const { getSessionIdleTimeoutMs, getSessionIdleTimeoutHours } = require('../utils/sessionPolicy');
 const { shouldRequireTwoFaSetup, isLoginTwoFaEnforcementEnabled, getTwoFaGraceDays, isAdminLoginTwoFaEnforcementEnabled, getAdminTwoFaGraceDays } = require('../utils/twoFaPolicy');
 const { recordConsentEntries } = require('../services/consentService');
-const { cleanupInvalidUserPhones, repairPhoneUniqueness } = require('../utils/ensurePhoneIndex');
+const { cleanupInvalidUserPhones, repairPhoneUniqueness, makeOptionalPhonePlaceholder, publicPhoneValue, isPlaceholderPhone } = require('../utils/ensurePhoneIndex');
 const {
   CONSENT_TYPES,
   SUBJECT_TYPES,
@@ -359,6 +359,7 @@ async function sendPhoneOtp(user) {
 }
 
 function hasEnoughPhoneDigits(user) {
+  if (isPlaceholderPhone(user?.phone)) return false;
   const d = String(user?.phone || '').replace(/\D/g, '');
   return d.length >= 10;
 }
@@ -390,7 +391,7 @@ async function maybeIssueAccessTokenIfVerified(user, res, req) {
     user_id: user._id,
     token: accessToken,
     type: 'user',
-    phone: user.phone,
+    phone: publicPhoneValue(user.phone),
     plan: user.plan || 'free',
     isFirstLogin: user.isFirstLogin,
     ...verificationState(user),
@@ -572,7 +573,7 @@ const login = async (req, res) => {
     user_id: user._id,
     token: generateToken,
     type: 'user',
-    phone: user.phone,
+    phone: publicPhoneValue(user.phone),
     plan: user.plan || 'free',
     isFirstLogin: isFirstLogin
   });
@@ -661,7 +662,7 @@ const verifyTwoFaLogin = async (req, res) => {
     user_id: user._id,
     token: generateToken,
     type: 'user',
-    phone: user.phone,
+    phone: publicPhoneValue(user.phone),
     plan: user.plan || 'free',
     isFirstLogin: user.isFirstLogin
   });
@@ -854,7 +855,7 @@ const verifyTwoFaRecoveryOtp = async (req, res) => {
     user_id: user._id,
     token: generateToken,
     type: 'user',
-    phone: user.phone,
+    phone: publicPhoneValue(user.phone),
     plan: user.plan || 'free',
     isFirstLogin: user.isFirstLogin
   });
@@ -1230,6 +1231,9 @@ const register = async (req, res) => {
       const createPayload = {
         fullname: normalizedFullname,
         email: normalizedEmail,
+        // Always set a unique phone value: real number OR __opt_<id> placeholder.
+        // Omitting phone collides on legacy unique indexes that treat null as duplicate.
+        phone: normalizedPhone || makeOptionalPhonePlaceholder(),
         password,
         company: company ? String(company).trim() : '',
         address: address ? String(address).trim() : '',
@@ -1241,17 +1245,16 @@ const register = async (req, res) => {
         phoneOtpHash: null,
         phoneOtpExpires: null,
       };
-      if (normalizedPhone) createPayload.phone = normalizedPhone;
 
       let user;
       try {
         user = await User.create(createPayload);
       } catch (createErr) {
-        // Optional phone: legacy unique(null)/""/"91" indexes block signup — repair and retry.
         const dupKey = Object.keys(createErr?.keyPattern || createErr?.keyValue || {})[0] || '';
         if (createErr?.code === 11000 && dupKey === 'phone' && !normalizedPhone) {
-          console.warn('Register phone-index conflict on blank phone — repairing index and retrying');
-          await repairPhoneUniqueness();
+          console.warn('Register phone-index conflict — normalizing phones and retrying with fresh placeholder');
+          await cleanupInvalidUserPhones().catch(() => 0);
+          createPayload.phone = makeOptionalPhonePlaceholder();
           user = await User.create(createPayload);
         } else {
           throw createErr;
@@ -1338,6 +1341,7 @@ const register = async (req, res) => {
     const legacyPayload = {
       fullname: normalizedFullname,
       email: normalizedEmail,
+      phone: normalizedPhone || makeOptionalPhonePlaceholder(),
       password,
       company: company ? String(company).trim() : '',
       address: address ? String(address).trim() : '',
@@ -1349,7 +1353,6 @@ const register = async (req, res) => {
       phoneOtpHash: null,
       phoneOtpExpires: null,
     };
-    if (normalizedPhone) legacyPayload.phone = normalizedPhone;
 
     let user;
     try {
@@ -1357,8 +1360,9 @@ const register = async (req, res) => {
     } catch (createErr) {
       const dupKey = Object.keys(createErr?.keyPattern || createErr?.keyValue || {})[0] || '';
       if (createErr?.code === 11000 && dupKey === 'phone' && !normalizedPhone) {
-        console.warn('Register (legacy) phone-index conflict on blank phone — repairing index and retrying');
-        await repairPhoneUniqueness();
+        console.warn('Register (legacy) phone-index conflict — normalizing phones and retrying');
+        await cleanupInvalidUserPhones().catch(() => 0);
+        legacyPayload.phone = makeOptionalPhonePlaceholder();
         user = await User.create(legacyPayload);
       } else {
         throw createErr;
@@ -1431,13 +1435,13 @@ const register = async (req, res) => {
       console.error('Duplicate key on register:', key || error.message, keyValue);
       if (key === 'phone') {
         const collidingPhone = String(keyValue.phone ?? '').replace(/\D/g, '');
-        if (collidingPhone.length >= 10) {
+        if (collidingPhone.length >= 10 && !String(keyValue.phone || '').startsWith('__opt_')) {
           return res.status(400).json({
             message: 'This phone number is already linked to another account. Use a different number or leave it blank.',
           });
         }
-        // Last resort: repair index again so the next attempt succeeds.
         try {
+          await cleanupInvalidUserPhones();
           await repairPhoneUniqueness();
         } catch (_) { /* ignore */ }
         return res.status(409).json({
@@ -1648,7 +1652,7 @@ async function generateAccessTokenUser(user, expireIn, req, keepSessionId = null
     id: user._id,
     email: user.email,
     fullname: user.fullname,
-    phone: user.phone,
+    phone: publicPhoneValue(user.phone),
     company: user.company,
     address: user.address,
     type: 'user',
@@ -1700,7 +1704,7 @@ const getMe = async (req, res) => {
         id: user._id,
         email: user.email,
         fullname: user.fullname,
-        phone: user.phone,
+        phone: publicPhoneValue(user.phone),
         company: user.company,
         address: user.address,
         plan: user.plan || 'free',
@@ -1956,7 +1960,7 @@ const updateProfile = async (req, res) => {
       id: user._id,
       email: user.email,
       fullname: user.fullname,
-      phone: user.phone,
+      phone: publicPhoneValue(user.phone),
       company: user.company,
       address: user.address,
       plan: user.plan
