@@ -16,8 +16,7 @@ import {
   Award
 } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { ChartErrorBoundary, CHART_HEX } from '../common/ChartErrorBoundary';
+import { ChartErrorBoundary } from '../common/ChartErrorBoundary';
 
 interface AIInsightsData {
   mostUsedTemplates: Array<{ name: string; count: number; percentage: number }>;
@@ -179,19 +178,12 @@ const AIAuditInsights: React.FC = () => {
   const monthlyHasData = insightsData.monthlyComparison.some(
     (entry) => Number(entry.aiGenerated) > 0 || Number(entry.manual) > 0
   );
-
-  // Skip Recharts entirely — production crashes with toUpperCase on undefined in vendor-charts
-  // (including via resize event handlers that escape React error boundaries).
-  const showCharts = false;
-
-  const pieColors = [CHART_HEX.chart1, CHART_HEX.chart2];
-
-  const chartTooltipStyle = {
-    backgroundColor: '#ffffff',
-    border: `1px solid ${CHART_HEX.grid}`,
-    borderRadius: '0.5rem',
-    color: '#0f172a',
-  };
+  const monthlyMax = Math.max(
+    1,
+    ...insightsData.monthlyComparison.map((entry) =>
+      Math.max(Number(entry.aiGenerated) || 0, Number(entry.manual) || 0),
+    ),
+  );
 
   return (
     <ChartErrorBoundary>
@@ -314,53 +306,63 @@ const AIAuditInsights: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {showCharts && pieTotal > 0 ? (
+        {pieTotal > 0 ? (
         <div className="bg-card rounded-xl shadow-sm border border-border p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">AI Generated vs Manual Documents</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name ?? 'Item'}: ${((percent ?? 0) * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill={CHART_HEX.chart1}
-                dataKey="value"
-                isAnimationActive={false}
-              >
-                {pieData.map((_entry, index) => (
-                  <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={chartTooltipStyle} />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="space-y-3">
+            {pieData.map((entry) => {
+              const pct = Math.round((Number(entry.value) / pieTotal) * 100);
+              return (
+                <div key={entry.name} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-foreground">{entry.name}</span>
+                    <span className="text-muted-foreground">{entry.value} ({pct}%)</span>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${Math.max(4, pct)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
         ) : (
-          <div className="bg-card rounded-xl shadow-sm border border-border p-6 flex items-center justify-center min-h-[300px]">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6 flex items-center justify-center min-h-[180px]">
             <p className="text-sm text-muted-foreground">No document activity yet for AI vs manual comparison.</p>
           </div>
         )}
 
-        {showCharts && monthlyHasData ? (
+        {monthlyHasData ? (
         <div className="bg-card rounded-xl shadow-sm border border-border p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">Monthly Trend (Last 6 Months)</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={insightsData.monthlyComparison}>
-              <CartesianGrid strokeDasharray="3 3" stroke={CHART_HEX.grid} opacity={0.6} />
-              <XAxis dataKey="month" type="category" scale="band" stroke={CHART_HEX.axis} tick={{ fill: CHART_HEX.axis, fontSize: 11 }} />
-              <YAxis type="number" scale="linear" stroke={CHART_HEX.axis} tick={{ fill: CHART_HEX.axis, fontSize: 11 }} />
-              <Tooltip contentStyle={chartTooltipStyle} />
-              <Legend wrapperStyle={{ color: '#0f172a' }} />
-              <Bar dataKey="aiGenerated" fill={CHART_HEX.chart1} name="AI Generated" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-              <Bar dataKey="manual" fill={CHART_HEX.chart2} name="Manual" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="space-y-3">
+            {insightsData.monthlyComparison.map((entry) => {
+              const aiPct = Math.round(((Number(entry.aiGenerated) || 0) / monthlyMax) * 100);
+              const manualPct = Math.round(((Number(entry.manual) || 0) / monthlyMax) * 100);
+              return (
+                <div key={entry.month} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{entry.month}</span>
+                    <span>AI {entry.aiGenerated} · Manual {entry.manual}</span>
+                  </div>
+                  <div className="flex gap-1 h-2.5">
+                    <div className="flex-1 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(entry.aiGenerated ? 4 : 0, aiPct)}%` }} />
+                    </div>
+                    <div className="flex-1 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.max(entry.manual ? 4 : 0, manualPct)}%` }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
         ) : (
-          <div className="bg-card rounded-xl shadow-sm border border-border p-6 flex items-center justify-center min-h-[300px]">
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6 flex items-center justify-center min-h-[180px]">
             <p className="text-sm text-muted-foreground">No monthly document trend data yet.</p>
           </div>
         )}
