@@ -5,6 +5,7 @@ const RecipientPermission = require('../models/RecipientPermission');
 const axios = require('axios');
 const sendEmail = require('../emails/sendEmail');
 const { signRequestTemplate, signReminderTemplate, envelopeCompletedTemplate, reassignedSignRequestTemplate, reassignedOwnerCcTemplate } = require('../emails/emailTemplates');
+const { fetchUserFullname } = require('../services/envelopeCommentNotifyService');
 const mongoose = require('mongoose');
 const SignatureFields = require('../models/SignatureFields');
 const { signAndEmbed, initiateRecipientSignature, finalizeSigning, prepareDocumentForFinalSigning } = require('../services/digitalSignatureService');
@@ -1064,12 +1065,14 @@ const sendSignEmailToPermission = async ({
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
   const signLink = buildPublicSignerUrl(envelopeId, waitingPermission.recipientId._id);
   const portalLink = buildRecipientPortalUrl(frontendUrl, waitingPermission.recipientId.email);
+  const senderName = (await fetchUserFullname(userId)) || undefined;
   const html = signRequestTemplate(
     waitingPermission.recipientId.name,
     envelopeSubject,
     envelopeMessage,
     signLink,
     portalLink,
+    senderName,
   );
 
   await dispatchEnvelopeEmail({
@@ -1897,7 +1900,9 @@ const addDigitalSignatureForSelfSigner = async ({ envelopeId, documentId, recipi
       nextSignerName,
       nextSignerSubject,
       nextSignerMessage,
-      nextSignerSignatureLink
+      nextSignerSignatureLink,
+      null,
+      currentSigner?.data?.name || undefined,
     );
 
     try {
@@ -2025,6 +2030,7 @@ const sendReminderEmailsForEnvelope = async (envelope) => {
 
   const uniqueRecipients = Array.from(recipientsMap.values());
   const frontendUrl = String(process.env.FRONTEND_URL || '').replace(/\/+$/, '');
+  const senderName = (await fetchUserFullname(envelope.sender)) || undefined;
 
   for (const recipient of uniqueRecipients) {
     const signLink = buildPublicSignerUrl(envelope._id, recipient._id);
@@ -2035,6 +2041,7 @@ const sendReminderEmailsForEnvelope = async (envelope) => {
       envelope.message,
       signLink,
       portalLink,
+      senderName,
     );
 
     try {

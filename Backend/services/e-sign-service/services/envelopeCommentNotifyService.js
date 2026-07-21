@@ -18,6 +18,20 @@ async function fetchUserEmail(userId, authorizationHeader) {
   }
 }
 
+async function fetchUserFullname(userId, authorizationHeader) {
+  if (!userId) return '';
+  try {
+    const resp = await axios.get(`${process.env.AUTH_URL}/api/user-details/${userId}`, {
+      headers: authorizationHeader ? { Authorization: authorizationHeader } : {},
+      timeout: 15000,
+    });
+    const data = resp?.data?.data || {};
+    return String(data.fullname || data.name || '').trim();
+  } catch {
+    return '';
+  }
+}
+
 async function dispatchEnvelopeEmail({ userId, toEmail, subject, html }) {
   const emailServiceUrl = process.env.EMAIL_SERVICE_URL;
   if (!emailServiceUrl || !toEmail) return;
@@ -180,4 +194,5 @@ module.exports = {
   notifyRecipientSenderReply,
   notifySenderRecipientReply,
   fetchUserEmail,
+  fetchUserFullname,
 };

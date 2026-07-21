@@ -67,7 +67,8 @@ function emailSenderAvatarRow(safeSenderName) {
 }
 
 function emailSignBody({ safeSubject, safeMessage, signLink, portalLink, safeLinkText, isReminder = false, senderName }) {
-  const safeSender = escapeHtml(senderName || getBrandName());
+  // Prefer the real sender; never fall back to brand name (DocuMantra) in this sentence.
+  const safeSender = escapeHtml(String(senderName || '').trim() || 'A sender');
   const introRow = emailSenderAvatarRow(safeSender);
 
   const reminderNote = isReminder
