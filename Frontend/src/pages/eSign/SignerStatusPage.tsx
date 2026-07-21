@@ -14,6 +14,7 @@ import {
 import { authApi, eSignApi, subscriptionApi } from "../../services/apiHelper";
 import confetti from "canvas-confetti";
 import BrandLogo from "../../components/BrandLogo";
+import { formatDocuMantraEnvelopeId } from "../../utils/envelopeIdFormat";
 
 export default function SignerStatusPage() {
   const { envelopeId, recipientId } = useParams<{
@@ -713,8 +714,8 @@ export default function SignerStatusPage() {
                   {documentName || "—"}
                 </div>
                 <div className="mt-1">
-                  <span className="font-medium text-gray-900">Envelope ID:</span>{" "}
-                  {String(envelopeId ?? "—")}
+                  <span className="font-medium text-gray-900">DocuMantra Envelope ID:</span>{" "}
+                  {formatDocuMantraEnvelopeId(envelopeId)}
                 </div>
               </div>
 
@@ -856,8 +857,8 @@ export default function SignerStatusPage() {
 
                       <div className="mt-5 grid grid-cols-1 gap-2 text-sm text-gray-700">
                         <div className="flex gap-2">
-                          <span className="w-28 text-gray-500">Envelope ID</span>
-                          <span className="break-all">{String(envelopeId ?? "—")}</span>
+                          <span className="w-28 text-gray-500">DocuMantra Envelope ID</span>
+                          <span className="break-all">{formatDocuMantraEnvelopeId(envelopeId)}</span>
                         </div>
                         <div className="flex gap-2">
                           <span className="w-28 text-gray-500">Recipient ID</span>

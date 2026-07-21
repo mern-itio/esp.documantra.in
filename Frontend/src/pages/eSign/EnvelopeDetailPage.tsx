@@ -5,6 +5,7 @@ import { Download, Printer, ChevronLeft, ExternalLink, CheckCircle2, PenLine, Li
 import Swal from 'sweetalert2';
 import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
 import { EnvelopeCommentsSenderPanel } from '../../components/ESign/EnvelopeCommentLayer';
+import { formatDocuMantraEnvelopeId } from '../../utils/envelopeIdFormat';
 
 declare global {
     interface Window { pdfjsLib: any }
@@ -429,7 +430,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                 ></div>
 
                                 <div className="flex items-start justify-between mb-3">
-                                    <div className="text-[16px] font-semibold text-blue">Envelope ID</div>
+                                    <div className="text-[16px] font-semibold text-blue">DocuMantra Envelope ID</div>
                                     <button
                                         onClick={() => setShowIdPopover(false)}
                                         className="text-gray-600 hover:text-gray-800"
@@ -438,8 +439,8 @@ const EnvelopeDetailPage: React.FC = () => {
                                     </button>
                                 </div>
 
-                                <div className="text-[14px] text-gray-900 break-all mb-3">
-                                    {envelope.id}
+                                <div className="text-[14px] text-gray-900 break-all mb-3 font-mono tracking-wide">
+                                    {formatDocuMantraEnvelopeId(envelope.id)}
                                 </div>
 
                                 <div className="text-right">
@@ -447,10 +448,10 @@ const EnvelopeDetailPage: React.FC = () => {
                                         onClick={async () => {
                                             try {
                                                 if ((navigator as any).clipboard && (navigator as any).clipboard.writeText) {
-                                                    await (navigator as any).clipboard.writeText(envelope.id || '');
+                                                    await (navigator as any).clipboard.writeText(formatDocuMantraEnvelopeId(envelope.id));
                                                 } else {
                                                     const ta = document.createElement('textarea');
-                                                    ta.value = envelope.id || '';
+                                                    ta.value = formatDocuMantraEnvelopeId(envelope.id);
                                                     ta.style.position = 'fixed';
                                                     ta.style.left = '-9999px';
                                                     document.body.appendChild(ta);
@@ -462,7 +463,7 @@ const EnvelopeDetailPage: React.FC = () => {
                                                 setTimeout(() => setCopiedId(false), 1500);
                                             } catch (e) {
                                                 const ta = document.createElement('textarea');
-                                                ta.value = envelope.id || '';
+                                                ta.value = formatDocuMantraEnvelopeId(envelope.id);
                                                 ta.style.position = 'fixed';
                                                 ta.style.left = '-9999px';
                                                 document.body.appendChild(ta);

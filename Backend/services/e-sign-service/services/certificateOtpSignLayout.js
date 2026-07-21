@@ -52,10 +52,8 @@ function formatGmtTs(d) {
 
 /** DocuSign-style envelope ID: 8-4-4-4-12 uppercase hex */
 function formatDocuSignEnvelopeId(rawId) {
-  const hex = String(rawId || '').replace(/[^a-fA-F0-9]/g, '').toLowerCase();
-  if (!hex) return '—';
-  const padded = (hex + '00000000').slice(0, 32).toUpperCase();
-  return `${padded.slice(0, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}-${padded.slice(16, 20)}-${padded.slice(20, 32)}`;
+  const { formatDocuMantraEnvelopeId } = require('../utils/envelopeIdFormat');
+  return formatDocuMantraEnvelopeId(rawId);
 }
 
 function formatTs(d) {
@@ -357,14 +355,14 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
     ['DOCUMENT', clip(envelope?.subject, 24)],
     ['SIGNERS', String(signers.length)],
     ['COMPLETED', completedAt ? formatGmtTs(completedAt) : '—'],
-    ['ENVELOPE', clip(formattedEnvelopeId, 22)],
+    ['ENVELOPE', formattedEnvelopeId],
   ];
   const colW = width / 4;
   info.forEach(([label, value], i) => {
     const x = left + i * colW + 8;
     doc.fillColor(C.label).font('Helvetica-Bold').fontSize(6);
     textAt(doc, label, x, y + 7, { width: colW - 10 });
-    doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(7.5);
+    doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(i === 3 ? 6.2 : 7.5);
     textAt(doc, value, x, y + 17, { width: colW - 10 });
     if (i > 0) line(doc, left + i * colW, y + 5, left + i * colW, y + infoH - 5);
   });

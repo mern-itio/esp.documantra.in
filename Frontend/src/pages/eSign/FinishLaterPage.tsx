@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { ArrowRight, Clock, FileText, ShieldCheck } from "lucide-react";
 import { APP_NAME } from "../../components/constants/appConfig";
+import { formatDocuMantraEnvelopeId } from "../../utils/envelopeIdFormat";
 
 export default function FinishLaterPage() {
   const { envelopeId, recipientId } = useParams<{
@@ -49,8 +50,8 @@ export default function FinishLaterPage() {
 
                   <div className="mt-4 h-12 p-2 rounded-xl bg-gray-100" >
                   <div className="flex gap-2">
-                  <span className="w-28 thankyou-para text-gray-500">Envelope ID:</span>
-                  <span className="break-all thankyou-para">{String(envelopeId ?? "—")}</span>
+                  <span className="w-28 thankyou-para text-gray-500">DocuMantra Envelope ID:</span>
+                  <span className="break-all thankyou-para">{formatDocuMantraEnvelopeId(envelopeId)}</span>
                 </div>
                     </div>
                 </div>

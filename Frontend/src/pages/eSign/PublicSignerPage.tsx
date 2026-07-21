@@ -13,6 +13,7 @@ import DocumentSignatureBackground from "../../components/common/DocumentSignatu
 import BrandLogo from "../../components/BrandLogo";
 import { resolveEsignDocumentFileProp } from "../../utils/esignDocumentUrl";
 import { markDocumentOpened, persistBiometricEvidence } from "../../utils/signingContext";
+import { formatDocuMantraEnvelopeId } from "../../utils/envelopeIdFormat";
 import * as Icons from "lucide-react";
 import {
   FileText,
@@ -1527,7 +1528,6 @@ const EnvelopeDetails: React.FC = () => {
   };
 
   const sessionInfoRows = (() => {
-    const envelopeIdValue = String(id ?? "").trim() || "—";
     const recipientIdValue = String(recipientId ?? "").trim() || "—";
     // const pageUrlValue = (() => {
     //   try {
@@ -1562,7 +1562,7 @@ const EnvelopeDetails: React.FC = () => {
     const ipValue = sessionIp?.trim() ? sessionIp.trim() : "Unavailable";
 
     return [
-      { label: "Envelope ID", value: envelopeIdValue },
+      { label: "DocuMantra Envelope ID", value: formatDocuMantraEnvelopeId(id) },
       { label: "Recipient ID", value: recipientIdValue },
       { label: "IP Address", value: ipValue },
       { label: "Opened At", value: openedAtValue },

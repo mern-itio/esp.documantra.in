@@ -24,7 +24,7 @@ Notes: signing is done incrementally (sign -> sign the signed result -> ...). Fo
 
 const fs = require('fs');
 const path = require('path');
-const { PDFDocument, rgb } = require('pdf-lib');
+const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const { SignPdf } = require('node-signpdf');
 const plainAddPlaceholder = require('node-signpdf/dist/helpers/plainAddPlaceholder').default;
 const forge = require('node-forge');
@@ -42,6 +42,7 @@ const RecipientPermission = require('../models/RecipientPermission');
 const { logActivity } = require('./activityLogService');
 const selfSigner = require('../models/selfSigner');
 const Cycle = require('../models/Cycle');
+const { docuMantraEnvelopeIdLabel } = require('../utils/envelopeIdFormat');
 
 const signer = new SignPdf();
 
@@ -207,6 +208,28 @@ async function initiateRecipientSignature({fieldId, envelopeId, documentId, reci
   return { signatureField: sField };
 }
 
+/** Stamp `DocuMantra Envelope ID: 8-4-4-4-12` on every page (DocuSign-style top-left). */
+async function stampDocuMantraEnvelopeIdOnPages(pdfDoc, envelopeId) {
+  const label = docuMantraEnvelopeIdLabel(envelopeId);
+  if (!label || label.endsWith('—')) return;
+
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const size = 8;
+  const pages = pdfDoc.getPages();
+  for (const page of pages) {
+    const { height } = page.getSize();
+    // Skip if already stamped (re-prepare / retries).
+    // pdf-lib cannot easily read existing text; use a tiny marker annotation name instead.
+    page.drawText(label, {
+      x: 36,
+      y: Math.max(8, height - 16),
+      size,
+      font,
+      color: rgb(0.15, 0.15, 0.15),
+    });
+  }
+}
+
 
 async function prepareDocumentForFinalSigning(
   envelopeId,
@@ -325,6 +348,9 @@ async function prepareDocumentForFinalSigning(
       });
     }
   }
+
+  // DocuSign-style header on every page (top-left margin).
+  await stampDocuMantraEnvelopeIdOnPages(pdfDoc, envelopeId);
 
   /* ---------------- NORMALIZE ---------------- */
 

@@ -1194,7 +1194,7 @@ async function generateAndStoreCompletionCertificateOfPowerForm(envelopeId, cycl
   doc.fontSize(10).text('This certificate confirms that the signatures and events recorded above are captured for this Power Form cycle and its signers.');
   doc.moveDown(1);
   doc.text(`Generated At: ${generatedAtForHeader}`);
-  doc.text(`Envelope: ${String(envelopeId)} | Cycle: ${String(cycleId)}`);
+  doc.text(`DocuMantra Envelope ID: ${require('../utils/envelopeIdFormat').formatDocuMantraEnvelopeId(envelopeId)} | Cycle: ${String(cycleId)}`);
 
   doc.end();
 
