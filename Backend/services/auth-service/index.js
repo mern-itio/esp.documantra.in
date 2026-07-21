@@ -10,6 +10,7 @@ if (!process.env.SKIP_ADMIN_TOKEN_REVOCATION_CHECK) {
 const cors = require('cors');
 const { getCorsOptions, createErrorHandler, applySecurityHeaders } = require('@draftnsign/validators');
 const { connectDB } = require('./config/db');
+const { ensureUserPhoneIndex } = require('./utils/ensurePhoneIndex');
 const { refreshSessionPolicyCache } = require('./utils/sessionPolicy');
 const { refreshFederatedLoginCache } = require('./utils/federatedLoginPolicy');
 const authRoutes = require('./routes/authRoutes');
@@ -29,7 +30,13 @@ applySecurityHeaders(app);
 app.use(optionsGuard);
 app.use(cors(getCorsOptions()));
 
-connectDB().then(() => Promise.all([refreshSessionPolicyCache(), refreshFederatedLoginCache()]));
+connectDB().then(() =>
+  Promise.all([
+    refreshSessionPolicyCache(),
+    refreshFederatedLoginCache(),
+    ensureUserPhoneIndex(),
+  ])
+);
 
 app.use(express.json());
 app.use('/api-admin', verifyJWT('admin'));

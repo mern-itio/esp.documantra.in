@@ -17,6 +17,7 @@ const { enforceConcurrentSessionLimit, getMaxConcurrentSessions } = require('../
 const { getSessionIdleTimeoutMs, getSessionIdleTimeoutHours } = require('../utils/sessionPolicy');
 const { shouldRequireTwoFaSetup, isLoginTwoFaEnforcementEnabled, getTwoFaGraceDays, isAdminLoginTwoFaEnforcementEnabled, getAdminTwoFaGraceDays } = require('../utils/twoFaPolicy');
 const { recordConsentEntries } = require('../services/consentService');
+const { cleanupInvalidUserPhones } = require('../utils/ensurePhoneIndex');
 const {
   CONSENT_TYPES,
   SUBJECT_TYPES,
@@ -1226,10 +1227,9 @@ const register = async (req, res) => {
         }
       }
 
-      const user = await User.create({
+      const createPayload = {
         fullname: normalizedFullname,
         email: normalizedEmail,
-        ...(normalizedPhone ? { phone: normalizedPhone } : {}),
         password,
         company: company ? String(company).trim() : '',
         address: address ? String(address).trim() : '',
@@ -1240,7 +1240,22 @@ const register = async (req, res) => {
         emailOtpExpires: null,
         phoneOtpHash: null,
         phoneOtpExpires: null,
-      });
+      };
+      if (normalizedPhone) createPayload.phone = normalizedPhone;
+
+      let user;
+      try {
+        user = await User.create(createPayload);
+      } catch (createErr) {
+        // Retry once after scrubbing blank/dial-code collisions on unique phone indexes.
+        const dupKey = Object.keys(createErr?.keyPattern || createErr?.keyValue || {})[0] || '';
+        if (createErr?.code === 11000 && dupKey === 'phone' && !normalizedPhone) {
+          await cleanupInvalidUserPhones().catch(() => 0);
+          user = await User.create(createPayload);
+        } else {
+          throw createErr;
+        }
+      }
 
       await provisionFreeSubscription(user._id);
 
@@ -1319,10 +1334,9 @@ const register = async (req, res) => {
     const emailOtp = generateOtp();
     const emailOtpExpires = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
-    const user = await User.create({
+    const legacyPayload = {
       fullname: normalizedFullname,
       email: normalizedEmail,
-      ...(normalizedPhone ? { phone: normalizedPhone } : {}),
       password,
       company: company ? String(company).trim() : '',
       address: address ? String(address).trim() : '',
@@ -1332,8 +1346,22 @@ const register = async (req, res) => {
       emailOtpHash: hashOtp(emailOtp),
       emailOtpExpires,
       phoneOtpHash: null,
-      phoneOtpExpires: null
-    });
+      phoneOtpExpires: null,
+    };
+    if (normalizedPhone) legacyPayload.phone = normalizedPhone;
+
+    let user;
+    try {
+      user = await User.create(legacyPayload);
+    } catch (createErr) {
+      const dupKey = Object.keys(createErr?.keyPattern || createErr?.keyValue || {})[0] || '';
+      if (createErr?.code === 11000 && dupKey === 'phone' && !normalizedPhone) {
+        await cleanupInvalidUserPhones().catch(() => 0);
+        user = await User.create(legacyPayload);
+      } else {
+        throw createErr;
+      }
+    }
 
     await provisionFreeSubscription(user._id);
 
@@ -1396,9 +1424,20 @@ const register = async (req, res) => {
     });
   } catch (error) {
     if (error.code === 11000) {
-      const key = Object.keys(error.keyPattern || error.keyValue || {})[0] || '';
-      console.error('Duplicate key on register:', key || error.message);
+      const keyValue = error.keyValue || {};
+      const key = Object.keys(error.keyPattern || keyValue)[0] || '';
+      console.error('Duplicate key on register:', key || error.message, keyValue);
       if (key === 'phone') {
+        const collidingPhone = String(keyValue.phone ?? '').replace(/\D/g, '');
+        // Blank / dial-code collisions are data/index issues — never show as user phone conflict.
+        if (!collidingPhone || collidingPhone.length < 10) {
+          try {
+            await cleanupInvalidUserPhones();
+          } catch (_) { /* ignore */ }
+          return res.status(409).json({
+            message: 'Could not finish signup because of a phone-index conflict. Please try again.',
+          });
+        }
         return res.status(400).json({
           message: 'This phone number is already linked to another account. Use a different number or leave it blank.',
         });

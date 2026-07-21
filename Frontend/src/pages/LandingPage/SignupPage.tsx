@@ -371,7 +371,7 @@ const SignupPage = () => {
       const result = await signup({
         fullname: formData.firstName,
         email: formData.email.trim().toLowerCase(),
-        // Omit country-code-only values so backend does not treat "91" as a real phone.
+        // Never send dial-code-only values (react-phone-input-2 keeps "91" when empty).
         phone: phoneDigits.length >= 10 ? phoneDigits : '',
         password: formData.password,
         emailVerificationToken,

@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   address: { type: String, required: false, default: '' },
   company: { type: String, required: false, default: '' },
-  phone: { type: String, required: false, sparse: true },
+  // Uniqueness is enforced via partial index phone_unique_valid (real numbers only).
+  phone: { type: String, required: false },
   aadharNumber:{type: String, required:false},
   password: { type: String, required: false },
   googleId: { type: String, required: false, unique: true, sparse: true },
