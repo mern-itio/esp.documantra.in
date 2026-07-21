@@ -16,7 +16,6 @@ import {
   Award
 } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
-import { ChartErrorBoundary } from '../common/ChartErrorBoundary';
 
 interface AIInsightsData {
   mostUsedTemplates: Array<{ name: string; count: number; percentage: number }>;
@@ -186,7 +185,6 @@ const AIAuditInsights: React.FC = () => {
   );
 
   return (
-    <ChartErrorBoundary>
     <div className="space-y-6 text-card-foreground">
       <div className="p-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -452,7 +450,6 @@ const AIAuditInsights: React.FC = () => {
         </div>
       </div>
     </div>
-    </ChartErrorBoundary>
   );
 };
 

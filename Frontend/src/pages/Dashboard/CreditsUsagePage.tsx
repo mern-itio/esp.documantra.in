@@ -12,10 +12,9 @@ import {
   CheckCircle2,
   Zap,
 } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 import type { Invoice } from '../../types';
 import CreditPurchaseModal from '../../components/common/CreditPurchaseModal';
-import { ChartErrorBoundary, CHART_HEX } from '../../components/common/ChartErrorBoundary';
+import { CHART_HEX } from '../../components/common/ChartErrorBoundary';
 import { formatBillingAmount } from '../../utils/billingCurrency';
 
 interface UsageRow {
@@ -261,8 +260,10 @@ const CreditsUsagePage: React.FC = () => {
       return monthKey === selectedInvoiceMonth;
     });
   }, [invoices, selectedInvoiceMonth]);
-  const chartTickFill = CHART_HEX.axis;
-  const chartGridStroke = CHART_HEX.grid;
+  const moduleUsageMax = Math.max(
+    1,
+    ...includedUsageByModuleData.map((entry) => Number(entry.credits) || 0),
+  );
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -344,34 +345,29 @@ const CreditsUsagePage: React.FC = () => {
                     <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Monthly usage by module
                     </div>
-                    <div className="h-64">
-                      <ChartErrorBoundary>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={includedUsageByModuleData}
-                          margin={{ top: 6, right: 16, left: 8, bottom: 24 }}
-                          barCategoryGap={18}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} opacity={0.6} />
-                          <XAxis dataKey="module" type="category" scale="band" tick={{ fontSize: 11, fill: chartTickFill }} interval={0} angle={-10} textAnchor="end" height={52} />
-                          <YAxis type="number" scale="linear" tick={{ fontSize: 11, fill: chartTickFill }} />
-                          <Tooltip
-                            formatter={(value: any) => [`${Number(value).toLocaleString()} credits`, 'Usage']}
-                            contentStyle={{
-                              background: '#ffffff',
-                              border: `1px solid ${CHART_HEX.grid}`,
-                              borderRadius: '0.5rem',
-                              color: '#0f172a',
-                            }}
-                          />
-                          <Bar dataKey="credits" radius={[6, 6, 0, 0]} maxBarSize={60} isAnimationActive={false}>
-                            {includedUsageByModuleData.map((entry, index) => (
-                              <Cell key={`module-cell-${index}`} fill={entry.color || CHART_HEX.chart1} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                      </ChartErrorBoundary>
+                    <div className="space-y-3 py-1">
+                      {includedUsageByModuleData.map((entry) => {
+                        const pct = Math.round((Number(entry.credits) / moduleUsageMax) * 100);
+                        return (
+                          <div key={entry.module} className="space-y-1.5">
+                            <div className="flex items-center justify-between gap-3 text-sm">
+                              <span className="font-medium text-foreground">{entry.module}</span>
+                              <span className="tabular-nums text-muted-foreground">
+                                {Number(entry.credits).toLocaleString()} credits
+                              </span>
+                            </div>
+                            <div className="h-2.5 overflow-hidden rounded-full bg-background">
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{
+                                  width: `${Math.max(4, pct)}%`,
+                                  backgroundColor: entry.color || CHART_HEX.chart1,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                   <div className="rounded-lg border border-border bg-card p-1">

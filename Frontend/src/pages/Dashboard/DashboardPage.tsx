@@ -17,7 +17,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import AIAuditInsights from '../../components/ESign/AIAuditInsights';
-import { ChartErrorBoundary, CHART_HEX } from '../../components/common/ChartErrorBoundary';
+import { CHART_HEX } from '../../components/common/ChartErrorBoundary';
 
 const DashboardPage: React.FC = () => {
   const { user, accountType, dismissFirstLogin } = useAuth();
@@ -432,9 +432,7 @@ const DashboardPage: React.FC = () => {
         )}
       </div>
       <div className="bg-muted/40 rounded-xl p-6 border border-border">
-        <ChartErrorBoundary>
-          <AIAuditInsights />
-        </ChartErrorBoundary>
+        <AIAuditInsights />
       </div>
     </div>
   );

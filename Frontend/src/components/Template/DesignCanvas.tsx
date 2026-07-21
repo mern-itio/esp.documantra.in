@@ -2,10 +2,6 @@ import React, { useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Rnd } from 'react-rnd';
 import type { CanvasElement } from '../../types/template';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
-import { Bar, Line } from 'react-chartjs-2';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
 interface DesignCanvasProps {
   elements: CanvasElement[];
@@ -197,7 +193,6 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       }
 
       case 'chart': {
-        // default chart data
         const chartData = el.chartData || {
           labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
           datasets: [
@@ -210,14 +205,30 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             }
           ]
         };
+        const labels = chartData.labels || [];
+        const values = (chartData.datasets?.[0]?.data || []).map((n: number) => Number(n) || 0);
+        const max = Math.max(1, ...values);
+        const barColor = chartData.datasets?.[0]?.backgroundColor || '#3b82f6';
 
         return (
-          <div className="w-full h-full flex items-center justify-center">
-            {el.chartKind === 'line' ? (
-              <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
-            ) : (
-              <Bar data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
-            )}
+          <div className="w-full h-full flex items-end gap-1 p-2">
+            {labels.map((label: string, idx: number) => {
+              const value = values[idx] ?? 0;
+              const pct = Math.round((value / max) * 100);
+              return (
+                <div key={`${label}-${idx}`} className="flex-1 h-full flex flex-col justify-end items-center gap-1 min-w-0">
+                  <div
+                    className="w-full rounded-t"
+                    style={{
+                      height: `${Math.max(value ? 8 : 0, pct)}%`,
+                      backgroundColor: typeof barColor === 'string' ? barColor : '#3b82f6',
+                    }}
+                    title={`${label}: ${value}`}
+                  />
+                  <span className="text-[9px] text-gray-500 truncate w-full text-center">{label}</span>
+                </div>
+              );
+            })}
           </div>
         );
       }

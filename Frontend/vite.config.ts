@@ -37,7 +37,6 @@ export default defineConfig({
           if (id.includes('pdfjs-dist') || id.includes('react-pdf')) return 'vendor-pdf';
           if (id.includes('@ckeditor')) return 'vendor-ckeditor';
           if (id.includes('@mui')) return 'vendor-mui';
-          if (id.includes('recharts') || id.includes('chart.js')) return 'vendor-charts';
           if (id.includes('lottie')) return 'vendor-lottie';
           if (id.includes('fabric')) return 'vendor-fabric';
           if (id.includes('socket.io')) return 'vendor-socket';

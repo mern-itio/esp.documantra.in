@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { apiServiceApi } from "../../../services/apiHelper";
 
 type StatusCodeDatum = {
@@ -30,14 +29,12 @@ const StatusCodesChart = () => {
     const fetchStatusData = async () => {
       try {
         const response = await apiServiceApi.get('/api/api-service/status-codes');
-        // API expects { codes: [{ code, count, percent }], total }
         if (response.status === 200 && response.data.codes) {
-          // Map API data to chart format with colors
-          const formatted = response.data.codes.map((c : any) => ({
-          code: c.code,
-          value: c.count,
-          color: STATUS_COLORS[String(c.code)] || "#94a3b8"
-        }));
+          const formatted = response.data.codes.map((c: any) => ({
+            code: c.code,
+            value: c.count,
+            color: STATUS_COLORS[String(c.code)] || "#94a3b8"
+          }));
           setStatusData(formatted);
         }
       } catch (err) {
@@ -47,47 +44,39 @@ const StatusCodesChart = () => {
     fetchStatusData();
   }, []);
 
-  const total = statusData.reduce((sum, d) => sum + d.value, 0);
+  const total = Math.max(1, statusData.reduce((sum, d) => sum + d.value, 0));
 
   return (
     <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Status Codes</h2>
-      <div className="flex flex-col items-center">
-        <ResponsiveContainer width={160} height={160}>
-          <PieChart>
-            <Pie
-              data={statusData}
-              dataKey="value"
-              nameKey="code"
-              cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={80}
-              paddingAngle={2}
-              startAngle={90}
-              endAngle={450}
-            >
-              {statusData.map((entry) => (
-                <Cell key={entry.code} fill={entry.color} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-        {/* Legend */}
-        <div className="w-full mt-4 flex flex-col gap-2">
-          {statusData.map(entry => (
-            <div key={entry.code} className="flex items-center justify-between text-gray-700 text-sm">
-              <div className="flex items-center">
-                <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: entry.color }} />
-                <span>{entry.code}</span>
-                <span className="ml-2 text-gray-500">({STATUS_MEANINGS[String(entry.code)] || "Unknown"})</span>
+      <div className="flex flex-col gap-3">
+        {statusData.length === 0 ? (
+          <p className="text-sm text-gray-500 py-6 text-center">No status code data yet.</p>
+        ) : (
+          statusData.map((entry) => {
+            const pct = Math.round((entry.value / total) * 100);
+            return (
+              <div key={entry.code} className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm text-gray-700">
+                  <div className="flex items-center">
+                    <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: entry.color }} />
+                    <span>{entry.code}</span>
+                    <span className="ml-2 text-gray-500">({STATUS_MEANINGS[String(entry.code)] || "Unknown"})</span>
+                  </div>
+                  <span>
+                    {entry.value.toLocaleString()} ({((entry.value / total) * 100).toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/80">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${Math.max(4, pct)}%`, backgroundColor: entry.color }}
+                  />
+                </div>
               </div>
-              <span>
-                {entry.value.toLocaleString()} ({((entry.value / total) * 100).toFixed(1)}%)
-              </span>
-            </div>
-          ))}
-        </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
