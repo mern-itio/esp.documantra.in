@@ -2241,7 +2241,6 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               break;
                             }
                           }
-                          const allowSigning = isCurrentUser && !isSigned && allFilled && !isSigning && signingEnabled;
                           const isActiveNavField = currentNavFieldKey === keyId;
                           return (
                             <div
