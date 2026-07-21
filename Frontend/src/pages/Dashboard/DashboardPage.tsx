@@ -50,7 +50,6 @@ const DashboardPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [envStatesLoading, setEnvStatesLoading] = React.useState(true);
   const [envelopeStats, setEnvelopeStats] = React.useState<any>(null);
-  const [userPlan, setUserPlan] = React.useState<any>(null);
 
   React.useEffect(() => {
     fetchAllEnvelopeStats();
@@ -74,10 +73,9 @@ const DashboardPage: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        const [bRes, uRes, planRes] = await Promise.all([
+        const [bRes, uRes] = await Promise.all([
           subscriptionApi.get('/usage/balance'),
           subscriptionApi.get('/usage/records?limit=30'),
-          subscriptionApi.get('/user-plan/me').catch(() => null), // Fetch plan info, ignore errors
         ]);
         if (!mounted) return;
         setBalance((bRes as any).data?.data?.creditsBalance ?? null);
@@ -86,10 +84,6 @@ const DashboardPage: React.FC = () => {
           toolNameByIdRef.current = raw ? JSON.parse(raw) : {};
         } catch { toolNameByIdRef.current = {}; }
         setUsage(((uRes as any).data?.data?.records || []).map((r: any) => ({ action: r.action, creditsDelta: r.creditsDelta, balanceAfter: r.balanceAfter, createdAt: r.createdAt, toolId: r.toolId })));
-        // Store user plan if available
-        if (planRes && (planRes as any).data?.data) {
-          setUserPlan((planRes as any).data.data);
-        }
       } catch {
         if (!mounted) return;
       } finally {
