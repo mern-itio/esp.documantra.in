@@ -1275,6 +1275,37 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   };
   
   // (Prev navigation removed because it wasn't used; keeping only Next in UI)
+  const navigateToFieldAndMaybeOpenSignPad = (index: number) => {
+    if (index == null || index < 0 || index >= actionableFields.length) return;
+    const field = actionableFields[index];
+    goToActionableIndex(index);
+    if (
+      !field ||
+      field.type !== "signature" ||
+      isViewOnly ||
+      !signingEnabled ||
+      isSignatureFieldCompleted(field)
+    ) {
+      return;
+    }
+
+    let prerequisitesFilled = true;
+    switch (mode) {
+      case MODE.SELF_SIGNER:
+        prerequisitesFilled = areAllNonSignatureFieldsFilledForSlot(field.slotId);
+        break;
+      case MODE.RECIPIENT:
+        prerequisitesFilled = areAllNonSignatureFieldsFilledForRecipient(field.recipientId);
+        break;
+    }
+    if (!prerequisitesFilled) return;
+
+    // Yellow "Sign" CTA previously only scrolled to the field — open SignPad so it actually works.
+    window.setTimeout(() => {
+      handleFieldClick(field);
+    }, 320);
+  };
+
   const goToNext = () => {
     if (actionableFields.length === 0) return;
     
@@ -1294,9 +1325,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       }
       
       if (firstIncomplete !== null) {
-        goToActionableIndex(firstIncomplete);
+        navigateToFieldAndMaybeOpenSignPad(firstIncomplete);
       } else {
-        goToActionableIndex(0);
+        navigateToFieldAndMaybeOpenSignPad(0);
       }
       return;
     }
@@ -1317,6 +1348,29 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       // Current field doesn't exist in actionableFields, so it's completed
       isCurrentCompleted = true;
     }
+
+    // Already on an incomplete signature field — open SignPad immediately (don't skip away).
+    if (
+      currentField &&
+      !isCurrentCompleted &&
+      currentField.type === "signature" &&
+      signingEnabled &&
+      !isViewOnly
+    ) {
+      let prerequisitesFilled = true;
+      switch (mode) {
+        case MODE.SELF_SIGNER:
+          prerequisitesFilled = areAllNonSignatureFieldsFilledForSlot(currentField.slotId);
+          break;
+        case MODE.RECIPIENT:
+          prerequisitesFilled = areAllNonSignatureFieldsFilledForRecipient(currentField.recipientId);
+          break;
+      }
+      if (prerequisitesFilled) {
+        handleFieldClick(currentField);
+        return;
+      }
+    }
     
     // Find next incomplete field based on mode
     switch (mode) {
@@ -1333,7 +1387,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         
         // Navigate if we found a field (even if index is same, because the field at that index changed)
         if (nextIndex !== null) {
-          goToActionableIndex(nextIndex);
+          navigateToFieldAndMaybeOpenSignPad(nextIndex);
         }
         break;
       }
@@ -1349,7 +1403,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         
         // Navigate if we found a field
         if (nextIndex !== null) {
-          goToActionableIndex(nextIndex);
+          navigateToFieldAndMaybeOpenSignPad(nextIndex);
         }
         break;
       }
@@ -2221,8 +2275,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   left: 0,
                                   width: scaledWidth,
                                   height: scaledHeight,
-                                  // In CC view-only we still want clicks to open audit trail.
-                                  pointerEvents: isViewOnly ? "auto" : (isSigned ? "auto" : allowSigning ? "auto" : "none"),
+                                  // Keep signature boxes clickable whenever signing is enabled for this user.
+                                  pointerEvents: isViewOnly
+                                    ? "auto"
+                                    : isSigned || (isCurrentUser && signingEnabled && !isSigning)
+                                      ? "auto"
+                                      : "none",
                                   fontSize: fieldFontSize,
                                   padding: `0px ${boxPaddingX-15}px`,
                                 }}
@@ -2247,9 +2305,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     return;
                                   }
                                   if (!signingEnabled || isSigning) return;
-                                  if (isCurrentUser && !recipientSignature) {
+                                  if (!isCurrentUser) return;
+                                  if (!allFilled) {
+                                    window.alert("Please fill all other required fields before signing.");
+                                    return;
+                                  }
+                                  if (!recipientSignature) {
                                     onFieldClick(field);
-                                  } else if (isCurrentUser && recipientSignature) {
+                                  } else {
                                     doSign(field);
                                   }
                                 }}
@@ -2287,12 +2350,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 ) : isCurrentUser && recipientSignature ? (
                                   <span className="inline-flex items-center gap-1">
                                     <PenLine className="h-3.5 w-3.5" />
-                                    Click to sign
+                                    Sign
                                   </span>
                                 ) : isCurrentUser && !recipientSignature ? (
                                   <span className="inline-flex items-center gap-1">
                                     <PenLine className="h-3.5 w-3.5" />
-                                    Signature
+                                    Sign
                                   </span>
                                 ) : (
                                   "Signature"
