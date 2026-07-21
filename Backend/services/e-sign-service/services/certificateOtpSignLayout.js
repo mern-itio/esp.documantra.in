@@ -236,16 +236,43 @@ function drawLocationRows(doc, x, y, w, evidence) {
 
 function drawTimeline(doc, x, y, w, timeline) {
   let rowY = y;
-  (timeline || []).slice(0, 5).forEach((item, idx, arr) => {
-    doc.circle(x + 2.5, rowY + 3, 2).fill(C.green);
-    if (idx < arr.length - 1) line(doc, x + 2.5, rowY + 6, x + 2.5, rowY + 13);
-    doc.fillColor(C.ink).font('Helvetica').fontSize(6.8);
-    textAt(doc, clip(item.event, 36), x + 10, rowY, { width: w - 70 });
-    doc.fillColor(C.label).font('Helvetica').fontSize(6.5);
-    textAt(doc, formatGmtTs(item.at), x + w - 64, rowY, { width: 64, align: 'right' });
-    rowY += 13;
+  const items = (timeline || []).slice(0, 5);
+  items.forEach((item, idx) => {
+    const event = String(item.event || '—');
+    const ts = formatGmtTs(item.at);
+    const rowH = 20;
+
+    doc.circle(x + 2.5, rowY + 4, 2).fill(C.green);
+    if (idx < items.length - 1) {
+      line(doc, x + 2.5, rowY + 7, x + 2.5, rowY + rowH - 2);
+    }
+
+    // Stack label + timestamp so narrow columns never mid-word wrap sideways.
+    doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(6.6);
+    textAt(doc, event, x + 10, rowY, { width: Math.max(40, w - 14) });
+    doc.fillColor(C.label).font('Helvetica').fontSize(5.7);
+    textAt(doc, ts, x + 10, rowY + 9, { width: Math.max(40, w - 14) });
+    rowY += rowH;
   });
   return rowY;
+}
+
+function hasLocationEvidence(evidence) {
+  if (!evidence) return false;
+  return Boolean(
+    evidence.location ||
+      evidence.city ||
+      evidence.region ||
+      evidence.country ||
+      evidence.countryCode ||
+      evidence.zip ||
+      evidence.timezone ||
+      evidence.geoCoords ||
+      evidence.latitude != null ||
+      evidence.lat != null ||
+      evidence.longitude != null ||
+      evidence.lon != null,
+  );
 }
 
 function drawTopChrome(doc) {
@@ -348,8 +375,17 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
     const evidence = sanitizeSigningEvidence(signer.evidence || {});
     const timeline = signer.timeline || [];
     const hasAuth = countAuthSlots(evidence) > 0;
+    const showLocation = hasLocationEvidence(evidence);
+    const timelineRows = Math.min((timeline || []).length || 1, 5);
+    const timelineBlockH = 14 + timelineRows * 20;
+    const metaRows = ['device', 'os', 'browser', 'ip', 'isp', 'org', 'asn'].filter(
+      (k) => evidence[k],
+    ).length;
+    const metaBlockH = 14 + Math.max(metaRows, 1) * 11;
+    const contentH = Math.max(hasAuth ? 70 : 40, metaBlockH, showLocation ? 70 : 0, timelineBlockH);
+    const signatureReserve = 48;
+    const panelH = Math.max(120, 28 + contentH + signatureReserve);
     const extraH = (evidence.evidenceHash ? 16 : 0) + (evidence.userAgent ? 9 : 0) + 8;
-    const panelH = 156;
     y = ensureSpace(doc, y, panelH + extraH + 6);
     doc.roundedRect(left, y, width, panelH, 6).lineWidth(0.9).strokeColor(C.line).fillAndStroke(C.panel, C.line);
     doc.rect(left, y, width, 22).fill('#eef2f6');
@@ -372,34 +408,52 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
     textAt(doc, 'VERIFIED', left + width - 50, y + 7.5, { width: 42, align: 'center' });
 
     const bodyY = y + 28;
-    const authW = hasAuth ? width * 0.2 : 0;
-    const metaW = width * (hasAuth ? 0.28 : 0.34);
-    const locW = width * 0.28;
-    const timeW = width - authW - metaW - locW - 28;
-    const metaX = left + 10 + authW + (hasAuth ? 6 : 0);
-    const locX = metaX + metaW + 8;
-    const timeX = locX + locW + 8;
+    const gap = 8;
+    // Prefer a wide timeline column; collapse empty IP LOCATION.
+    let authW = hasAuth ? Math.min(108, width * 0.18) : 0;
+    let locW = showLocation ? Math.min(130, width * 0.22) : 0;
+    let metaW = Math.min(150, width * 0.26);
+    let timeW = width - authW - metaW - locW - gap * (1 + (hasAuth ? 1 : 0) + (showLocation ? 1 : 0)) - 16;
+    if (timeW < 150) {
+      // Steal width from location/meta first so timeline stays readable.
+      const need = 150 - timeW;
+      const fromLoc = Math.min(locW * 0.35, need);
+      locW -= fromLoc;
+      timeW += fromLoc;
+      if (timeW < 150) {
+        const fromMeta = Math.min(metaW * 0.25, 150 - timeW);
+        metaW -= fromMeta;
+        timeW += fromMeta;
+      }
+    }
+
+    const metaX = left + 10 + (hasAuth ? authW + gap : 0);
+    const locX = metaX + metaW + (showLocation ? gap : 0);
+    const timeX = showLocation ? locX + locW + gap : metaX + metaW + gap;
+    const dividerBottom = y + panelH - signatureReserve;
 
     if (hasAuth) {
       doc.fillColor(C.green).font('Helvetica-Bold').fontSize(6);
       textAt(doc, 'IDENTITY', left + 10, bodyY);
       await drawAuthPhotos(doc, evidence, left + 10, bodyY + 8);
-      line(doc, metaX - 4, bodyY - 2, metaX - 4, y + panelH - 8);
+      line(doc, metaX - gap / 2, bodyY - 2, metaX - gap / 2, dividerBottom);
     }
 
     doc.fillColor(C.green).font('Helvetica-Bold').fontSize(6);
     textAt(doc, 'SESSION DETAILS', metaX, bodyY);
     drawMetaRows(doc, metaX, bodyY + 8, metaW, evidence);
-    line(doc, locX - 4, bodyY - 2, locX - 4, y + panelH - 8);
+    line(doc, timeX - gap / 2 - (showLocation ? locW + gap : 0), bodyY - 2, timeX - gap / 2 - (showLocation ? locW + gap : 0), dividerBottom);
+
+    if (showLocation) {
+      doc.fillColor(C.green).font('Helvetica-Bold').fontSize(6);
+      textAt(doc, 'IP LOCATION', locX, bodyY);
+      drawLocationRows(doc, locX, bodyY + 8, locW, evidence);
+      line(doc, timeX - gap / 2, bodyY - 2, timeX - gap / 2, dividerBottom);
+    }
 
     doc.fillColor(C.green).font('Helvetica-Bold').fontSize(6);
-    textAt(doc, 'IP LOCATION', locX, bodyY);
-    drawLocationRows(doc, locX, bodyY + 8, locW, evidence);
-    line(doc, timeX - 4, bodyY - 2, timeX - 4, y + panelH - 8);
-
-    doc.fillColor(C.green).font('Helvetica-Bold').fontSize(6);
-    textAt(doc, 'AUDIT TIMELINE (GMT)', timeX, bodyY);
-    drawTimeline(doc, timeX, bodyY + 8, timeW, timeline);
+    textAt(doc, 'AUDIT TIMELINE (GMT)', timeX, bodyY, { width: timeW });
+    drawTimeline(doc, timeX, bodyY + 10, timeW, timeline);
 
     const handwritten = await resolveImageBuffer(evidence.handwrittenSignature);
     if (handwritten) {
