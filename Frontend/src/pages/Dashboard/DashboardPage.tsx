@@ -16,7 +16,6 @@ import {
   Activity,
   ArrowUpRight
 } from 'lucide-react';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import AIAuditInsights from '../../components/ESign/AIAuditInsights';
 import { ChartErrorBoundary, CHART_HEX } from '../../components/common/ChartErrorBoundary';
 
@@ -52,16 +51,6 @@ const DashboardPage: React.FC = () => {
   const [envStatesLoading, setEnvStatesLoading] = React.useState(true);
   const [envelopeStats, setEnvelopeStats] = React.useState<any>(null);
   const [userPlan, setUserPlan] = React.useState<any>(null);
-  const [chartsReady, setChartsReady] = React.useState(false);
-
-  React.useEffect(() => {
-    if (loading) {
-      setChartsReady(false);
-      return undefined;
-    }
-    const frame = window.requestAnimationFrame(() => setChartsReady(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, [loading, usage.length]);
 
   React.useEffect(() => {
     fetchAllEnvelopeStats();
@@ -254,35 +243,6 @@ const DashboardPage: React.FC = () => {
     [moduleBarData]
   );
 
-  const radarData = useMemo(() => {
-    const used = chartData.reduce((sum: number, d: any) => sum + (Number(d?.used) || 0), 0);
-    const added = chartData.reduce((sum: number, d: any) => sum + (Number(d?.added) || 0), 0);
-    const total = Number(envelopeStats?.totalEnvelopes || 0);
-    const completed = Number(envelopeStats?.completedEnvelopes || 0);
-    const pending = Number(envelopeStats?.pendingEnvelopes || 0);
-    const creditBalance = Number(balance || 0);
-    const dynamic = {
-      volumeMax: Math.max(10, total, completed + pending),
-      queueMax: Math.max(5, pending, Math.ceil(total * 0.6)),
-      creditMax: Math.max(50, creditBalance, used, added),
-      usageMax: Math.max(20, used, added),
-    };
-    const normalize = (n: number, max: number) => {
-      const safeN = Number.isFinite(n) ? Math.max(0, n) : 0;
-      const scaled = Math.min(100, Math.round((safeN / Math.max(1, max)) * 100));
-      // Keep non-zero metrics visible in radar so "small but real" values are not invisible.
-      return safeN > 0 ? Math.max(12, scaled) : 0;
-    };
-    return [
-      { metric: 'Volume', value: normalize(total, dynamic.volumeMax) },
-      { metric: 'Completed', value: normalize(completed, Math.max(1, total)) },
-      { metric: 'Queue', value: normalize(pending, dynamic.queueMax) },
-      { metric: 'Credits', value: normalize(creditBalance, dynamic.creditMax) },
-      { metric: 'Usage', value: normalize(used, dynamic.usageMax) },
-      { metric: 'Topups', value: normalize(added, dynamic.usageMax) },
-    ].filter((entry) => typeof entry.metric === 'string' && entry.metric.length > 0);
-  }, [chartData, envelopeStats, balance]);
-
   const moduleChartColors: Record<string, string> = {
     'E-Sign': CHART_HEX.chart1,
     'PDF Tools': CHART_HEX.chart2,
@@ -291,42 +251,14 @@ const DashboardPage: React.FC = () => {
     Other: CHART_HEX.chart5,
   };
 
-  const hasChartMetrics = useMemo(() => {
-    // New signups often have a free credit balance only — that must NOT open Recharts
-    // (RadarChart has crashed production with toUpperCase on undefined for empty activity).
-    const hasUsageHistory = usage.length > 0;
-    const hasEnvelopeActivity = Number(envelopeStats?.totalEnvelopes || 0) > 0;
-    if (!hasUsageHistory && !hasEnvelopeActivity) return false;
-    const hasModuleUsage = moduleBarChartData.length > 0;
-    const hasRadarMetrics = radarData.some((entry) => Number(entry.value) > 0);
-    return hasModuleUsage || hasRadarMetrics;
-  }, [moduleBarChartData, radarData, usage.length, envelopeStats]);
+  // Recharts removed from dashboard — its resize/color path crashes production
+  // (`toUpperCase` on undefined) and escapes React error boundaries via event handlers.
+  const moduleUsageMax = useMemo(
+    () => Math.max(1, ...moduleBarChartData.map((entry) => Number(entry.value) || 0)),
+    [moduleBarChartData]
+  );
 
   return (
-    <ChartErrorBoundary
-      fallback={
-        <div className="space-y-4 rounded-xl border border-border bg-card p-8 text-center">
-          <p className="text-sm font-medium text-foreground">Dashboard charts hit a temporary issue.</p>
-          <p className="text-xs text-muted-foreground">Your account is fine — refresh the page or continue from the quick actions below.</p>
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-            >
-              Refresh
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/e-sign/create')}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground"
-            >
-              Create envelope
-            </button>
-          </div>
-        </div>
-      }
-    >
     <div className=" space-y-8">
       {/* Advanced Tutorial Modal */}
       {showTutorial && (
@@ -527,68 +459,30 @@ const DashboardPage: React.FC = () => {
               <Loader2 className="w-6 h-6 text-primary animate-spin" />
               <span className="ml-3 text-sm text-muted-foreground">Loading usage history...</span>
             </div>
-          ) : hasChartMetrics && chartsReady ? (
-            <ChartErrorBoundary>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                {moduleBarChartData.length > 0 ? (
-                <div className="xl:col-span-6 min-w-0 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4">
-                  <h3 className="text-sm font-bold text-foreground mb-3">Module Usage</h3>
-                  <div className="h-72 w-full min-w-0">
-                    <ResponsiveContainer width="100%" height={288} minWidth={0}>
-                      <BarChart data={moduleBarChartData} layout="vertical" margin={{ left: 14, right: 10, top: 6, bottom: 6 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_HEX.grid} opacity={0.55} />
-                        <XAxis type="number" scale="linear" stroke={CHART_HEX.axis} tick={{ fill: CHART_HEX.axis, fontSize: 11 }} />
-                        <YAxis dataKey="name" type="category" scale="band" width={90} stroke={CHART_HEX.axis} tick={{ fill: CHART_HEX.axis, fontSize: 11 }} />
-                        <Tooltip
-                          cursor={{ fill: CHART_HEX.muted, opacity: 0.2 }}
-                          content={({ active, payload, label }) => {
-                            if (!active || !payload?.length) return null;
-                            const raw = payload[0]?.value;
-                            const n = typeof raw === 'number' ? raw : Number(raw);
-                            const display = Number.isFinite(n) ? n.toLocaleString() : String(raw ?? '—');
-                            return (
-                              <div className="rounded-lg border border-border bg-card px-3 py-2.5 text-sm shadow-lg">
-                                <p className="font-semibold leading-tight text-foreground">{String(label ?? '—')}</p>
-                                <p className="mt-1.5 text-xs">
-                                  <span className="text-muted-foreground">Usage: </span>
-                                  <span className="font-semibold tabular-nums text-foreground">
-                                    {display} credits
-                                  </span>
-                                </p>
-                              </div>
-                            );
-                          }}
-                        />
-                        <Bar dataKey="value" barSize={45} radius={[0, 6, 6, 0]}>
-                        {moduleBarChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={moduleChartColors[entry.name] || CHART_HEX.chart1} />
-                        ))}
-                      </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+          ) : moduleBarChartData.length > 0 ? (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-foreground">Module Usage</h3>
+              {moduleBarChartData.map((entry) => {
+                const pct = Math.round((Number(entry.value) / moduleUsageMax) * 100);
+                return (
+                  <div key={entry.name} className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="font-medium text-foreground">{entry.name}</span>
+                      <span className="tabular-nums text-muted-foreground">{Number(entry.value).toLocaleString()} credits</span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${Math.max(4, pct)}%`,
+                          backgroundColor: moduleChartColors[entry.name] || CHART_HEX.chart1,
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-                ) : null}
-              
-                {radarData.some((entry) => Number(entry.value) > 0) ? (
-                <div className={`${moduleBarChartData.length > 0 ? 'xl:col-span-6' : 'xl:col-span-12'} min-w-0 rounded-xl border border-border bg-gradient-to-br from-card to-muted/30 p-4`}>
-                  <h3 className="text-sm font-bold text-foreground mb-3">Credit Usage</h3>
-                  <div className="h-72 w-full min-w-0">
-                    <ResponsiveContainer width="100%" height={288} minWidth={0}>
-                      <RadarChart data={radarData}>
-                        <PolarGrid stroke={CHART_HEX.grid} />
-                        <PolarAngleAxis dataKey="metric" type="category" tick={{ fill: CHART_HEX.axis, fontSize: 10 }} />
-                        <PolarRadiusAxis scale="linear" domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar dataKey="value" stroke={CHART_HEX.chart5} fill={CHART_HEX.chart4} fillOpacity={0.35} isAnimationActive={false} />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                ) : null}
-              </div>
+                );
+              })}
             </div>
-            </ChartErrorBoundary>
           ) : usage.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="p-4 rounded-full bg-muted mb-3">
@@ -627,7 +521,6 @@ const DashboardPage: React.FC = () => {
         </ChartErrorBoundary>
       </div>
     </div>
-    </ChartErrorBoundary>
   );
 };
 

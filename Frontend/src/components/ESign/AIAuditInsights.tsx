@@ -180,6 +180,10 @@ const AIAuditInsights: React.FC = () => {
     (entry) => Number(entry.aiGenerated) > 0 || Number(entry.manual) > 0
   );
 
+  // Skip Recharts entirely — production crashes with toUpperCase on undefined in vendor-charts
+  // (including via resize event handlers that escape React error boundaries).
+  const showCharts = false;
+
   const pieColors = [CHART_HEX.chart1, CHART_HEX.chart2];
 
   const chartTooltipStyle = {
@@ -310,7 +314,7 @@ const AIAuditInsights: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {pieTotal > 0 ? (
+        {showCharts && pieTotal > 0 ? (
         <div className="bg-card rounded-xl shadow-sm border border-border p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">AI Generated vs Manual Documents</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -340,7 +344,7 @@ const AIAuditInsights: React.FC = () => {
           </div>
         )}
 
-        {monthlyHasData ? (
+        {showCharts && monthlyHasData ? (
         <div className="bg-card rounded-xl shadow-sm border border-border p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">Monthly Trend (Last 6 Months)</h3>
           <ResponsiveContainer width="100%" height={300}>
