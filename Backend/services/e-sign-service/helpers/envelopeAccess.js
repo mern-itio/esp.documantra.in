@@ -28,16 +28,11 @@ const loadEnvelope = async (envelopeId) =>
     select: 'UserId email name',
   });
 
-const isEnvelopeSender = (userId, envelope, req) => {
+const isEnvelopeSender = (userId, envelope) => {
   if (!userId || !envelope?.sender) return false;
-  if (String(envelope.sender) !== String(userId)) return false;
-
-  const accountType = req?.headers?.['x-account-type'];
-  const orgId = req?.headers?.['x-organization-id'];
-  if (envelope.isOrganization && orgId) {
-    return String(envelope.organizationId) === String(orgId);
-  }
-  return true;
+  // Authenticated sender/owner always has access. Do not gate on org headers —
+  // mismatched x-organization-id was causing 403 on Agreement page downloads.
+  return String(envelope.sender) === String(userId);
 };
 
 const isEnvelopeRecipientFromPopulated = (userId, envelope) => {

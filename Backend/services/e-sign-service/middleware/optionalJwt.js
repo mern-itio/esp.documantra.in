@@ -1,9 +1,13 @@
 const jwt = require('jsonwebtoken');
+const { extractAccessToken } = require('@draftnsign/auth-lib');
 
+/**
+ * Optionally attach req.user from Bearer header or httpOnly accessToken cookie (M14).
+ * Does not reject unauthenticated requests — controllers decide access.
+ */
 const optionalJwt = () => async (req, res, next) => {
   try {
-    const authHeader = req.headers?.authorization;
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+    const token = extractAccessToken(req, 'user');
     if (!token) return next();
 
     const secret = process.env.ACCESS_TOKEN_SECRET;
