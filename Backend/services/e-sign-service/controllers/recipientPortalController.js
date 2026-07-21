@@ -14,6 +14,15 @@ const {
   normalizePortalEmail,
   PORTAL_VIEW_PERMISSION,
 } = require('../helpers/recipientPortalToken');
+const { buildPublicSignerUrl } = require('../helpers/signerAccessToken');
+const {
+  createFileAccessToken,
+  resolveLocalUploadPath,
+  normalizeEsignPublicBase,
+} = require('../helpers/documentDownloadAccess');
+const Document = require('../models/Document');
+const fs = require('fs');
+const path = require('path');
 
 const OTP_EXPIRY_MINUTES = 10;
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -375,8 +384,6 @@ const listRecipientPortalDocuments = async (req, res) => {
     const envelopeById = new Map(envelopes.map((e) => [String(e._id), e]));
     const senderMap = await fetchSenderNameMap(envelopes.map((e) => e.sender));
 
-    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
-
     const rows = [];
     for (const permission of permissions) {
       const envelope = envelopeById.get(String(permission.envelopeId));
@@ -405,7 +412,7 @@ const listRecipientPortalDocuments = async (req, res) => {
         envelopeStatus: envelope.status,
         updatedAt: permission.updatedAt || envelope.updatedAt || envelope.createdAt,
         expiresAt: envelope.expirationDate || null,
-        signUrl: `${frontendUrl}/e-sign/signer/${envelope._id}/${recipient._id}`,
+        signUrl: buildPublicSignerUrl(envelope._id, recipient._id),
       });
     }
 
@@ -430,10 +437,155 @@ const listRecipientPortalDocuments = async (req, res) => {
   }
 };
 
+async function assertPortalRecipientAccess(req, envelopeId, recipientId) {
+  const email = req.recipientPortal?.email;
+  const portalPermissions = req.recipientPortal?.permissions || [];
+  if (!portalPermissions.includes(PORTAL_VIEW_PERMISSION)) {
+    return { ok: false, status: 403, message: 'Insufficient portal permissions' };
+  }
+  if (!email) {
+    return { ok: false, status: 401, message: 'Recipient portal session required' };
+  }
+  if (!mongoose.Types.ObjectId.isValid(String(envelopeId)) || !mongoose.Types.ObjectId.isValid(String(recipientId))) {
+    return { ok: false, status: 400, message: 'Invalid document reference' };
+  }
+
+  const recipient = await Recipient.findById(recipientId).lean();
+  if (!recipient || normalizePortalEmail(recipient.email) !== normalizePortalEmail(email)) {
+    return { ok: false, status: 403, message: 'You do not have access to this document' };
+  }
+
+  const permission = await RecipientPermission.findOne({
+    envelopeId,
+    recipientId,
+  }).lean();
+  if (!permission) {
+    return { ok: false, status: 404, message: 'Document not found' };
+  }
+
+  const envelope = await Envelope.findById(envelopeId).lean();
+  if (!envelope || ['draft', 'deleted'].includes(String(envelope.status || '').toLowerCase())) {
+    return { ok: false, status: 404, message: 'Document not found' };
+  }
+
+  return { ok: true, email, recipient, permission, envelope };
+}
+
+function resolvePreferredDocumentPath(doc) {
+  const signedName = doc.signedFileName || (doc.signedFilePath ? path.basename(String(doc.signedFilePath)) : null);
+  if (doc.signedFilePath && fs.existsSync(doc.signedFilePath)) {
+    return { localPath: doc.signedFilePath, downloadName: signedName || 'signed-document.pdf' };
+  }
+  const localPath = resolveLocalUploadPath(doc, signedName || doc.fileName);
+  if (localPath) {
+    return {
+      localPath,
+      downloadName: path.basename(signedName || doc.fileName || 'document.pdf'),
+    };
+  }
+  return null;
+}
+
+/** Metadata + PDF view URLs for in-portal iframe viewer. */
+const getRecipientPortalDocumentViewer = async (req, res) => {
+  try {
+    const { envelopeId, recipientId } = req.params;
+    const access = await assertPortalRecipientAccess(req, envelopeId, recipientId);
+    if (!access.ok) {
+      return res.status(access.status).json({ message: access.message });
+    }
+
+    const { envelope, permission, recipient } = access;
+    const docs = await Document.find({ envelopeId }).lean();
+    const publicBase =
+      normalizeEsignPublicBase(
+        process.env.PUBLIC_ESIGN_URL ||
+          process.env.ESIGN_SERVICE_URL ||
+          'https://esp.documantra.in',
+      ) || 'https://esp.documantra.in/esign';
+
+    const files = docs.map((doc) => {
+      const fileToken = createFileAccessToken({
+        envelopeId,
+        documentId: doc._id,
+        recipientId,
+      });
+      const params = new URLSearchParams({
+        envelopeId: String(envelopeId),
+        recipientId: String(recipientId),
+      });
+      if (fileToken) params.set('fileToken', fileToken);
+      return {
+        id: String(doc._id),
+        name: doc.signedFileName || doc.fileName || 'document.pdf',
+        viewUrl: `${publicBase}/api/e-sign/public/documents/${doc._id}/view?${params.toString()}`,
+        hasSignedFile: Boolean(doc.signedFilePath),
+      };
+    });
+
+    const status = mapDocumentStatus(permission.status, envelope.status);
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        envelopeId,
+        recipientId,
+        title:
+          String(envelope.subject || '').trim() ||
+          String(envelope.name || '').trim() ||
+          'Document',
+        documentStatus: status,
+        recipientName: recipient.name || '',
+        recipientEmail: recipient.email || '',
+        files,
+        signUrl: buildPublicSignerUrl(envelopeId, recipientId),
+        canForward: status === 'PENDING',
+      },
+    });
+  } catch (error) {
+    console.error('getRecipientPortalDocumentViewer error:', error);
+    return res.status(500).json({ message: 'Failed to open document' });
+  }
+};
+
+/** Stream preferred (signed) PDF for portal download/print. */
+const downloadRecipientPortalDocument = async (req, res) => {
+  try {
+    const { envelopeId, recipientId, documentId } = req.params;
+    const access = await assertPortalRecipientAccess(req, envelopeId, recipientId);
+    if (!access.ok) {
+      return res.status(access.status).json({ message: access.message });
+    }
+
+    const doc = await Document.findOne({ _id: documentId, envelopeId }).lean();
+    if (!doc) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    const preferred = resolvePreferredDocumentPath(doc);
+    if (!preferred?.localPath) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+
+    const asAttachment = String(req.query?.download || '') === '1';
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `${asAttachment ? 'attachment' : 'inline'}; filename="${preferred.downloadName}"`,
+    );
+    return res.sendFile(path.resolve(preferred.localPath));
+  } catch (error) {
+    console.error('downloadRecipientPortalDocument error:', error);
+    return res.status(500).json({ message: 'Failed to download document' });
+  }
+};
+
 module.exports = {
   requestRecipientPortalCode,
   verifyRecipientPortalCode,
   refreshRecipientPortalSession,
   listRecipientPortalDocuments,
+  getRecipientPortalDocumentViewer,
+  downloadRecipientPortalDocument,
   maskEmail,
 };

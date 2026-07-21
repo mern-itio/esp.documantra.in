@@ -210,6 +210,42 @@ function createSmtpTransport(env = process.env) {
   return cachedSmtpTransport;
 }
 
+function normalizeMailgunAttachments(attachments) {
+  if (!attachments) return undefined;
+  const list = Array.isArray(attachments) ? attachments : [attachments];
+  if (!list.length) return undefined;
+
+  const normalized = list
+    .map((file) => {
+      if (!file) return null;
+      let data = file.data ?? file.content;
+      if (data == null) return null;
+
+      if (typeof data === 'string') {
+        const encoding =
+          file.encoding === 'base64' || (!file.encoding && /^[A-Za-z0-9+/=\r\n]+$/.test(data.slice(0, 80)))
+            ? 'base64'
+            : file.encoding || 'utf8';
+        data = Buffer.from(data, encoding);
+      } else if (data?.type === 'Buffer' && Array.isArray(data.data)) {
+        data = Buffer.from(data.data);
+      } else if (!Buffer.isBuffer(data) && data?.data) {
+        data = Buffer.from(data.data);
+      }
+
+      if (!Buffer.isBuffer(data)) return null;
+
+      return {
+        filename: file.filename || 'attachment.pdf',
+        data,
+        contentType: file.contentType || file.content_type || undefined,
+      };
+    })
+    .filter(Boolean);
+
+  return normalized.length ? normalized : undefined;
+}
+
 async function sendWithMailgun(options, env = process.env) {
   const cfg = getMailgunConfig(env);
   if (cfg.disabled) {
@@ -219,7 +255,8 @@ async function sendWithMailgun(options, env = process.env) {
     return { skipped: true, reason: 'Mailgun not configured (MAILGUN_API_KEY/MAILGUN_DOMAIN/MAILGUN_FROM)' };
   }
 
-  const { to, subject, text, html, from, cc, bcc, replyTo, tags, headers, variables } = options || {};
+  const { to, subject, text, html, from, cc, bcc, replyTo, tags, headers, variables, attachments } =
+    options || {};
   if (!isNonEmptyString(subject)) throw new Error('subject is required');
   if (!to || (Array.isArray(to) && to.length === 0)) throw new Error('to is required');
   if (!isNonEmptyString(text) && !isNonEmptyString(html)) throw new Error('Either text or html is required');
@@ -238,6 +275,11 @@ async function sendWithMailgun(options, env = process.env) {
     bcc: bcc || undefined,
     'h:Reply-To': isNonEmptyString(replyTo) ? replyTo : undefined,
   };
+
+  const mailgunAttachments = normalizeMailgunAttachments(attachments);
+  if (mailgunAttachments) {
+    message.attachment = mailgunAttachments;
+  }
 
   // Mailgun supports tags & custom headers/vars, keep optional and lightweight
   if (tags) {

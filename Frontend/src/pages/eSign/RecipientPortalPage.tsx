@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Archive,
   ArrowUpRight,
   ChevronDown,
+  Download,
   FileText,
+  Forward,
   Inbox,
   Loader2,
   LogOut,
   Mail,
+  Printer,
   RefreshCw,
   ShieldCheck,
+  X,
 } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
 import BrandLogo from '../../components/BrandLogo';
@@ -129,6 +133,24 @@ const RecipientPortalPage: React.FC = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [sessionBootstrapping, setSessionBootstrapping] = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const viewerIframeRef = useRef<HTMLIFrameElement>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerLoading, setViewerLoading] = useState(false);
+  const [viewerError, setViewerError] = useState('');
+  const [viewerTitle, setViewerTitle] = useState('');
+  const [viewerStatus, setViewerStatus] = useState<PortalDocument['status'] | ''>('');
+  const [viewerFiles, setViewerFiles] = useState<
+    Array<{ id: string; name: string; viewUrl: string; remoteViewUrl?: string }>
+  >([]);
+  const [activeFileIndex, setActiveFileIndex] = useState(0);
+  const [viewerDoc, setViewerDoc] = useState<PortalDocument | null>(null);
+  const [forwardOpen, setForwardOpen] = useState(false);
+  const [forwardEmail, setForwardEmail] = useState('');
+  const [forwardName, setForwardName] = useState('');
+  const [forwardMessage, setForwardMessage] = useState('');
+  const [forwardBusy, setForwardBusy] = useState(false);
+  const [forwardError, setForwardError] = useState('');
+  const [forwardSuccess, setForwardSuccess] = useState('');
 
   const sessionEmail = useMemo(
     () => email.trim().toLowerCase() || localStorage.getItem(PORTAL_EMAIL_KEY) || '',
@@ -426,6 +448,203 @@ const RecipientPortalPage: React.FC = () => {
     setInfo('');
     setChangeEmailMode(!sessionEmail);
     setUserMenuOpen(false);
+    setViewerOpen(false);
+    setViewerDoc(null);
+  };
+
+  const portalAuthHeaders = useCallback(() => {
+    const authToken = token || localStorage.getItem(PORTAL_TOKEN_KEY);
+    return authToken ? { Authorization: `Bearer ${authToken}` } : {};
+  }, [token]);
+
+  const openDocumentViewer = async (doc: PortalDocument) => {
+    setViewerDoc(doc);
+    setViewerOpen(true);
+    setViewerLoading(true);
+    setViewerError('');
+    setViewerFiles((prev) => {
+      prev.forEach((f) => {
+        if (f.viewUrl.startsWith('blob:')) URL.revokeObjectURL(f.viewUrl);
+      });
+      return [];
+    });
+    setActiveFileIndex(0);
+    setForwardOpen(false);
+    setForwardError('');
+    setForwardSuccess('');
+    setViewerTitle(doc.name);
+    setViewerStatus(doc.status);
+
+    try {
+      const response = await eSignApi.get(
+        `/api/e-sign/public/recipient-portal/documents/${doc.envelopeId}/${doc.recipientId}/viewer`,
+        { headers: portalAuthHeaders() },
+      );
+      const data = response.data?.data;
+      const files = Array.isArray(data?.files) ? data.files : [];
+      setViewerTitle(data?.title || doc.name);
+      setViewerStatus((data?.documentStatus || doc.status) as PortalDocument['status']);
+
+      if (!files.length) {
+        setViewerError('No document file is available to preview yet.');
+        return;
+      }
+
+      // Prefer authenticated blob URLs so preview/print work without leaving the portal.
+      const resolved = await Promise.all(
+        files.map(async (file: { id: string; name: string; viewUrl: string }) => {
+          try {
+            const fileRes = await eSignApi.get(
+              `/api/e-sign/public/recipient-portal/documents/${doc.envelopeId}/${doc.recipientId}/files/${file.id}`,
+              {
+                headers: portalAuthHeaders(),
+                responseType: 'blob',
+              },
+            );
+            const blob = new Blob([fileRes.data], { type: 'application/pdf' });
+            return {
+              id: String(file.id),
+              name: file.name || 'document.pdf',
+              viewUrl: URL.createObjectURL(blob),
+              remoteViewUrl: file.viewUrl,
+            };
+          } catch {
+            return {
+              id: String(file.id),
+              name: file.name || 'document.pdf',
+              viewUrl: file.viewUrl,
+              remoteViewUrl: file.viewUrl,
+            };
+          }
+        }),
+      );
+      setViewerFiles(resolved);
+    } catch (err: any) {
+      setViewerError(err?.response?.data?.message || 'Unable to open this document.');
+    } finally {
+      setViewerLoading(false);
+    }
+  };
+
+  const closeDocumentViewer = () => {
+    setViewerFiles((prev) => {
+      prev.forEach((f) => {
+        if (f.viewUrl.startsWith('blob:')) URL.revokeObjectURL(f.viewUrl);
+      });
+      return [];
+    });
+    setViewerOpen(false);
+    setViewerDoc(null);
+    setForwardOpen(false);
+  };
+
+  const activeViewerFile = viewerFiles[activeFileIndex] || null;
+
+  const handleViewerPrint = () => {
+    const url = activeViewerFile?.viewUrl;
+    if (!url) return;
+    const printWindow = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!printWindow) {
+      setViewerError('Please allow pop-ups to print this document.');
+      return;
+    }
+    const triggerPrint = () => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch {
+        // Browser may block print until PDF finishes loading.
+      }
+    };
+    printWindow.addEventListener('load', () => setTimeout(triggerPrint, 400));
+    setTimeout(triggerPrint, 1200);
+  };
+
+  const handleViewerDownload = async () => {
+    if (!viewerDoc || !activeViewerFile) return;
+    try {
+      if (activeViewerFile.viewUrl.startsWith('blob:')) {
+        const link = document.createElement('a');
+        link.href = activeViewerFile.viewUrl;
+        link.download = activeViewerFile.name || 'document.pdf';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return;
+      }
+      const response = await eSignApi.get(
+        `/api/e-sign/public/recipient-portal/documents/${viewerDoc.envelopeId}/${viewerDoc.recipientId}/files/${activeViewerFile.id}`,
+        {
+          headers: portalAuthHeaders(),
+          params: { download: 1 },
+          responseType: 'blob',
+        },
+      );
+      const blobUrl = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = activeViewerFile.name || 'document.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err: any) {
+      setViewerError(err?.response?.data?.message || 'Download failed. Please try again.');
+    }
+  };
+
+  const handleViewerForward = async () => {
+    if (!viewerDoc) return;
+    setForwardError('');
+    setForwardSuccess('');
+
+    if (viewerStatus !== 'PENDING') {
+      const shareUrl =
+        viewerDoc.signUrl ||
+        `${window.location.origin}/e-sign/signer/${viewerDoc.envelopeId}/${viewerDoc.recipientId}`;
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setForwardSuccess('Document link copied. You can paste it to send forward.');
+      } catch {
+        window.prompt('Copy this link to send forward:', shareUrl);
+      }
+      return;
+    }
+
+    if (!forwardOpen) {
+      setForwardOpen(true);
+      return;
+    }
+
+    if (!forwardEmail.trim() || !forwardName.trim()) {
+      setForwardError('Enter the new recipient name and email.');
+      return;
+    }
+
+    setForwardBusy(true);
+    try {
+      await eSignApi.post(
+        '/api/e-sign/public/envelope/assign-to-someone-else',
+        {
+          envelopeId: viewerDoc.envelopeId,
+          recipientId: viewerDoc.recipientId,
+          newSignerName: forwardName.trim(),
+          newSignerEmail: forwardEmail.trim().toLowerCase(),
+          reason: forwardMessage.trim() || 'Forwarded from recipient portal',
+        },
+        { headers: portalAuthHeaders() },
+      );
+      setForwardSuccess('Document forwarded successfully.');
+      setForwardOpen(false);
+      setForwardEmail('');
+      setForwardName('');
+      setForwardMessage('');
+      await loadDocuments(tab);
+    } catch (err: any) {
+      setForwardError(err?.response?.data?.message || 'Unable to forward this document.');
+    } finally {
+      setForwardBusy(false);
+    }
   };
 
   const renderDocumentTable = (
@@ -769,19 +988,161 @@ const RecipientPortalPage: React.FC = () => {
                 status: doc.status,
                 date: formatDate(doc.updatedAt),
                 action: (
-                  <Link
-                    to={`/e-sign/signer/${doc.envelopeId}/${doc.recipientId}`}
+                  <button
+                    type="button"
+                    onClick={() => void openDocumentViewer(doc)}
                     className="inline-flex items-center justify-center gap-1 rounded-md bg-[#248567] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1f7158]"
                   >
                     Open
                     <ArrowUpRight className="h-3.5 w-3.5" />
-                  </Link>
+                  </button>
                 ),
               })),
             )
           )}
         </div>
       </main>
+
+      {viewerOpen && (
+        <div className="fixed inset-0 z-[80] flex flex-col bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 sm:px-6">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-gray-900">{viewerTitle || 'Document'}</p>
+              {viewerStatus ? (
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Status: <span className="font-medium text-gray-700">{viewerStatus}</span>
+                </p>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleViewerPrint}
+                disabled={viewerLoading || !activeViewerFile}
+                className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Print
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleViewerDownload()}
+                disabled={viewerLoading || !activeViewerFile}
+                className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleViewerForward()}
+                disabled={viewerLoading || !viewerDoc}
+                className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                <Forward className="h-3.5 w-3.5" />
+                Send Forward
+              </button>
+              <button
+                type="button"
+                onClick={closeDocumentViewer}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
+                aria-label="Close document"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {forwardOpen && viewerStatus === 'PENDING' && (
+            <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 sm:px-6">
+              <div className="mx-auto grid max-w-4xl gap-2 sm:grid-cols-3">
+                <input
+                  value={forwardName}
+                  onChange={(e) => setForwardName(e.target.value)}
+                  placeholder="New recipient name"
+                  className="rounded-md border border-gray-200 px-3 py-2 text-sm"
+                />
+                <input
+                  value={forwardEmail}
+                  onChange={(e) => setForwardEmail(e.target.value)}
+                  placeholder="New recipient email"
+                  className="rounded-md border border-gray-200 px-3 py-2 text-sm"
+                />
+                <input
+                  value={forwardMessage}
+                  onChange={(e) => setForwardMessage(e.target.value)}
+                  placeholder="Optional message"
+                  className="rounded-md border border-gray-200 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="mx-auto mt-2 flex max-w-4xl items-center gap-2">
+                <button
+                  type="button"
+                  disabled={forwardBusy}
+                  onClick={() => void handleViewerForward()}
+                  className="rounded-md bg-[#248567] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1f7158] disabled:opacity-50"
+                >
+                  {forwardBusy ? 'Sending…' : 'Confirm forward'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForwardOpen(false)}
+                  className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700"
+                >
+                  Cancel
+                </button>
+                {forwardError ? <p className="text-xs text-rose-600">{forwardError}</p> : null}
+              </div>
+            </div>
+          )}
+
+          {forwardSuccess ? (
+            <div className="border-b border-emerald-200 bg-emerald-50 px-4 py-2 text-xs text-emerald-700 sm:px-6">
+              {forwardSuccess}
+            </div>
+          ) : null}
+
+          {viewerFiles.length > 1 ? (
+            <div className="flex gap-2 overflow-x-auto border-b border-gray-100 px-4 py-2 sm:px-6">
+              {viewerFiles.map((file, idx) => (
+                <button
+                  key={file.id}
+                  type="button"
+                  onClick={() => setActiveFileIndex(idx)}
+                  className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${
+                    idx === activeFileIndex
+                      ? 'bg-[#248567] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {file.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="relative min-h-0 flex-1 bg-gray-100">
+            {viewerLoading ? (
+              <div className="flex h-full items-center justify-center gap-2 text-sm text-gray-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Opening document…
+              </div>
+            ) : viewerError ? (
+              <div className="flex h-full items-center justify-center px-6 text-center text-sm text-rose-600">
+                {viewerError}
+              </div>
+            ) : activeViewerFile ? (
+              <iframe
+                ref={viewerIframeRef}
+                title={viewerTitle || 'Document preview'}
+                src={activeViewerFile.viewUrl}
+                className="h-full w-full border-0 bg-white"
+              />
+            ) : null}
+          </div>
+        </div>
+      )}
+
       <CookieConsentBanner onManage={() => setCookieCenterOpen(true)} />
       <CookiePreferenceCenter
         open={cookieCenterOpen}

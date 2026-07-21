@@ -268,6 +268,7 @@ module.exports = {
   createFileAccessToken,
   verifyFileAccessToken,
   buildPublicUploadUrl,
+  normalizeEsignPublicBase,
   assertDocumentDownloadAccess,
   assertEnvelopeDownloadAccess,
   assertUploadFileAccess,

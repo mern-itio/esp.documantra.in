@@ -1220,15 +1220,13 @@ const sendToAllRecipients = async (
           envelope.subject
         );
         try {
-          await axios.post(
-            `${process.env.EMAIL_SERVICE_URL}/mail/send/${userId}`,
-            {
-              toEmail: recipient.recipientId.email,
-              subject: `Document "${envelope.subject}" Completed and Signed`,
-              html,
-              attachments
-            }
-          );
+          await dispatchEnvelopeEmail({
+            userId,
+            toEmail: recipient.recipientId.email,
+            subject: `Document "${envelope.subject}" Completed and Signed`,
+            html,
+            attachments,
+          });
 
           console.log('✅ Recipient Email Sent');
         } catch (err) {
@@ -1501,10 +1499,11 @@ const completeSignature = async(req, res)=>{
             };
             envelope.status = 'completed';
           await envelope.save();
-          // documents already fetched above for final signing
+          // Re-fetch after finalize so signedFilePath is present on each document
+          const finalizedDocs = await Document.find({ envelopeId });
           const attachments = [];
-          for (const doc of documents) {
-            if (!doc.signedFilePath) continue;
+          for (const doc of finalizedDocs) {
+            if (!doc.signedFilePath || !fs.existsSync(doc.signedFilePath)) continue;
 
             const pdfBuffer = fs.readFileSync(doc.signedFilePath);
 
@@ -1598,104 +1597,18 @@ const addDigitalSignatureForRecipient = async ({ envelopeId, documentId, recipie
       status: 'pending'
     });
 
-    // All fields across all documents are completed
+    // All fields across all documents are completed — defer finalization +
+    // completion email to signature-complete. Completing here raced Finish and
+    // previously called sendToAllRecipients with the wrong argument order.
     if (pendingFields.length === 0) {
-      const allSignersDone = await signatureOperationServices.allSigningRecipientsCompleted(envelopeId);
-      if (!allSignersDone) {
-        return {
-          status: 200,
-          response: {
-            status: 200,
-            success: true,
-            message: 'All your fields are signed. Click Complete to finish.',
-            fieldRemmaning: false,
-          },
-        };
-      }
-
-      const envelope = await Envelope.findById(envelopeId);
-      if (!envelope) {
-        return {
-          status: 404,
-          response: { message: 'Envelope not found' }
-        };
-      }
-
-      // Prepare document for final signing
-      const prepareDoc = await prepareDocumentForFinalSigning(envelopeId, documentId);
-      if (!prepareDoc) {
-        console.log('Failed to prepare document for final signing');
-        return {
-          status: 500,
-          response: { message: 'Failed to prepare document for final signing' }
-        };
-      }
-
-      // Finalize signing
-      const digiSign = await finalizeSigning(envelopeId, documentId);
-      if (!digiSign) {
-        console.log('Failed to finalize signing');
-        return {
-          status: 500,
-          response: { message: 'Failed to finalize signing' }
-        };
-      }
-
-      const signedPdfBuffer = fs.readFileSync(digiSign.finalPath);
-      const signedPdfFilename = `signed-document-${envelopeId}.pdf`;
-
-      // Update envelope status to completed
-      envelope.status = 'completed';
-      await envelope.save();
-
-      // Generate Certificate of Completion
-      try {
-        const { buffer, filename, filepath } = await generateAndStoreCompletionCertificate(envelope._id);
-        envelope.completionCertificate = {
-          filename,
-          path: filepath,
-          mimeType: 'application/pdf',
-          createdAt: new Date()
-        };
-        await envelope.save();
-
-        // Send completion email to all recipients
-        await sendToAllRecipients(envelope, buffer, filename, signedPdfBuffer, signedPdfFilename, envelope?.sender);
-      } catch (err) {
-        console.error('Error generating completion certificate:', err);
-      }
-
-      await logActivity(envelopeId, "ENVELOPE_COMPLETED", "System", {
-        subject: envelope.subject,
-        message: envelope.message
-      });
-
-      // Create notification for envelope creator
-      try {
-        const recipient = await Recipient.findById(recipientId);
-        if (recipient && envelope.sender) {
-          await Notification.create({
-            userId: envelope.sender.toString(),
-            envelopeId: envelope._id,
-            recipientId: recipient._id,
-            recipientName: recipient.name,
-            envelopeSubject: envelope.subject,
-            type: 'envelope_completed',
-            message: `All recipients have signed "${envelope.subject}"`
-          });
-        }
-      } catch (notifErr) {
-        console.error('Error creating notification:', notifErr);
-      }
-
       return {
         status: 200,
         response: {
-          status: 'success',
-          message: 'Envelope signing completed',
+          status: 200,
+          success: true,
+          message: 'All your fields are signed. Click Complete to finish.',
           fieldRemmaning: false,
-          data: digiSign
-        }
+        },
       };
     }
 

@@ -115,6 +115,7 @@ async function sendViaMailgunPlatform({ platformDoc, toEmail, subject, html, att
       html,
       from: identity.from,
       replyTo: identity.replyTo,
+      attachments,
     },
     env
   );
@@ -155,8 +156,11 @@ async function sendViaUserSmtp({ smtpConfig, toEmail, subject, html, attachments
   return { provider: 'user_smtp', ...info };
 }
 
-async function sendViaEnvMailgun({ toEmail, subject, html, senderMode }) {
-  const result = await sendWithMailgun({ to: toEmail, subject, html }, process.env);
+async function sendViaEnvMailgun({ toEmail, subject, html, attachments = [], senderMode }) {
+  const result = await sendWithMailgun(
+    { to: toEmail, subject, html, attachments },
+    process.env
+  );
   if (result?.skipped) throw new Error(result.reason || 'Mailgun not configured');
   return { provider: 'mailgun_env', ...result, senderMode };
 }
@@ -183,6 +187,7 @@ const sendEmailByUserId = async ({
         html,
         from: identity.from,
         replyTo: identity.replyTo,
+        attachments,
       },
       env
     );
@@ -195,7 +200,7 @@ const sendEmailByUserId = async ({
     return sendViaUserSmtp({ smtpConfig, toEmail, subject, html, attachments });
   }
 
-  return sendViaEnvMailgun({ toEmail, subject, html, senderMode: mode });
+  return sendViaEnvMailgun({ toEmail, subject, html, attachments, senderMode: mode });
 };
 
 const sendEmailBySystem = async ({ to, subject, html, attachments = [], senderMode = 'dm' }) => {
@@ -213,7 +218,7 @@ const sendEmailBySystem = async ({ to, subject, html, attachments = [], senderMo
   }
 
   try {
-    return await sendViaEnvMailgun({ toEmail: to, subject, html, senderMode });
+    return await sendViaEnvMailgun({ toEmail: to, subject, html, attachments, senderMode });
   } catch (envErr) {
     if (platformDoc?.allowUserSmtpFallback === false) {
       throw envErr;

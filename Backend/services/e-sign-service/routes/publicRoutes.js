@@ -35,6 +35,8 @@ const {
   verifyRecipientPortalCode,
   refreshRecipientPortalSession,
   listRecipientPortalDocuments,
+  getRecipientPortalDocumentViewer,
+  downloadRecipientPortalDocument,
 } = require('../controllers/recipientPortalController');
 const {
   checkSignerAccess,
@@ -127,6 +129,16 @@ router.post('/recipient-portal/request-code', requestRecipientPortalCode);
 router.post('/recipient-portal/verify-code', verifyRecipientPortalCode);
 router.post('/recipient-portal/refresh-session', refreshRecipientPortalSession);
 router.get('/recipient-portal/documents', recipientPortalAuth, listRecipientPortalDocuments);
+router.get(
+  '/recipient-portal/documents/:envelopeId/:recipientId/viewer',
+  recipientPortalAuth,
+  getRecipientPortalDocumentViewer,
+);
+router.get(
+  '/recipient-portal/documents/:envelopeId/:recipientId/files/:documentId',
+  recipientPortalAuth,
+  downloadRecipientPortalDocument,
+);
 router.get('/signer-access/check', checkSignerAccess);
 router.post('/signer-access/request-code', requestSignerAccessCode);
 router.post('/signer-access/verify-code', verifySignerAccessCode);

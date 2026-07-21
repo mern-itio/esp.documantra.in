@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const {
   assertDocumentDownloadAccess,
   resolveLocalUploadPath,
@@ -16,7 +17,13 @@ const viewDocument = async (req, res, next) => {
       });
     }
 
-    const localPath = resolveLocalUploadPath(access.doc, access.doc.fileName);
+    const localPath =
+      access.doc.signedFilePath && fs.existsSync(access.doc.signedFilePath)
+        ? access.doc.signedFilePath
+        : resolveLocalUploadPath(
+            access.doc,
+            access.doc.signedFileName || access.doc.fileName,
+          );
     if (!localPath) {
       return res.status(404).json({
         status: 404,
@@ -25,7 +32,9 @@ const viewDocument = async (req, res, next) => {
       });
     }
 
-    const downloadName = path.basename(access.doc.fileName || 'document.pdf');
+    const downloadName = path.basename(
+      access.doc.signedFileName || access.doc.fileName || 'document.pdf',
+    );
     res.setHeader('Content-Type', access.doc.mimeType || 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${downloadName}"`);
     return res.sendFile(localPath);
