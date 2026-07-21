@@ -224,25 +224,27 @@ export function FederatedLoginButtons({
     [disabled, onError],
   );
 
-  if (loading) {
-    return (
-      <p className="py-2 text-center text-xs text-slate-500">Loading sign-in options…</p>
-    );
-  }
-
-  if (orderedProviders.length === 0) {
-    return (
-      <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs text-amber-700">
-        Social sign-in is not configured yet. Use email or contact your administrator.
-      </p>
-    );
+  // Admin disabled / not configured: render nothing (no yellow banner, no loading text).
+  if (loading || orderedProviders.length === 0) {
+    return null;
   }
 
   const heading = mode === 'signup' ? 'Or Sign Up Using' : 'Or Sign In Using';
 
   return (
     <div className="relative z-10 w-full">
-      <p className="mb-4 text-center text-sm font-medium text-slate-500">{heading}</p>
+      {mode === 'signup' ? (
+        <div className="relative mb-4 py-1">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative flex justify-center text-[11px]">
+            <span className="bg-white px-3 text-slate-400">or continue with</span>
+          </div>
+        </div>
+      ) : (
+        <p className="mb-4 text-center text-sm font-medium text-slate-500">{heading}</p>
+      )}
       <div className="flex flex-wrap items-center justify-center gap-4">
         {orderedProviders.map((provider) => (
           <CircularSocialButton

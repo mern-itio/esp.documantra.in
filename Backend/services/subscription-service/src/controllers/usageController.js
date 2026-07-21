@@ -1,6 +1,7 @@
 const Subscription = require('../models/Subscription');
 const PlanTemplate = require('../models/PlanTemplate');
 const UsageRecord = require('../models/UsageRecord');
+const { ensureUserSubscription } = require('./userPlanController');
 
 // Helper to extract userId from verified JWT (align with userPlanController)
 const getUserIdFromRequest = (req) => {
@@ -41,23 +42,20 @@ const getBalance = async (req, res) => {
       subscriptionUserId = orgOwnerId;
     }
 
-    const subscription = await Subscription.findOne({
+    let subscription = await Subscription.findOne({
       userId: subscriptionUserId,
     }).lean();
 
+    // New signups: provision Free plan + starting credits (default 5) on first balance check.
     if (!subscription) {
-      return res.status(200).json({
-        status: 200,
-        data: {
-          creditsBalance: 0,
-        },
-      });
+      const created = await ensureUserSubscription(subscriptionUserId);
+      subscription = created.toObject ? created.toObject() : created;
     }
 
     return res.status(200).json({
       status: 200,
       data: {
-        creditsBalance: subscription.creditsBalance,
+        creditsBalance: subscription.creditsBalance ?? 0,
       },
     });
   } catch (e) {

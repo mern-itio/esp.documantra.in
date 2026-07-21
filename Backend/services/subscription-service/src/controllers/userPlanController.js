@@ -22,6 +22,15 @@ const getUserEmailFromRequest = (req) => {
   return decoded?.data?.email || decoded?.email || null;
 };
 
+/** Default free credits for brand-new signups when Free plan monthlyCredits is unset/0. */
+const FREE_SIGNUP_CREDITS = Math.max(0, Number(process.env.FREE_SIGNUP_CREDITS) || 5);
+
+function getFreeSignupCredits(freePlanTemplate) {
+  const fromPlan = Number(freePlanTemplate?.monthlyCredits);
+  if (Number.isFinite(fromPlan) && fromPlan > 0) return fromPlan;
+  return FREE_SIGNUP_CREDITS;
+}
+
 const buildPlanResponse = (subscription, planTemplate = null) => ({
   id: subscription._id,
   userId: subscription.userId,
@@ -31,7 +40,7 @@ const buildPlanResponse = (subscription, planTemplate = null) => ({
   services: planTemplate?.services || ['pdf', 'esign'],
   type: planTemplate?.type || (planTemplate?.pricePerPeriod > 0 ? 'paid' : 'free'),
   price: planTemplate?.pricePerPeriod || 0,
-  conversionsLimit: planTemplate?.monthlyCredits ?? 0,
+  conversionsLimit: planTemplate?.monthlyCredits ?? getFreeSignupCredits(planTemplate),
   creditsBalance: subscription.creditsBalance || 0,
   toolCosts: planTemplate?.toolCosts || [],
   authCosts: planTemplate?.authCosts || [],
@@ -55,9 +64,7 @@ const ensureUserSubscription = async (userId) => {
       });
       if (freePlanTemplate) {
         subscription.planTemplateId = freePlanTemplate._id;
-        if (!subscription.creditsBalance && freePlanTemplate.monthlyCredits) {
-          subscription.creditsBalance = freePlanTemplate.monthlyCredits;
-        }
+        // Do not top-up existing balances (spent-to-zero must stay 0).
         await subscription.save();
       }
     }
@@ -68,6 +75,8 @@ const ensureUserSubscription = async (userId) => {
     $or: [{ type: 'free' }, { pricePerPeriod: 0 }],
   }).lean();
 
+  const startingCredits = getFreeSignupCredits(freePlanTemplate);
+
   if (freePlanTemplate) {
     const now = new Date();
     const nextBilling = freePlanTemplate.period === 'monthly'
@@ -77,7 +86,7 @@ const ensureUserSubscription = async (userId) => {
     subscription = await Subscription.create({
       userId,
       planTemplateId: freePlanTemplate._id,
-      creditsBalance: freePlanTemplate.monthlyCredits || 0,
+      creditsBalance: startingCredits,
       status: 'active',
       periodStart: now,
       periodEnd: nextBilling,
@@ -88,7 +97,7 @@ const ensureUserSubscription = async (userId) => {
 
   return Subscription.create({
     userId,
-    creditsBalance: 0,
+    creditsBalance: startingCredits,
     status: 'active',
   });
 };

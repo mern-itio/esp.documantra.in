@@ -292,12 +292,41 @@ const DashboardPage: React.FC = () => {
   };
 
   const hasChartMetrics = useMemo(() => {
+    // New signups often have a free credit balance only — that must NOT open Recharts
+    // (RadarChart has crashed production with toUpperCase on undefined for empty activity).
+    const hasUsageHistory = usage.length > 0;
+    const hasEnvelopeActivity = Number(envelopeStats?.totalEnvelopes || 0) > 0;
+    if (!hasUsageHistory && !hasEnvelopeActivity) return false;
     const hasModuleUsage = moduleBarChartData.length > 0;
     const hasRadarMetrics = radarData.some((entry) => Number(entry.value) > 0);
     return hasModuleUsage || hasRadarMetrics;
-  }, [moduleBarChartData, radarData]);
+  }, [moduleBarChartData, radarData, usage.length, envelopeStats]);
 
   return (
+    <ChartErrorBoundary
+      fallback={
+        <div className="space-y-4 rounded-xl border border-border bg-card p-8 text-center">
+          <p className="text-sm font-medium text-foreground">Dashboard charts hit a temporary issue.</p>
+          <p className="text-xs text-muted-foreground">Your account is fine — refresh the page or continue from the quick actions below.</p>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/e-sign/create')}
+              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground"
+            >
+              Create envelope
+            </button>
+          </div>
+        </div>
+      }
+    >
     <div className=" space-y-8">
       {/* Advanced Tutorial Modal */}
       {showTutorial && (
@@ -598,6 +627,7 @@ const DashboardPage: React.FC = () => {
         </ChartErrorBoundary>
       </div>
     </div>
+    </ChartErrorBoundary>
   );
 };
 

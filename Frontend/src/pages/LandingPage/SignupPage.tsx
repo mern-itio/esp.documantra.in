@@ -241,8 +241,9 @@ const SignupPage = () => {
         return ''
       }
       case 'phone': {
+        // react-phone-input-2 keeps the country dial code (e.g. "91") even when empty.
         const digits = String(value || '').replace(/\D/g, '')
-        if (!digits) return ''
+        if (!digits || digits.length <= 3) return '' // dial code only → treat as blank
         if (digits.length < 10) return 'Enter a valid phone number or leave blank'
         return ''
       }
@@ -366,10 +367,12 @@ const SignupPage = () => {
 
     setIsLoading(true)
     try {
+      const phoneDigits = String(formData.phone || '').replace(/\D/g, '')
       const result = await signup({
         fullname: formData.firstName,
         email: formData.email.trim().toLowerCase(),
-        phone: formData.phone,
+        // Omit country-code-only values so backend does not treat "91" as a real phone.
+        phone: phoneDigits.length >= 10 ? phoneDigits : '',
         password: formData.password,
         emailVerificationToken,
         recaptchaToken: 'disabled',
@@ -920,15 +923,6 @@ const SignupPage = () => {
                           Verify your email above to unlock password fields and finish creating your account.
                         </p>
                       )}
-
-                      <div className="relative py-1">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-slate-200" />
-                        </div>
-                        <div className="relative flex justify-center text-[11px]">
-                          <span className="bg-white px-3 text-slate-400">or continue with</span>
-                        </div>
-                      </div>
 
                       <FederatedLoginButtons
                         mode="signup"

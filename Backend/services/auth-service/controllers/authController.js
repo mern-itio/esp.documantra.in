@@ -36,6 +36,21 @@ authenticator.options = {
   step: 30,
 };
 
+/** Create Free plan subscription with starting credits (default 5) for a new user. */
+async function provisionFreeSubscription(userId) {
+  try {
+    const rawBase = process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110';
+    const base = String(rawBase).replace(/\/$/, '');
+    await axios.post(
+      `${base}/user-plan/create-free`,
+      { userId: String(userId) },
+      { timeout: 5000 }
+    );
+  } catch (err) {
+    console.warn('provisionFreeSubscription failed:', err?.message);
+  }
+}
+
 async function verifyRecaptcha(token) {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
   if (!secretKey) return true; // Bypass if not configured
@@ -345,6 +360,12 @@ async function sendPhoneOtp(user) {
 function hasEnoughPhoneDigits(user) {
   const d = String(user?.phone || '').replace(/\D/g, '');
   return d.length >= 10;
+}
+
+/** Optional phone: ignore empty / country-code-only (e.g. "91" from react-phone-input-2). */
+function normalizeOptionalPhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '').slice(0, 15);
+  return digits.length >= 10 ? digits : '';
 }
 
 function verificationState(user) {
@@ -1117,7 +1138,8 @@ const register = async (req, res) => {
 
   const normalizedFullname = String(fullname || '').trim();
   const normalizedEmail = String(email || '').trim().toLowerCase();
-  const normalizedPhone = String(phone || '').replace(/\D/g, '').slice(0, 15);
+  // Do not persist dial-code-only values — they collide on unique/sparse phone indexes.
+  const normalizedPhone = normalizeOptionalPhone(phone);
 
   if (!normalizedFullname || !normalizedEmail || !password) {
     return res.status(400).json({ message: 'Full name, email and password are required' });
@@ -1207,7 +1229,7 @@ const register = async (req, res) => {
       const user = await User.create({
         fullname: normalizedFullname,
         email: normalizedEmail,
-        phone: normalizedPhone || undefined,
+        ...(normalizedPhone ? { phone: normalizedPhone } : {}),
         password,
         company: company ? String(company).trim() : '',
         address: address ? String(address).trim() : '',
@@ -1219,6 +1241,8 @@ const register = async (req, res) => {
         phoneOtpHash: null,
         phoneOtpExpires: null,
       });
+
+      await provisionFreeSubscription(user._id);
 
       try {
         await recordConsentEntries(req, [
@@ -1298,7 +1322,7 @@ const register = async (req, res) => {
     const user = await User.create({
       fullname: normalizedFullname,
       email: normalizedEmail,
-      phone: normalizedPhone || '',
+      ...(normalizedPhone ? { phone: normalizedPhone } : {}),
       password,
       company: company ? String(company).trim() : '',
       address: address ? String(address).trim() : '',
@@ -1310,6 +1334,8 @@ const register = async (req, res) => {
       phoneOtpHash: null,
       phoneOtpExpires: null
     });
+
+    await provisionFreeSubscription(user._id);
 
     await recordConsentEntries(req, [
       {

@@ -161,6 +161,15 @@ const AIAuditInsights: React.FC = () => {
     return null;
   }
 
+  // Brand-new accounts: skip the whole insights block (avoids empty Recharts mounts).
+  if (
+    insightsData.productivityInsights.documentsCreated === 0 &&
+    insightsData.mostUsedTemplates.length === 0 &&
+    insightsData.failedEnvelopes.length === 0
+  ) {
+    return null;
+  }
+
   const pieData = [
     { name: 'AI Generated', value: insightsData.aiGeneratedVsManual.aiGenerated },
     { name: 'Manual', value: insightsData.aiGeneratedVsManual.manual }

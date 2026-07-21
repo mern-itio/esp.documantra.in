@@ -24,6 +24,20 @@ async function linkEsignRecipient(user) {
   }
 }
 
+async function provisionFreeSubscription(userId) {
+  try {
+    const rawBase = process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110';
+    const base = String(rawBase).replace(/\/$/, '');
+    await axios.post(
+      `${base}/user-plan/create-free`,
+      { userId: String(userId) },
+      { timeout: 5000 }
+    );
+  } catch (err) {
+    console.warn('provisionFreeSubscription failed:', err?.message);
+  }
+}
+
 async function findOrCreateOAuthUser({
   email,
   name,
@@ -53,6 +67,7 @@ async function findOrCreateOAuthUser({
       plan: 'free',
       isFirstLogin: true,
     });
+    await provisionFreeSubscription(user._id);
     await linkEsignRecipient(user);
     return { user, isNew: true };
   }
