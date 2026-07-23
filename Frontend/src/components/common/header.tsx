@@ -8,6 +8,7 @@ import { SubscriptionStorage } from '../../services/subscriptionService';
 import { subscriptionApi, organizationApi, apiGateway } from '../../services/apiHelper';
 import Swal from 'sweetalert2';
 import type { Organization } from '../../types/organization';
+import { getInitials } from '../../utils/formatName';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -351,11 +352,6 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   }, [paletteQuery, navigate]);
 
   const lowCredits = credits != null && credits <= 10;
-  const getInitials = (fullName = "") => {
-    const parts = fullName.trim().split(" ");
-    if (parts.length === 1) return parts[0][0].toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
 
   return (
     <header className="bg-background shadow-sm border-b border-border text-foreground">
@@ -524,7 +520,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                     )
                   ) : (
                     <span >
-                      {getInitials((user as any)?.fullname)}
+                      {getInitials((user as any)?.fullname, (user as any)?.email)}
                     </span>
                   )}
                 </div>
@@ -563,7 +559,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-foreground/20 text-sm font-semibold">
                     {organizationDetail && accountType === 'organization'
                       ? getInitials(organizationDetail.name)
-                      : getInitials((user as any)?.fullname)}
+                      : getInitials((user as any)?.fullname, (user as any)?.email)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">

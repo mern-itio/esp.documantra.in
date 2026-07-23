@@ -7,6 +7,7 @@ import UseCases from './headerTab/useCases'
 import ProductSection from './headerTab/product'
 import ResourceTab from './headerTab/ResourceTab'
 import BrandLogo from '../BrandLogo'
+import { getInitials } from '../../utils/formatName'
 
 const Header = () => {
   const { isAuthenticated, user } = useAuth()
@@ -91,13 +92,6 @@ const Header = () => {
       dropdown.style.transform = 'translateX(-50%)'
     }
   }, [activeDropdown]) 
-
-  const getInitials = (fullName = "") => {
-    const parts = fullName.trim().split(" ");
-    if (parts.length === 1) return parts[0][0].toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
- 
 
   return (
     <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-[#F7F3EE]/95 backdrop-blur-sm shadow-lg' : 'bg-transparent'
@@ -220,7 +214,7 @@ const Header = () => {
                 <div className="relative group">
                   {/* User Icon */}
                   <div className="w-9 h-9 flex items-center justify-center font-bold rounded-full bgColor text-white cursor-pointer">
-                    <Link to='/dashboard'> {getInitials((user as any)?.fullname)}</Link>
+                    <Link to='/dashboard'> {getInitials((user as any)?.fullname, (user as any)?.email)}</Link>
                   </div>
 
                   {/* Tooltip */}
