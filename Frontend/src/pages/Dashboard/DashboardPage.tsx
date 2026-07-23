@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import AIAuditInsights from '../../components/ESign/AIAuditInsights';
 import { CHART_HEX } from '../../components/common/ChartErrorBoundary';
+import { BRAND } from '../../config/brand';
 
 const DashboardPage: React.FC = () => {
   const { user, accountType, dismissFirstLogin } = useAuth();
@@ -181,7 +182,7 @@ const DashboardPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
           <div className="bg-card/95 backdrop-blur-sm  shadow-lg border border-border p-8 max-w-xl w-full relative text-card-foreground">
-            <h2 className="text-3xl font-bold mb-4 text-center text-foreground">Welcome to Draft & Sign!</h2>
+            <h2 className="text-3xl font-bold mb-4 text-center text-foreground">Welcome to {BRAND.name}!</h2>
             <p className="text-lg text-muted-foreground mb-6 text-center">Our system can do the following things:</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <button onClick={() => handleFeatureClick('esign')} className="flex flex-col items-center p-6 bg-muted/60 rounded-lg border border-border hover:bg-muted transition">
