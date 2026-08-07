@@ -19,6 +19,7 @@ import toast from "react-hot-toast"
 import Swal from "sweetalert2";
 import { useAuth } from "../AuthService/AuthContext";
 import { fetchEsignDocumentData } from "../../utils/esignDocumentUrl";
+import { PDFJS_WORKER_SRC } from "../../config/pdfjsWorker";
 
 // Type declarations for PDF.js
 declare global {
@@ -151,7 +152,7 @@ export default function SigningEditorStep({
         // Use the worker from public folder (same as production)
         // This matches the behavior that works in production
         if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
         }
       } catch (err) {
         console.warn("Failed to set PDF.js worker:", err);
@@ -168,7 +169,7 @@ export default function SigningEditorStep({
         // Set worker path to public folder (same as production)
         // This matches the behavior that works in production
         try {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+          pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
         } catch (error) {
           console.warn("Failed to set PDF.js worker:", error);
           pdfjsLib.GlobalWorkerOptions.workerSrc = '';

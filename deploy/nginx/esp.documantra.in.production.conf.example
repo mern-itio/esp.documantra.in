@@ -187,9 +187,26 @@ server {
         try_files $uri =404;
     }
 
-    # Static media/fonts — moderate cache
-    location ~* \.(avif|webp|woff2?|ttf|svg|ico|mp4|mjs)$ {
+    # PDF.js worker — must be served as JavaScript (not application/octet-stream)
+    location = /pdf.worker.min.mjs {
         root /var/www/draft-and-sign;
+        default_type application/javascript;
+        expires 30d;
+        add_header Cache-Control "public" always;
+        try_files $uri =404;
+    }
+
+    # Static media/fonts — moderate cache
+    location ~* \.(avif|webp|woff2?|ttf|svg|ico|mp4)$ {
+        root /var/www/draft-and-sign;
+        expires 30d;
+        add_header Cache-Control "public" always;
+        try_files $uri =404;
+    }
+
+    location ~* \.mjs$ {
+        root /var/www/draft-and-sign;
+        default_type application/javascript;
         expires 30d;
         add_header Cache-Control "public" always;
         try_files $uri =404;

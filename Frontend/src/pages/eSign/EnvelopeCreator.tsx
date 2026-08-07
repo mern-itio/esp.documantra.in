@@ -75,6 +75,7 @@ import {
 import { SubscriptionPlansModal } from '../../components/common/SubscriptionPlansModal';
 import { debounce } from '../../components/common/lib/utils';
 import type { SignatureField as EditorSignatureField } from '../../components/ESign/SigningEditorStep';
+import { PDFJS_WORKER_SRC } from '../../config/pdfjsWorker';
 type EditorSignatureFieldExt = EditorSignatureField & {
   signerIndex?: number | null;
   isPowerForm?: boolean;
@@ -1506,7 +1507,7 @@ const isPublicFlow =
             const pdfjsModule = await import('pdfjs-dist');
             pdfjsLib = pdfjsModule;
             if (pdfjsLib.GlobalWorkerOptions) {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+              pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
             }
             (window as any).pdfjsLib = pdfjsLib;
           } catch (importError) {
