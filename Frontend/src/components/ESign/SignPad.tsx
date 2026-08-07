@@ -7,6 +7,7 @@ import ActionButton from "./ActionButton"; // <-- adjust path as needed
 
 interface ActiveField {
   _id: string;
+  fieldId?: string;
   type: string;
   page: number;
   x: number;
@@ -34,7 +35,7 @@ interface SignPadProps {
 export default function SignPad({
   isSignPad,
   setIsSignPad,
-  // activeField,
+  activeField,
   currentUserId,
   // documentId,
   envelopeID,
@@ -222,16 +223,14 @@ export default function SignPad({
       }
       const response = await eSignApi.post("/api/e-sign/public/save-signature",payload);
       if(response?.status === 200){
-        alert("Signature saved successfully.");
-        //onSignatureSaved modify to re-render updated signature to updated signature fields
+        const activeFieldId = String(activeField?._id || activeField?.fieldId || "").trim();
         if(response.data.mode === "update" && response.data.signatureFields){
           for(const field of response.data.signatureFields){
-            onSignatureSaved?.(isSignImg,field._id);
+            onSignatureSaved?.(isSignImg, String(field._id || field.fieldId || ""));
           }
-        }else{
-          onSignatureSaved?.(isSignImg,"");
+        } else {
+          onSignatureSaved?.(isSignImg, activeFieldId);
         }
-        onSignatureSaved?.(isSignImg,"");
         setIsSignPad(false);
       }
     } catch (err){
@@ -483,7 +482,7 @@ export default function SignPad({
 
             {/* Primary Sign button */}
             <ActionButton onClick={handleSaveSignature} loading={isSubmitting} disabled={!isSignImg} variant="primary">
-              Save Signature
+              {activeField ? "Adopt and sign" : "Save signature"}
             </ActionButton>
           </div>
         </div>

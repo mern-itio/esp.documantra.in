@@ -18,6 +18,7 @@ import {
   useEnvelopeComments,
 } from "./EnvelopeCommentLayer";
 import type { EnvelopeComment } from "../../services/envelopeCommentService";
+import { PDFJS_WORKER_SRC } from "../../config/pdfjsWorker";
 
 interface Props {
   // Backward compatible single document
@@ -314,6 +315,8 @@ const DocumentViewerContent: React.FC<Props> = ({
       currentUserId:currentUserId,
       selfValue:selfValue,
       signingContext,
+    }, {
+      headers: getSignerAccessHeaders?.(),
     });
     if (response?.status === 200) {
       window.location.replace(`/e-sign/signer/status/${env}/${rid}`);
@@ -332,10 +335,6 @@ const DocumentViewerContent: React.FC<Props> = ({
     }
     completionTriggeredRef.current = true;
     setShowCompleteButton(true);
-    setCompleteCtaState('done');
-    window.setTimeout(() => {
-      completeSignature(envelopeID, currentUserId);
-    }, 700);
   };
 
   // Get matched signer for a field (self-signer mode only)
@@ -388,7 +387,7 @@ const DocumentViewerContent: React.FC<Props> = ({
         return !!matchedSigner.signature;
       }
       case MODE.RECIPIENT: {
-        const fieldKey = field._id || field.fieldId;
+        const fieldKey = normalizeMongoId(field._id || field.fieldId);
         return !!field.signature || !!localSignedMap[fieldKey];
       }
       default:
@@ -463,6 +462,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   const [showCompleteButton, setShowCompleteButton] = useState(false);
   const [completeCtaState, setCompleteCtaState] = useState<"idle" | "done">("idle");
   const completionTriggeredRef = useRef(false);
+  const isSigningBatchRef = useRef(false);
   const [isCompleteCtaGuidanceDismissed, setIsCompleteCtaGuidanceDismissed] = useState(false);
   const shouldHighlightCompleteCta =
     !isViewOnly &&
@@ -621,7 +621,7 @@ const DocumentViewerContent: React.FC<Props> = ({
     
     if (typeof window !== "undefined") {
       try {
-        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
       } catch (err) {
         console.warn("Failed to set PDF.js worker:", err);
       }
@@ -1300,9 +1300,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     }
     if (!prerequisitesFilled) return;
 
-    // Yellow "Sign" CTA previously only scrolled to the field — open SignPad so it actually works.
     window.setTimeout(() => {
-      handleFieldClick(field);
+      if (
+        mode === MODE.RECIPIENT &&
+        recipientSignature &&
+        !isSignatureFieldCompleted(field)
+      ) {
+        doSign(field);
+      } else {
+        handleFieldClick(field);
+      }
     }, 320);
   };
 
@@ -1367,7 +1374,15 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           break;
       }
       if (prerequisitesFilled) {
-        handleFieldClick(currentField);
+        if (
+          mode === MODE.RECIPIENT &&
+          recipientSignature &&
+          !isSignatureFieldCompleted(currentField)
+        ) {
+          doSign(currentField);
+        } else {
+          handleFieldClick(currentField);
+        }
         return;
       }
     }
@@ -1413,7 +1428,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   // Do Signature (single field — used by batch and direct sign)
   const signSingleField = async (
     field: any,
-    options?: { suppressNavigation?: boolean; suppressConfetti?: boolean; batchLabel?: string },
+    options?: {
+      suppressNavigation?: boolean;
+      suppressConfetti?: boolean;
+      batchLabel?: string;
+      signatureOverride?: string;
+    },
     certificateIdOverride?: string,
   ) => {
     const fieldKeyRaw = field?._id || field?.fieldId;
@@ -1490,7 +1510,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
       const payload = {
         fieldId: fieldKey,
-        signatureImageBase64: recipientSignature,
+        signatureImageBase64: options?.signatureOverride ?? recipientSignature,
         envelopeId: envelopeID || '',
         documentId: field?.documentId,
         recipientId: currentUserId,
@@ -1506,6 +1526,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
       const response = await eSignApi.post('/api/e-sign/public/add-signature', payload, {
         timeout: 180000,
+        headers: getSignerAccessHeaders?.(),
       });
       if (response?.status === 200) {
         if (response?.data?.signMethod == 'V_Sign') {
@@ -1514,6 +1535,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           await handleSuccess(response, fieldKey, {
             suppressNavigation: options?.suppressNavigation,
             suppressConfetti: options?.suppressConfetti,
+            signatureOverride: options?.signatureOverride,
           });
         }
       } else {
@@ -1522,7 +1544,24 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           alert('Failed to submit signature. Please try again.');
         }
       }
-    } catch (err) {
+    } catch (err: any) {
+      const errStatus = err?.response?.status;
+      const errCode = err?.response?.data?.code;
+      if (
+        errStatus === 403 &&
+        (errCode === 'ALREADY_COMPLETED' || isSignatureFieldCompleted(field))
+      ) {
+        await handleSuccess(
+          { data: { fieldRemmaning: false } },
+          fieldKey,
+          {
+            suppressNavigation: options?.suppressNavigation,
+            suppressConfetti: options?.suppressConfetti,
+            signatureOverride: options?.signatureOverride,
+          },
+        );
+        return;
+      }
       console.error('submit error:', err);
       const completed = await waitForCompletion(60000);
       if (!completed && isMountedRef.current) {
@@ -1537,8 +1576,15 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     }
   };
 
-  const doSign = async (field: any) => {
-    if (!recipientSignature) {
+  const doSign = async (
+    field: any,
+    options?: { signatureOverride?: string },
+  ) => {
+    if (isSigningBatchRef.current) return;
+    if (isSignatureFieldCompleted(field)) return;
+
+    const signatureToUse = options?.signatureOverride ?? recipientSignature;
+    if (!signatureToUse) {
       alert('Please save a signature before submitting!');
       return;
     }
@@ -1556,6 +1602,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
     if (fieldsToSign.length === 0) return;
 
+    isSigningBatchRef.current = true;
+    try {
     // When signing multiple pages, certificate issuance can fail on subsequent calls.
     // Reuse one certificateId for the whole batch.
     let preIssuedCertificateId: string | undefined;
@@ -1582,6 +1630,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           fieldsToSign.length > 1
             ? `Signing page ${pageNum} (${i + 1} of ${fieldsToSign.length})...`
             : undefined,
+        signatureOverride: options?.signatureOverride,
       }, preIssuedCertificateId);
       setSignBatchProgress(
         fieldsToSign.length > 1 ? `${i + 1} / ${fieldsToSign.length}` : null,
@@ -1590,6 +1639,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
     setSignBatchProgress(null);
     setSigningStatusText('Finalizing document...');
+    } finally {
+      isSigningBatchRef.current = false;
+    }
   };
   async function checkRecipientRequireDetails(currentUserId:any){
     const response = await eSignApi.post('/api/e-sign/public/recipients/validate',{
@@ -1640,7 +1692,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     const issueCertificate = async (recipientId: any, envelopeId: any, selfVal: any) => {
       const payload = { recipientId, envelopeId, selfValue: selfVal };
       try {
-        const res = await eSignApi.post("/api/e-sign/certificates/issue", payload);
+        const res = await eSignApi.post("/api/e-sign/certificates/issue", payload, {
+          headers: getSignerAccessHeaders?.(),
+        });
         return res?.data?.certificateId;
       } catch (err) {
         console.error("issueCertificate error:", err);
@@ -1865,10 +1919,20 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   async function handleSuccess(
     response: any,
     fieldKey: any,
-    options?: { suppressNavigation?: boolean; suppressConfetti?: boolean },
+    options?: { suppressNavigation?: boolean; suppressConfetti?: boolean; signatureOverride?: string },
   ) {
-    const key = fieldKey;
-        setLocalSignedMap((p) => ({ ...(p || {}), [key]: recipientSignature }));
+    const key = normalizeMongoId(fieldKey);
+    const appliedSignature = options?.signatureOverride ?? recipientSignature;
+        setLocalSignedMap((p) => ({ ...(p || {}), [key]: appliedSignature || '' }));
+        if (appliedSignature) {
+          setSignatureFields((prev) =>
+            prev.map((f) =>
+              normalizeMongoId(f._id || f.fieldId) === key
+                ? { ...f, signature: appliedSignature, status: 'signed' }
+                : f,
+            ),
+          );
+        }
         if (!options?.suppressConfetti) {
           triggerConfetti();
         }
@@ -1890,10 +1954,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             break;
           }
           case MODE.RECIPIENT: {
-            // Recipient mode: navigate to next field
-            setTimeout(() => {
-              goToNext();
-            }, 300);
+            if (
+              !(
+                response?.data?.fieldRemmaining === false ||
+                response?.data?.fieldRemmaning == false
+              )
+            ) {
+              setTimeout(() => {
+                goToNext();
+              }, 300);
+            }
             break;
           }
         }
@@ -1907,6 +1977,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             } catch (err) {
               console.error('onRecipientComplete callback error:', err);
             }
+            setShowCompleteButton(true);
             maybeAutoCompleteSigning();
           } else {
             setShowCompleteButton(true);
@@ -3483,47 +3554,47 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
           mode={isEditingSignature ? "update" : "add"}
           selfValue={selfValue || ""}
           cycleId={cycleId || ""}
-          onSignatureSaved={(signatureUrl: string,fieldId: string) => {
-            if(fieldId){
-              // for updating multiple signature fields with same signature
-              setLocalSignedMap((p) => ({ ...(p || {}), [fieldId]: signatureUrl }));
-            }
+          onSignatureSaved={(signatureUrl: string, _fieldId: string) => {
             setRecipientSignature(signatureUrl);
             
             // Clear cached values for initial fields so they can be re-evaluated with updated initials
             const initialFields = signatureFields.filter((f: any) => f.type === "initial");
             initialFields.forEach((field: any) => {
-              const keyId = field._id || field.fieldId;
+              const keyId = normalizeMongoId(field._id || field.fieldId);
               if (keyId) {
-                // Clear from ref
                 delete fieldValuesRef.current[keyId];
-                // Clear from state
                 setLocalFieldValues((prev) => {
                   const next = { ...prev };
                   delete next[keyId];
                   return next;
                 });
-                // Remove from auto-filled set so it can be re-evaluated
                 autoFilledDateFieldsRef.current.delete(keyId);
               }
             });
             
-            // In self-signer mode, refresh selfSigner data to get updated signatureFields
             switch (mode) {
               case MODE.SELF_SIGNER:
                 if (cycleId) {
-                  // Mark navigation as pending
                   pendingNavigationRef.current = true;
-                  // Wait a bit for the backend to update, then refresh
                   setTimeout(() => {
                     getSelfSigner();
-                    // Navigation will be triggered in getSelfSigner's finally block
                   }, 500);
                 }
                 break;
-              case MODE.RECIPIENT:
-                // No additional action needed for recipient mode
+              case MODE.RECIPIENT: {
+                if (isEditingSignature || !activeField || isSigningBatchRef.current) break;
+                const activeKey = normalizeMongoId(activeField._id || activeField.fieldId);
+                if (!activeKey || isSignatureFieldCompleted(activeField)) break;
+                const fieldToSign =
+                  signatureFields.find(
+                    (f: any) => normalizeMongoId(f._id || f.fieldId) === activeKey,
+                  ) || activeField;
+                setActiveField(null);
+                window.setTimeout(() => {
+                  doSign(fieldToSign, { signatureOverride: signatureUrl });
+                }, 150);
                 break;
+              }
             }
           }}
           onSaveSign={(fieldId: string, signatureUrl: string, fieldRemmaning:boolean) => {
