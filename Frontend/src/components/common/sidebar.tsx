@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FileText, ChevronLeft, ChevronDown, ChevronRight, Building2, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Plus, HelpCircle, CreditCard, Share, Library, Gift } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronDown, ChevronRight, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Plus, HelpCircle, CreditCard, Share, Library, Gift } from 'lucide-react';
 import { useAuth } from '../AuthService/AuthContext';
 import { APP_NAME } from '../constants/appConfig';
+import BrandLogo from '../BrandLogo';
 
 interface SidebarProps {
   activeView?: string;
@@ -335,14 +336,20 @@ const Sidebar: React.FC<SidebarProps> = ({
     <div className={`bg-sidebar shadow-lg border-r border-sidebar-border transition-all duration-300 ease-in-out ${isOpen ? 'w-64' : 'w-16'} flex flex-col h-full relative overflow-visible`}>
   
       <div className="flex items-center justify-between px-3 py-3 border-b border-sidebar-border flex-shrink-0 bg-gradient-to-r from-sidebar to-muted/40">
-        {isOpen && (
-          <div className="flex items-center space-x-2 animate-fade-in">
-            <Building2 className="h-7 w-7 text-primary transition-transform duration-300 hover:scale-110 hover:rotate-6" />
-            <div>
-              <Link to="/dashboard"><h1 className="text-base font-semibold text-foreground transition-colors duration-300 hover:text-primary">{APP_NAME}</h1></Link>
-            </div>
-          </div>
-        )}
+        <Link
+          to="/dashboard"
+          className={`flex items-center min-w-0 ${isOpen ? 'gap-2 animate-fade-in' : 'justify-center flex-1'}`}
+          title={APP_NAME}
+        >
+          <BrandLogo
+            className={`object-contain shrink-0 transition-transform duration-300 hover:scale-105 ${isOpen ? 'h-8 w-auto max-w-[140px]' : 'h-8 w-8'}`}
+          />
+          {isOpen && (
+            <h1 className="text-base font-semibold text-foreground transition-colors duration-300 hover:text-primary truncate">
+              {APP_NAME}
+            </h1>
+          )}
+        </Link>
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="p-1 rounded-md hover:bg-muted transition-colors duration-200"
