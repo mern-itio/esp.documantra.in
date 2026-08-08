@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="${ROOT:-/root/Draft-and-Sign}"
-BRANCH="${BRANCH:-vapt-changes-24-6-26}"
+BRANCH="${BRANCH:-recipient-portal-pandadoc-ux-10-7-26}"
 WEB_ROOT="${WEB_ROOT:-/var/www/esign-public}"
 NGINX_SITE="${NGINX_SITE:-/etc/nginx/sites-enabled/esign.documantra.in}"
 
@@ -14,7 +14,9 @@ git pull --ff-only origin "$BRANCH"
 echo "==> Build frontend (public-sign host)"
 cd "$ROOT/Frontend"
 npm ci
-VITE_PUBLIC_SIGN_ONLY=true npm run build
+cp "$ROOT/deploy/env/esign-public.env" .env.esign
+npm run build:esign-public
+rm -f .env.esign
 
 echo "==> Deploy static files"
 mkdir -p "$WEB_ROOT"

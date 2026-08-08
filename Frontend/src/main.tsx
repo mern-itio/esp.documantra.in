@@ -7,8 +7,11 @@ import './App.css'
 import './style.css'
 
 import { BRAND } from './config/brand'
+import { redirectEsignPublicHostIfNeeded } from './config/appMode'
 
 ;(globalThis as typeof globalThis & { BRAND: typeof BRAND }).BRAND = BRAND
+
+redirectEsignPublicHostIfNeeded()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

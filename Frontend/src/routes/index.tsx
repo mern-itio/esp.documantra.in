@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createBrowserRouter, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
 import { useAuth } from '../components/AuthService/AuthContext';
+import { isPublicSignOnlyApp } from '../config/appMode';
 import {
   PublicPDFTools,
   PublicWizard,
@@ -98,6 +98,7 @@ import {
   ApiServiceAnalytics,
   ApiServiceProjects,
   ApiServiceKey,
+  ApiServiceIntegrationDemo,
   ApiServiceExplorer,
   ApiServiceDocumentation,
   ApiServiceWebhooks,
@@ -302,9 +303,8 @@ const PDFToolsLayout = () => {
         const activeSet = new Set<string>(activeIds);
         setActiveToolIds(activeSet);
         setFilteredMock(getActiveMockTools(activeSet));
-      } catch (e) {
-        // On failure, show none to avoid exposing inactive tools
-        setFilteredMock({} as any);
+      } catch {
+        setFilteredMock(getActiveMockTools());
       }
       try {
         const tools = await toolCatalogService.listPublic();
@@ -463,12 +463,17 @@ const PDFToolsLayout = () => {
       default:
         if (isToolsLoading) {
           return (
-            <div className="flex items-center justify-center">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Loading PDF tools...</span>
-              </div>
-            </div>
+            <ToolsGrid
+              tools={[]}
+              onToolSelect={handleToolSelect}
+              favoriteTools={favoriteTools}
+              onToggleFavorite={toggleFavorite}
+              recentTools={recentTools}
+              searchQuery={searchQuery}
+              selectedCategory={selectedCategory}
+              onSearchChange={setSearchQuery}
+              isLoading
+            />
           );
         }
 
@@ -484,13 +489,15 @@ const PDFToolsLayout = () => {
               recentTools={recentTools}
               searchQuery={searchQuery}
               selectedCategory={selectedCategory}
+              onSearchChange={setSearchQuery}
+              isLoading={isToolsLoading}
             />
         );
     }
   };
 
   return (
-    <div className='bg-background p-2'>
+    <div className="min-h-full">
       {isPro && (
         <Header
           searchQuery={searchQuery}
@@ -500,7 +507,7 @@ const PDFToolsLayout = () => {
           stats={processingStats}
         />
       )}
-      {renderCurrentView()}
+      <div className="p-0 md:p-1">{renderCurrentView()}</div>
     </div>
   );
 };
@@ -623,9 +630,12 @@ const LandingPageLayout = () => (
   </div>
 );
 
+const RootGuestRoute = () =>
+  isPublicSignOnlyApp() ? <Navigate to="/public-sign" replace /> : <LandingPageLayout />;
+
 // Guest Routes (Public)
 const guestRoutes = [
-  { path: '/', element: <LandingPageLayout /> },
+  { path: '/', element: <RootGuestRoute /> },
   { path: '/login', element: <GuestRoute><LoginPage /></GuestRoute> },
   { path: '/signup', element: <GuestRoute><SignupPage /></GuestRoute> },
   { path: '/oauth/callback/:provider', element: <GuestRoute><FederatedOAuthCallbackPage /></GuestRoute> },
@@ -855,6 +865,7 @@ const authRoutes = [
   { path: '/api-service/analytics', element: <ApiServiceAnalytics /> },
   { path: '/api-service/projects', element: <ApiServiceProjects /> },
   { path: '/api-service/keys', element: <ApiServiceKey /> },
+  { path: '/api-service/demo', element: <ApiServiceIntegrationDemo /> },
   { path: '/api-service/explorer', element: <ApiServiceExplorer /> },
   { path: '/api-service/documentation', element: <ApiServiceDocumentation /> },
   { path: '/api-service/Webhooks', element: <ApiServiceWebhooks /> },

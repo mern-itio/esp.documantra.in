@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:esign-public": "tsc -b && vite build --mode esign",
     "lint": "eslint .",
     "preview": "vite preview"
   },
