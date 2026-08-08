@@ -4,6 +4,7 @@ import { API_ENDPOINTS, apiRequest } from '../../services/api';
 import { assertSecureApiUrl } from '../../utils/secureApiUrl';
 import { encryptLoginPayload, fetchLoginPublicKey } from '../../utils/loginPayloadCrypto';
 import { authApi } from '../../services/apiHelper';
+import { claimPublicGuestEnvelopes } from '../../services/claimPublicGuestEnvelopes';
 import { isPublicSignRoute } from '../../config/appMode';
 import { SubscriptionService, SubscriptionStorage } from '../../services/subscriptionService';
 import {
@@ -159,6 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       syncUserState(mapApiUserToState(u));
       setIsAuthenticated(true);
+      void claimPublicGuestEnvelopes().catch(() => {});
       const storedAccountType = sessionStorage.getItem('accountType');
       setAccountType(storedAccountType === 'organization' ? 'organization' : 'user');
       setOrganizationId(sessionStorage.getItem('organizationId') || null);
@@ -327,6 +329,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setOrganizationDetail(null);
     syncUserState(initialUserData);
     setIsAuthenticated(true);
+    void claimPublicGuestEnvelopes().catch(() => {});
 
     if (options?.setupOnly) return;
 

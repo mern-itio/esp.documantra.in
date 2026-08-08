@@ -9,6 +9,7 @@ import {
   PublicSignHeader,
 } from './PublicSignMarketingChrome';
 import '../../styles/documantra-chrome.css';
+import { claimPublicGuestEnvelopes } from '../../services/claimPublicGuestEnvelopes';
 import { withPublicGuestHeaders } from '../../utils/publicGuestId';
 
 type SentEnvelope = {
@@ -57,11 +58,7 @@ export default function PublicSendSuccessPage() {
     const load = async () => {
       try {
         if (isAuthenticated) {
-          await eSignApi.post(
-            '/api/e-sign/public/claim-guest-envelopes',
-            {},
-            { headers: withPublicGuestHeaders() },
-          );
+          await claimPublicGuestEnvelopes();
         }
 
         const response = await eSignApi.get('/api/e-sign/public/sent-envelopes', {

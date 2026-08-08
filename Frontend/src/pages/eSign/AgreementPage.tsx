@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, MoreVertical, Download, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCircle, Pencil, Trash2, Plus, ShieldCheck, X, Settings, Clock, Mail, Eye, MailOpen, EyeClosed, CircleCheckBig, Sparkles } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { eSignApi } from '../../services/apiHelper';
+import { claimPublicGuestEnvelopes } from '../../services/claimPublicGuestEnvelopes';
 import Swal from 'sweetalert2';
 import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
 import { useAuth } from '../../components/AuthService/AuthContext';
+import { PageShell, PageHero } from '../../components/common/PageShell';
 
 interface Agreement {
   id: string;
@@ -665,6 +667,7 @@ const AgreementPage: React.FC = () => {
   const fetchEnvelopes = useCallback(async () => {
     try {
       setLoading(true);
+      await claimPublicGuestEnvelopes();
       const response = await eSignApi.get('/api/e-sign/get-envelopes');
 
       if (response.data && response.data.status === 'success') {
@@ -748,8 +751,11 @@ const AgreementPage: React.FC = () => {
         console.error('Failed to fetch envelopes:', response.data?.message);
         setAgreements([]);
       }
-    } catch (error) {
-      console.error('Error fetching envelopes:', error);
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status !== 401 && status !== 403 && status !== 404) {
+        console.error('Error fetching envelopes:', error);
+      }
       setAgreements([]);
     } finally {
       setLoading(false);
@@ -1868,13 +1874,23 @@ const AgreementPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
+      <PageShell wide flush>
+        <div className="flex h-64 items-center justify-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+        </div>
+      </PageShell>
     );
   }
 
   return (
+    <PageShell wide flush>
+      {selectedIds.size === 0 && (
+        <PageHero
+          compact
+          title="Envelopes"
+          subtitle="Search, filter and manage all your signing workflows"
+        />
+      )}
     <div className="text-foreground">
       {/* Selection header (replaces default header when any selected) */}
       {selectedIds.size > 0 && (
@@ -1913,7 +1929,7 @@ const AgreementPage: React.FC = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search..."
-                  className="w-full pl-10 pr-12 py-2.5 border border-border rounded-lg focus:outline-none shadow-sm focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground hover:border-primary/40 text-sm"
+                  className="dm-input pl-10 pr-12 py-2.5"
                   data-tour="search-input"
                 />
 
@@ -2551,6 +2567,7 @@ const AgreementPage: React.FC = () => {
         </div>
       )}
     </div>
+    </PageShell>
   );
 };
 

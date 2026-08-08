@@ -38,6 +38,7 @@ const { listRecipients, createRecipient, updateRecipient, deleteRecipient } = re
 const { upload } = require('../utils/secureUpload');
 const { viewDocument } = require('../controllers/documentViewController');
 const requireTwoFaForSensitiveActions = require('../middleware/requireTwoFaForSensitiveActions');
+const { claimGuestEnvelopes } = require('../controllers/publicSentController');
 const {
   requireAuthenticatedEnvelopeAccess,
 } = require('../middleware/envelopeAccessMiddleware');
@@ -54,6 +55,7 @@ router.post('/save-signature-fields', requireAuthenticatedEnvelopeAccess({ fromB
 router.post('/update-envelope', requireAuthenticatedEnvelopeAccess({ fromBody: true, requireSender: true }), updateEnvelope);
 router.post('/add-signature', addSignature);
 router.get('/get-envelopes', envelopesData);
+router.post('/claim-guest-envelopes', claimGuestEnvelopes);
 router.get('/get-all-recipients',getAllRecipients);
 router.get('/documents/:documentId/view', viewDocument);
 router.get('/envelope/:id', readAccess, envelopesDetail);
