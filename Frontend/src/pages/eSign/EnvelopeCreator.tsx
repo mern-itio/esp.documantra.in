@@ -3311,7 +3311,7 @@ if (response.status == 200) {
     const fileList = pending
       .map(
         (doc) =>
-          `<li style="margin-bottom:8px;"><strong>${doc.name}</strong><br/><span style="color:#92400e;">Signature/field place nahi hua — is file par action pending hai.</span></li>`
+          `<li style="margin-bottom:8px;"><strong>${doc.name}</strong><br/><span style="color:#92400e;">No signature or field has been placed on this file — action is still pending.</span></li>`
       )
       .join('');
 
@@ -3320,7 +3320,7 @@ if (response.status == 200) {
       title: 'Action required',
       html: `
         <p style="margin-bottom:12px;text-align:left;">
-          <strong>${pending.length}</strong> of <strong>${total}</strong> files par abhi tak koi signature ya field place nahi hua
+          <strong>${pending.length}</strong> of <strong>${total}</strong> files still have no signature or field placed
           (${withFields} complete, ${pending.length} pending):
         </p>
         <ul style="text-align:left;padding-left:18px;margin:0;">${fileList}</ul>

@@ -520,7 +520,7 @@ export default function SigningEditorStep({
     const fileList = pending
       .map(
         (doc) =>
-          `<li style="margin-bottom:8px;"><strong>${doc.name}</strong><br/><span style="color:#92400e;">Signature/field place nahi hua — is file par action pending hai.</span></li>`
+          `<li style="margin-bottom:8px;"><strong>${doc.name}</strong><br/><span style="color:#92400e;">No signature or field has been placed on this file — action is still pending.</span></li>`
       )
       .join('');
 
@@ -530,7 +530,7 @@ export default function SigningEditorStep({
       html: `
         <p style="margin-bottom:12px;text-align:left;">
           <strong>${documentFieldCoverage.withoutActivity}</strong> of
-          <strong>${documentFieldCoverage.total}</strong> files par abhi tak koi signature ya field place nahi hua:
+          <strong>${documentFieldCoverage.total}</strong> files still have no signature or field placed:
         </p>
         <ul style="text-align:left;padding-left:18px;margin:0;">${fileList}</ul>
       `,
