@@ -55,6 +55,14 @@ server {
         proxy_pass http://127.0.0.1:2103/uploads/;
     }
 
+    location = /public-sign {
+        return 301 /;
+    }
+
+    location ^~ /public-sign/editor {
+        rewrite ^/public-sign/editor(.*)$ /editor$1 permanent;
+    }
+
     location = /index.html {
         if ($request_method = OPTIONS) { return 405; }
         root /var/www/esign-public;

@@ -3,7 +3,7 @@ import { FileText, Info, Plus, ShieldCheck, Star } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
 import { BRAND } from '../../config/brand';
 import { useBrandSettings } from '../../hooks/useBrandSettings';
-import { isPublicSignOnlyApp } from '../../config/appMode';
+import { buildPublicSignEditorUrl, isPublicSignOnlyApp } from '../../config/appMode';
 import {
   PublicSignFooter,
   PublicSignHeader,
@@ -247,8 +247,11 @@ export default function PublicWizard() {
         })),
       });
 
-      window.location.href =
-        `/public-sign/editor?step=3&envelopeId=${envelopeId}&public=true`;
+      window.location.href = buildPublicSignEditorUrl({
+        step: 3,
+        envelopeId,
+        public: true,
+      });
     } catch (e: unknown) {
       console.error(e);
       const message =

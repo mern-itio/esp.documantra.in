@@ -16,10 +16,24 @@ const LegacyPublicSignRedirect = () => {
   );
 };
 
+const LegacyEditorRedirect = () => {
+  const location = useLocation();
+  const rest = location.pathname.replace(/^\/public-sign\/editor\/?/, '');
+  const suffix = rest ? `/${rest}` : '';
+  return (
+    <Navigate
+      to={{ pathname: `/editor${suffix}`, search: location.search, hash: location.hash }}
+      replace
+    />
+  );
+};
+
 const publicSignRouter = createBrowserRouter([
   { path: '/', element: <PublicWizard /> },
+  { path: '/editor', element: <EnvelopeCreator /> },
   { path: '/public-sign', element: <LegacyPublicSignRedirect /> },
-  { path: '/public-sign/editor', element: <EnvelopeCreator /> },
+  { path: '/public-sign/editor', element: <LegacyEditorRedirect /> },
+  { path: '/public-sign/editor/*', element: <LegacyEditorRedirect /> },
   { path: '/e-sign/recipient-portal', element: <RecipientPortalPage /> },
   {
     element: <PublicSignerLayout />,

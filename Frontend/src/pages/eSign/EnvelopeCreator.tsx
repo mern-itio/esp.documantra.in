@@ -53,6 +53,7 @@ import {
   getEsignDocumentPreviewKind,
 } from '../../config/esignUploadFormats';
 import { fetchEsignDocumentData, resolveEsignDocumentUrl } from '../../utils/esignDocumentUrl';
+import { buildPublicSignEditorUrl } from '../../config/appMode';
 import { isAuthMethodFreeViaReferralPerk } from '../../utils/referralAuthPerks';
 import toast from 'react-hot-toast';
 // import { useApp } from '../../context/AppContext';
@@ -2033,7 +2034,7 @@ const isPublicFlow =
       if (loopEnvelopeId) {
         await getEnvelopeDetail(loopEnvelopeId);
         if (isPublicFlow) {
-          navigate(`/public-sign/editor?step=2&envelopeId=${loopEnvelopeId}&public=true`);
+          navigate(buildPublicSignEditorUrl({ step: 2, envelopeId: loopEnvelopeId, public: true }));
         } else {
           navigate(`/e-sign/create?step=2&envelopeId=${loopEnvelopeId}`);
         }
@@ -2196,7 +2197,7 @@ const isPublicFlow =
       }
       await getEnvelopeDetail(loopEnvelopeId);
 if (isPublicFlow) {
-  navigate(`/public-sign/editor?step=2&envelopeId=${loopEnvelopeId}&public=true`);
+  navigate(buildPublicSignEditorUrl({ step: 2, envelopeId: loopEnvelopeId, public: true }));
 } else {
   navigate(`/e-sign/create?step=2&envelopeId=${loopEnvelopeId}`);
 }      
@@ -2233,7 +2234,7 @@ if (isPublicFlow) {
         console.log('Current Step:', currentStep + 1);
       
 if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}&public=true`);
+  await navigate(buildPublicSignEditorUrl({ step: currentStep + 1, envelopeId: response.data.envelopeId, public: true }));
 } else {
   await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
 }
@@ -2306,7 +2307,7 @@ envelopeId,
         setSignatureFields(response.data.data.signatureFields);
         
 if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${envelopeId}&public=true`);
+  await navigate(buildPublicSignEditorUrl({ step: currentStep + 1, envelopeId, public: true }));
 } else {
   await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
 }
@@ -2477,7 +2478,7 @@ const response = await eSignApi.get(url);
       if (response.status === 200) {
         console.log('Signature type updated successfully:', response.data);
 if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}&public=true`);
+  await navigate(buildPublicSignEditorUrl({ step: currentStep + 1, envelopeId: response.data.envelopeId, public: true }));
 } else {
   await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${response.data.envelopeId}`);
 }       
@@ -2784,7 +2785,7 @@ if (isPublicFlow) {
           // navigate to next step with returned envelope/template id
          
 if (isPublicFlow) {
-  navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${savedId}&public=true`);
+  navigate(buildPublicSignEditorUrl({ step: currentStep + 1, envelopeId: savedId, public: true }));
 } else {
   navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${savedId}`);
 }
@@ -2812,7 +2813,7 @@ if (isPublicFlow) {
       if (currentStep === 6) {
         alert('Envelope created successfully, Ready to send!');
 if (isPublicFlow) {
-  await navigate(`/public-sign/editor?step=${currentStep + 1}&envelopeId=${envelopeId}&public=true`);
+  await navigate(buildPublicSignEditorUrl({ step: currentStep + 1, envelopeId, public: true }));
 } else {
   await navigate(`/e-sign/create?step=${currentStep + 1}&envelopeId=${envelopeId}`);
 }        

@@ -14,6 +14,7 @@ import { Toaster } from "react-hot-toast";
 import SubscriptionPlansModal from './components/common/SubscriptionPlansModal';
 import CreditPurchaseModal from './components/common/CreditPurchaseModal';
 import BrandingHead from './components/BrandingHead';
+import PublicSignHead from './components/PublicFlow/PublicSignHead';
 import { useSubscription } from './context/SubscriptionContext';
 
 const CustomerChatWidget = lazy(() => import('./components/SupportChat/CustomerChatWidget'));
@@ -90,6 +91,7 @@ const App: React.FC = () => {
               <SidebarProvider>
                 <ThemeConfig>
                   <BrandingHead />
+                  {publicSignOnly ? <PublicSignHead /> : null}
                   <RouterProvider router={activeRouter} />
                   <Toaster
                     containerStyle={{ zIndex: 10100 }}

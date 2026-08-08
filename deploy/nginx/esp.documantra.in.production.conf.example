@@ -103,8 +103,12 @@ server {
         return 301 https://esign.documantra.in/;
     }
 
+    location ^~ /public-sign/editor {
+        return 301 https://esign.documantra.in/editor$is_args$args;
+    }
+
     location ^~ /public-sign/ {
-        return 301 https://esign.documantra.in$request_uri;
+        return 301 https://esign.documantra.in/;
     }
 
     location /pdf/ {

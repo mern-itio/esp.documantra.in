@@ -195,11 +195,19 @@ export function resolveDocumantraHref(href: string): string {
   if (href.startsWith('http://') || href.startsWith('https://')) return href;
   if (href === '/public-sign' || href.startsWith('/public-sign/')) {
     if (typeof window !== 'undefined' && isEsignPublicHost()) {
-      return href === '/public-sign' ? '/' : href;
+      if (href === '/public-sign') return '/';
+      if (href.startsWith('/public-sign/editor')) {
+        return href.replace('/public-sign/editor', '/editor');
+      }
+      return href;
     }
-    return href === '/public-sign'
-      ? `${ESIGN_PUBLIC_URL}/`
-      : `${ESIGN_PUBLIC_URL}${href}`;
+    if (href === '/public-sign') {
+      return `${ESIGN_PUBLIC_URL}/`;
+    }
+    if (href.startsWith('/public-sign/editor')) {
+      return `${ESIGN_PUBLIC_URL}${href.replace('/public-sign/editor', '/editor')}`;
+    }
+    return `${ESIGN_PUBLIC_URL}${href}`;
   }
   if (href.startsWith('/')) return `${DOCUMANTRA_SITE}${href}`;
   if (href.startsWith('#')) return `${DOCUMANTRA_SITE}/${href}`;
