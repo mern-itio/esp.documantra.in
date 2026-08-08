@@ -20,7 +20,8 @@ const {
   getRecipientAuditTrail,
   completeSignature,
   validateRecipient,
-  sendEnvelope
+  sendEnvelope,
+  getEnvSignFields,
 } = require('../controllers/mainController');
 
 const {
@@ -66,6 +67,11 @@ const publicSendEnvelope = requirePublicDraftOrSenderAccess();
 router.get('/health', (_, res) => res.send('E-Sign Public Service is running...'));
 router.get('/documents/:documentId/view', viewDocument);
 router.get('/envelope/:id', envelopesDetail);
+router.get(
+  '/envelope/get-signature-fields/:envelopeId',
+  requirePublicDraftOrSenderAccess(),
+  getEnvSignFields,
+);
 router.get('/document/signature-fields/:id/:mode?', getSignatureFields);
 router.post(
   '/upload',

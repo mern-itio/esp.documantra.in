@@ -63,6 +63,30 @@ server {
         rewrite ^/public-sign/editor(.*)$ /editor$1 permanent;
     }
 
+    # PDF.js worker — must be JavaScript, not application/octet-stream
+    location = /pdf.worker.min.mjs {
+        root /var/www/esign-public;
+        default_type application/javascript;
+        expires 30d;
+        add_header Cache-Control "public" always;
+        try_files $uri =404;
+    }
+
+    location ~* ^/assets/.+\.mjs$ {
+        root /var/www/esign-public;
+        default_type application/javascript;
+        expires 1y;
+        add_header Cache-Control "public, immutable" always;
+        try_files $uri =404;
+    }
+
+    location /assets/ {
+        root /var/www/esign-public;
+        expires 1y;
+        add_header Cache-Control "public, immutable" always;
+        try_files $uri =404;
+    }
+
     location = /index.html {
         if ($request_method = OPTIONS) { return 405; }
         root /var/www/esign-public;

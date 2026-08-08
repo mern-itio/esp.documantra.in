@@ -4304,7 +4304,10 @@ if (isPublicFlow) {
 
   const getSignatureFields = async (envelopeId: string) => {
     try {
-      const response = await eSignApi.get(`/api/e-sign/envelope/get-signature-fields/${envelopeId}`);
+      const url = isPublicFlow
+        ? `/api/e-sign/public/envelope/get-signature-fields/${envelopeId}`
+        : `/api/e-sign/envelope/get-signature-fields/${envelopeId}`;
+      const response = await eSignApi.get(url);
       if (response.status === 200) {
         setSignatureFields(response.data.signatureFields);
         console.log('Fetched signature fields:', response.data.signatureFields);

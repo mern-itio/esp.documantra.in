@@ -28,8 +28,8 @@ cp "$ROOT/deploy/nginx/snippets/vapt-esign-public-spa-headers.conf" /etc/nginx/s
 cp "$ROOT/deploy/nginx/snippets/vapt-hide-server-header.conf" /etc/nginx/snippets/ 2>/dev/null || true
 
 if [ ! -f "$NGINX_SITE" ]; then
-  echo "WARN: $NGINX_SITE missing — copy deploy/nginx/esign.documantra.in.production.conf.example"
-  echo "      then: certbot certonly --nginx -d esign.documantra.in"
+  echo "==> Install nginx site config"
+  cp "$ROOT/deploy/nginx/esign.documantra.in.production.conf.example" "$NGINX_SITE"
 fi
 
 nginx -t
