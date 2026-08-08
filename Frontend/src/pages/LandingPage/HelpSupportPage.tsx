@@ -21,6 +21,10 @@ import {
 import { Link } from 'react-router-dom';
 import { supportPublicApi } from '../../services/supportService';
 import { useBrandSettings } from '../../hooks/useBrandSettings';
+import {
+  PublicSignFooter,
+  PublicSignHeader,
+} from '../PublicFlow/PublicSignMarketingChrome';
 
 const HelpSupportPage: React.FC = () => {
   const { supportEmail } = useBrandSettings();
@@ -269,7 +273,10 @@ const HelpSupportPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-blue-50 pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-blue-50">
+      <PublicSignHeader />
+
+      <main>
       {/* Hero Section */}
       <section className="py-16 bg-gradient-to-br from-[#260559] to-blue-700 text-white">
         <div className="container-max px-4 sm:px-6 lg:px-8">
@@ -606,6 +613,9 @@ const HelpSupportPage: React.FC = () => {
           </div>
         </div>
       </div>
+      </main>
+
+      <PublicSignFooter />
     </div>
   );
 };
