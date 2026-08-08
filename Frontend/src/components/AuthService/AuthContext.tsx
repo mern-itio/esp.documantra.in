@@ -4,6 +4,7 @@ import { API_ENDPOINTS, apiRequest } from '../../services/api';
 import { assertSecureApiUrl } from '../../utils/secureApiUrl';
 import { encryptLoginPayload, fetchLoginPublicKey } from '../../utils/loginPayloadCrypto';
 import { authApi } from '../../services/apiHelper';
+import { isPublicSignRoute } from '../../config/appMode';
 import { SubscriptionService, SubscriptionStorage } from '../../services/subscriptionService';
 import {
   clearAccountContext,
@@ -174,16 +175,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const isPublicAuthExemptRoute = () => {
-    const path = window.location.pathname;
     return (
-      path.includes('/e-sign/signer/') ||
-      path.startsWith('/e-sign/recipient-portal') ||
-      path.startsWith('/public-sign') ||
-      path === '/login' ||
-      path === '/signup' ||
-      path === '/forgot-password' ||
-      path === '/reset-password' ||
-      path.startsWith('/oauth/callback/')
+      isPublicSignRoute() ||
+      window.location.pathname === '/login' ||
+      window.location.pathname === '/signup' ||
+      window.location.pathname === '/forgot-password' ||
+      window.location.pathname === '/reset-password' ||
+      window.location.pathname.startsWith('/oauth/callback/')
     );
   };
 

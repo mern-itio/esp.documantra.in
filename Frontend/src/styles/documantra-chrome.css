@@ -1,0 +1,64 @@
+/** Matches documantra.in marketing site header/footer layout (tailwind container: 1400px + 2rem padding). */
+.documantra-container {
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+.documantra-chrome-header {
+  border-color: hsl(40 20% 88% / 0.4);
+  background-color: hsl(40 33% 98% / 0.95);
+}
+
+@supports (backdrop-filter: blur(0)) {
+  .documantra-chrome-header {
+    background-color: hsl(40 33% 98% / 0.6);
+  }
+}
+
+.documantra-chrome-footer {
+  border-color: hsl(40 20% 88%);
+  background-color: hsl(40 20% 94% / 0.3);
+}
+
+.documantra-chrome-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(24 10% 40%);
+  transition: color 0.15s ease;
+}
+
+.documantra-chrome-link:hover {
+  color: hsl(0 0% 18%);
+}
+
+.documantra-chrome-btn-primary {
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: hsl(40 33% 98%);
+  background-color: hsl(160 48% 21%);
+  transition: background-color 0.15s ease;
+}
+
+.documantra-chrome-btn-primary:hover {
+  background-color: hsl(160 48% 18%);
+}
+
+.documantra-chrome-btn-ghost {
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(0 0% 18%);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.documantra-chrome-btn-ghost:hover {
+  background-color: hsl(40 20% 94%);
+  color: hsl(0 0% 18%);
+}

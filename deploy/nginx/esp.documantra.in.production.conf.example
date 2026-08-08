@@ -98,6 +98,15 @@ server {
         proxy_pass http://127.0.0.1:2103/uploads/;
     }
 
+    # Public sign moved to esign.documantra.in
+    location = /public-sign {
+        return 301 https://esign.documantra.in/;
+    }
+
+    location ^~ /public-sign/ {
+        return 301 https://esign.documantra.in$request_uri;
+    }
+
     location /pdf/ {
         proxy_pass http://127.0.0.1:2104/;
     }

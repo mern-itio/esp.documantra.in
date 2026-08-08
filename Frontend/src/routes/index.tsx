@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { createBrowserRouter, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthService/AuthContext';
 import { isPublicSignOnlyApp } from '../config/appMode';
+import RedirectToEsignPublic from '../components/PublicFlow/RedirectToEsignPublic';
 import {
   PublicPDFTools,
-  PublicWizard,
   PDFToolsMergePDFPage,
   PDFToolsSplitPDFPage,
   PDFToolsExtractPDFPage,
@@ -631,7 +631,7 @@ const LandingPageLayout = () => (
 );
 
 const RootGuestRoute = () =>
-  isPublicSignOnlyApp() ? <Navigate to="/public-sign" replace /> : <LandingPageLayout />;
+  isPublicSignOnlyApp() ? <Navigate to="/" replace /> : <LandingPageLayout />;
 
 // Guest Routes (Public)
 const guestRoutes = [
@@ -645,10 +645,10 @@ const guestRoutes = [
   { path: '/cookie-policy', element: <CookiePolicyPage /> },
 {path: '/tools',  element: <PublicPDFTools />},  
 { path: '/use-cases', element: <UseCasesPage /> },
-{ path: '/public-sign', element: <PublicWizard /> },
+{ path: '/public-sign', element: <RedirectToEsignPublic /> },
 {
   path: '/public-sign/editor',
-  element: <EnvelopeCreator />
+  element: <RedirectToEsignPublic />
 }, 
  { path: '/workspace', element: <WorkspacePage /> },
   { path: '/feature-comparison', element: <FeatureComparisonPage /> },

@@ -4,6 +4,7 @@ import {
   DEFAULT_BRAND_LOGO_URL,
   fetchBrandingAssets,
 } from './documantraBranding';
+import { ESIGN_PUBLIC_URL, isEsignPublicHost } from '../config/appMode';
 
 export const DOCUMANTRA_SITE =
   (import.meta.env.VITE_DOCUMANTRA_SITE_URL || 'https://documantra.in').replace(
@@ -188,11 +189,18 @@ const normalizeFooter = (value: Partial<FooterContent> | null): FooterContent =>
     : fallbackFooter.linkGroups,
 });
 
-/** Absolute URL for documantra.in assets and pages. Keeps /public-sign on current host. */
+/** Absolute URL for documantra.in assets and pages. Public sign lives on esign.documantra.in. */
 export function resolveDocumantraHref(href: string): string {
   if (!href) return DOCUMANTRA_SITE;
   if (href.startsWith('http://') || href.startsWith('https://')) return href;
-  if (href === '/public-sign' || href.startsWith('/public-sign/')) return href;
+  if (href === '/public-sign' || href.startsWith('/public-sign/')) {
+    if (typeof window !== 'undefined' && isEsignPublicHost()) {
+      return href === '/public-sign' ? '/' : href;
+    }
+    return href === '/public-sign'
+      ? `${ESIGN_PUBLIC_URL}/`
+      : `${ESIGN_PUBLIC_URL}${href}`;
+  }
   if (href.startsWith('/')) return `${DOCUMANTRA_SITE}${href}`;
   if (href.startsWith('#')) return `${DOCUMANTRA_SITE}/${href}`;
   return `${DOCUMANTRA_SITE}/${href}`;

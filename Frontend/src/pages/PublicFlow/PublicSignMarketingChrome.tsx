@@ -19,10 +19,11 @@ import {
   resolveDocumantraAsset,
   resolveDocumantraHref,
 } from '../../services/documantraSiteContent';
+import '../../styles/documantra-chrome.css';
 
-const primaryGreen = 'bg-[hsl(160,48%,21%)] hover:bg-[hsl(160,48%,18%)]';
-const linkClass =
-  'text-sm font-medium text-gray-600 transition-colors hover:text-gray-950';
+const primaryGreen = 'documantra-chrome-btn-primary';
+const linkClass = 'documantra-chrome-link';
+const chromeContainer = 'documantra-container';
 
 const XIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -115,13 +116,13 @@ export const PublicSignHeader = () => {
   const { header, navLinks } = useDocumantraChrome();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200/70 bg-[#FDFBF7]/95 backdrop-blur supports-[backdrop-filter]:bg-[#FDFBF7]/80">
-      <div className="mx-auto flex h-28 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="documantra-chrome-header sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-[hsl(40,33%,98%)]/60">
+      <div className={`${chromeContainer} flex h-28 items-center justify-between`}>
         <a href={DOCUMANTRA_SITE} className="group flex items-center gap-2.5">
           <img
             src={resolveDocumantraAsset(header.logoUrl)}
             alt={header.siteName || 'DocuMantra'}
-            className="h-24 w-auto max-w-[660px] transition-transform group-hover:scale-[1.02]"
+            className="h-24 w-auto max-w-[660px] object-contain transition-transform group-hover:scale-105"
           />
         </a>
 
@@ -134,13 +135,13 @@ export const PublicSignHeader = () => {
         <div className="hidden items-center gap-3 md:flex">
           <a
             href={resolveDocumantraHref(header.secondaryCtaHref)}
-            className="rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950"
+            className="documantra-chrome-btn-ghost"
           >
             {header.secondaryCtaLabel}
           </a>
           <a
             href={resolveDocumantraHref(header.primaryCtaHref)}
-            className={`rounded-md px-4 py-2 text-sm font-semibold text-white transition ${primaryGreen}`}
+            className={primaryGreen}
           >
             {header.primaryCtaLabel}
           </a>
@@ -157,11 +158,11 @@ export const PublicSignHeader = () => {
       </div>
 
       <div
-        className={`absolute left-0 right-0 top-28 border-b border-gray-200 bg-[#FDFBF7] transition-all duration-300 md:hidden ${
+        className={`absolute left-0 right-0 top-28 border-b border-[hsl(40,20%,88%)] bg-[hsl(40,33%,98%)] transition-all duration-300 ease-in-out md:hidden ${
           isMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
         }`}
       >
-        <nav className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6">
+        <nav className={`${chromeContainer} flex flex-col gap-4 py-4`}>
           {navLinks.map((link) => (
             <NavAnchor
               key={`mobile-${link.label}-${link.href}`}
@@ -170,16 +171,16 @@ export const PublicSignHeader = () => {
               onNavigate={() => setIsMenuOpen(false)}
             />
           ))}
-          <div className="flex flex-col gap-2 border-t border-gray-200 pt-4">
+          <div className="flex flex-col gap-2 border-t border-[hsl(40,20%,88%)] pt-4">
             <a
               href={resolveDocumantraHref(header.secondaryCtaHref)}
-              className="rounded-md px-3 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-100"
+              className="documantra-chrome-btn-ghost w-full text-center"
             >
               {header.secondaryCtaLabel}
             </a>
             <a
               href={resolveDocumantraHref(header.primaryCtaHref)}
-              className={`rounded-md px-4 py-2 text-center text-sm font-semibold text-white ${primaryGreen}`}
+              className={`${primaryGreen} w-full text-center`}
             >
               {header.primaryCtaLabel}
             </a>
@@ -194,7 +195,7 @@ const BackToTop = () => (
   <button
     type="button"
     onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-    className={`fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full text-white shadow-lg transition ${primaryGreen}`}
+    className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(160,48%,21%)] text-[hsl(40,33%,98%)] shadow-lg transition hover:opacity-90"
     aria-label="Back to top"
   >
     <ArrowUp className="h-4 w-4" />
@@ -202,12 +203,12 @@ const BackToTop = () => (
 );
 
 const TrustBadges = ({ badges }: { badges: string[] }) => (
-  <div className="border-t border-gray-200 py-8">
+  <div className="border-t border-[hsl(40,20%,88%)] py-8">
     <div className="flex flex-wrap justify-center gap-3">
       {badges.filter(Boolean).map((badge) => (
         <div
           key={badge}
-          className="inline-flex items-center gap-2 rounded-full border border-[hsl(160,48%,21%)]/10 bg-[hsl(160,48%,21%)]/5 px-4 py-2 text-xs font-medium text-gray-600"
+          className="inline-flex items-center gap-2 rounded-full border border-[hsl(160,48%,21%)]/10 bg-[hsl(160,48%,21%)]/5 px-4 py-2 text-xs font-medium text-[hsl(24,10%,40%)]"
         >
           <Shield className="h-3.5 w-3.5 text-[hsl(160,48%,21%)]" />
           {badge}
@@ -230,7 +231,7 @@ const AppStoreLinks = ({
         href={appStoreUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 rounded-lg bg-gray-950 px-4 py-2 text-xs font-medium text-white transition hover:opacity-90"
+        className="inline-flex items-center gap-2 rounded-lg bg-[hsl(0,0%,18%)] px-4 py-2 text-xs font-medium text-[hsl(40,33%,98%)] transition hover:opacity-90"
       >
         <Apple className="h-4 w-4" />
         <span className="leading-tight">
@@ -244,7 +245,7 @@ const AppStoreLinks = ({
         href={playStoreUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 rounded-lg bg-gray-950 px-4 py-2 text-xs font-medium text-white transition hover:opacity-90"
+        className="inline-flex items-center gap-2 rounded-lg bg-[hsl(0,0%,18%)] px-4 py-2 text-xs font-medium text-[hsl(40,33%,98%)] transition hover:opacity-90"
       >
         <Smartphone className="h-4 w-4" />
         <span className="leading-tight">
@@ -291,12 +292,12 @@ export const PublicSignFooter = () => {
     : '';
 
   return (
-    <footer className="border-t border-gray-200 bg-[#FDFBF7]">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
-        <div className="mb-10 grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
+    <footer className="documantra-chrome-footer border-t">
+      <div className={`${chromeContainer} py-12 md:py-16`}>
+        <div className="mb-10 grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {footer.linkGroups.map((group, groupIndex) => (
             <div key={`${group.category}-${groupIndex}`}>
-              <h3 className="mb-4 text-sm font-bold text-gray-950">
+              <h3 className="mb-4 text-sm font-bold text-[hsl(0,0%,18%)]">
                 {group.category}
               </h3>
               <ul className="space-y-2.5">
@@ -306,7 +307,7 @@ export const PublicSignFooter = () => {
                     <li key={`${group.category}-${link.label}-${linkIndex}`}>
                       <a
                         href={resolveDocumantraHref(link.href)}
-                        className="inline-flex items-center gap-1.5 text-sm text-gray-600 transition-colors hover:text-gray-950"
+                        className="inline-flex items-center gap-1.5 text-sm text-[hsl(24,10%,40%)] transition-colors hover:text-[hsl(0,0%,18%)]"
                       >
                         {link.label}
                         {link.badge ? (
@@ -316,7 +317,7 @@ export const PublicSignFooter = () => {
                         ) : null}
                       </a>
                       {link.desc ? (
-                        <span className="mt-0.5 block text-xs text-gray-500">
+                        <span className="mt-0.5 block text-xs text-[hsl(24,10%,40%)]">
                           {link.desc}
                         </span>
                       ) : null}
@@ -331,17 +332,17 @@ export const PublicSignFooter = () => {
           <TrustBadges badges={footer.trustBadges || []} />
         ) : null}
 
-        <div className="flex flex-col items-start justify-between gap-8 border-t border-gray-200 py-8 lg:flex-row lg:items-center">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-            <a href={DOCUMANTRA_SITE} className="flex items-center gap-2.5">
+        <div className="flex flex-col items-start justify-between gap-8 border-t border-[hsl(40,20%,88%)] py-8 lg:flex-row lg:items-center">
+          <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
+            <a href={DOCUMANTRA_SITE} className="group flex items-center gap-2.5">
               <img
                 src={resolveDocumantraAsset(header.logoUrl)}
                 alt="DocuMantra"
-                className="h-16 w-auto max-w-[280px]"
+                className="h-14 w-auto max-w-[280px] object-contain transition-transform group-hover:scale-105"
               />
             </a>
             <div>
-              <p className="max-w-xs text-sm text-gray-600">{footer.tagline}</p>
+              <p className="max-w-xs text-sm text-[hsl(24,10%,40%)]">{footer.tagline}</p>
               {footer.contactEmail ? (
                 <a
                   href={`mailto:${footer.contactEmail}`}
@@ -353,9 +354,9 @@ export const PublicSignFooter = () => {
             </div>
           </div>
 
-          <div className="flex w-full flex-col gap-6 sm:w-auto sm:flex-row sm:items-center">
+          <div className="flex w-full flex-col items-start gap-6 sm:w-auto sm:flex-row sm:items-center">
             <div>
-              <p className="mb-2 text-sm font-medium text-gray-950">
+              <p className="mb-2 text-sm font-medium text-[hsl(0,0%,18%)]">
                 {footer.newsletterText}
               </p>
               <form
@@ -368,13 +369,10 @@ export const PublicSignFooter = () => {
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="max-w-[240px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                  className="max-w-[240px] rounded-md border border-[hsl(40,20%,88%)] bg-[hsl(40,33%,99%)] px-3 py-2 text-sm"
                   required
                 />
-                <button
-                  type="submit"
-                  className={`rounded-md px-4 py-2 text-sm font-medium text-white ${primaryGreen}`}
-                >
+                <button type="submit" className={primaryGreen}>
                   Subscribe
                 </button>
               </form>
@@ -386,17 +384,17 @@ export const PublicSignFooter = () => {
           </div>
         </div>
 
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 md:flex-row">
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-[hsl(40,20%,88%)] pt-8 md:flex-row">
           <div className="flex flex-col items-center gap-4 sm:flex-row">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[hsl(24,10%,40%)]">
               © {new Date().getFullYear()} {footer.copyright}
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600">
+            <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-[hsl(24,10%,40%)]">
               {(footer.bottomQuickLinks || []).map((link) => (
                 <a
                   key={link.label}
                   href={resolveDocumantraHref(link.href)}
-                  className="transition-colors hover:text-gray-950"
+                  className="transition-colors hover:text-[hsl(0,0%,18%)]"
                 >
                   {link.label}
                 </a>
@@ -413,7 +411,7 @@ export const PublicSignFooter = () => {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-gray-600 transition hover:bg-gray-100 hover:text-gray-950"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(40,20%,94%)] text-[hsl(24,10%,40%)] transition hover:bg-[hsl(24,10%,40%)]/10 hover:text-[hsl(0,0%,18%)]"
                   aria-label={social.label}
                 >
                   {social.isLucide ? <Mail size={18} /> : Icon ? <Icon /> : null}

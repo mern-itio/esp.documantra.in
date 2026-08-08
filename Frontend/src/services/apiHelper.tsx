@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import { SubscriptionStorage } from './subscriptionService';
 import { resolveServiceUrl } from '../utils/secureApiUrl';
-import { isPublicSignOnlyApp } from '../config/appMode';
+import { isPublicSignOnlyApp, isPublicSignRoute } from '../config/appMode';
 import { getAccountContextHeaders } from '../utils/authSession';
 
 const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance => {
@@ -20,10 +20,7 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
     const isPublicEsignRequest =
       requestUrl.includes('/api/e-sign/public/') ||
       isPublicSignOnlyApp() ||
-      (typeof window !== 'undefined' &&
-        (window.location.pathname.startsWith('/public-sign') ||
-          window.location.pathname.startsWith('/e-sign/signer') ||
-          window.location.pathname.startsWith('/e-sign/recipient-portal')));
+      (typeof window !== 'undefined' && isPublicSignRoute());
 
     if (!isPublicEsignRequest) {
       const accountHeaders = getAccountContextHeaders();
@@ -46,13 +43,11 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
       // Dispatch logout event on 401 Unauthorized globally
       if (error.response?.status === 401 && typeof window !== 'undefined') {
 
-  const path = window.location.pathname;
+      const path = window.location.pathname;
 
-  const isPublicRoute =
-    path.startsWith('/public-sign') ||
-    path.startsWith('/e-sign/signer') ||
-    path.startsWith('/e-sign/recipient-portal') ||
-    isPublicSignOnlyApp();
+      const isPublicRoute =
+        isPublicSignRoute() ||
+        isPublicSignOnlyApp();
 
   if (!isPublicRoute) {
     try {

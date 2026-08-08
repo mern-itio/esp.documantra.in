@@ -20,6 +20,7 @@ import Swal from "sweetalert2";
 import { useAuth } from "../AuthService/AuthContext";
 import { fetchEsignDocumentData } from "../../utils/esignDocumentUrl";
 import { PDFJS_WORKER_SRC } from "../../config/pdfjsWorker";
+import { isPublicSignRoute } from "../../config/appMode";
 
 // Type declarations for PDF.js
 declare global {
@@ -139,8 +140,7 @@ export default function SigningEditorStep({
 }) {
   const isPublicFlow =
     typeof window !== "undefined" &&
-    (window.location.pathname.startsWith("/public-sign") ||
-      window.location.search.includes("public=true"));
+    (isPublicSignRoute() || window.location.search.includes("public=true"));
   const saveSignatureFieldsPath = isPublicFlow
     ? "/api/e-sign/public/save-signature-fields"
     : "/api/e-sign/save-signature-fields";

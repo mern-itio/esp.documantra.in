@@ -35,4 +35,4 @@ fi
 nginx -t
 systemctl reload nginx
 
-echo "OK: https://esign.documantra.in/public-sign"
+echo "OK: https://esign.documantra.in/"
