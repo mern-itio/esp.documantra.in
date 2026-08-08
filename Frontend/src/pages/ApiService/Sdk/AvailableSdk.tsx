@@ -13,7 +13,6 @@ import {
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useAPI } from '../../../context/ApiContext'
-import { BRAND } from '../../../config/brand'
 import { useBrandSettings } from '../../../hooks/useBrandSettings'
 
 export const AvailableSdk: React.FC = () => {

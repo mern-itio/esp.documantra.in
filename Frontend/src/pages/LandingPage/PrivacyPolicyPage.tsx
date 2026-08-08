@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useBrandSettings } from '../../hooks/useBrandSettings';
 
 const PrivacyPolicyPage = () => {
-  const { name: brandName, supportEmail, privacyEmail } = useBrandSettings();
+  const { privacyEmail } = useBrandSettings();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'section-1': true,
   }); 
