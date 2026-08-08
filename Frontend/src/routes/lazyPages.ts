@@ -95,6 +95,7 @@ export const ApiServiceDashboard = lazyPage(() => import('../pages/ApiService/Da
 export const ApiServiceAnalytics = lazyPage(() => import('../pages/ApiService/Analytics/Main'));
 export const ApiServiceProjects = lazyPage(() => import('../pages/ApiService/Projects/Main'));
 export const ApiServiceKey = lazyPage(() => import('../pages/ApiService/Key/Main'));
+export const ApiServiceIntegrationDemo = lazyPage(() => import('../pages/ApiService/Demo/IntegrationDemo'));
 export const ApiServiceExplorer = lazyPage(() => import('../pages/ApiService/Explorer/ApiExplorer'));
 export const ApiServiceDocumentation = lazyPage(() => import('../pages/ApiService/Documentation/Main'));
 export const ApiServiceWebhooks = lazyPage(() => import('../pages/ApiService/Webhooks/Main'));
