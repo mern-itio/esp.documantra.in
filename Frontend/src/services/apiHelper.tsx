@@ -43,8 +43,6 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
       // Dispatch logout event on 401 Unauthorized globally
       if (error.response?.status === 401 && typeof window !== 'undefined') {
 
-      const path = window.location.pathname;
-
       const isPublicRoute =
         isPublicSignRoute() ||
         isPublicSignOnlyApp();
