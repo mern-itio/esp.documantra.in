@@ -80,7 +80,7 @@ const ProductSection = () => {
 
             {/* Bottom feature tiles row */}
             <p className="text-heading mb-4">
-                DraftnSign in your business
+                {APP_NAME} in your business
             </p>
             <div className="grid gap-4 mt-4 md:grid-cols-3">
                 <Link

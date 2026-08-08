@@ -1,6 +1,8 @@
 import { SupportPage } from "./SupportChannels";
+import { useBrandSettings } from "../../../hooks/useBrandSettings";
 
 const Main = () => {
+  const { name: brandName } = useBrandSettings();
   return (
     <div className="p-6 space-y-8 bg-[#F5F2EE] min-h-screen">
       {/* Header */}
@@ -8,7 +10,7 @@ const Main = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Support Center</h1>
           <p className="text-gray-600">
-            Get help with DraftnSign API integration and troubleshooting
+            Get help with {brandName} API integration and troubleshooting
           </p>
         </div>
       </div>

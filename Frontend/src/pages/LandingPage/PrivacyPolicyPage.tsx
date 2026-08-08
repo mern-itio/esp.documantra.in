@@ -2,8 +2,10 @@ import { useRef, useState } from 'react';
 import { Download, Printer, ChevronDown, ChevronUp, Shield, Lock, Database, Globe, AlertCircle, Check, FileText } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { Link } from 'react-router-dom';
+import { useBrandSettings } from '../../hooks/useBrandSettings';
 
 const PrivacyPolicyPage = () => {
+  const { name: brandName, supportEmail, privacyEmail } = useBrandSettings();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'section-1': true,
   }); 
@@ -99,7 +101,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <p className="text-blue-800 font-medium">Privacy Officer Contact Information</p>
                 <p className="text-blue-700 text-sm mt-1">
-                  If you have any questions about this Privacy Policy or our data practices, please contact our Privacy Officer at privacy@draftandsign.com or call us at (800) 555-0123.
+                  If you have any questions about this Privacy Policy or our data practices, please contact our Privacy Officer at {privacyEmail} or call us at (800) 555-0123.
                 </p>
               </div>
             </div>
@@ -381,7 +383,7 @@ const PrivacyPolicyPage = () => {
           <ul className="list-disc pl-6 mb-4">
             <li>Through your account settings</li>
             <li>By contacting our support team</li>
-            <li>By emailing privacy@draftandsign.com</li>
+            <li>By emailing {privacyEmail}</li>
           </ul>
           <p className="mb-4">
             We will process your request within the timeframe required by applicable law (typically 30 days), subject to legal retention requirements.
@@ -577,7 +579,7 @@ const PrivacyPolicyPage = () => {
           <ul className="list-disc pl-6 mb-4">
             <li><strong>Self-Service Portal:</strong> Account dashboard for common requests</li>
             <li><strong>Privacy Request Form:</strong> Dedicated form for formal requests</li>
-            <li><strong>Email Contact:</strong> Direct communication with privacy team at privacy@draftandsign.com</li>
+            <li><strong>Email Contact:</strong> Direct communication with privacy team at {privacyEmail}</li>
             <li><strong>Phone Support:</strong> Call (800) 555-0123 for assistance</li>
           </ul>
           <p className="mb-4">
@@ -709,7 +711,7 @@ const PrivacyPolicyPage = () => {
               <div>
                 <p className="text-yellow-800 font-medium">Notice to Parents</p>
                 <p className="text-yellow-700 text-sm mt-1">
-                  If you believe your child has provided us with personal information without your consent, please contact us at privacy@draftandsign.com, and we will take prompt action to remove the information.
+                  If you believe your child has provided us with personal information without your consent, please contact us at {privacyEmail}, and we will take prompt action to remove the information.
                 </p>
               </div>
             </div>
@@ -762,7 +764,7 @@ const PrivacyPolicyPage = () => {
           <ul className="list-disc pl-6 mb-4">
             <li>All previous versions are retained for reference</li>
             <li>A summary of significant changes between versions is available</li>
-            <li>You can request access to previous versions by contacting privacy@draftandsign.com</li>
+            <li>You can request access to previous versions by contacting {privacyEmail}</li>
           </ul>
           
           <h4 className="text-lg font-semibold mb-2">Effective Dates</h4>
@@ -800,7 +802,7 @@ const PrivacyPolicyPage = () => {
           
           <div className="bg-[#F5F2EE] p-4 rounded-lg mb-6">
             <h4 className="font-semibold mb-2">Privacy Team</h4>
-            <p className="mb-1"><strong>Email:</strong> privacy@draftandsign.com</p>
+            <p className="mb-1"><strong>Email:</strong> {privacyEmail}</p>
             <p className="mb-1"><strong>Address:</strong> 123 Legal Avenue, Suite 400, San Francisco, CA 94103</p>
             <p><strong>Phone:</strong> (800) 555-0123</p>
           </div>
@@ -810,7 +812,7 @@ const PrivacyPolicyPage = () => {
             For users in the European Economic Area, United Kingdom, or Switzerland, you may also contact our Data Protection Officer:
           </p>
           <div className="bg-[#F5F2EE] p-4 rounded-lg mb-4">
-            <p className="mb-1"><strong>Email:</strong> dpo@draftandsign.com</p>
+            <p className="mb-1"><strong>Email:</strong> {privacyEmail}</p>
             <p><strong>Address:</strong> 123 Legal Avenue, Suite 400, San Francisco, CA 94103</p>
           </div>
           
@@ -820,7 +822,7 @@ const PrivacyPolicyPage = () => {
           </p>
           <div className="bg-[#F5F2EE] p-4 rounded-lg mb-4">
             <p className="mb-1"><strong>Name:</strong> {BRAND.name} EU Representative</p>
-            <p className="mb-1"><strong>Email:</strong> eu-representative@draftandsign.com</p>
+            <p className="mb-1"><strong>Email:</strong> {privacyEmail}</p>
             <p><strong>Address:</strong> 1 Dublin Square, Dublin, Ireland</p>
           </div>
           
@@ -830,7 +832,7 @@ const PrivacyPolicyPage = () => {
           </p>
           <div className="bg-[#F5F2EE] p-4 rounded-lg mb-4">
             <p className="mb-1"><strong>Name:</strong> {BRAND.name} UK Representative</p>
-            <p className="mb-1"><strong>Email:</strong> uk-representative@draftandsign.com</p>
+            <p className="mb-1"><strong>Email:</strong> {privacyEmail}</p>
             <p><strong>Address:</strong> 1 London Bridge, London, UK</p>
           </div>
           

@@ -17,8 +17,11 @@ import {
   Edit,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { PageShell, PageHero } from '../../components/common/PageShell';
+import { useBrandSettings } from '../../hooks/useBrandSettings';
 
 const Settings: React.FC = () => {
+  const { name: brandName } = useBrandSettings();
   const { user } = useApp();
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
@@ -411,31 +414,27 @@ const Settings: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F5F2EE]">
-      <div className="p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-2">Manage your account settings and preferences.</p>
-        </div>
+    <PageShell wide>
+      <PageHero
+        compact
+        title="Settings"
+        subtitle="Manage your account settings and preferences."
+        backTo="/dashboard"
+      />
 
-        <div className="flex gap-8">
+      <div className="flex flex-col gap-6 lg:flex-row">
           {/* Sidebar */}
-          <div className="w-64 bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-4">
-            <nav className="space-y-2">
+          <div className="dm-panel w-full shrink-0 p-2 lg:w-64">
+            <nav className="space-y-1">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                        : 'text-gray-600 hover:bg-[#F5F2EE] hover:text-gray-900'
-                    }`}
+                    className={`dm-nav-item ${activeTab === tab.id ? 'dm-nav-item--active' : ''}`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="h-5 w-5" />
                     {tab.name}
                   </button>
                 );
@@ -464,13 +463,12 @@ const Settings: React.FC = () => {
               <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <SettingsIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Preferences</h3>
-                <p className="text-gray-600">Customize your DraftnSign experience.</p>
+                <p className="text-gray-600">Customize your {brandName} experience.</p>
               </div>
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

@@ -1,9 +1,12 @@
 import { Check, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useBrandSettings } from '../../hooks/useBrandSettings'
 
 const FeatureComparison = () => {
+  const { name: brandName } = useBrandSettings()
+
   const competitors = [
-    { name: 'DraftnSign', color: 'bg-[#260559]' },
+    { name: brandName, color: 'bg-[#260559]' },
     { name: 'DocuSign', color: 'bg-gray-400' },
     { name: 'HelloSign', color: 'bg-gray-400' },
     { name: 'Adobe Sign', color: 'bg-gray-400' }
@@ -24,10 +27,10 @@ const FeatureComparison = () => {
       <div className="container-max">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Why Choose DraftnSign?
+            Why Choose {brandName}?
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            See how {BRAND.name} compares to other document management platforms
+            See how {brandName} compares to other document management platforms
           </p>
         </div>
 

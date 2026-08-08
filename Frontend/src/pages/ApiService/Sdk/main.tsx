@@ -1,6 +1,8 @@
 import { AvailableSdk } from "./AvailableSdk";
+import { useBrandSettings } from "../../../hooks/useBrandSettings";
 
 const Main = () => {
+  const { name: brandName } = useBrandSettings();
   return (
     <div className="p-6 space-y-8 bg-[#F5F2EE] min-h-screen">
       {/* Header */}
@@ -8,7 +10,7 @@ const Main = () => {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">SDKs & Libraries</h1>
         <p className="text-gray-600">
-         Official SDKs and libraries to integrate DraftnSign into your applications
+         Official SDKs and libraries to integrate {brandName} into your applications
         </p>
       </div>
     </div>

@@ -230,7 +230,7 @@ const generateInvoicePdfBuffer = (invoice, type = 'invoice') =>
         .text('Kaushambi, Ghaziabad, Uttar Pradesh', rightX, topY + 24)
         .text('India', rightX, topY + 36)
         .text('+91 12345-67890', rightX, topY + 48)
-        .text('info@draftandsign.com', rightX, topY + 60);
+        .text(process.env.BRAND_CONTACT_EMAIL || process.env.SUPPORT_EMAIL || 'connect@documantra.in', rightX, topY + 60);
 
       // Divider
       doc.moveTo(50, 190).lineTo(545, 190).strokeColor('#dddddd').stroke();

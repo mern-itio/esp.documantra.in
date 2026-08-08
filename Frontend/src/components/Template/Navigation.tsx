@@ -17,8 +17,10 @@ import {
   Sparkles,
   Shield
 } from 'lucide-react';
+import { useBrandSettings } from '../../hooks/useBrandSettings';
 
 export const Navigation: React.FC = () => {
+  const { name: brandName } = useBrandSettings();
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
@@ -50,7 +52,7 @@ export const Navigation: React.FC = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                   <FileText className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold text-gray-900">DraftnSign</span>
+                <span className="text-xl font-bold text-gray-900">{brandName}</span>
                 <span className="text-sm text-gray-500 hidden sm:inline">Templates</span>
               </Link>
             </div>

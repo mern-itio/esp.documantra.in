@@ -15,12 +15,14 @@ import {
   UserCog
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useBrandSettings } from '../../hooks/useBrandSettings';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { name: brandName } = useBrandSettings();
   const { user } = useApp();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -57,7 +59,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">DraftnSign</span>
+            <span className="text-xl font-bold text-gray-900">{brandName}</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}

@@ -3,8 +3,10 @@ import { toast } from "react-hot-toast";
 import { MessageSquare, Users, Eye, ThumbsUp, Clock, Search,Plus,CheckCircle,Pin,Tag} from 'lucide-react';
 import { apiServiceApi } from '../../../services/apiHelper';
 import LoadingSpinner from '../../../components/ApiServices/Spinner';
+import { useBrandSettings } from '../../../hooks/useBrandSettings';
 
 const Main: React.FC = () => {
+  const { name: brandName } = useBrandSettings();
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,7 +90,7 @@ const handleLoadMore = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Developer Community</h1>
           <p className="text-gray-600">
-            Connect with other developers, share knowledge, and get help with DraftnSign API
+            Connect with other developers, share knowledge, and get help with {brandName} API
           </p>
         </div>
         <button

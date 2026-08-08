@@ -20,8 +20,10 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supportPublicApi } from '../../services/supportService';
+import { useBrandSettings } from '../../hooks/useBrandSettings';
 
 const HelpSupportPage: React.FC = () => {
+  const { supportEmail } = useBrandSettings();
   const [searchQuery, setSearchQuery] = useState('');
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [formData, setFormData] = useState({
@@ -160,7 +162,7 @@ const HelpSupportPage: React.FC = () => {
       icon: Mail,
       title: 'Email Support',
       description: 'Get help via email',
-      contact: 'support@draftnsign.com',
+      contact: supportEmail,
       responseTime: 'Within 24 hours',
       color: 'text-blue-600'
     },

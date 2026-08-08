@@ -27,6 +27,9 @@ export function formatEnvelopeSubject(documentName: string): string {
 }
 
 /** Replace legacy `{BRAND.name}` placeholders in static copy. */
-export function brandText(template: string): string {
-  return template.replace(/\{BRAND\.name\}/g, BRAND.name);
+export function brandText(template: string, name = BRAND.name): string {
+  return template.replace(/\{BRAND\.name\}/g, name);
 }
+
+/** Public API base URL shown in developer docs and code samples. */
+export const API_PUBLIC_BASE_URL = `${BRAND.website}/api/v1`;

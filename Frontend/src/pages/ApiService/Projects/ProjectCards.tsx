@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Edit, Trash2, Folder } from "lucide-react";
 import Modal from "../../../components/common/types/Modal";
 import QuickActions from "../Analytics/QuickActions";
+import { BRAND } from "../../../config/brand";
 
 // Static Data (extra fields for details demo)
 const projects = [
   {
     name: "HR Integration Project",
     created: "6/15/2024",
-    description: "Integrate DraftnSign with HR systems for employee onboarding",
+    description: `Integrate ${BRAND.name} with HR systems for employee onboarding`,
     apiKeys: 2,
     requests: 3003,
     avgLatency: 156,

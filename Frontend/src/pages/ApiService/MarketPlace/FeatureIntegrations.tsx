@@ -18,8 +18,11 @@ import {
   ChevronRight
 } from 'lucide-react'
 import { mockIntegrations } from '../../../data/mockAPIData'
+import { BRAND } from '../../../config/brand'
+import { useBrandSettings } from '../../../hooks/useBrandSettings'
 
 export const FeatureInterations: React.FC = () => {
+  const { name: brandName } = useBrandSettings();
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedProvider, setSelectedProvider] = useState('all')
@@ -38,7 +41,7 @@ export const FeatureInterations: React.FC = () => {
 
   const providers = [
     { id: 'all', name: 'All Providers' },
-    { id: 'draftn', name: 'DraftnSign' },
+    { id: 'draftn', name: brandName },
     { id: 'community', name: 'Community' },
     { id: 'partner', name: 'Partners' },
     { id: 'verified', name: 'Verified Only' }
@@ -101,7 +104,7 @@ export const FeatureInterations: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900">{integration.name}</h3>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-600">{integration.provider}</span>
-                    {integration.provider === 'DraftnSign' && (
+                    {integration.provider === BRAND.name && (
                       <Verified className="h-4 w-4 text-blue-500" />
                     )}
                   </div>
@@ -352,7 +355,7 @@ const IntegrationCard: React.FC<{ integration: any }> = ({ integration }) => {
             <h3 className="text-lg font-semibold text-gray-900">{integration.name}</h3>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">{integration.provider}</span>
-              {integration.provider === 'DraftnSign' && (
+              {integration.provider === BRAND.name && (
                 <Verified className="h-4 w-4 text-blue-500" />
               )}
             </div>

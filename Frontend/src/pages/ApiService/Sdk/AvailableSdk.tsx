@@ -13,8 +13,11 @@ import {
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useAPI } from '../../../context/ApiContext'
+import { BRAND } from '../../../config/brand'
+import { useBrandSettings } from '../../../hooks/useBrandSettings'
 
 export const AvailableSdk: React.FC = () => {
+  const { name: brandName } = useBrandSettings();
   const { sdks } = useAPI()
   const [selectedSDK, setSelectedSDK] = useState(sdks[0])
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
@@ -374,7 +377,7 @@ func main() {
                     <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
                     <div>
                       <h4 className="font-medium text-gray-900">Full API Coverage</h4>
-                      <p className="text-sm text-gray-600">Complete access to all DraftnSign API endpoints</p>
+                      <p className="text-sm text-gray-600">Complete access to all {brandName} API endpoints</p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">

@@ -1,6 +1,7 @@
 import { Briefcase, ChevronRight, Globe, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../DocumentService/ui/button'
+import { APP_NAME } from '../../constants/appConfig'
 
 const UseCases = () => {
     return (
@@ -224,7 +225,7 @@ const UseCases = () => {
                                 <img src="./logos/hsbc.png" alt="TheKey logo" className="h-6 w-auto" />
                             </div>
                             <p className="text-sm font-semibold text-slate-900 group-hover:text-[#260559] transition-colors leading-snug">
-                                TheKey saves 3,000 hours per year using DraftnSign
+                                TheKey saves 3,000 hours per year using {APP_NAME}
                             </p>
                         </Link>
                     </div>

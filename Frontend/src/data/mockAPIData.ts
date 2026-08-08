@@ -1,10 +1,11 @@
 import type { Project, APIEndpoint, SDK, Integration, ForumPost, AnalyticsData, TestCase } from '../types'
+import { BRAND } from '../config/brand'
 
 export const mockProjects: Project[] = [
   {
     id: 'proj_001',
     name: 'HR Integration Project',
-    description: 'Integrate DraftnSign with HR systems for employee onboarding',
+    description: `Integrate ${BRAND.name} with HR systems for employee onboarding`,
     userId: 'user_123',
     createdAt: '2024-06-15T10:00:00Z',
     updatedAt: '2024-07-01T15:30:00Z',
@@ -417,9 +418,9 @@ export const mockIntegrations: Integration[] = [
   {
     id: 'int_001',
     name: 'Salesforce Integration',
-    description: 'Seamlessly integrate DraftnSign with Salesforce CRM for automated contract workflows',
+    description: `Seamlessly integrate ${BRAND.name} with Salesforce CRM for automated contract workflows`,
     category: 'CRM',
-    provider: 'DraftnSign',
+    provider: BRAND.name,
     logo: 'https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&dpr=1',
     rating: 4.8,
     downloads: 12450,
@@ -432,7 +433,7 @@ export const mockIntegrations: Integration[] = [
   {
     id: 'int_002',
     name: 'HubSpot Connector',
-    description: 'Connect DraftnSign with HubSpot for streamlined deal closure and contract management',
+    description: `Connect ${BRAND.name} with HubSpot for streamlined deal closure and contract management`,
     category: 'CRM',
     provider: 'Community',
     logo: 'https://images.pexels.com/photos/590016/pexels-photo-590016.jpg?auto=compress&cs=tinysrgb&w=100&h=100&dpr=1',
@@ -449,7 +450,7 @@ export const mockIntegrations: Integration[] = [
     name: 'Slack Notifications',
     description: 'Get real-time notifications in Slack when documents are signed or require attention',
     category: 'Communication',
-    provider: 'DraftnSign',
+    provider: BRAND.name,
     logo: 'https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&dpr=1',
     rating: 4.9,
     downloads: 15670,
@@ -476,7 +477,7 @@ export const mockIntegrations: Integration[] = [
   {
     id: 'int_005',
     name: 'Zapier Workflows',
-    description: 'Connect DraftnSign with 5000+ apps through Zapier for unlimited automation possibilities',
+    description: `Connect ${BRAND.name} with 5000+ apps through Zapier for unlimited automation possibilities`,
     category: 'Automation',
     provider: 'Zapier',
     logo: 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&dpr=1',
@@ -552,8 +553,8 @@ export const mockForumPosts: ForumPost[] = [
     content: 'We\'re excited to announce the release of Python SDK v2.1.0 with improved error handling and new features...',
     author: {
       id: 'staff_001',
-      name: 'DraftnSign Team',
-      email: 'team@draftn.com',
+      name: `${BRAND.name} Team`,
+      email: BRAND.supportEmail,
       role: 'admin',
       createdAt: '2024-01-01T10:00:00Z',
       lastActive: '2024-07-01T17:00:00Z'

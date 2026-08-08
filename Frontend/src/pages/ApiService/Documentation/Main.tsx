@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { BRAND, API_PUBLIC_BASE_URL } from "../../../config/brand";
+import { useBrandSettings } from "../../../hooks/useBrandSettings";
 
 const Main: React.FC = () => {
   const location = useLocation();
@@ -151,13 +153,15 @@ const Main: React.FC = () => {
   );
 };
 
-const DocsOverview: React.FC = () => (
+const DocsOverview: React.FC = () => {
+  const { name: brandName } = useBrandSettings();
+  return (
   <div>
     <h1 className="text-4xl font-bold text-gray-900 mb-6">
-      DraftnSign API Documentation
+      {brandName} API Documentation
     </h1>
     <p className="text-xl text-gray-600 mb-8">
-      Welcome to the DraftnSign API documentation. Here you'll find
+      Welcome to the {brandName} API documentation. Here you'll find
       comprehensive guides and API references to help you integrate document
       signing and management into your applications.
     </p>
@@ -171,7 +175,7 @@ const DocsOverview: React.FC = () => (
           Quick Start Guide
         </h3>
         <p className="text-gray-600 mb-4">
-          Get up and running with the DraftnSign API in minutes.
+          Get up and running with the {brandName} API in minutes.
         </p>
         <div className="flex items-center text-primary-600 font-medium">
           Get started <ChevronRight className="ml-1 h-4 w-4" />
@@ -244,9 +248,11 @@ const DocsOverview: React.FC = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 const QuickStartDocs: React.FC = () => {
+  const { name: brandName } = useBrandSettings();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const copyToClipboard = (code: string, id: string) => {
@@ -302,7 +308,7 @@ const QuickStartDocs: React.FC = () => {
         Quick Start Guide
       </h1>
       <p className="text-xl text-gray-600 mb-8">
-        Get started with the DraftnSign API in just a few steps. This guide will
+        Get started with the {brandName} API in just a few steps. This guide will
         walk you through creating your first envelope and sending it for
         signature.
       </p>
@@ -335,7 +341,7 @@ const QuickStartDocs: React.FC = () => {
             2. Install SDK
           </h2>
           <p className="text-gray-600 mb-4">
-            Install the DraftnSign SDK for your preferred programming language:
+            Install the {brandName} SDK for your preferred programming language:
           </p>
 
           <div className="space-y-4">
@@ -506,22 +512,25 @@ for env in envelopes:
 
 export default Main;
 
-const AuthenticationDocs: React.FC = () => (
+const AuthenticationDocs: React.FC = () => {
+  const { name: brandName } = useBrandSettings();
+  return (
   <div>
     <h1 className="text-4xl font-bold text-gray-900 mb-6">Authentication</h1>
     <p className="text-xl text-gray-600 mb-8">
-      Learn how to authenticate your requests to the DraftnSign API using API
+      Learn how to authenticate your requests to the {brandName} API using API
       keys and OAuth 2.0.
     </p>
     {/* Add authentication documentation content */}
   </div>
-);
+  );
+};
 
 const UsersAPIDocs: React.FC = () => (
   <div>
     <h1 className="text-4xl font-bold text-gray-900 mb-6">Users API</h1>
     <p className="text-xl text-gray-600 mb-8">
-      Manage users in your DraftnSign organization with the Users API.
+      Manage users in your {BRAND.name} organization with the Users API.
     </p>
     {/* Add users API documentation content */}
   </div>
@@ -551,7 +560,7 @@ const PythonSDKDocs: React.FC = () => (
   <div>
     <h1 className="text-4xl font-bold text-gray-900 mb-6">Python SDK</h1>
     <p className="text-xl text-gray-600 mb-8">
-      Official Python SDK for the DraftnSign API with full feature support.
+      Official Python SDK for the {BRAND.name} API with full feature support.
     </p>
     {/* Add Python SDK documentation content */}
   </div>
@@ -561,7 +570,7 @@ const JavaScriptSDKDocs: React.FC = () => (
   <div>
     <h1 className="text-4xl font-bold text-gray-900 mb-6">JavaScript SDK</h1>
     <p className="text-xl text-gray-600 mb-8">
-      Official JavaScript/Node.js SDK for the DraftnSign API.
+      Official JavaScript/Node.js SDK for the {BRAND.name} API.
     </p>
     {/* Add JavaScript SDK documentation content */}
   </div>

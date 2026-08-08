@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { FileText, Info, Plus, ShieldCheck, Star } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
 import { BRAND } from '../../config/brand';
+import { useBrandSettings } from '../../hooks/useBrandSettings';
 import { isPublicSignOnlyApp } from '../../config/appMode';
 import {
   PublicSignFooter,
@@ -90,6 +91,7 @@ const accentSoft = 'bg-[#E8F5EE]';
 const cardMint = 'bg-[#F0F9F4]';
 
 export default function PublicWizard() {
+  const { name: brandName, supportEmail } = useBrandSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState(1);
@@ -414,11 +416,11 @@ export default function PublicWizard() {
                 href={isPublicSignOnlyApp() ? `${BRAND.website}/login` : '/login'}
                 className="text-blue-600 hover:underline"
               >
-                why {BRAND.name} is free
+                why {brandName} is free
               </a>
               . Still have questions?{' '}
               <a
-                href={`mailto:${BRAND.supportEmail}`}
+                href={`mailto:${supportEmail}`}
                 className="text-blue-600 hover:underline"
               >
                 Feel free to contact us

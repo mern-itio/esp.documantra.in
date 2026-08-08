@@ -72,7 +72,7 @@ const ResourceTab = () => {
                                 </div>
                                 <div className="p-4">
                                     <h3 className="font-semibold text-slate-900 group-hover:text-[#260559] transition-colors">The Best contract management software tools (full comparison)</h3>
-                                    <p className="text-xs text-slate-600 mt-1">Contracting via email and WhatsApp – how to formalize with DraftnSign.</p>
+                                    <p className="text-xs text-slate-600 mt-1">Contracting via email and WhatsApp – how to formalize with {APP_NAME}.</p>
                                 </div>
                             </Link>
                         </div>
@@ -121,7 +121,7 @@ const ResourceTab = () => {
                                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100"><FileCheck className="h-5 w-5 text-emerald-600" /></div>
                                 <div>
                                     <div className="font-semibold text-slate-900 text-sm">What is eSignature?</div>
-                                    <div className="text-xs text-slate-600">Learn what electronic signature is and how DraftnSign eSignature works.</div>
+                                    <div className="text-xs text-slate-600">Learn what electronic signature is and how {APP_NAME} eSignature works.</div>
                                 </div>
                             </Link>
                             <Link to="/blog/pdf-certification"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F2EE] transition-colors">
@@ -135,7 +135,7 @@ const ResourceTab = () => {
                                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100"><Globe className="h-5 w-5 text-emerald-600" /></div>
                                 <div>
                                     <div className="font-semibold text-slate-900 text-sm">How to get a document signed online</div>
-                                    <div className="text-xs text-slate-600">Use DraftnSign eSignature to get documents signed online quickly.</div>
+                                    <div className="text-xs text-slate-600">Use {APP_NAME} eSignature to get documents signed online quickly.</div>
                                 </div>
                             </Link>
                             <Link to="/blog/faster-signing"  className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F2EE] transition-colors">

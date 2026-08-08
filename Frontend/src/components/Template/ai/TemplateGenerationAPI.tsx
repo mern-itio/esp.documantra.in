@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Code, Copy, Play, Settings } from 'lucide-react';
+import { API_PUBLIC_BASE_URL } from '../../../config/brand';
 
 interface APIEndpoint {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -79,7 +80,7 @@ export const TemplateGenerationAPI: React.FC<TemplateGenerationAPIProps> = ({
 import json
 
 # AI Template Generation
-url = "https://api.draftnSign.com/v1/ai/templates/generate"
+url = "${API_PUBLIC_BASE_URL}/ai/templates/generate"
 headers = {
     "Authorization": "Bearer ${apiKey}",
     "Content-Type": "application/json"
@@ -103,7 +104,7 @@ print(f"AI confidence: {template['confidence']}%")`,
 const generateTemplate = async () => {
     try {
         const response = await axios.post(
-            'https://api.draftnSign.com/v1/ai/templates/generate',
+            '${API_PUBLIC_BASE_URL}/ai/templates/generate',
             {
                 description: 'Create an employment contract for software engineers',
                 industry: 'technology',
@@ -128,7 +129,7 @@ const generateTemplate = async () => {
 generateTemplate();`,
 
     curl: `# AI Template Generation
-curl -X POST https://api.draftnSign.com/v1/ai/templates/generate \\
+curl -X POST ${API_PUBLIC_BASE_URL}/ai/templates/generate \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -139,7 +140,7 @@ curl -X POST https://api.draftnSign.com/v1/ai/templates/generate \\
 
     php: `<?php
 // AI Template Generation
-$url = 'https://api.draftnSign.com/v1/ai/templates/generate';
+$url = '${API_PUBLIC_BASE_URL}/ai/templates/generate';
 $headers = [
     'Authorization: Bearer ${apiKey}',
     'Content-Type: application/json'
@@ -179,11 +180,11 @@ echo "AI confidence: " . $template['confidence'] . "%\\n";
         type: 'bearer_token',
         key: apiKey
       },
-      baseUrl: 'https://api.draftnSign.com/v1',
+      baseUrl: API_PUBLIC_BASE_URL,
       sdks: {
-        python: 'pip install draftnSign-ai',
-        nodejs: 'npm install @draftnSign/ai-sdk',
-        php: 'composer require draftnSign/ai-sdk'
+        python: 'pip install documantra-ai',
+        nodejs: 'npm install @documantra/ai-sdk',
+        php: 'composer require documantra/ai-sdk'
       }
     };
 
@@ -331,9 +332,9 @@ echo "AI confidence: " . $template['confidence'] . "%\\n";
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 bg-[#F5F2EE] rounded-lg">
             <h4 className="font-medium text-gray-900 mb-2">Python SDK</h4>
-            <code className="text-sm text-gray-700">pip install draftnSign-ai</code>
+            <code className="text-sm text-gray-700">pip install documantra-ai</code>
             <button
-              onClick={() => copyToClipboard('pip install draftnSign-ai')}
+              onClick={() => copyToClipboard('pip install documantra-ai')}
               className="ml-2 p-1 text-gray-400 hover:text-gray-600"
             >
               <Copy className="w-3 h-3" />
@@ -341,9 +342,9 @@ echo "AI confidence: " . $template['confidence'] . "%\\n";
           </div>
           <div className="p-4 bg-[#F5F2EE] rounded-lg">
             <h4 className="font-medium text-gray-900 mb-2">Node.js SDK</h4>
-            <code className="text-sm text-gray-700">npm install @draftnSign/ai-sdk</code>
+            <code className="text-sm text-gray-700">npm install @documantra/ai-sdk</code>
             <button
-              onClick={() => copyToClipboard('npm install @draftnSign/ai-sdk')}
+              onClick={() => copyToClipboard('npm install @documantra/ai-sdk')}
               className="ml-2 p-1 text-gray-400 hover:text-gray-600"
             >
               <Copy className="w-3 h-3" />

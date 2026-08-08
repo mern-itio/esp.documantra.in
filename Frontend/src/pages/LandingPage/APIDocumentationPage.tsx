@@ -1,882 +1,567 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Code, Webhook, Send, BarChart3, Copy, Check, FileText, 
-  Database, Settings, Search, Cloud, Lock,
-  ChevronDown, ChevronRight, ExternalLink, Terminal, Play,
-  ArrowRight
+import {
+  ArrowRight,
+  Check,
+  Code,
+  Copy,
+  ExternalLink,
+  Key,
+  Layers,
+  Lock,
+  Play,
+  Send,
+  Terminal,
 } from 'lucide-react';
+import { BRAND } from '../../config/brand';
+import { useBrandSettings } from '../../hooks/useBrandSettings';
+import {
+  DOCUMANTRA_API_AUTH,
+  DOCUMANTRA_SIGN_API_PREFIX,
+  DOCUMANTRA_SIGN_ENDPOINTS,
+  INTEGRATION_STEPS,
+  buildCurlExample,
+  buildFetchExample,
+  getDocuMantraApiBaseUrl,
+  type DocuMantraApiEndpoint,
+} from '../../data/documantraSignApi';
 
-const APIDocumentationPage = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [activeSidebar, setActiveSidebar] = useState('introduction');
-  const [copied, setCopied] = useState(false);
-const [expandedSection, setExpandedSection] = useState<string | null>('authentication');
+type NavSection = 'overview' | 'auth' | 'workflow' | 'endpoints' | 'examples' | 'errors';
 
+const METHOD_COLORS: Record<string, string> = {
+  GET: 'bg-emerald-100 text-emerald-800',
+  POST: 'bg-blue-100 text-blue-800',
+  PUT: 'bg-amber-100 text-amber-800',
+};
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+function CodeBlock({
+  code,
+  label,
+  onCopy,
+  copied,
+}: {
+  code: string;
+  label?: string;
+  onCopy: (text: string) => void;
+  copied: boolean;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
+      <div className="flex items-center justify-between border-b border-gray-800 px-4 py-2">
+        <span className="text-xs text-gray-400">{label || 'Example'}</span>
+        <button
+          type="button"
+          onClick={() => onCopy(code)}
+          className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200"
+        >
+          {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+          Copy
+        </button>
+      </div>
+      <pre className="overflow-x-auto p-4 text-sm leading-relaxed text-gray-100">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
 
-  const toggleSection = (section: string) => {
-    if (expandedSection === section) {
-      setExpandedSection(null);
-    } else {
-      setExpandedSection(section);
-    }
-  };
-
-  const codeExamples = {
-    authentication: `// Authentication example
-const docusigner = require('@docusigner/sdk');
-
-// Initialize with API key
-const client = new docusigner.Client({
-  apiKey: 'YOUR_API_KEY',
-  environment: 'production' // or 'sandbox' for testing
-});`,
-    createEnvelope: `// Create and send an envelope
-const envelope = await docusigner.envelopes.create({
-  documents: [{
-    name: "contract.pdf",
-    content: base64Content
-  }],
-  recipients: [{
-    email: "signer@example.com",
-    name: "John Doe",
-    role: "signer"
-  }],
-  fields: [{
-    type: "signature",
-    page: 1,
-    x: 100,
-    y: 200
-  }]
-});`,
-    useTemplate: `// Use template via API
-const envelope = await docusigner.templates.use({
-  templateId: "template_123",
-  recipients: [{
-    email: "client@example.com",
-    name: "Jane Smith",
-    role: "signer"
-  }],
-  data: {
-    companyName: "Acme Corp",
-    contractDate: "2025-01-15"
-  }
-});`,
-    sendEnvelope: `// Send document programmatically
-const result = await docusigner.envelopes.send({
-  envelopeId: envelope.id,
-  message: "Please sign this document",
-  subject: "Contract for Review"
-});
-
-console.log("Envelope sent:", result.status);`,
-    webhook: `// Track status via webhooks
-app.post('/webhook', (req, res) => {
-  const event = req.body;
-  
-  if (event.type === 'envelope.completed') {
-    console.log('Document signed!', event.data);
-    // Update your database
-    updateDocumentStatus(event.data.envelopeId, 'completed');
-  }
-  
-  res.status(200).send('OK');
-});`
-  };
-
-  const apiEndpoints = [
-    {
-      name: "Authentication",
-      endpoint: "POST /auth/token",
-      description: "Get an access token for API requests",
-      parameters: [
-        { name: "api_key", type: "string", required: true, description: "Your API key" },
-        { name: "secret", type: "string", required: true, description: "Your API secret" }
-      ]
-    },
-    {
-      name: "Create Envelope",
-      endpoint: "POST /envelopes",
-      description: "Create a new envelope with documents",
-      parameters: [
-        { name: "documents", type: "array", required: true, description: "Array of document objects" },
-        { name: "recipients", type: "array", required: true, description: "Array of recipient objects" },
-        { name: "fields", type: "array", required: false, description: "Array of field objects" },
-        { name: "options", type: "object", required: false, description: "Additional options" }
-      ]
-    },
-    {
-      name: "Get Envelope",
-      endpoint: "GET /envelopes/{id}",
-      description: "Get envelope details by ID",
-      parameters: [
-        { name: "id", type: "string", required: true, description: "Envelope ID" },
-        { name: "include", type: "string", required: false, description: "Additional data to include" }
-      ]
-    },
-    {
-      name: "Send Envelope",
-      endpoint: "POST /envelopes/{id}/send",
-      description: "Send an existing envelope to recipients",
-      parameters: [
-        { name: "id", type: "string", required: true, description: "Envelope ID" },
-        { name: "message", type: "string", required: false, description: "Custom message" },
-        { name: "subject", type: "string", required: false, description: "Email subject" }
-      ]
-    },
-    {
-      name: "Get Templates",
-      endpoint: "GET /templates",
-      description: "List all available templates",
-      parameters: [
-        { name: "limit", type: "integer", required: false, description: "Number of results per page" },
-        { name: "offset", type: "integer", required: false, description: "Pagination offset" },
-        { name: "folder", type: "string", required: false, description: "Filter by folder" }
-      ]
-    }
-  ];
-
-  const sdkLanguages = [
-    { name: "JavaScript", icon: "JS", color: "bg-yellow-500" },
-    { name: "Python", icon: "PY", color: "bg-blue-500" },
-    { name: "PHP", icon: "PHP", color: "bg-[#F0FDF4]0" },
-    { name: "Ruby", icon: "RB", color: "bg-red-500" },
-    { name: "Java", icon: "JV", color: "bg-orange-500" },
-    { name: ".NET", icon: "NET", color: "bg-blue-600" }
-  ];
+function EndpointCard({
+  endpoint,
+  onCopy,
+  copiedKey,
+}: {
+  endpoint: DocuMantraApiEndpoint;
+  onCopy: (text: string, key: string) => void;
+  copiedKey: string | null;
+}) {
+  const pathOnly = endpoint.endpoint.replace(DOCUMANTRA_SIGN_API_PREFIX, '');
+  const curl = buildCurlExample(endpoint);
 
   return (
-    <div className="min-h-screen bg-[#F5F2EE] mt-8 pt-24 pb-16">
+    <article id={endpoint.slug} className="scroll-mt-28 overflow-hidden rounded-2xl border border-[#E8E0D4] bg-[#F7F3EE] shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E8E0D4] bg-[#F5F2EE] px-5 py-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ${METHOD_COLORS[endpoint.method] || 'bg-gray-100 text-gray-700'}`}>
+            {endpoint.method}
+          </span>
+          <code className="font-mono text-sm text-[#260559]">{pathOnly}</code>
+          <span className="rounded-full bg-[#155E4B]/10 px-2 py-0.5 text-xs font-medium text-[#155E4B]">
+            Step {endpoint.step}
+          </span>
+        </div>
+        <h3 className="text-sm font-semibold text-gray-800">{endpoint.name}</h3>
+      </div>
+
+      <div className="space-y-4 p-5">
+        <p className="text-sm text-gray-600">{endpoint.description}</p>
+
+        {endpoint.pathParams?.length ? (
+          <p className="text-sm text-gray-600">
+            <span className="font-medium text-gray-800">Path params: </span>
+            {endpoint.pathParams.map((p) => (
+              <code key={p} className="mx-1 rounded bg-white px-1.5 py-0.5 text-xs text-[#260559]">
+                :{p}
+              </code>
+            ))}
+          </p>
+        ) : null}
+
+        {endpoint.contentType && (
+          <p className="text-sm text-gray-600">
+            <span className="font-medium text-gray-800">Content-Type: </span>
+            <code className="text-xs">{endpoint.contentType === 'multipart' ? 'multipart/form-data' : 'application/json'}</code>
+          </p>
+        )}
+
+        {endpoint.responseHint && (
+          <p className="text-sm text-gray-600">
+            <span className="font-medium text-gray-800">Typical response: </span>
+            <code className="text-xs">{endpoint.responseHint}</code>
+          </p>
+        )}
+
+        {endpoint.bodyTemplate ? (
+          <CodeBlock
+            code={endpoint.bodyTemplate}
+            label="Request body"
+            onCopy={(t) => onCopy(t, `${endpoint.slug}-body`)}
+            copied={copiedKey === `${endpoint.slug}-body`}
+          />
+        ) : null}
+
+        <CodeBlock
+          code={curl}
+          label="cURL"
+          onCopy={(t) => onCopy(t, `${endpoint.slug}-curl`)}
+          copied={copiedKey === `${endpoint.slug}-curl`}
+        />
+      </div>
+    </article>
+  );
+}
+
+const APIDocumentationPage = () => {
+  const { supportEmail } = useBrandSettings();
+  const [activeSection, setActiveSection] = useState<NavSection>('overview');
+  const [selectedExample, setSelectedExample] = useState(DOCUMANTRA_SIGN_ENDPOINTS[0].slug);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const baseUrl = useMemo(() => getDocuMantraApiBaseUrl(), []);
+  const exampleEndpoint = useMemo(
+    () => DOCUMANTRA_SIGN_ENDPOINTS.find((e) => e.slug === selectedExample) ?? DOCUMANTRA_SIGN_ENDPOINTS[0],
+    [selectedExample],
+  );
+
+  const copyToClipboard = useCallback((text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  }, []);
+
+  const navItems: { id: NavSection; label: string }[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'auth', label: 'Authentication' },
+    { id: 'workflow', label: 'Envelope workflow' },
+    { id: 'endpoints', label: 'API reference' },
+    { id: 'examples', label: 'Code examples' },
+    { id: 'errors', label: 'Errors & tips' },
+  ];
+
+  const fullWorkflowExample = useMemo(() => {
+    return `// Recommended server-side flow for your custom UI
+// 1. User logs into DocuMantra (session cookie on your backend)
+// 2. Your server calls Sign API with cookie + sandbox key
+
+const headers = {
+  '${DOCUMANTRA_API_AUTH.sandboxHeader}': process.env.DOCUMANTRA_SANDBOX_KEY,
+  Cookie: req.headers.cookie, // forward session from authenticated user
+};
+
+// Step 1 — upload PDF
+const form = new FormData();
+form.append('files', pdfBuffer, 'contract.pdf');
+const upload = await fetch('${baseUrl}/upload-envelope', { method: 'POST', headers, body: form });
+const { envelopeId, documents } = await upload.json();
+
+// Step 2 — add recipients → Step 3 — fields → Step 4 — update → Step 5 — send
+// Step 6 — poll GET /envelope/:envelopeId from your UI status screen`;
+  }, [baseUrl]);
+
+  return (
+    <div className="min-h-screen bg-[#F5F2EE] pt-24 pb-16">
       <div className="container-max">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-[#260559] to-[#3a0a7e] text-white rounded-2xl shadow-lg p-8 mb-8 text-white">
-          <div className="max-w-4xl">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">API Documentation</h1>
-            <p className="text-xl text-primary-100 mb-6">
-              Integrate {BRAND.name}'s powerful document and e-signature capabilities directly into your applications with our comprehensive API.
+        {/* Hero */}
+        <div className="mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-[#260559] to-[#155E4B] p-8 text-white shadow-lg">
+          <div className="max-w-3xl">
+            <p className="mb-2 text-sm font-medium uppercase tracking-wider text-white/70">Developer docs</p>
+            <h1 className="mb-4 text-3xl font-bold md:text-4xl">{BRAND.name} Sign API</h1>
+            <p className="mb-6 text-lg text-white/90">
+              Build your own UI on top of {BRAND.name}. These endpoints match the live backend — use them to upload
+              documents, add signers, place fields, send envelopes, and track status from any app.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
-                <Code className="h-5 w-5" />
-                <span className="font-medium">RESTful API</span>
-              </div>
-              <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
-                <Webhook className="h-5 w-5" />
-                <span className="font-medium">Webhook Support</span>
-              </div>
-              <div className="flex items-center gap-2 bg-[#F7F3EE]/20 px-4 py-2 rounded-full">
-                <Lock className="h-5 w-5" />
-                <span className="font-medium">OAuth 2.0</span>
-              </div>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to={DOCUMANTRA_API_AUTH.explorerRoute}
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-[#260559] shadow hover:bg-white/95"
+              >
+                <Play className="h-4 w-4" />
+                Open API Explorer
+              </Link>
+              <Link
+                to={DOCUMANTRA_API_AUTH.keyRoute}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/15"
+              >
+                <Key className="h-4 w-4" />
+                Manage API keys
+              </Link>
+              <Link
+                to={DOCUMANTRA_API_AUTH.signupRoute}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                Create account
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="grid grid-cols-12 gap-8">
           {/* Sidebar */}
-          <div className="col-span-12 md:col-span-3">
-            <div className="bg-[#F7F3EE] rounded-xl shadow-md p-4 sticky top-24">
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search API docs..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                  />
-                </div>
-              </div>
+          <aside className="col-span-12 md:col-span-3">
+            <div className="sticky top-24 rounded-2xl border border-[#E8E0D4] bg-[#F7F3EE] p-4 shadow-sm">
+              <nav className="space-y-1">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveSection(item.id)}
+                    className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${
+                      activeSection === item.id
+                        ? 'bg-[#260559]/10 text-[#260559]'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
 
-              <div className="space-y-1">
-                <button
-                  onClick={() => setActiveSidebar('introduction')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                    activeSidebar === 'introduction' ? 'bg-[#260559]-50 text-[#260559]' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Introduction
-                </button>
-                <button
-                  onClick={() => setActiveSidebar('authentication')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                    activeSidebar === 'authentication' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Authentication
-                </button>
-                <button
-                  onClick={() => setActiveSidebar('envelopes')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                    activeSidebar === 'envelopes' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Envelopes
-                </button>
-                <button
-                  onClick={() => setActiveSidebar('templates')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                    activeSidebar === 'templates' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Templates
-                </button>
-                <button
-                  onClick={() => setActiveSidebar('documents')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                    activeSidebar === 'documents' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Documents
-                </button>
-                <button
-                  onClick={() => setActiveSidebar('webhooks')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                    activeSidebar === 'webhooks' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Webhooks
-                </button>
-                <button
-                  onClick={() => setActiveSidebar('sdks')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                    activeSidebar === 'sdks' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  SDKs & Libraries
-                </button>
-                <button
-                  onClick={() => setActiveSidebar('errors')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                    activeSidebar === 'errors' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Error Handling
-                </button>
-                <button
-                  onClick={() => setActiveSidebar('rate-limits')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                    activeSidebar === 'rate-limits' ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Rate Limits
-                </button>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="font-medium text-gray-900 mb-3 text-sm">Resources</h3>
-                <div className="space-y-2">
-                  <a href="#" className="flex items-center gap-2 text-[#260559]-600 hover:text-[#260559]-700 text-sm">
-                    <FileText className="h-4 w-4" />
-                    <span>API Reference</span>
-                  </a>
-                  <a href="#" className="flex items-center gap-2 text-[#260559]-600 hover:text-[#260559]-700 text-sm">
-                    <Code className="h-4 w-4" />
-                    <span>Code Examples</span>
-                  </a>
-                  <a href="#" className="flex items-center gap-2 text-[#260559]-600 hover:text-[#260559]-700 text-sm">
-                    <Terminal className="h-4 w-4" />
-                    <span>CLI Reference</span>
-                  </a>
-                  <a href="#" className="flex items-center gap-2 text-[#260559]-600 hover:text-[#260559]-700 text-sm">
-                    <ExternalLink className="h-4 w-4" />
-                    <span>API Status</span>
-                  </a>
+              <div className="mt-6 border-t border-[#E8E0D4] pt-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Endpoints</p>
+                <div className="max-h-64 space-y-1 overflow-y-auto">
+                  {DOCUMANTRA_SIGN_ENDPOINTS.map((ep) => (
+                    <a
+                      key={ep.slug}
+                      href={`#${ep.slug}`}
+                      onClick={() => setActiveSection('endpoints')}
+                      className="block truncate rounded px-2 py-1.5 font-mono text-xs text-gray-600 hover:bg-gray-100 hover:text-[#260559]"
+                    >
+                      {ep.method} {ep.endpoint.replace(DOCUMANTRA_SIGN_API_PREFIX, '')}
+                    </a>
+                  ))}
                 </div>
               </div>
             </div>
-          </div>
+          </aside>
 
-          {/* Main Content */}
-          <div className="col-span-12 md:col-span-9">
-            {/* Tabs */}
-            <div className="bg-[#F7F3EE] rounded-xl shadow-md mb-8">
-              <div className="flex overflow-x-auto">
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className={`px-6 py-4 font-medium border-b-2 ${
-                    activeTab === 'overview' ? 'border-[#260559] text-[#260559]' : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Overview
-                </button>
-                <button
-                  onClick={() => setActiveTab('reference')}
-                  className={`px-6 py-4 font-medium border-b-2 ${
-                    activeTab === 'reference' ? 'border-[#260559] text-[#260559]' : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  API Reference
-                </button>
-                <button
-                  onClick={() => setActiveTab('guides')}
-                  className={`px-6 py-4 font-medium border-b-2 ${
-                    activeTab === 'guides' ? 'border-[#260559] text-[#260559]' : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Guides
-                </button>
-                <button
-                  onClick={() => setActiveTab('examples')}
-                  className={`px-6 py-4 font-medium border-b-2 ${
-                    activeTab === 'examples' ? 'border-[#260559] text-[#260559]' : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Examples
-                </button>
-              </div>
-            </div>
+          {/* Main */}
+          <main className="col-span-12 space-y-8 md:col-span-9">
+            {(activeSection === 'overview' || activeSection === 'auth' || activeSection === 'workflow') && (
+              <>
+                {activeSection === 'overview' && (
+                  <section className="rounded-2xl border border-[#E8E0D4] bg-[#F7F3EE] p-6 shadow-sm md:p-8">
+                    <h2 className="mb-4 text-2xl font-bold text-gray-900">Integrate with your UI</h2>
+                    <p className="mb-6 text-gray-600">
+                      {BRAND.name} exposes a REST Sign API under a single prefix. Your frontend (React, mobile, or
+                      server-rendered app) calls your backend; your backend forwards requests with the user session and
+                      sandbox key. No proprietary SDK is required — standard HTTP, JSON, and multipart uploads.
+                    </p>
 
-            {/* Overview Tab Content */}
-            {activeTab === 'overview' && (
-              <div className="space-y-8">
-                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Getting Started with {BRAND.name} API</h2>
-                  <p className="text-gray-600 mb-6">
-                    The {BRAND.name} API allows you to integrate our document and e-signature capabilities directly into your applications. 
-                    This guide will help you get started with the basics of our API.
-                  </p>
-
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-3">Base URL</h3>
-                      <div className="bg-[#F5F2EE] p-4 rounded-lg flex justify-between items-center">
-                        <code className="text-sm font-mono text-gray-800">https://api.docusigner.com/v1</code>
-                        <button 
-                          onClick={() => copyToClipboard('https://api.docusigner.com/v1')}
-                          className="text-gray-500 hover:text-gray-700"
+                    <div className="mb-6">
+                      <h3 className="mb-2 text-lg font-semibold text-gray-900">Base URL</h3>
+                      <div className="flex items-center justify-between gap-3 rounded-xl bg-[#F5F2EE] px-4 py-3">
+                        <code className="break-all font-mono text-sm text-[#260559]">{baseUrl}</code>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(baseUrl, 'base-url')}
+                          className="shrink-0 text-gray-500 hover:text-gray-700"
                         >
-                          {copied ? <Check className="h-5 w-5 text-green-500" /> : <Copy className="h-5 w-5" />}
+                          {copiedKey === 'base-url' ? (
+                            <Check className="h-5 w-5 text-emerald-500" />
+                          ) : (
+                            <Copy className="h-5 w-5" />
+                          )}
                         </button>
                       </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-3">Authentication</h3>
-                      <p className="text-gray-600 mb-4">
-                        All API requests must be authenticated using an API key. You can obtain your API key from the 
-                        <Link to="/dashboard/settings/api" className="text-primary-600 hover:text-primary-700"> API settings page</Link> in your dashboard.
+                      <p className="mt-2 text-sm text-gray-500">
+                        Production: <code>{BRAND.website}{DOCUMANTRA_SIGN_API_PREFIX}</code> · Local dev uses your Vite
+                        origin with proxy to port 2105.
                       </p>
-                      <div className="bg-gray-800 rounded-lg p-4 text-white font-mono text-sm overflow-x-auto">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-gray-400">// Authentication example</span>
-                          <button 
-                            onClick={() => copyToClipboard(codeExamples.authentication)}
-                            className="text-gray-400 hover:text-gray-300"
-                          >
-                            {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-                          </button>
-                        </div>
-                        <pre>{codeExamples.authentication}</pre>
-                      </div>
                     </div>
 
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-3">Quick Start</h3>
-                      <p className="text-gray-600 mb-4">
-                        Here's a simple example of creating and sending a document for signature:
-                      </p>
-                      <div className="bg-gray-800 rounded-lg p-4 text-white font-mono text-sm overflow-x-auto">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-gray-400">// Create and send an envelope</span>
-                          <button 
-                            onClick={() => copyToClipboard(codeExamples.createEnvelope)}
-                            className="text-gray-400 hover:text-gray-300"
-                          >
-                            {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-                          </button>
-                        </div>
-                        <pre>{codeExamples.createEnvelope}</pre>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div className="rounded-xl border border-[#E8E0D4] bg-white p-4">
+                        <Code className="mb-2 h-5 w-5 text-[#155E4B]" />
+                        <h4 className="font-semibold text-gray-900">REST + JSON</h4>
+                        <p className="mt-1 text-sm text-gray-600">Nine sign endpoints, ordered workflow</p>
+                      </div>
+                      <div className="rounded-xl border border-[#E8E0D4] bg-white p-4">
+                        <Lock className="mb-2 h-5 w-5 text-[#155E4B]" />
+                        <h4 className="font-semibold text-gray-900">Session + API key</h4>
+                        <p className="mt-1 text-sm text-gray-600">Dual auth on every sign route</p>
+                      </div>
+                      <div className="rounded-xl border border-[#E8E0D4] bg-white p-4">
+                        <Layers className="mb-2 h-5 w-5 text-[#155E4B]" />
+                        <h4 className="font-semibold text-gray-900">Your UI</h4>
+                        <p className="mt-1 text-sm text-gray-600">Map each step to your screens and webhooks</p>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </section>
+                )}
 
-                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">API Features</h2>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#260559]/60 rounded-lg flex items-center justify-center">
-                          <Send className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">Prepare Envelopes</h3>
-                          <p className="text-sm text-gray-600">Create and configure documents programmatically</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#260559]/60 rounded-lg flex items-center justify-center">
-                          <Code className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">Template Integration</h3>
-                          <p className="text-sm text-gray-600">Use pre-built templates with dynamic data</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#260559]/60 rounded-lg flex items-center justify-center">
-                          <BarChart3 className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">Status Tracking</h3>
-                          <p className="text-sm text-gray-600">Monitor signing progress in real-time</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#260559]/60 rounded-lg flex items-center justify-center">
-                          <Webhook className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">Webhook Events</h3>
-                          <p className="text-sm text-gray-600">Receive instant notifications on status changes</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {(activeSection === 'overview' || activeSection === 'auth') && (
+                  <section className="rounded-2xl border border-[#E8E0D4] bg-[#F7F3EE] p-6 shadow-sm md:p-8">
+                    <h2 className="mb-4 text-2xl font-bold text-gray-900">Authentication</h2>
+                    <p className="mb-4 text-gray-600">{DOCUMANTRA_API_AUTH.sessionNote}</p>
 
-                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Available SDKs</h2>
-                  <p className="text-gray-600 mb-6">
-                    We provide official SDKs for popular programming languages to make integration easier:
-                  </p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {sdkLanguages.map((lang, index) => (
-                      <a 
-                        key={index}
-                        href="#"
-                        className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
-                      >
-                        <div className={`w-10 h-10 ${lang.color} rounded-lg flex items-center justify-center text-white font-bold text-sm`}>
-                          {lang.icon}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{lang.name} SDK</h3>
-                          <p className="text-xs text-gray-500">View Documentation</p>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">API Pricing</h2>
-                  <p className="text-gray-600 mb-6">
-                    Our API is available on all plans, with usage limits based on your subscription:
-                  </p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-[#F5F2EE]">
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API Calls</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate Limit</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        <tr>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Free</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10 calls/month</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10 calls/minute</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$0</td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Starter</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">100 calls/month</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">60 calls/minute</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$10/month</td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Business</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1,000 calls/month</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">120 calls/minute</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$30/month</td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Enterprise</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Unlimited</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Custom</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Contact Sales</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="mt-6 text-center">
-                    <Link to="/pricing" className="text-[#260559]-600 hover:text-primary-700 font-medium">
-                      View full pricing details →
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* API Reference Tab Content */}
-            {activeTab === 'reference' && (
-              <div className="space-y-8">
-                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">API Reference</h2>
-                  <p className="text-gray-600 mb-8">
-                    Explore our comprehensive API endpoints and learn how to integrate {BRAND.name} into your applications.
-                  </p>
-
-                  <div className="space-y-6">
-                    {apiEndpoints.map((endpoint, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="flex items-center justify-between p-4 bg-[#F5F2EE]">
-                          <div className="flex items-center gap-3">
-                            <span className="px-3 py-1 bg-primary-100 text-primary-800 rounded-lg text-xs font-medium">
-                              {endpoint.endpoint.split(' ')[0]}
-                            </span>
-                            <span className="font-mono text-sm text-gray-800">
-                              {endpoint.endpoint.split(' ')[1]}
-                            </span>
-                          </div>
-                          <span className="text-sm font-medium text-gray-700">{endpoint.name}</span>
-                        </div>
-                        <div className="p-4">
-                          <p className="text-gray-600 mb-4">{endpoint.description}</p>
-                          <h4 className="font-medium text-gray-900 mb-2">Parameters</h4>
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="bg-[#F5F2EE]">
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Required</th>
-                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-200">
-                                {endpoint.parameters.map((param, paramIndex) => (
-                                  <tr key={paramIndex}>
-                                    <td className="px-4 py-2 font-mono">{param.name}</td>
-                                    <td className="px-4 py-2">{param.type}</td>
-                                    <td className="px-4 py-2">
-                                      {param.required ? (
-                                        <span className="text-red-600">Required</span>
-                                      ) : (
-                                        <span className="text-gray-500">Optional</span>
-                                      )}
-                                    </td>
-                                    <td className="px-4 py-2">{param.description}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Guides Tab Content */}
-            {activeTab === 'guides' && (
-              <div className="space-y-8">
-                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">API Guides</h2>
-                  <p className="text-gray-600 mb-8">
-                    Step-by-step guides to help you implement common workflows with the {BRAND.name} API.
-                  </p>
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 hover:shadow-md transition-all">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <Send className="h-5 w-5 text-primary-600" />
-                        </div>
-                        <h3 className="font-semibold text-gray-900">Sending Documents for Signature</h3>
-                      </div>
-                      <p className="text-gray-600 mb-4">
-                        Learn how to create and send documents for signature using the API, including setting up recipients and signature fields.
-                      </p>
-                      <a href="#" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                        Read guide
-                        <ChevronRight className="ml-1 h-4 w-4" />
-                      </a>
+                    <div className="mb-6 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-[#F5F2EE] text-left text-xs uppercase text-gray-500">
+                            <th className="px-4 py-2">Requirement</th>
+                            <th className="px-4 py-2">How</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E8E0D4]">
+                          <tr>
+                            <td className="px-4 py-3 font-medium">Session (JWT cookie)</td>
+                            <td className="px-4 py-3 text-gray-600">
+                              Log in via{' '}
+                              <Link to={DOCUMANTRA_API_AUTH.loginRoute} className="text-[#155E4B] hover:underline">
+                                dashboard login
+                              </Link>
+                              . Browser calls use <code className="text-xs">credentials: &apos;include&apos;</code>.
+                              Server integrations must forward the session cookie.
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="px-4 py-3 font-medium">{DOCUMANTRA_API_AUTH.sandboxHeader}</td>
+                            <td className="px-4 py-3 text-gray-600">
+                              Create a sandbox key at{' '}
+                              <Link to={DOCUMANTRA_API_AUTH.keyRoute} className="text-[#155E4B] hover:underline">
+                                {DOCUMANTRA_API_AUTH.keyRoute}
+                              </Link>
+                              . Send on every <code className="text-xs">/sign/*</code> request.
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
 
-                    <div className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 hover:shadow-md transition-all">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-primary-600" />
-                        </div>
-                        <h3 className="font-semibold text-gray-900">Working with Templates</h3>
-                      </div>
-                      <p className="text-gray-600 mb-4">
-                        Discover how to use document templates to streamline your workflow and maintain consistency across documents.
-                      </p>
-                      <a href="#" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                        Read guide
-                        <ChevronRight className="ml-1 h-4 w-4" />
-                      </a>
-                    </div>
+                    <CodeBlock
+                      code={`// Headers required on every Sign API call
+{
+  "${DOCUMANTRA_API_AUTH.sandboxHeader}": "dm_sandbox_xxxxxxxx",
+  "Cookie": "accessToken=...; refreshToken=..."  // from logged-in DocuMantra user
+}
 
-                    <div className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 hover:shadow-md transition-all">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <Webhook className="h-5 w-5 text-primary-600" />
-                        </div>
-                        <h3 className="font-semibold text-gray-900">Setting Up Webhooks</h3>
-                      </div>
-                      <p className="text-gray-600 mb-4">
-                        Learn how to configure webhooks to receive real-time notifications about document and signature events.
-                      </p>
-                      <a href="#" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                        Read guide
-                        <ChevronRight className="ml-1 h-4 w-4" />
-                      </a>
-                    </div>
+// Browser (same origin, user already logged in)
+fetch('${baseUrl}/upload-envelope', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { '${DOCUMANTRA_API_AUTH.sandboxHeader}': 'YOUR_SANDBOX_KEY' },
+  body: formData,
+});`}
+                      label="Auth headers"
+                      onCopy={(t) => copyToClipboard(t, 'auth-example')}
+                      copied={copiedKey === 'auth-example'}
+                    />
 
-                    <div className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 hover:shadow-md transition-all">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <BarChart3 className="h-5 w-5 text-primary-600" />
-                        </div>
-                        <h3 className="font-semibold text-gray-900">Tracking Document Status</h3>
-                      </div>
-                      <p className="text-gray-600 mb-4">
-                        Discover how to monitor document status and retrieve signing events and audit trails.
-                      </p>
-                      <a href="#" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                        Read guide
-                        <ChevronRight className="ml-1 h-4 w-4" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Examples Tab Content */}
-            {activeTab === 'examples' && (
-              <div className="space-y-8">
-                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Code Examples</h2>
-                  <p className="text-gray-600 mb-8">
-                    Explore practical examples of common API operations in different programming languages.
-                  </p>
-
-                  <div className="space-y-6">
-                    <div>
-                      <div 
-                        className="flex items-center justify-between cursor-pointer"
-                        onClick={() => toggleSection('authentication')}
-                      >
-                        <h3 className="text-xl font-semibold text-gray-900">Authentication</h3>
-                        {expandedSection === 'authentication' ? (
-                          <ChevronDown className="h-5 w-5 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-gray-500" />
-                        )}
-                      </div>
-                      {expandedSection === 'authentication' && (
-                        <div className="mt-4 bg-gray-800 rounded-lg p-4 text-white font-mono text-sm overflow-x-auto">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-gray-400">// Authentication example</span>
-                            <button 
-                              onClick={() => copyToClipboard(codeExamples.authentication)}
-                              className="text-gray-400 hover:text-gray-300"
-                            >
-                              {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-                            </button>
-                          </div>
-                          <pre>{codeExamples.authentication}</pre>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div 
-                        className="flex items-center justify-between cursor-pointer"
-                        onClick={() => toggleSection('createEnvelope')}
-                      >
-                        <h3 className="text-xl font-semibold text-gray-900">Creating an Envelope</h3>
-                        {expandedSection === 'createEnvelope' ? (
-                          <ChevronDown className="h-5 w-5 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-gray-500" />
-                        )}
-                      </div>
-                      {expandedSection === 'createEnvelope' && (
-                        <div className="mt-4 bg-gray-800 rounded-lg p-4 text-white font-mono text-sm overflow-x-auto">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-gray-400">// Create and send an envelope</span>
-                            <button 
-                              onClick={() => copyToClipboard(codeExamples.createEnvelope)}
-                              className="text-gray-400 hover:text-gray-300"
-                            >
-                              {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-                            </button>
-                          </div>
-                          <pre>{codeExamples.createEnvelope}</pre>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div 
-                        className="flex items-center justify-between cursor-pointer"
-                        onClick={() => toggleSection('useTemplate')}
-                      >
-                        <h3 className="text-xl font-semibold text-gray-900">Using Templates</h3>
-                        {expandedSection === 'useTemplate' ? (
-                          <ChevronDown className="h-5 w-5 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-gray-500" />
-                        )}
-                      </div>
-                      {expandedSection === 'useTemplate' && (
-                        <div className="mt-4 bg-gray-800 rounded-lg p-4 text-white font-mono text-sm overflow-x-auto">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-gray-400">// Use template via API</span>
-                            <button 
-                              onClick={() => copyToClipboard(codeExamples.useTemplate)}
-                              className="text-gray-400 hover:text-gray-300"
-                            >
-                              {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-                            </button>
-                          </div>
-                          <pre>{codeExamples.useTemplate}</pre>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div 
-                        className="flex items-center justify-between cursor-pointer"
-                        onClick={() => toggleSection('sendEnvelope')}
-                      >
-                        <h3 className="text-xl font-semibold text-gray-900">Sending Envelopes</h3>
-                        {expandedSection === 'sendEnvelope' ? (
-                          <ChevronDown className="h-5 w-5 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-gray-500" />
-                        )}
-                      </div>
-                      {expandedSection === 'sendEnvelope' && (
-                        <div className="mt-4 bg-gray-800 rounded-lg p-4 text-white font-mono text-sm overflow-x-auto">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-gray-400">// Send document programmatically</span>
-                            <button 
-                              onClick={() => copyToClipboard(codeExamples.sendEnvelope)}
-                              className="text-gray-400 hover:text-gray-300"
-                            >
-                              {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-                            </button>
-                          </div>
-                          <pre>{codeExamples.sendEnvelope}</pre>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div 
-                        className="flex items-center justify-between cursor-pointer"
-                        onClick={() => toggleSection('webhook')}
-                      >
-                        <h3 className="text-xl font-semibold text-gray-900">Webhook Integration</h3>
-                        {expandedSection === 'webhook' ? (
-                          <ChevronDown className="h-5 w-5 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-gray-500" />
-                        )}
-                      </div>
-                      {expandedSection === 'webhook' && (
-                        <div className="mt-4 bg-gray-800 rounded-lg p-4 text-white font-mono text-sm overflow-x-auto">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-gray-400">// Track status via webhooks</span>
-                            <button 
-                              onClick={() => copyToClipboard(codeExamples.webhook)}
-                              className="text-gray-400 hover:text-gray-300"
-                            >
-                              {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-                            </button>
-                          </div>
-                          <pre>{codeExamples.webhook}</pre>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-[#F7F3EE] rounded-xl shadow-md p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Interactive API Explorer</h2>
-                  <p className="text-gray-600 mb-6">
-                    Try out API calls directly in your browser with our interactive API explorer.
-                  </p>
-                  <div className="bg-[#F5F2EE] rounded-lg p-8 text-center">
-                    <Play className="h-12 w-12 text-primary-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">API Explorer</h3>
-                    <p className="text-gray-600 mb-4">
-                      Test API endpoints, view responses, and generate code snippets in your preferred language.
+                    <p className="mt-4 text-sm text-gray-500">
+                      Key management API (requires login):{' '}
+                      <code>GET /api/api-service/keys</code>, <code>POST /api/api-service/generate</code>
                     </p>
-                    <Link to="/api/explorer" className="btn-primary inline-flex items-center">
-                      Launch API Explorer
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
+                  </section>
+                )}
+
+                {(activeSection === 'overview' || activeSection === 'workflow') && (
+                  <section className="rounded-2xl border border-[#E8E0D4] bg-[#F7F3EE] p-6 shadow-sm md:p-8">
+                    <h2 className="mb-4 text-2xl font-bold text-gray-900">Envelope workflow</h2>
+                    <p className="mb-6 text-gray-600">
+                      Wire these steps into your product UI — e.g. upload screen → recipient form → field placement →
+                      review → send → status dashboard.
+                    </p>
+
+                    <ol className="space-y-4">
+                      {INTEGRATION_STEPS.map((step, i) => (
+                        <li key={step.title} className="flex gap-4">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#260559] text-sm font-bold text-white">
+                            {i + 1}
+                          </span>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{step.title}</h4>
+                            <p className="text-sm text-gray-600">{step.detail}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+
+                    <div className="mt-8 rounded-xl border border-[#155E4B]/20 bg-[#155E4B]/5 p-4">
+                      <div className="mb-2 flex items-center gap-2 font-semibold text-[#155E4B]">
+                        <Send className="h-4 w-4" />
+                        API call sequence
+                      </div>
+                      <ol className="list-inside list-decimal space-y-1 font-mono text-xs text-gray-700 md:text-sm">
+                        {DOCUMANTRA_SIGN_ENDPOINTS.filter((e) => e.step <= 6).map((e) => (
+                          <li key={e.slug}>
+                            {e.method} {e.endpoint.replace(DOCUMANTRA_SIGN_API_PREFIX, '')} — {e.name}
+                          </li>
+                        ))}
+                      </ol>
+                      <p className="mt-3 text-sm text-gray-600">
+                        Optional: <code>GET /signature/:documentId</code>, <code>POST /add-signature</code>,{' '}
+                        <code>POST /initiate-recipient-auth</code> for embedded signing and OTP flows.
+                      </p>
+                    </div>
+
+                    <div className="mt-6">
+                      <CodeBlock
+                        code={fullWorkflowExample}
+                        label="Custom UI integration pattern"
+                        onCopy={(t) => copyToClipboard(t, 'workflow')}
+                        copied={copiedKey === 'workflow'}
+                      />
+                    </div>
+                  </section>
+                )}
+              </>
             )}
-          </div>
+
+            {(activeSection === 'endpoints' || activeSection === 'overview') && (
+              <section>
+                <h2 className="mb-4 text-2xl font-bold text-gray-900">API reference</h2>
+                <p className="mb-6 text-gray-600">
+                  All routes are prefixed with <code>{DOCUMANTRA_SIGN_API_PREFIX}</code>. Paths below are relative to
+                  that prefix.
+                </p>
+                <div className="space-y-6">
+                  {DOCUMANTRA_SIGN_ENDPOINTS.map((endpoint) => (
+                    <EndpointCard
+                      key={endpoint.slug}
+                      endpoint={endpoint}
+                      onCopy={copyToClipboard}
+                      copiedKey={copiedKey}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {activeSection === 'examples' && (
+              <section className="rounded-2xl border border-[#E8E0D4] bg-[#F7F3EE] p-6 shadow-sm md:p-8">
+                <h2 className="mb-4 text-2xl font-bold text-gray-900">Code examples</h2>
+                <p className="mb-6 text-gray-600">
+                  Select an endpoint to view a fetch snippet you can paste into your app. Test live responses in the{' '}
+                  <Link to={DOCUMANTRA_API_AUTH.explorerRoute} className="text-[#155E4B] hover:underline">
+                    API Explorer
+                  </Link>
+                  .
+                </p>
+
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {DOCUMANTRA_SIGN_ENDPOINTS.map((ep) => (
+                    <button
+                      key={ep.slug}
+                      type="button"
+                      onClick={() => setSelectedExample(ep.slug)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                        selectedExample === ep.slug
+                          ? 'bg-[#260559] text-white'
+                          : 'bg-white text-gray-700 ring-1 ring-[#E8E0D4] hover:bg-gray-50'
+                      }`}
+                    >
+                      {ep.name}
+                    </button>
+                  ))}
+                </div>
+
+                <CodeBlock
+                  code={buildFetchExample(exampleEndpoint)}
+                  label={`fetch — ${exampleEndpoint.name}`}
+                  onCopy={(t) => copyToClipboard(t, 'fetch-example')}
+                  copied={copiedKey === 'fetch-example'}
+                />
+
+                <div className="mt-8 rounded-xl bg-[#F5F2EE] p-6 text-center">
+                  <Terminal className="mx-auto mb-3 h-10 w-10 text-[#155E4B]" />
+                  <h3 className="mb-2 text-lg font-semibold text-gray-900">Try requests in the browser</h3>
+                  <p className="mb-4 text-sm text-gray-600">
+                    Log in, add your sandbox key, and run real calls against the same endpoints documented here.
+                  </p>
+                  <Link
+                    to={DOCUMANTRA_API_AUTH.explorerRoute}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#260559] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#260559]/90"
+                  >
+                    Launch API Explorer
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                </div>
+              </section>
+            )}
+
+            {activeSection === 'errors' && (
+              <section className="rounded-2xl border border-[#E8E0D4] bg-[#F7F3EE] p-6 shadow-sm md:p-8">
+                <h2 className="mb-4 text-2xl font-bold text-gray-900">Errors & integration tips</h2>
+                <ul className="list-disc space-y-2 pl-5 text-gray-600">
+                  <li>
+                    <strong>401 Missing X-Sandbox-Api-Key</strong> — Add the header from{' '}
+                    <Link to={DOCUMANTRA_API_AUTH.keyRoute} className="text-[#155E4B] hover:underline">
+                      API keys
+                    </Link>
+                    .
+                  </li>
+                  <li>
+                    <strong>403 Invalid sandbox key</strong> — Regenerate key; ensure mode is sandbox and key is active.
+                  </li>
+                  <li>
+                    <strong>401 Unauthorized (JWT)</strong> — User session expired; re-login or refresh tokens.
+                  </li>
+                  <li>
+                    Use <code>GET /envelope/:envelopeId</code> to poll status from your UI instead of blocking on send.
+                  </li>
+                  <li>
+                    For embedded signing, combine <code>GET /signature/:documentId</code> with{' '}
+                    <code>POST /add-signature</code>.
+                  </li>
+                  <li>Never expose sandbox keys in public frontend code — proxy through your backend.</li>
+                </ul>
+              </section>
+            )}
+          </main>
         </div>
 
-        {/* CTA Section */}
-        <div className="bg-gradient-to-br from-[#260559] to-[#3a0a7e] text-white rounded-2xl shadow-lg p-8 mt-12 text-white">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
+        {/* CTA */}
+        <div className="mt-12 rounded-2xl bg-gradient-to-br from-[#260559] to-[#155E4B] p-8 text-white shadow-lg">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-2xl font-bold mb-4">Ready to Integrate?</h2>
-              <p className="text-primary-100 mb-6">
-                Get started with the {BRAND.name} API today. Sign up for a free account to receive your API key and start building.
+              <h2 className="text-2xl font-bold">Ready to build?</h2>
+              <p className="mt-2 text-white/90">
+                Create an account, generate a sandbox key, and connect your UI to {BRAND.name} in minutes.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/signup" className="bg-[#F7F3EE] text-[#260559] hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl">
-                  Get Your API Key
-                </Link>
-                <Link to="/contact" className="border-2 border-white text-white hover:bg-[#F7F3EE] hover:text-[#260559] font-semibold py-3 px-6 rounded-lg transition-colors">
-                  Contact Developer Support
-                </Link>
-              </div>
             </div>
-            
-            <div className="bg-[#F7F3EE]/10 backdrop-blur-sm rounded-xl p-6">
-              <h3 className="text-xl font-semibold mb-4">API Support Resources</h3>
-              <div className="space-y-4">
-                <a href="#" className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg hover:bg-[#F7F3EE]/30 transition-colors">
-                  <Database className="h-5 w-5" />
-                  <div>
-                    <div className="font-medium">Sample Applications</div>
-                    <div className="text-sm text-primary-100">Complete example projects</div>
-                  </div>
-                </a>
-                <a href="#" className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg hover:bg-[#F7F3EE]/30 transition-colors">
-                  <Settings className="h-5 w-5" />
-                  <div>
-                    <div className="font-medium">Developer Tools</div>
-                    <div className="text-sm text-primary-100">Debugging and testing utilities</div>
-                  </div>
-                </a>
-                <a href="#" className="flex items-center gap-3 p-3 bg-[#F7F3EE]/20 rounded-lg hover:bg-[#F7F3EE]/30 transition-colors">
-                  <Cloud className="h-5 w-5" />
-                  <div>
-                    <div className="font-medium">Sandbox Environment</div>
-                    <div className="text-sm text-primary-100">Test your integration safely</div>
-                  </div>
-                </a>
-              </div>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to={DOCUMANTRA_API_AUTH.signupRoute}
+                className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-[#260559] hover:bg-white/95"
+              >
+                Get started
+              </Link>
+              <a
+                href={`mailto:${supportEmail}`}
+                className="rounded-xl border border-white/30 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                Contact support
+              </a>
             </div>
           </div>
         </div>

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { toast } from "react-hot-toast";
 import { apiServiceApi } from '../../../services/apiHelper';
+import { useBrandSettings } from '../../../hooks/useBrandSettings';
 import { HelpCircle, MessageSquare, Book, Mail, Phone, Clock, CheckCircle,Search,ChevronRight,} from 'lucide-react';
 
 export const SupportPage: React.FC = () => {
+  const { name: brandName, supportEmail, salesEmail } = useBrandSettings();
   //   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [mockTickets, setMockTickets] = useState([]);
   const [showNewTicketModal, setShowNewTicketModal] = useState(false)
@@ -44,14 +46,14 @@ export const SupportPage: React.FC = () => {
       title: 'Enterprise Support',
       description: 'Priority support for enterprise customers',
       action: 'Contact Sales',
-      href: 'mailto:shristyv301@gmail.com', 
+      href: `mailto:${salesEmail}`,
       color: 'bg-orange-500'
     }
   ]
 
   const faqItems = [
     {
-      question: 'How do I get started with the DraftnSign API?',
+      question: `How do I get started with the ${brandName} API?`,
       answer: 'Start by creating an API key in your dashboard, then follow our Quick Start guide to make your first API call. We recommend beginning with our Python or JavaScript SDK for the easiest integration experience.'
     },
     {
@@ -231,7 +233,7 @@ export const SupportPage: React.FC = () => {
                 <Mail className="h-5 w-5 text-gray-400" />
                 <div>
                   <div className="font-medium text-gray-900">Email Support</div>
-                  <div className="text-sm text-gray-600">support@draftn.com</div>
+                  <div className="text-sm text-gray-600">{supportEmail}</div>
                 </div>
               </div>
               <div className="flex items-center space-x-3">

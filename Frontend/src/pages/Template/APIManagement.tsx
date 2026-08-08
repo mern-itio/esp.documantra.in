@@ -10,6 +10,7 @@ import {
   Download,
   Terminal
 } from 'lucide-react';
+import { API_PUBLIC_BASE_URL } from '../../config/brand';
 
 export const APIManagement: React.FC = () => {
   const [showApiKey, setShowApiKey] = useState(false);
@@ -66,7 +67,7 @@ export const APIManagement: React.FC = () => {
   const codeExamples = {
     python: `import requests
 
-url = "https://api.draftnSign.com/v1/templates/template_001/generate"
+url = "${API_PUBLIC_BASE_URL}/templates/template_001/generate"
 headers = {
     "Authorization": "Bearer sk_live_4aBcDeFgHiJkLmNoPqRsTuVwXyZ",
     "Content-Type": "application/json"
@@ -85,7 +86,7 @@ document = response.json()`,
 
     nodejs: `const axios = require('axios');
 
-const url = 'https://api.draftnSign.com/v1/templates/template_001/generate';
+const url = '${API_PUBLIC_BASE_URL}/templates/template_001/generate';
 const headers = {
     'Authorization': 'Bearer sk_live_4aBcDeFgHiJkLmNoPqRsTuVwXyZ',
     'Content-Type': 'application/json'
@@ -107,7 +108,7 @@ axios.post(url, data, { headers })
         console.error(error);
     });`,
 
-    curl: `curl -X POST https://api.draftnSign.com/v1/templates/template_001/generate \\
+    curl: `curl -X POST ${API_PUBLIC_BASE_URL}/templates/template_001/generate \\
   -H "Authorization: Bearer sk_live_4aBcDeFgHiJkLmNoPqRsTuVwXyZ" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -119,7 +120,7 @@ axios.post(url, data, { headers })
   }'`,
 
     php: `<?php
-$url = 'https://api.draftnSign.com/v1/templates/template_001/generate';
+$url = '${API_PUBLIC_BASE_URL}/templates/template_001/generate';
 $headers = [
     'Authorization: Bearer sk_live_4aBcDeFgHiJkLmNoPqRsTuVwXyZ',
     'Content-Type: application/json'
