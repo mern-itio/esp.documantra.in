@@ -4,6 +4,7 @@ import PublicWizard from '../pages/PublicFlow/PublicWizard';
 import EnvelopeCreator from '../pages/eSign/EnvelopeCreator';
 import PublicSignerPage from '../pages/eSign/PublicSignerPage';
 import RecipientPortalPage from '../pages/eSign/RecipientPortalPage';
+import PublicSendSuccessPage from '../pages/PublicFlow/PublicSendSuccessPage';
 import ThankYouPage from '../pages/eSign/ThankYou';
 
 const LegacyPublicSignRedirect = () => {
@@ -31,6 +32,7 @@ const LegacyEditorRedirect = () => {
 const publicSignRouter = createBrowserRouter([
   { path: '/', element: <PublicWizard /> },
   { path: '/editor', element: <EnvelopeCreator /> },
+  { path: '/sent', element: <PublicSendSuccessPage /> },
   { path: '/public-sign', element: <LegacyPublicSignRedirect /> },
   { path: '/public-sign/editor', element: <LegacyEditorRedirect /> },
   { path: '/public-sign/editor/*', element: <LegacyEditorRedirect /> },

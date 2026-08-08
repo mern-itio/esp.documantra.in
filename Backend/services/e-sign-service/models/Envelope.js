@@ -62,7 +62,8 @@ sender: {
   // AI Assistant tracking
   isAIGenerated: { type: Boolean, default: false }, // Track if envelope was created/sent by AI assistant
   isOrganization: { type: Boolean, default: false }, // Track if envelope belongs to an organization
-  organizationId: { type: mongoose.Schema.Types.ObjectId, default:null } // Link to organization if applicable
+  organizationId: { type: mongoose.Schema.Types.ObjectId, default:null }, // Link to organization if applicable
+  publicGuestId: { type: String, index: true, default: null }, // Anonymous public-sign sender (browser guest id)
 }, { timestamps: true });
 
 module.exports = mongoose.model('Envelope', EnvelopeSchema);

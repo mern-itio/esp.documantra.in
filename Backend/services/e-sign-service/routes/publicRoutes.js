@@ -45,6 +45,12 @@ const {
   verifySignerAccessCode,
 } = require('../controllers/signerAccessController');
 const {
+  getSendUsage,
+  listSentEnvelopes,
+  claimGuestEnvelopes,
+  enforcePublicSendLimit,
+} = require('../controllers/publicSentController');
+const {
   listEnvelopeComments,
   createEnvelopeComment,
   resolveEnvelopeComment,
@@ -58,13 +64,18 @@ const { viewDocument } = require('../controllers/documentViewController');
 const {
   requirePublicDraftOrSenderAccess,
 } = require('../middleware/envelopeAccessMiddleware');
+const optionalJwt = require('../middleware/optionalJwt');
 
 const router = express.Router();
+router.use(optionalJwt());
 const publicDraftWrite = requirePublicDraftOrSenderAccess({ fromBody: true, optional: true });
 const publicDraftWriteRequired = requirePublicDraftOrSenderAccess({ fromBody: true });
 const publicSendEnvelope = requirePublicDraftOrSenderAccess();
 
 router.get('/health', (_, res) => res.send('E-Sign Public Service is running...'));
+router.get('/send-usage', getSendUsage);
+router.get('/sent-envelopes', listSentEnvelopes);
+router.post('/claim-guest-envelopes', claimGuestEnvelopes);
 router.get('/documents/:documentId/view', viewDocument);
 router.get('/envelope/:id', envelopesDetail);
 router.get(
@@ -87,6 +98,7 @@ router.post(
 
 router.post(
   '/send-envelope/:envelopeId',
+  enforcePublicSendLimit,
   publicSendEnvelope,
   sendEnvelope
 );

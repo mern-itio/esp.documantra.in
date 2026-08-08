@@ -768,8 +768,29 @@ const sendEnvelope = async (req, res) => {
     const { envelopeId } = req.params;
     const envelope = await Envelope.findById(envelopeId);
     const userId = req?.user?.data?.id || req?.user?.id;
+    const {
+      assertPublicSendQuota,
+      incrementPublicSendQuota,
+      attachPublicGuestToEnvelope,
+    } = require('../helpers/publicGuestSend');
+
     if (!envelope) {
       return res.status(404).json({ message: "Envelope not found" });
+    }
+
+    const isPublicSend = String(req.originalUrl || '').includes('/api/e-sign/public/');
+    if (isPublicSend) {
+      const quota = await assertPublicSendQuota(req);
+      if (!quota.ok) {
+        return res.status(quota.status).json({
+          message: quota.message,
+          upgrade: quota.upgrade,
+          used: quota.used,
+          limit: quota.limit,
+          remaining: quota.remaining,
+        });
+      }
+      await attachPublicGuestToEnvelope(envelope, req);
     }
 
     // Check if envelope is already sent or completed
@@ -809,6 +830,9 @@ const sendEnvelope = async (req, res) => {
       if (envelope.status === 'draft') {
         envelope.status = 'in-progress';
         await envelope.save();
+      }
+      if (isPublicSend) {
+        await incrementPublicSendQuota(req);
       }
       let referralMilestone = null;
       try {

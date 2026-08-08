@@ -6,6 +6,10 @@ const RecipientPermission = require('../models/RecipientPermission');
 const SignatureField = require('../models/SignatureFields');
 const { logActivity } = require("../services/activityLogService");
 const { normalizeUploadToPdf } = require('../services/convertUploadToPdf');
+const {
+  getPublicGuestId,
+  attachPublicGuestToEnvelope,
+} = require('../helpers/publicGuestSend');
 const mongoose = require('mongoose');
 const axios = require('axios');
 
@@ -88,7 +92,9 @@ const parseAuthLevel = (authentication) => {
 const Upload = async (req, res) => {
     const { files } = req;
     //const userId = req.user?.data?.id || null;
-const userId = req.user?.data?.id;   
+const userId = req.user?.data?.id;
+const isPublicUpload = String(req.originalUrl || req.baseUrl || '').includes('/api/e-sign/public/');
+const publicGuestId = isPublicUpload && !userId ? getPublicGuestId(req) : null;
  if (!files || files.length === 0) {
         console.error('No files uploaded');
         return res.status(400).json({ message: 'No files uploaded' });
@@ -129,6 +135,9 @@ const userId = req.user?.data?.id;
         }
       }
       await envelope.save();
+      if (isPublicUpload && !userId) {
+        await attachPublicGuestToEnvelope(envelope, req);
+      }
     } else {
       // Create a new envelope with optional subject/message/name
       const { name, subject, message, envelopetype, isAIGenerated } = req.body || {};
@@ -144,7 +153,8 @@ const userId = req.user?.data?.id;
       }
       
       envelope = new Envelope({
-        sender: userId,
+        sender: userId || null,
+        publicGuestId: publicGuestId || null,
      //sender: userId || null,  
  name: typeof name === 'string' && name.trim().length > 0 ? name.trim() : undefined,
         subject: typeof subject === 'string' ? subject.trim() : undefined,

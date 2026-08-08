@@ -3434,6 +3434,32 @@ if (response.status == 200) {
       return;
     }
 
+    if (isPublicFlow) {
+      try {
+        const usageResp = await eSignApi.get('/api/e-sign/public/send-usage');
+        const usage = usageResp.data;
+        if (usage?.limitReached || (typeof usage?.remaining === 'number' && usage.remaining <= 0)) {
+          const pricingUrl = `${BRAND.website.replace(/\/$/, '')}/#pricing`;
+          const result = await Swal.fire({
+            title: 'Free plan limit reached',
+            text:
+              usageResp.data?.message ||
+              `You can send up to ${usage?.limit || 10} documents per month on the free plan.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'View pricing',
+            cancelButtonText: 'OK',
+          });
+          if (result.isConfirmed) {
+            window.location.href = pricingUrl;
+          }
+          return;
+        }
+      } catch (usageErr) {
+        console.warn('Could not verify public send quota:', usageErr);
+      }
+    }
+
     setSending(true);
     // Keep modal open to show loading state
     let refreshedRecipients: EnvelopeRecipient[] = [];
@@ -3511,15 +3537,9 @@ const sendResp = await eSignApi.post(sendUrl);
           html: referralMilestoneSwalHtml(milestone),
           confirmButtonText: 'Awesome',
         });
-        navigate(isPublicFlow ? '/e-sign/signer/thank-you' : '/e-sign/aggrement');
+        navigate(isPublicFlow ? `/sent?envelopeId=${envelopeId}` : '/e-sign/aggrement');
       } else if (isPublicFlow) {
-        await Swal.fire({
-          title: 'Sent!',
-          text: 'Signing request has been sent to recipients by email.',
-          icon: 'success',
-          confirmButtonText: 'OK',
-        });
-        navigate('/e-sign/signer/thank-you');
+        navigate(`/sent?envelopeId=${envelopeId}`);
       } else {
         // Keep existing app flow: Agreement page shows the standard success popup via `sent=true`.
         navigate('/e-sign/aggrement?sent=true');
@@ -3596,9 +3616,30 @@ const sendResp = await eSignApi.post(sendUrl);
       // Close modal before showing error alert
       setShowSendConfirmationModal(false);
 
+      const responseStatus = (err as { response?: { status?: number } })?.response?.status;
+      const responseData = (err as { response?: { data?: { message?: string; upgrade?: boolean } } })
+        ?.response?.data;
+
+      if (responseStatus === 429 && isPublicFlow) {
+        const pricingUrl = `${BRAND.website.replace(/\/$/, '')}/#pricing`;
+        const result = await Swal.fire({
+          title: 'Free plan limit reached',
+          text:
+            responseData?.message ||
+            'You have reached the free monthly document limit. Upgrade to send more.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'View pricing',
+          cancelButtonText: 'OK',
+        });
+        if (result.isConfirmed) {
+          window.location.href = pricingUrl;
+        }
+        return;
+      }
+
       const rawMessage =
-        (err as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || (err as Error)?.message || "";
+        responseData?.message || (err as Error)?.message || "";
       const friendlyMessage = /ECONNRESET|ETIMEDOUT|ESOCKET|socket hang up/i.test(
         rawMessage
       )
