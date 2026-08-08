@@ -1,17 +1,15 @@
 /**
  * Global PDF.js worker configuration for Vite.
- * Uses the worker bundled from pdfjs-dist (same version as react-pdf).
+ * Served from public/pdf.worker.min.mjs (copied at build from pdfjs-dist by vite.config.ts).
  */
-import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
-export const PDFJS_WORKER_SRC = workerSrc;
+export const PDFJS_WORKER_SRC = '/pdf.worker.min.mjs';
 
 if (typeof window !== 'undefined') {
   (window as Window & { __PDFJS_WORKER_SRC__?: string; pdfjsLib?: { GlobalWorkerOptions?: { workerSrc: string } } })
-    .__PDFJS_WORKER_SRC__ = workerSrc;
+    .__PDFJS_WORKER_SRC__ = PDFJS_WORKER_SRC;
 
   if (window.pdfjsLib?.GlobalWorkerOptions) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
   }
 
   let reactPdfConfigured = false;
@@ -20,7 +18,7 @@ if (typeof window !== 'undefined') {
     import('react-pdf')
       .then((reactPdf) => {
         if (reactPdf.pdfjs?.GlobalWorkerOptions) {
-          reactPdf.pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+          reactPdf.pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
           reactPdfConfigured = true;
         }
       })

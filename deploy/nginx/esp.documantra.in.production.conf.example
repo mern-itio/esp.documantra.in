@@ -179,8 +179,17 @@ server {
         include /etc/nginx/snippets/vapt-user-spa-headers.conf;
     }
 
-    # Hashed Vite assets — long cache (filename changes on each build)
-    location ^~ /assets/ {
+    # Vite-built .mjs workers (hashed under /assets/) — must not use application/octet-stream
+    location ~* ^/assets/.+\.mjs$ {
+        root /var/www/draft-and-sign;
+        default_type application/javascript;
+        expires 1y;
+        add_header Cache-Control "public, immutable" always;
+        try_files $uri =404;
+    }
+
+    # Hashed Vite assets — long cache (no ^~ so .mjs regex above can match)
+    location /assets/ {
         root /var/www/draft-and-sign;
         expires 1y;
         add_header Cache-Control "public, immutable" always;
