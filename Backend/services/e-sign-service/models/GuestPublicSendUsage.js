@@ -5,6 +5,7 @@ const GuestPublicSendUsageSchema = new mongoose.Schema(
     guestId: { type: String, index: true, required: true },
     monthKey: { type: String, required: true },
     count: { type: Number, default: 0 },
+    envelopeIds: { type: [String], default: [] },
   },
   { timestamps: true },
 );

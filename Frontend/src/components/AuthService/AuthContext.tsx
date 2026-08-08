@@ -160,7 +160,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       syncUserState(mapApiUserToState(u));
       setIsAuthenticated(true);
-      void claimPublicGuestEnvelopes().catch(() => {});
+      try {
+        await claimPublicGuestEnvelopes();
+      } catch {
+        /* non-blocking */
+      }
       const storedAccountType = sessionStorage.getItem('accountType');
       setAccountType(storedAccountType === 'organization' ? 'organization' : 'user');
       setOrganizationId(sessionStorage.getItem('organizationId') || null);
@@ -329,9 +333,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setOrganizationDetail(null);
     syncUserState(initialUserData);
     setIsAuthenticated(true);
-    void claimPublicGuestEnvelopes().catch(() => {});
 
     if (options?.setupOnly) return;
+
+    try {
+      await claimPublicGuestEnvelopes();
+    } catch {
+      /* non-blocking */
+    }
 
     try {
       const subscriptionPlan = await SubscriptionService.getUserPlan();

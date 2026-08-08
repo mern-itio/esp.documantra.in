@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Envelope = require('../models/Envelope');
 const RecipientPermission = require('../models/RecipientPermission');
 const { getUserId } = require('../helpers/envelopeAccess');
@@ -9,6 +10,8 @@ const {
   buildLimitResponse,
   countUserSentThisMonth,
   getGuestUsageCount,
+  unclaimedSenderFilter,
+  listTrackedEnvelopeIdsForGuest,
 } = require('../helpers/publicGuestSend');
 
 const formatEnvelopeRow = (envelope, recipients = []) => ({
@@ -100,15 +103,34 @@ const claimGuestEnvelopes = async (req, res) => {
       return res.status(200).json({ claimed: 0 });
     }
 
-    const result = await Envelope.updateMany(
+    const senderId = mongoose.Types.ObjectId.isValid(String(userId))
+      ? new mongoose.Types.ObjectId(String(userId))
+      : userId;
+
+    const byGuestId = await Envelope.updateMany(
       {
         publicGuestId: guestId,
-        $or: [{ sender: null }, { sender: { $exists: false } }],
+        ...unclaimedSenderFilter,
       },
-      { $set: { sender: userId } },
+      { $set: { sender: senderId } },
     );
 
-    return res.status(200).json({ claimed: result.modifiedCount || 0 });
+    const trackedIds = await listTrackedEnvelopeIdsForGuest(guestId);
+    let byTrackedIds = { modifiedCount: 0 };
+    if (trackedIds.length) {
+      byTrackedIds = await Envelope.updateMany(
+        {
+          _id: { $in: trackedIds },
+          ...unclaimedSenderFilter,
+        },
+        { $set: { sender: senderId, publicGuestId: guestId } },
+      );
+    }
+
+    const claimed =
+      (byGuestId.modifiedCount || 0) + (byTrackedIds.modifiedCount || 0);
+
+    return res.status(200).json({ claimed });
   } catch (error) {
     console.error('claimGuestEnvelopes failed:', error);
     return res.status(500).json({ message: 'Failed to claim guest documents' });

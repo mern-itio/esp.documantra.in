@@ -5,6 +5,8 @@ import { useAuth } from '../../components/AuthService/AuthContext'
 import { APP_NAME } from '../../components/constants/appConfig'
 import BrandLogo from '../../components/BrandLogo'
 import { FederatedLoginButtons } from '../../components/AuthService/FederatedLoginButtons'
+import { capturePublicGuestIdFromSearchParams } from '../../utils/publicGuestId'
+import { claimPublicGuestEnvelopes } from '../../services/claimPublicGuestEnvelopes'
 const SIGNUP_REFERRER_STORAGE_KEY = 'signupReferrerUserId'
 
 type LoginStep = 'login' | 'verify'
@@ -30,6 +32,10 @@ const LoginPage = () => {
     } catch {
       return ''
     }
+  }, [searchParams])
+
+  useEffect(() => {
+    capturePublicGuestIdFromSearchParams(searchParams)
   }, [searchParams])
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')

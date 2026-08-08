@@ -9,13 +9,14 @@ import {
   CheckCircle, 
   AlertCircle,
   Eye,
-  Filter,
   Users,
   Calendar
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { eSignApi } from '../../services/apiHelper';
+import { claimPublicGuestEnvelopes } from '../../services/claimPublicGuestEnvelopes';
 import AIAuditInsights from '../../components/ESign/AIAuditInsights';
+import { PageShell, PageHero, PagePanel, StatTile, SelectField, EmptyState } from '../../components/common/PageShell';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -51,26 +52,42 @@ const Dashboard: React.FC = () => {
   const fetchEnvelopes = async () => {
     setLoading(true);
     try {
+       await claimPublicGuestEnvelopes();
        const response = await eSignApi.get('/api/e-sign/get-envelopes');
        if (response.status == 200) {
         setEnvelopes(response.data.data);
        }
-    } catch (error) {
-      console.error('Error fetching envelopes:', error);
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status !== 401 && status !== 403 && status !== 404) {
+        console.error('Error fetching envelopes:', error);
+      }
     } finally {
       setLoading(false);
     }
   };
   const statusColors = {
-    draft: 'bg-gray-100 text-gray-800',
-    sent: 'bg-blue-100 text-blue-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    completed: 'bg-green-100 text-green-800',
-    expired: 'bg-red-100 text-red-800',
-    voided: 'bg-gray-100 text-gray-600',
-    declined: 'bg-red-100 text-red-800',
-    "in-progress": 'bg-yellow-100 text-yellow-800', // Added
-    "archived":'bg-red-100 text-red-800'//Added
+    draft: 'dm-badge dm-badge--muted',
+    sent: 'dm-badge dm-badge--primary',
+    pending: 'dm-badge dm-badge--warning',
+    completed: 'dm-badge dm-badge--success',
+    expired: 'dm-badge dm-badge--danger',
+    voided: 'dm-badge dm-badge--muted',
+    declined: 'dm-badge dm-badge--danger',
+    'in-progress': 'dm-badge dm-badge--warning',
+    archived: 'dm-badge dm-badge--danger',
+  };
+
+  const statusIconBg = {
+    draft: 'bg-muted text-muted-foreground',
+    sent: 'bg-primary/10 text-primary',
+    pending: 'bg-amber-50 text-amber-700',
+    completed: 'bg-emerald-50 text-emerald-700',
+    expired: 'bg-red-50 text-red-700',
+    voided: 'bg-muted text-muted-foreground',
+    declined: 'bg-red-50 text-red-700',
+    'in-progress': 'bg-amber-50 text-amber-700',
+    archived: 'bg-red-50 text-red-700',
   };
 
   const statusIcons = {
@@ -104,24 +121,9 @@ const Dashboard: React.FC = () => {
   });
 
   const stats = [
-    {
-      name: 'Total Envelopes',
-      value: envelopes.length,
-      icon: FileText,
-      color: 'bg-blue-500'
-    },
-    {
-      name: 'Pending Envelopes',
-      value: envelopes.filter(e => e.status === 'sent' || e.status === 'in-progress').length,
-      icon: Clock,
-      color: 'bg-yellow-500'
-    },
-    {
-      name: 'Completed',
-      value: envelopes.filter(e => e.status === 'completed').length,
-      icon: CheckCircle,
-      color: 'bg-green-500'
-    },
+    { name: 'Total Envelopes', value: envelopes.length, icon: FileText, accent: 'from-[#260559] to-[#5b3aa0]' },
+    { name: 'Pending', value: envelopes.filter(e => e.status === 'sent' || e.status === 'in-progress').length, icon: Clock, accent: 'from-amber-500 to-orange-500' },
+    { name: 'Completed', value: envelopes.filter(e => e.status === 'completed').length, icon: CheckCircle, accent: 'from-[#155E4B] to-emerald-500' },
     {
       name: 'This Month',
       value: envelopes.filter(e => {
@@ -130,12 +132,12 @@ const Dashboard: React.FC = () => {
         return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
       }).length,
       icon: Calendar,
-      color: 'bg-[#F0FDF4]0'
-    }
+      accent: 'from-teal-600 to-cyan-500',
+    },
   ];
 
   return (
-    <div className="p-6 space-y-8">
+    <PageShell wide>
       {/* Step-by-step Tutorial Modal */}
       {showTutorial && (
         <div className="fixed inset-0 z-50">
@@ -254,216 +256,116 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">E-Sign Dashboard</h1>
+      <PageHero
+        compact
+        title="E-Sign Dashboard"
+        subtitle="Track envelopes, send reminders, and monitor signing progress"
+        action={
+          <Link to="/e-sign/create" className="dm-btn-primary bg-white text-[#155E4B] hover:bg-white/90">
+            <Plus className="h-4 w-4" />
+            Create envelope
+          </Link>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <StatTile key={stat.name} label={stat.name} value={stat.value} icon={stat.icon} accent={stat.accent} />
+        ))}
+      </div>
+
+      <PagePanel title="Find envelopes" noPadding bodyClassName="p-4 md:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <SelectField label="Status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="sm:max-w-[200px]">
+            <option value="all">All status</option>
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+            <option value="expired">Expired</option>
+            <option value="voided">Voided</option>
+          </SelectField>
+          <SelectField label="Sort by" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="sm:max-w-[200px]">
+            <option value="recent">Most recent</option>
+            <option value="subject">Subject</option>
+            <option value="status">Status</option>
+          </SelectField>
         </div>
-        <Link
-          to="/e-sign/create"
-          className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Create Envelope
-        </Link>
-      </div>
+      </PagePanel>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div key={stat.name} className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                </div>
-                <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {envelopes.length > 0 && (
+        <PagePanel noPadding bodyClassName="p-4 md:p-5">
+          <AIAuditInsights />
+        </PagePanel>
+      )}
 
-      {/* Filters and Controls */}
-      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Filter:</span>
-            </div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="sent">Sent</option>
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
-              <option value="expired">Expired</option>
-              <option value="voided">Voided</option>
-            </select>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="recent">Most Recent</option>
-                <option value="subject">Subject</option>
-                <option value="status">Status</option>
-              </select>
-            </div>
-            {/* <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-[#F5F2EE] rounded-lg transition-colors">
-              <Download className="w-4 h-4" />
-              Export
-            </button> */}
-          </div>
-        </div>
-      </div>
-
-      {/* AI Audit, Logs & Insights Section */}
-      <div className="bg-[#F5F2EE] rounded-xl p-6 border border-gray-200">
-        <AIAuditInsights />
-      </div>
-
-
-      {/* Envelopes List */}
-      <div className="bg-[#F7F3EE] rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Envelopes</h2>
-            {!loading && (
-              <span className="text-sm text-gray-500">{sortedEnvelopes.length} envelopes</span>
-            )}
-          </div>
-        </div>
-
+      <PagePanel title="Recent envelopes" subtitle={!loading ? `${sortedEnvelopes.length} shown` : undefined} noPadding bodyClassName="p-0">
         {loading ? (
-            //Loader UI (Skeleton or Spinner)
-            <div className="p-12 text-center">
-              <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8H4z"
-                />
-              </svg>
-              <p className="text-gray-500">Loading envelopes...</p>
-            </div>
-          ) :
-        sortedEnvelopes.length === 0 ? (
-          <div className="p-12 text-center">
-            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No envelopes found</h3>
-            <p className="text-gray-500 mb-6">Get started by creating your first envelope.</p>
-            <Link
-              to="/e-sign/create"
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Create Envelope
-            </Link>
+          <div className="flex flex-col items-center justify-center py-14">
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-primary" />
+            <p className="mt-3 text-sm text-muted-foreground">Loading envelopes…</p>
           </div>
+        ) : sortedEnvelopes.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="No envelopes yet"
+            description="Create your first envelope to start collecting signatures."
+            action={
+              <Link to="/e-sign/create" className="dm-btn-primary">
+                <Plus className="h-4 w-4" />
+                Create envelope
+              </Link>
+            }
+            className="border-0 bg-transparent shadow-none"
+          />
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div>
             {sortedEnvelopes.map((envelope) => {
               const StatusIcon = statusIcons[envelope.status as keyof typeof statusIcons];
               const completedRecipients = envelope.recipients.filter((r: any) => r.status === 'completed' || r.status === 'signed').length;
-              
+
               return (
-                <div key={envelope.id} className="p-6 hover:bg-[#F5F2EE] transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-start space-x-4 flex-1">
-                      <div className="flex-shrink-0">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${statusColors[envelope.status as keyof typeof statusIcons]}`}>
-                          <StatusIcon className="w-5 h-5" />
-                        </div>
+                <div key={envelope.id} className="dm-list-row">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 flex-1 items-start gap-4">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${statusIconBg[envelope.status as keyof typeof statusIconBg] || statusIconBg.draft}`}>
+                        <StatusIcon className="h-5 w-5" />
                       </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Link
-                            to={`/e-sign/envelope/${envelope.id}`}
-                            className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors truncate"
-                          >
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <Link to={`/e-sign/envelope/${envelope.id}`} className="truncate text-base font-semibold text-foreground transition hover:text-primary">
                             {envelope.subject}
                           </Link>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[envelope.status as keyof typeof statusIcons]}`}>
+                          <span className={statusColors[envelope.status as keyof typeof statusColors] || statusColors.draft}>
                             {envelope.status.charAt(0).toUpperCase() + envelope.status.slice(1)}
                           </span>
-                          { envelope.isPowerForm &&(
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#8B008B] text-white">
-                              {"Power-Form"}
-                            </span>
+                          {envelope.isPowerForm && <span className="dm-badge bg-[#260559]/10 text-[#260559] ring-[#260559]/20">Power form</span>}
+                          {(envelope.priority === 'high' || envelope.priority === 'urgent') && (
+                            <span className="dm-badge dm-badge--danger">{envelope.priority === 'urgent' ? 'Urgent' : 'High'}</span>
                           )}
-                          {envelope.priority === 'high' || envelope.priority === 'urgent' ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              {envelope.priority === 'urgent' ? 'Urgent' : 'High'}
-                            </span>
-                          ) : null}
                         </div>
                         {envelope.isPowerForm === false && (
-                        <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
-                          <div className="flex items-center gap-1">
-                            <Users className="w-4 h-4" />
-                            <span>{completedRecipients}/{envelope.recipients.length} signed</span>
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1"><Users className="h-4 w-4" />{completedRecipients}/{envelope.recipients.length} signed</div>
+                            <div className="flex items-center gap-1"><FileText className="h-4 w-4" />{envelope.documents.length} document{envelope.documents.length !== 1 ? 's' : ''}</div>
+                            <div className="flex items-center gap-1"><Clock className="h-4 w-4" />Created {formatDistanceToNow(new Date(envelope.createdAt), { addSuffix: true })}</div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <FileText className="w-4 h-4" />
-                            <span>{envelope.documents.length} document{envelope.documents.length !== 1 ? 's' : ''}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            <span>Created {formatDistanceToNow(new Date(envelope.createdAt), { addSuffix: true })}</span>
-                          </div>
-                        </div>
                         )}
-                        
-                        {envelope.message && (
-                          <p className="text-sm text-gray-600 line-clamp-2">{envelope.message}</p>
-                        )}
+                        {envelope.message && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{envelope.message}</p>}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 ml-4">
-                      <Link
-                        to={`/e-sign/envelope/${envelope.id}`}
-                        className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View
-                      </Link>
-                      {/* <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button> */}
-                    </div>
+                    <Link to={`/e-sign/envelope/${envelope.id}`} className="dm-btn-secondary shrink-0 self-start sm:self-center">
+                      <Eye className="h-4 w-4" />
+                      View
+                    </Link>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-      </div>
-    </div>
+      </PagePanel>
+    </PageShell>
   );
 };
 

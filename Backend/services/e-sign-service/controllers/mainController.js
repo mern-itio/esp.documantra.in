@@ -832,7 +832,7 @@ const sendEnvelope = async (req, res) => {
         await envelope.save();
       }
       if (isPublicSend) {
-        await incrementPublicSendQuota(req);
+        await incrementPublicSendQuota(req, envelope._id);
       }
       let referralMilestone = null;
       try {

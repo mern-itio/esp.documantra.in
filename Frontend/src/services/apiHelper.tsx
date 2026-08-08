@@ -4,7 +4,7 @@ import { SubscriptionStorage } from './subscriptionService';
 import { resolveServiceUrl } from '../utils/secureApiUrl';
 import { isPublicSignOnlyApp, isPublicSignRoute } from '../config/appMode';
 import { getAccountContextHeaders } from '../utils/authSession';
-import { getPublicGuestId } from '../utils/publicGuestId';
+import { getExistingPublicGuestId, getPublicGuestId } from '../utils/publicGuestId';
 
 const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance => {
 
@@ -28,6 +28,10 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
       Object.entries(accountHeaders).forEach(([key, value]) => {
         (config.headers as any)[key] = value;
       });
+      const guestId = getExistingPublicGuestId();
+      if (guestId) {
+        (config.headers as any)['x-public-guest-id'] = guestId;
+      }
     } else {
       const guestId = getPublicGuestId();
       if (guestId) {

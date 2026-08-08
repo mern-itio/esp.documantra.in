@@ -13,11 +13,39 @@ const getMonthKey = (date = new Date()) => {
 const getMonthStart = (date = new Date()) =>
   new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 0, 0, 0, 0));
 
+const readCookieValue = (req, name) => {
+  const header = req.headers?.cookie;
+  if (!header || typeof header !== 'string') return null;
+  const parts = header.split(';');
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    if (key !== name) continue;
+    const raw = trimmed.slice(eq + 1);
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }
+  return null;
+};
+
 const getPublicGuestId = (req) => {
   const header = req.headers['x-public-guest-id'];
   if (header && String(header).trim()) return String(header).trim();
-  if (req.cookies?.publicGuestId) return String(req.cookies.publicGuestId).trim();
+  const bodyGuest = req.body?.guestId;
+  if (bodyGuest && String(bodyGuest).trim()) return String(bodyGuest).trim();
+  const cookieGuest = readCookieValue(req, 'publicGuestId');
+  if (cookieGuest && String(cookieGuest).trim()) return String(cookieGuest).trim();
   return null;
+};
+
+const unclaimedSenderFilter = {
+  $or: [{ sender: null }, { sender: { $exists: false } }],
 };
 
 const countUserSentThisMonth = async (userId) => {
@@ -78,7 +106,7 @@ const assertPublicSendQuota = async (req) => {
   return { ok: true, ...buildLimitResponse(used) };
 };
 
-const incrementPublicSendQuota = async (req) => {
+const incrementPublicSendQuota = async (req, envelopeId) => {
   const userId = getUserId(req);
   if (userId) return;
 
@@ -86,9 +114,14 @@ const incrementPublicSendQuota = async (req) => {
   if (!guestId) return;
 
   const monthKey = getMonthKey();
+  const update = { $inc: { count: 1 } };
+  if (envelopeId) {
+    update.$addToSet = { envelopeIds: String(envelopeId) };
+  }
+
   await GuestPublicSendUsage.findOneAndUpdate(
     { guestId, monthKey },
-    { $inc: { count: 1 } },
+    update,
     { upsert: true, new: true },
   );
 };
@@ -104,14 +137,22 @@ const attachPublicGuestToEnvelope = async (envelope, req) => {
   return envelope;
 };
 
+const listTrackedEnvelopeIdsForGuest = async (guestId) => {
+  if (!guestId) return [];
+  const rows = await GuestPublicSendUsage.find({ guestId }).select('envelopeIds').lean();
+  return [...new Set(rows.flatMap((row) => (row.envelopeIds || []).map(String)))];
+};
+
 module.exports = {
   PUBLIC_FREE_MONTHLY_LIMIT,
   getMonthKey,
   getPublicGuestId,
+  unclaimedSenderFilter,
   countUserSentThisMonth,
   getGuestUsageCount,
   buildLimitResponse,
   assertPublicSendQuota,
   incrementPublicSendQuota,
   attachPublicGuestToEnvelope,
+  listTrackedEnvelopeIdsForGuest,
 };

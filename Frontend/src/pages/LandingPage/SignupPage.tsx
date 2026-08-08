@@ -24,6 +24,8 @@ import { FederatedLoginButtons } from '../../components/AuthService/FederatedLog
 import { getPasswordChecks, getPasswordPolicyError } from '../../utils/passwordPolicy'
 import BrandLogo from '../../components/BrandLogo'
 import { BRAND } from '../../config/brand'
+import { capturePublicGuestIdFromSearchParams } from '../../utils/publicGuestId'
+import { claimPublicGuestEnvelopes } from '../../services/claimPublicGuestEnvelopes'
 
 const OTP_EXPIRY_SECONDS = 10 * 60
 const SIGNUP_REFERRER_STORAGE_KEY = 'signupReferrerUserId'
@@ -172,6 +174,10 @@ const SignupPage = () => {
     } catch {
       return ''
     }
+  }, [searchParams])
+
+  useEffect(() => {
+    capturePublicGuestIdFromSearchParams(searchParams)
   }, [searchParams])
 
   const [formData, setFormData] = useState({
@@ -390,7 +396,10 @@ const SignupPage = () => {
         /* ignore */
       }
 
-      if (result.loggedIn) navigate('/dashboard')
+      if (result.loggedIn) {
+        await claimPublicGuestEnvelopes()
+        navigate('/dashboard')
+      }
     } catch (error) {
       const message =
         (error as Error)?.message || 'An error occurred during signup. Please try again.'
@@ -431,6 +440,7 @@ const SignupPage = () => {
       } catch {
         /* ignore */
       }
+      await claimPublicGuestEnvelopes()
       navigate('/dashboard')
     } catch (error: any) {
       setFormError(error.message || 'Google Signup failed. Please try again.')

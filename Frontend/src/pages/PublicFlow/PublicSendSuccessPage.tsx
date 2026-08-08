@@ -10,7 +10,7 @@ import {
 } from './PublicSignMarketingChrome';
 import '../../styles/documantra-chrome.css';
 import { claimPublicGuestEnvelopes } from '../../services/claimPublicGuestEnvelopes';
-import { withPublicGuestHeaders } from '../../utils/publicGuestId';
+import { buildEspAuthUrl, withPublicGuestHeaders } from '../../utils/publicGuestId';
 
 type SentEnvelope = {
   id: string;
@@ -30,8 +30,6 @@ type SendUsage = {
   monthKey: string;
 };
 
-const espSignupUrl = `${BRAND.website.replace(/\/$/, '')}/signup?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : 'https://esign.documantra.in/sent')}`;
-const espLoginUrl = `${BRAND.website.replace(/\/$/, '')}/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : 'https://esign.documantra.in/sent')}`;
 const espPricingUrl = `${BRAND.website.replace(/\/$/, '')}/#pricing`;
 
 const statusLabel = (status: string) => {
@@ -82,6 +80,8 @@ export default function PublicSendSuccessPage() {
   }, [isAuthenticated]);
 
   const limitReached = usage ? usage.remaining <= 0 : false;
+  const espSignupUrl = buildEspAuthUrl(BRAND.website, 'signup');
+  const espLoginUrl = buildEspAuthUrl(BRAND.website, 'login');
 
   return (
     <div className="min-h-screen bg-[hsl(40,33%,98%)]">
