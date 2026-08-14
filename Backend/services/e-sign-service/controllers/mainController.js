@@ -1315,16 +1315,11 @@ const addSignature = async (req, res) => {
 
     const isPublicSign = String(req.originalUrl || req.baseUrl || '').includes('/api/e-sign/public/');
     if (isPublicSign && mode === 'Recipient') {
-      const { isVSignEnabledAndReady } = require('../utils/vsignConfigPolicy');
+      const { qualifiesEnvelopeForVSign } = require('../utils/vsignConfigPolicy');
       const envelopeMeta = await Envelope.findById(envelopeId)
         .select('signatureType envelopetype')
         .lean();
-      const qualifiesForVSign =
-        isVSignEnabledAndReady() && (
-          envelopeMeta?.signatureType === 'qualified'
-          || String(envelopeMeta?.envelopetype || '').toLowerCase() === 'qualified'
-        );
-      if (qualifiesForVSign) {
+      if (qualifiesEnvelopeForVSign(envelopeMeta)) {
         signatureMethod = 'aadhaarSignature';
         signatureProvider = 'vSign';
       }

@@ -7,6 +7,7 @@ const signatureTransactions = require('../../models/signatureTransactions');
 const VSIGN_SERVICE_BUILD = '2026-08-14-live-v15';
 const {
   isVSignEnabledAndReady,
+  isLegacyEnvMode,
   getVSignReadinessIssues,
 } = require('../../utils/vsignConfigPolicy');
 const { fetchRecipientById } = require('../recipientService');
@@ -52,7 +53,7 @@ function withAppearancePayload(base, appearance = {}) {
 
 module.exports = {
   aadhaarSignature: async (data) => {
-    if (!isVSignEnabledAndReady()) {
+    if (!isLegacyEnvMode() && !isVSignEnabledAndReady()) {
       const issues = getVSignReadinessIssues();
       return {
         status: 503,

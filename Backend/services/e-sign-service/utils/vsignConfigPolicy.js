@@ -56,7 +56,14 @@ function resolveAbsolutePath(relativeOrAbsolute) {
 
 function docToEffective(doc) {
   const base = defaultConfig();
-  if (!doc) return { ...base, source: 'env' };
+  if (!doc) {
+    return {
+      ...base,
+      enabled: false,
+      source: 'legacy-env',
+      adminConfigured: false,
+    };
+  }
   return {
     enabled: doc.enabled === true,
     vsignEnv: doc.vsignEnv || base.vsignEnv,
@@ -76,7 +83,38 @@ function docToEffective(doc) {
     useJar: doc.useJar !== false,
     signatureFontSize: doc.signatureFontSize || base.signatureFontSize,
     source: 'db',
+    adminConfigured: true,
   };
+}
+
+function isLegacyEnvMode(cfg = getCachedEffectiveConfig()) {
+  return cfg.source !== 'db' || !cfg.adminConfigured;
+}
+
+/** Pre-admin-deploy behaviour: .env + existing PFX on disk (production unchanged until admin enables). */
+function legacyEnvVSignOperational(cfg = getCachedEffectiveConfig()) {
+  if (!process.env.ASP_ID && !cfg.aspId) return false;
+  const legacyCfg = { ...cfg, certMode: 'uat' };
+  if (!legacyCfg.pfxPassword) legacyCfg.pfxPassword = process.env.PFX_PASSWORD || 'abc1234';
+  if (!legacyCfg.pfxAlias) {
+    legacyCfg.pfxAlias = process.env.PFX_ALIAS || '{05AE2E10-4F6D-41A6-9F83-4D0025CA28A0}';
+  }
+  return isVSignPfxReady(legacyCfg);
+}
+
+function qualifiesEnvelopeForVSign(envelopeMeta) {
+  const isQualified =
+    envelopeMeta?.signatureType === 'qualified'
+    || String(envelopeMeta?.envelopetype || '').toLowerCase() === 'qualified';
+
+  if (isLegacyEnvMode()) {
+    if (process.env.NODE_ENV !== 'production' && process.env.ASP_ID) {
+      return true;
+    }
+    return isQualified && legacyEnvVSignOperational();
+  }
+
+  return isVSignEnabledAndReady() && isQualified;
 }
 
 function getCachedEffectiveConfig() {
@@ -88,9 +126,12 @@ function getCachedEffectiveConfig() {
 
 async function refreshVSignConfigCache() {
   try {
-    const doc = await getOrCreateVSignConfigDoc();
+    const doc = await VSignConfig.findOne({ key: 'default' }).select('+pfxPassword +dmEncryptionKeyPassword');
     cachedConfig = docToEffective(doc);
     cacheExpiresAt = Date.now() + CACHE_TTL_MS;
+    if (isLegacyEnvMode(cachedConfig)) {
+      console.log('[VSign] legacy env mode — production flow unchanged until admin enables VSign in settings');
+    }
     return cachedConfig;
   } catch (err) {
     console.warn('[VSign] refreshVSignConfigCache failed:', err.message);
@@ -116,10 +157,16 @@ function isVSignPfxReady(cfg) {
 }
 
 function isVSignEnabledAndReady(cfg = getCachedEffectiveConfig()) {
+  if (isLegacyEnvMode(cfg)) {
+    return legacyEnvVSignOperational(cfg);
+  }
   return Boolean(cfg.enabled && cfg.aspId && isVSignPfxReady(cfg));
 }
 
 function getVSignReadinessIssues(cfg = getCachedEffectiveConfig()) {
+  if (isLegacyEnvMode(cfg)) {
+    return legacyEnvVSignOperational(cfg) ? [] : ['Legacy env: ASP_ID or PFX not configured'];
+  }
   const issues = [];
   if (!cfg.enabled) issues.push('VSign is disabled in admin settings');
   if (!cfg.aspId) issues.push('ASP ID is required');
@@ -134,7 +181,7 @@ function getVSignReadinessIssues(cfg = getCachedEffectiveConfig()) {
 }
 
 async function getAdminVSignConfigPayload() {
-  const doc = await getOrCreateVSignConfigDoc();
+  const doc = await VSignConfig.findOne({ key: 'default' }).select('+pfxPassword +dmEncryptionKeyPassword');
   const cfg = docToEffective(doc);
   const pfxAbs = resolveAbsolutePath(cfg.pfxPath);
   const publicCertAbs = resolveAbsolutePath(cfg.publicCertPath);
@@ -162,19 +209,23 @@ async function getAdminVSignConfigPayload() {
     signatureFontSize: cfg.signatureFontSize,
     ready: isVSignEnabledAndReady(cfg),
     readinessIssues: getVSignReadinessIssues(cfg),
+    legacyMode: isLegacyEnvMode(cfg),
     pfxPresent: pfxAbs ? fs.existsSync(pfxAbs) : false,
-    updatedAt: doc.updatedAt,
+    updatedAt: doc?.updatedAt || null,
   };
 }
 
 function getPublicVSignStatus() {
   const cfg = getCachedEffectiveConfig();
+  const legacy = isLegacyEnvMode(cfg);
+  const operational = isVSignEnabledAndReady(cfg);
   return {
-    enabled: cfg.enabled,
-    ready: isVSignEnabledAndReady(cfg),
+    enabled: legacy ? operational : cfg.enabled,
+    ready: operational,
+    legacyMode: legacy,
     certMode: cfg.certMode,
     vsignEnv: cfg.vsignEnv,
-    aspIdConfigured: Boolean(cfg.aspId),
+    aspIdConfigured: Boolean(cfg.aspId || process.env.ASP_ID),
   };
 }
 
@@ -187,6 +238,9 @@ module.exports = {
   getAdminVSignConfigPayload,
   getPublicVSignStatus,
   isVSignEnabledAndReady,
+  isLegacyEnvMode,
+  qualifiesEnvelopeForVSign,
+  legacyEnvVSignOperational,
   getVSignReadinessIssues,
   resolveAbsolutePath,
   resolveEspResponseUrl,
