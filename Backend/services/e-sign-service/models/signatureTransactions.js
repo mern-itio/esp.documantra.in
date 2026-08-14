@@ -7,7 +7,12 @@ const signatureTransactions = new mongoose.Schema({
     fieldId:{type:mongoose.Schema.Types.ObjectId,ref:"SignatureField",required:true},
     envelopeId:{type:mongoose.Schema.Types.ObjectId,ref:"Envelope",required:true},
     signedFilePath:{type:String,required:true},
-    signatureImage:{type:String,required:true},
-    signBase64:{type:String,required:true}
+    signatureImage:{type:String},
+    signBase64:{type:String},
+    appearanceWidth:{type:Number},
+    appearanceHeight:{type:Number},
+    signatureFontSize:{type:String},
+    tickImgPath:{type:String},
+    aspLogo:{type:String},
 });
 module.exports = mongoose.model("SignatureTransaction", signatureTransactions);

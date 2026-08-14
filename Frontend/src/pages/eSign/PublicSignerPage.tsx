@@ -13,6 +13,8 @@ import DocumentSignatureBackground from "../../components/common/DocumentSignatu
 import BrandLogo from "../../components/BrandLogo";
 import { resolveEsignDocumentFileProp } from "../../utils/esignDocumentUrl";
 import { markDocumentOpened, persistBiometricEvidence } from "../../utils/signingContext";
+import { resolvePublicSignatureMethod, isVSignEnabled, refreshVSignPublicStatus } from "../../config/vsign";
+import { isPublicSignOnlyApp } from "../../config/appMode";
 import { formatDocuMantraEnvelopeId } from "../../utils/envelopeIdFormat";
 import * as Icons from "lucide-react";
 import {
@@ -97,6 +99,18 @@ const EnvelopeDetails: React.FC = () => {
     }
   }, [location.pathname, location.search]);
 
+  // Some copied links drop the "/" between envelopeId and recipientId (48–49 hex chars).
+  useEffect(() => {
+    const rawId = String(id ?? "").trim();
+    const rawRecipientId = String(recipientId ?? "").trim();
+    if (rawRecipientId || !/^[a-f0-9]{48,49}$/i.test(rawId)) return;
+
+    const envId = rawId.slice(0, 24);
+    const rid = rawId.length === 48 ? rawId.slice(24) : rawId.slice(25);
+    const suffix = `${location.search}${location.hash}`;
+    window.location.replace(`/e-sign/signer/${envId}/${rid}${suffix}`);
+  }, [id, recipientId, location.search, location.hash]);
+
   const initialAccessToken = useMemo(() => {
     try {
       return new URLSearchParams(location.search).get('accessToken');
@@ -106,10 +120,18 @@ const EnvelopeDetails: React.FC = () => {
   }, [location.search]);
 
   useEffect(() => {
+    refreshVSignPublicStatus().catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (id && recipientId) {
       markDocumentOpened(String(id), String(recipientId));
     }
   }, [id, recipientId]);
+
+  const usesVSignByDefault = isVSignEnabled() || isPublicSignOnlyApp();
+  const skipSignerAccessGate =
+    import.meta.env.DEV || import.meta.env.VITE_SKIP_SIGNER_ACCESS_OTP === "true";
 
   const [envelope, setEnvelope] = useState<any>(null);
   const [signatureFields, setSignatureFields] = useState<any[]>([]);
@@ -117,7 +139,7 @@ const EnvelopeDetails: React.FC = () => {
   const [allDocuments, setAllDocuments] = useState<any[]>([]);
   const [allRecipients, setAllRecipients] = useState<any[]>([]);
   const [currentRecipient,setCurrentRecipient] = useState<any>([]);
-  const [loading, setLoading] = useState(isPreviewMode);
+  const [loading, setLoading] = useState(isPreviewMode || skipSignerAccessGate);
   const [_showDownloadModal, setShowDownloadModal] = useState(false);
 
   /* ---------- TERMS & CONDITIONS GATE ---------- */
@@ -148,8 +170,12 @@ const EnvelopeDetails: React.FC = () => {
   const [showSigningDoneModal, setShowSigningDoneModal] = useState(false);
   const initialCompletionRedirectRef = useRef(true);
   const [sessionIp, setSessionIp] = useState<string>(""); // best-effort
-  const [signatureProvider, setSignatureProvider] = useState<string>("draftAndSign");
-  const [signatureMethod, setSignatureMethod] = useState<string>("Digital_Signature");
+  const [signatureProvider, setSignatureProvider] = useState<string>(
+    usesVSignByDefault ? "vSign" : "draftAndSign",
+  );
+  const [signatureMethod, setSignatureMethod] = useState<string>(
+    usesVSignByDefault ? "aadhaarSignature" : "Digital_Signature",
+  );
 
   useEffect(() => {
     // Close the dropdown when clicking outside it
@@ -206,7 +232,7 @@ const EnvelopeDetails: React.FC = () => {
   const [biometricError, setBiometricError] = useState<string>('');
   const [verificationUrl, setVerificationUrl] = useState<string>(''); // For redirects to external identity verification
   const [signerAccessToken, setSignerAccessToken] = useState<string | null>(null);
-  const [accessVerified, setAccessVerified] = useState(false);
+  const [accessVerified, setAccessVerified] = useState(skipSignerAccessGate);
   const [showCookieCenter, setShowCookieCenter] = useState(false);
   const [showCommentsPanel, setShowCommentsPanel] = useState(false);
 
@@ -241,8 +267,12 @@ const EnvelopeDetails: React.FC = () => {
         setEnvelope(response.data.data);
         const docs = response.data.data.documents || [];
         setAllDocuments(docs);
-        setSignatureProvider("draftAndSign");
-        setSignatureMethod("Digital_Signature");
+        const method = resolvePublicSignatureMethod(
+          response.data.data?.signatureType,
+          response.data.data?.envelopetype,
+        );
+        setSignatureMethod(method);
+        setSignatureProvider(method === 'aadhaarSignature' ? 'vSign' : 'draftAndSign');
         const recipients = response.data.data.recipients || [];
         setAllRecipients(recipients);
         if(!cycleId){
@@ -291,6 +321,17 @@ const EnvelopeDetails: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isPreviewMode || !accessVerified || !id || !recipientId) return;
+    setLoading(true);
+    const token =
+      initialAccessToken ||
+      readSignerAccessToken(String(id), String(recipientId)) ||
+      undefined;
+    fetchEnvelopeDetails(token);
+  }, [isPreviewMode, accessVerified, id, recipientId, initialAccessToken]);
+
   const fetchCurrentRecipient = async(recipientId:any) =>{
     const response = await eSignApi.post('api/e-sign/public/fetch/current-recipient',{
       cycleId:cycleId,

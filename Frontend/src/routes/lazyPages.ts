@@ -85,6 +85,8 @@ export const EsignAnalytics = lazyPage(() => import('../pages/eSign/Analytics'))
 export const EsignSettings = lazyPage(() => import('../pages/eSign/Settings'));
 export const EsignEnterpriseSettings = lazyPage(() => import('../pages/eSign/EnterpriseSettings'));
 export const EsignESignatureAdmin = lazyPage(() => import('../pages/eSign/ESignatureAdmin'));
+export const VSignAdminSettings = lazyPage(() => import('../pages/eSign/VSignAdminSettings'));
+export const AdminLocalLogin = lazyPage(() => import('../pages/eSign/AdminLocalLogin'));
 export const AITemplateGenerator = lazyPage(() => import('../pages/Template/AITemplateGenerator'));
 export const UserProfile = lazyPage(() => import('../pages/Account/UserProfile'));
 export const RewardsPage = lazyPage(() => import('../pages/Account/RewardsPage'));

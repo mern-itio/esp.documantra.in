@@ -1,0 +1,30 @@
+# VSign LIVE — only ITIO key files (no extra credentials from VSign until ASP ID is issued).
+# Copy to Backend/services/e-sign-service/.env — never commit real passwords.
+
+# Live signing cert (dmsignaturekey.pfx → uploads/vSign/signCertificate.pfx)
+VSIGN_CERT_MODE=live
+PFX_PATH=uploads/vSign/signCertificate.pfx
+PFX_PASSWORD=
+PFX_ALIAS=
+
+# VSign assigns production ASP ID after you email ITIO_PUBLIC KEY.cer — until then UAT ID for local tests
+ASP_ID=IIPLUAT001
+
+# Flip to production after VSign confirms ASP ID:
+# VSIGN_ENV=production
+# ASP_ID=<production-id-from-vsign>
+# VSIGN_AUTHPAGE=https://esign.vsign.in/esp
+# VSIGN_CALLBACK_URL=https://esp.documantra.in/esign/api/e-sign/public/v-sign/response
+
+VSIGN_ENV=uat
+VSIGN_AUTHPAGE=https://esignuat.vsign.in/esp
+VSIGN_ESP_RESPONSE_URL=https://esignuat.vsign.in/esp/2.1.1/aspesignresponse
+VSIGN_CALLBACK_URL=https://esp.documantra.in/esign/api/e-sign/public/v-sign/response
+
+UTILITY_URL=http://127.0.0.1:7077
+VSIGN_USE_JAR=1
+VSIGN_APPEARANCE_MODE=custom-tick
+
+# Stored alongside signing cert — not passed to VSign gettxnref/signpdf
+DM_ENCRYPTION_KEY_PATH=uploads/vSign/dm_encryption_key.pfx
+ITIO_PUBLIC_CERT_PATH=uploads/vSign/ITIO_PUBLIC_KEY.cer

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { join } from 'path'
-import { existsSync } from 'fs'
+import { copyFileSync, existsSync } from 'fs'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,24 +10,23 @@ export default defineConfig({
     // Plugin to ensure the correct PDF.js worker file exists in public folder
     // The worker file (version 5.3.93) should be in public folder to match react-pdf for production
     {
-      name: 'verify-pdf-worker',
+      name: 'copy-pdf-worker',
       buildStart() {
         try {
+          const workerSrc = join(process.cwd(), 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.min.mjs')
           const workerDest = join(process.cwd(), 'public', 'pdf.worker.min.mjs')
-          
-          // Verify the worker file exists (should be version 5.3.93 for react-pdf compatibility)
-          if (existsSync(workerDest)) {
-            console.log('✓ PDF.js worker file verified in public folder (version 5.3.93 for react-pdf)')
+
+          if (existsSync(workerSrc)) {
+            copyFileSync(workerSrc, workerDest)
+            console.log('✓ PDF.js worker copied to public/pdf.worker.min.mjs')
           } else {
-            console.warn('⚠ PDF.js worker file not found in public folder')
-            console.warn('  Downloading version 5.3.93 to match react-pdf...')
-            // Could download here if needed, but file should already exist
+            console.warn('⚠ pdfjs-dist worker not found at', workerSrc)
           }
         } catch (error) {
-          console.warn('Failed to verify PDF.js worker file:', error)
+          console.warn('Failed to copy PDF.js worker file:', error)
         }
-      }
-    }
+      },
+    },
   ],
   build: {
     rollupOptions: {
@@ -46,16 +45,60 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api/pdf-service': {
-        target: 'http://localhost:2104',
+      '/auth': {
+        target: 'http://127.0.0.1:2101',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/pdf-service/, '')
+        rewrite: (path) => path.replace(/^\/auth/, ''),
+      },
+      '/document': {
+        target: 'http://127.0.0.1:2102',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/document/, ''),
       },
       '/esign': {
-        target: 'http://localhost:2103',
+        target: 'http://127.0.0.1:2103',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/esign/, '')
-      }
-    }
-  }
+        rewrite: (path) => path.replace(/^\/esign/, ''),
+      },
+      '/api/e-sign': {
+        target: 'http://127.0.0.1:2103',
+        changeOrigin: true,
+      },
+      '/pdf': {
+        target: 'http://127.0.0.1:2104',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/pdf/, ''),
+      },
+      '/subscription': {
+        target: 'http://127.0.0.1:2110',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/subscription/, ''),
+      },
+      '/organization': {
+        target: 'http://127.0.0.1:2111',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/organization/, ''),
+      },
+      '/api/pdf-service': {
+        target: 'http://127.0.0.1:2104',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/pdf-service/, ''),
+      },
+      '/admin': {
+        target: 'http://127.0.0.1:3100',
+        changeOrigin: true,
+        bypass(req) {
+          // SPA route — do not proxy to admin-service (would return 401 JSON)
+          const path = req.url?.split('?')[0] || '';
+          if (path === '/admin/login' || path.startsWith('/admin/login/')) {
+            return '/index.html';
+          }
+        },
+      },
+      '/api/api-service': {
+        target: 'http://127.0.0.1:2105',
+        changeOrigin: true,
+      },
+    },
+  },
 })

@@ -3,130 +3,277 @@ const path = require('path');
 const axios = require('axios');
 const Document = require('../../models/Document');
 const signatureTransactions = require('../../models/signatureTransactions');
-const VUTILITY = process.env.UTILITY_URL || 'http://localhost:7077';
-const VSIGN_AUTHPAGE = process.env.VSIGN_AUTHPAGE || "https://esignuat.vsign.in/esp";
-const ASP_ID = process.env.ASP_ID || "IIPLUAT001";
-const signatureOperationServices = require("../signatureOperationServices");
-const { fetchRecipientById } = require("../recipientService")
+/** Second-image layout: 250x60, official tick, no aspLogo/green caption. */
+const VSIGN_SERVICE_BUILD = '2026-08-14-live-v15';
+const {
+  isVSignEnabledAndReady,
+  getVSignReadinessIssues,
+} = require('../../utils/vsignConfigPolicy');
+const { fetchRecipientById } = require('../recipientService');
+const {
+  resolveVSignCallbackUrl,
+  resolveVSignEnv,
+  resolveVSignCertMode,
+  resolveVSignUsesLiveCert,
+  resolveVSignPfxPath,
+  resolveVSignAspId,
+  resolveVSignPfxCredentials,
+  resolveVSignAuthPage,
+  resolveVSignUtilityUrl,
+  normalizeVSignPath,
+  buildVSignSignatureDetailsString,
+  buildVSignAppearanceExtras,
+  stageVSignAppearanceAssets,
+  VSIGN_REFERENCE_APPEARANCE,
+} = require('../../utils/vsignAssets');
+const serviceRoot = path.join(__dirname, '../..');
+const VSIGN_ENV = resolveVSignEnv(serviceRoot);
+const VSIGN_CERT_MODE = resolveVSignCertMode(serviceRoot);
+const VSIGN_AUTHPAGE = resolveVSignAuthPage(serviceRoot);
+const ASP_ID = resolveVSignAspId(serviceRoot);
+
+console.log('[VSign] aadhar.vsign.service BUILD:', VSIGN_SERVICE_BUILD);
+console.log('[VSign] cert:', VSIGN_CERT_MODE, 'esp:', VSIGN_ENV, 'aspId:', ASP_ID);
+
+function stageAppearance(serviceRoot, tempInfoPath) {
+  return stageVSignAppearanceAssets(
+    serviceRoot,
+    tempInfoPath,
+    buildVSignAppearanceExtras(serviceRoot),
+  );
+}
+
+function withAppearancePayload(base, appearance = {}) {
+  const payload = { ...base };
+  if (appearance.tickImgPath) payload.tickImgPath = appearance.tickImgPath;
+  if (appearance.aspLogo) payload.aspLogo = appearance.aspLogo;
+  return payload;
+}
+
 module.exports = {
   aadhaarSignature: async (data) => {
-    const { documentId, recipientId, fieldId, signatureImageBase64,envelopeId } = data;
-    const time = Date.now();// Use timestamp to generate unique file names and transaction IDs
-    // GET DOCUMENT
-    const recipient = await fetchRecipientById(recipientId);
-    const docRecord = await Document.findById(documentId);// Fetch document record to get file path for signing
-    if (!docRecord) return res.status(404).json({ message: "Document not found" });
-    // GET ALL FIELDS
-    const allFields  = await signatureOperationServices.fetchRecipientAllFields(envelopeId, recipientId,documentId);// Fetch all fields of recipient to get co-ordinates for placing signature in case of multiple signature fields for same recipient. Also required for generating signaturedetailsString for V-Sign in case of multiple fields.
-    const signaturedetailsString = allFields.filter(f => f.type === 'signature').map(s => `${s.page}-${s.x},${s.y},250,60`).join(";");// Generate signaturedetailsString in format "page-x,y,width,height;page-x,y,width,height"
-    const baseDir = path.join(__dirname, '../..', 'uploads');// Base directory for all file operations, adjust as needed
-    const imgPath = path.join(baseDir, 'signImages', `sign_${recipientId}.png`);    // Save Signature Image
-    const cleanBase64 = signatureImageBase64.replace(/^data:image\/\w+;base64,/, '');
-
-    fs.writeFileSync(
-      imgPath,
-      Buffer.from(cleanBase64, 'base64')
-    );
-    const pdfPath = docRecord?.preparedDoc;// Fetch PDF file path from document record
-    const signedPdfPath = path.join(baseDir, 'signed',envelopeId.toString());// Base directory for storing signed PDFs
-    const tempInfoPath = path.join(baseDir, 'vSignTemp');// Base directory for temporary V-Sign information
-    const SignedfileName = `${time}-signed-${documentId}.pdf`;// Unique name for the signed PDF
-    const pdfDestinationPath = path.join(baseDir, 'signed',envelopeId, SignedfileName);// Final destination path for the signed PDF
-    const responseUrl = process.env.VSIGN_CALLBACK_URL || "http://localhost:2103/api/e-sign/public/v-sign/response";
-    const txn = `${Date.now()}`; // TRANSACTION ID
-    const pfxPath = path.join(baseDir, 'vSign', 'signCertificate.pfx');
-    const pfxPassword = process.env.PFX_PASSWORD || "abc1234";
-    const pfxAlias = process.env.PFX_ALIAS || "{05AE2E10-4F6D-41A6-9F83-4D0025CA28A0}";
-    const signingAlgorithm = "RSA";
-    const maxWaitPeriod = "1440";
-    const ver = "21";
-    const AuthMode = "1";
-    const fileType = "path";
-    const isresponseXML = "0";
-    const isrequestXML = "0";
-    const pdfdetails = [
-      {
-        pdfbase64val:pdfPath,
-        docInfo:SignedfileName,
-        docUrl:"",
-        reason:`Signature for ${recipient?.name}`,
-        signaturedetails:"",
-        signaturedetailsType:"signaturedetailsString",
-        signaturedetailsString:signaturedetailsString
-      }
-    ];
-    const payload = {
-      signedPdfPath:signedPdfPath,
-      tempInfoPath:tempInfoPath,
-      pdfDestinationPath:pdfDestinationPath,
-      responseUrl:responseUrl,
-      txn:txn,
-      aspId:ASP_ID,
-      pfxPath:pfxPath,
-      pfxPassword:pfxPassword,
-      pfxAlias:pfxAlias,
-      signingAlgorithm:signingAlgorithm,
-      maxWaitPeriod:maxWaitPeriod,
-      ver:ver,
-      AuthMode:AuthMode,
-      fileType:fileType,
-      isresponseXML:isresponseXML,
-      isrequestXML:isrequestXML,
-      pdfdetails:pdfdetails
-    };
-    const response =  await axios.post(`${VUTILITY}/gettxnrefv4_1`, payload);
-    const resData = response?.data;
-    if(resData?.status == "1"){
-        // Create Transaction Record with txnRef with other details like documentId, recipientId, fieldId, envelopeId,signedFilePath etc for future reference.
-        const signatureTransaction = new signatureTransactions({
-            txn: txn,
-            txnRef: resData.txnref,
-            documentId: documentId,
-            recipientId: recipientId,
-            fieldId: fieldId,
-            envelopeId: envelopeId,
-            signedFilePath: pdfDestinationPath,
-            signatureImage: imgPath,
-            signBase64: signatureImageBase64
-        });
-        await signatureTransaction.save();
-        const aadhaarNumber = recipient?.aadhaarNumber; // REPLACE WITH ACTUAL AADHAAR NUMBER
-        const txnRef = resData.txnref;
-        const rowAuthParams = `-|-|${aadhaarNumber}`;
-        const base64AuthParams = Buffer.from(rowAuthParams).toString('base64');
-        const authUrl = `${VSIGN_AUTHPAGE}/${base64AuthParams}/authpagev4`;
-        return {
-        status:200,
-        response:
-            {
-                success:true,
-                signMethod:"V_Sign",
-                message: "V-Sign process initiated",
-                authUrl: authUrl,
-                txnRef:txnRef
-            }
-        };
-   }
-  },
-  appendSignature: async (data) => {
-    const {tempInfoPath, signedFileParentPath, responseXML, pdfDestinationPath, signatureImagePath, aspLogo, signatureFontSize} = data;
-    const base64XML = Buffer.from(responseXML).toString('base64');
-    const payload = {
-      tempInfoPath: tempInfoPath,
-      signedFileParentPath: signedFileParentPath,
-      responseXML: base64XML,
-      pdfDestinationPath: pdfDestinationPath,
-      tickImgPath: signatureImagePath,
-      aspLogo: aspLogo,
-      signatureFontSize: signatureFontSize
-    };
-    try{
-      const response = await axios.post(`${VUTILITY}/signpdfv4_1`, payload);
-      console.log("Append Signature Response:", response.data);
-      return response.data;
-    }catch (err){
-        console.error("Error in appendSignature:", err);
+    if (!isVSignEnabledAndReady()) {
+      const issues = getVSignReadinessIssues();
+      return {
+        status: 503,
+        response: {
+          success: false,
+          message: issues[0] || 'VSign is not enabled or not fully configured in admin settings',
+          readinessIssues: issues,
+        },
+      };
     }
-  }
 
+    const { documentId, recipientId, fieldId, envelopeId } = data;
+    const time = Date.now();
+    const recipient = await fetchRecipientById(recipientId);
+    const docRecord = await Document.findById(documentId);
+    if (!docRecord) {
+      return { status: 404, response: { success: false, message: 'Document not found' } };
+    }
+
+    const allFields = await signatureOperationServices.fetchRecipientAllFields(
+      envelopeId,
+      recipientId,
+      documentId,
+    );
+    const baseDir = path.join(__dirname, '../..', 'uploads');
+    fs.mkdirSync(path.join(baseDir, 'signed', envelopeId.toString()), { recursive: true });
+    fs.mkdirSync(path.join(baseDir, 'vSignTemp'), { recursive: true });
+    const pdfPath = docRecord?.preparedDoc;
+
+    const {
+      signaturedetailsString,
+      signatureFontSize,
+      appearanceWidth,
+      appearanceHeight,
+    } = await buildVSignSignatureDetailsString(pdfPath, allFields, {
+      referenceAppearance: true,
+      serviceRoot,
+    });
+
+    const tempInfoPath = path.join(baseDir, 'vSignTemp');
+    const appearance = stageAppearance(serviceRoot, tempInfoPath);
+
+    const signedPdfPath = path.join(baseDir, 'signed', envelopeId.toString());
+    const signedFileName = `${time}-signed-${documentId}.pdf`;
+    const pdfDestinationPath = path.join(baseDir, 'signed', envelopeId, signedFileName);
+    const aspCallbackUrl = resolveVSignCallbackUrl(serviceRoot);
+
+    console.log('[VSign] mode: restore-previous-v14 (250x60, light-green tick, no aspLogo)');
+    console.log('[VSign] box:', `${appearanceWidth}x${appearanceHeight}`, 'font=', signatureFontSize);
+    console.log('[VSign] tickImgPath:', appearance.tickImgPath);
+    console.log('[VSign] signaturedetailsString:', signaturedetailsString);
+
+    if (!ASP_ID) {
+      return {
+        status: 500,
+        response: {
+          success: false,
+          message: 'ASP_ID is required for VSign',
+        },
+      };
+    }
+
+    const { password: pfxPassword, alias: pfxAlias, usesLiveCert } = resolveVSignPfxCredentials(serviceRoot);
+    if (usesLiveCert && (!pfxPassword || !pfxAlias)) {
+      return {
+        status: 500,
+        response: {
+          success: false,
+          message:
+            'Live PFX (dmsignaturekey.pfx) needs PFX_PASSWORD and PFX_ALIAS from certificate generation — UAT defaults do not apply',
+        },
+      };
+    }
+
+    if (VSIGN_ENV === 'production' && ASP_ID === 'IIPLUAT001') {
+      console.warn(
+        '[VSign] production ESP with UAT ASP ID — VSign will assign production ASP ID after ITIO_PUBLIC KEY.cer registration',
+      );
+    }
+
+    const txn = `${Date.now()}`;
+    const pfxPath = resolveVSignPfxPath(serviceRoot);
+    if (!fs.existsSync(pfxPath.replace(/\//g, path.sep))) {
+      return {
+        status: 500,
+        response: {
+          success: false,
+          message: `Signing PFX not found: ${pfxPath}`,
+        },
+      };
+    }
+
+    const payload = withAppearancePayload({
+      signedPdfPath: normalizeVSignPath(signedPdfPath),
+      tempInfoPath: normalizeVSignPath(tempInfoPath),
+      pdfDestinationPath: normalizeVSignPath(pdfDestinationPath),
+      responseUrl: aspCallbackUrl,
+      txn,
+      aspId: ASP_ID,
+      pfxPath,
+      pfxPassword,
+      pfxAlias,
+      signingAlgorithm: 'RSA',
+      maxWaitPeriod: '1440',
+      ver: '21',
+      AuthMode: '1',
+      fileType: 'path',
+      isresponseXML: '1',
+      isrequestXML: '1',
+      signatureFontSize,
+      pdfdetails: [
+        {
+          pdfbase64val: normalizeVSignPath(pdfPath),
+          docInfo: signedFileName,
+          docUrl: '',
+          reason: '',
+          signaturedetailsType: 'signaturedetailsString',
+          signaturedetailsString,
+        },
+      ],
+    }, appearance);
+
+    const response = await axios.post(`${resolveVSignUtilityUrl()}/gettxnrefv4_1`, payload);
+    const resData = response?.data;
+
+    if (resData?.status == '1') {
+      await new signatureTransactions({
+        txn,
+        txnRef: resData.txnref,
+        documentId,
+        recipientId,
+        fieldId,
+        envelopeId,
+        signedFilePath: pdfDestinationPath,
+        appearanceWidth,
+        appearanceHeight,
+        signatureFontSize,
+        tickImgPath: appearance.tickImgPath,
+        aspLogo: appearance.aspLogo || '',
+      }).save();
+
+      const aadhaarNumber = recipient?.aadhaarNumber;
+      if (!aadhaarNumber) {
+        return {
+          status: 400,
+          response: {
+            success: false,
+            message: 'Recipient Aadhaar number is required before VSign signing',
+          },
+        };
+      }
+
+      return {
+        status: 200,
+        response: {
+          success: true,
+          signMethod: 'V_Sign',
+          message: 'V-Sign process initiated',
+          authUrl: `${VSIGN_AUTHPAGE}/${Buffer.from(`-|-|${aadhaarNumber}`).toString('base64')}/authpagev4`,
+          txnRef: resData.txnref,
+        },
+      };
+    }
+
+    return {
+      status: 502,
+      response: {
+        success: false,
+        message: 'VSign utility failed to create transaction',
+        detail: resData || null,
+      },
+    };
+  },
+
+  appendSignature: async (data) => {
+    const {
+      tempInfoPath,
+      signedFileParentPath,
+      responseXML,
+      pdfDestinationPath,
+      signatureFontSize,
+      tickImgPath,
+      aspLogo,
+      txn,
+      txnRef,
+    } = data;
+    const baseTemp = tempInfoPath || path.join(serviceRoot, 'uploads', 'vSignTemp');
+    const payload = withAppearancePayload({
+      tempInfoPath: normalizeVSignPath(baseTemp),
+      signedFileParentPath: normalizeVSignPath(signedFileParentPath),
+      responseXML: Buffer.from(responseXML || '').toString('base64'),
+      pdfDestinationPath: normalizeVSignPath(pdfDestinationPath),
+      signatureFontSize: signatureFontSize || VSIGN_REFERENCE_APPEARANCE.fontSize,
+    }, {
+      tickImgPath: tickImgPath || buildVSignAppearanceExtras(serviceRoot).tickImgPath,
+      aspLogo: aspLogo || null,
+    });
+    if (txn) payload.txn = String(txn);
+    if (txnRef) payload.txnRef = String(txnRef);
+
+    console.log('[VSign] signpdf tickImgPath:', payload.tickImgPath || '(utility built-in)');
+    if (payload.aspLogo) console.log('[VSign] signpdf aspLogo:', payload.aspLogo);
+
+    try {
+      const response = await axios.post(`${resolveVSignUtilityUrl()}/signpdfv4_1`, payload, { timeout: 120000 });
+      const result = response.data;
+      console.log('Append Signature Response:', result);
+      if (result === '' || result == null) {
+        return { status: '0', error: 'VSign utility returned empty signpdf response.' };
+      }
+      if (typeof result === 'string') {
+        try {
+          return JSON.parse(result);
+        } catch (_) {
+          return { status: '0', error: result };
+        }
+      }
+      return result;
+    } catch (err) {
+      console.error('Error in appendSignature:', err.response?.data || err.message);
+      return { status: '0', error: err.response?.data || err.message };
+    }
+  },
 };

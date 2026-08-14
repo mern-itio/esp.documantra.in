@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
+import { getAdminAccessToken } from '../utils/adminSession';
 import { SubscriptionStorage } from './subscriptionService';
 import { resolveServiceUrl } from '../utils/secureApiUrl';
 import { isPublicSignOnlyApp, isPublicSignRoute } from '../config/appMode';
@@ -283,17 +284,34 @@ export const templateServiceApi = createApiInstance(
 );
 
 export const adminServiceApi = createApiInstance(
-  import.meta.env.VITE_ADMIN_SERVICE_URL || 'http://localhost:3100',
+  import.meta.env.VITE_ADMIN_SERVICE_URL || (import.meta.env.DEV ? '/admin' : 'http://localhost:3100'),
   'Admin-Service'
 );
+
+adminServiceApi.interceptors.request.use((config) => {
+  const token = getAdminAccessToken();
+  if (token && config.headers) {
+    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export const adminApi = createApiInstance(
+  import.meta.env.VITE_ADMIN_SERVICE_URL || (import.meta.env.DEV ? '/admin' : 'http://localhost:3100'),
+  'Admin-Service'
+);
+
+adminApi.interceptors.request.use((config) => {
+  const token = getAdminAccessToken();
+  if (token && config.headers) {
+    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export const subscriptionApi = createApiInstance(
   import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL || 'http://localhost:2110',
   'Subscription-Service'
-);
-export const adminApi = createApiInstance(
-  import.meta.env.VITE_ADMIN_SERVICE_URL || 'http://localhost:3100',
-  'Admin-Service'
 );
 
 export const organizationApi = createApiInstance(

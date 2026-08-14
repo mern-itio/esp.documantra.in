@@ -33,6 +33,11 @@ const {
   testPlatformEmail,
 } = require('../controllers/platformEmailController');
 const {
+  getVSignConfig,
+  updateVSignConfig,
+  testVSignConfig,
+} = require('../controllers/vsignConfigController');
+const {
   listTemplates,
   updateTemplate,
   deleteTemplate,
@@ -127,6 +132,11 @@ router.delete('/email-templates/:id',deleteEmailTemplate);
 router.get('/platform-email', getPlatformEmailConfig);
 router.put('/platform-email', updatePlatformEmailConfig);
 router.post('/platform-email/test', testPlatformEmail);
+
+// VSign / Aadhaar eSign settings
+router.get('/vsign-config', getVSignConfig);
+router.put('/vsign-config', updateVSignConfig);
+router.post('/vsign-config/test', testVSignConfig);
 
 // Organization routes
 router.get('/organization-request-list', listOrganizations);

@@ -300,15 +300,9 @@ const DocumentViewerContent: React.FC<Props> = ({
     }
     const env = String(envelopeID ?? "");
     const rid = String(currentUserId ?? "");
-    const drawnSignature = signatureFields.find(
-      (f: any) =>
-        String(f.recipientId) === rid &&
-        f.type === "signature" &&
-        f.signature,
-    )?.signature;
     const signingContext = await collectSigningContext(env, rid, {
-      dualSignature: signatureMethod === "aadhaarSignature" && Boolean(drawnSignature),
-      handwrittenSignature: drawnSignature || undefined,
+      dualSignature: false,
+      handwrittenSignature: undefined,
     });
     const response = await eSignApi.post('/api/e-sign/public/signature-complete',{
       envelopeId:envelopeID,
@@ -1510,7 +1504,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
       const payload = {
         fieldId: fieldKey,
-        signatureImageBase64: options?.signatureOverride ?? recipientSignature,
+        ...(signatureMethod !== 'aadhaarSignature' &&
+        (options?.signatureOverride ?? recipientSignature)
+          ? { signatureImageBase64: options?.signatureOverride ?? recipientSignature }
+          : {}),
         envelopeId: envelopeID || '',
         documentId: field?.documentId,
         recipientId: currentUserId,
@@ -1530,7 +1527,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       });
       if (response?.status === 200) {
         if (response?.data?.signMethod == 'V_Sign') {
+          if (!response?.data?.authUrl || !response?.data?.txnRef) {
+            alert('VSign could not start. Check ESP utility on port 7077 and try again.');
+            return;
+          }
+          window.clearInterval(statusTicker);
+          clearSigningState();
           await postRedirect(response?.data?.authUrl, response?.data?.txnRef);
+          return;
         } else {
           await handleSuccess(response, fieldKey, {
             suppressNavigation: options?.suppressNavigation,
@@ -1547,6 +1551,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     } catch (err: any) {
       const errStatus = err?.response?.status;
       const errCode = err?.response?.data?.code;
+      const errMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'An error occurred while submitting the signature.';
       if (
         errStatus === 403 &&
         (errCode === 'ALREADY_COMPLETED' || isSignatureFieldCompleted(field))
@@ -1563,10 +1572,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         return;
       }
       console.error('submit error:', err);
-      const completed = await waitForCompletion(60000);
-      if (!completed && isMountedRef.current) {
-        alert('An error occurred while submitting the signature.');
+      if (isMountedRef.current) {
+        alert(errMessage);
       }
+      return;
     } finally {
       window.clearInterval(statusTicker);
       if (isMountedRef.current && !options?.batchLabel) {
@@ -1584,7 +1593,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     if (isSignatureFieldCompleted(field)) return;
 
     const signatureToUse = options?.signatureOverride ?? recipientSignature;
-    if (!signatureToUse) {
+    if (!signatureToUse && signatureMethod !== 'aadhaarSignature') {
       alert('Please save a signature before submitting!');
       return;
     }
@@ -2356,7 +2365,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 }}
                                 className={`flex items-center justify-center gap-1 cursor-pointer font-semibold rounded ${
                                   isSigned
-                                    ? "border-2 border-rose-300 bg-white"
+                                    ? signatureMethod === 'aadhaarSignature'
+                                      ? "border-0 bg-transparent text-transparent"
+                                      : "border-2 border-rose-300 bg-white"
                                     : isViewOnly && isCurrentUser
                                       ? "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-80 cursor-pointer"
                                       : isCurrentUser
@@ -2394,6 +2405,11 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     <span>{signingStatusText || "Finalizing document..."}</span>
                                   </div>
                                 ) : isSigned ? (
+                                  signatureMethod === 'aadhaarSignature' ? (
+                                    <span className="text-[10px] leading-tight text-emerald-700 font-semibold text-center px-1">
+                                      Digitally Signed
+                                    </span>
+                                  ) : signedImage ? (
                                   <div className="relative w-full h-full">
                                     <img
                                       src={signedImage as string}
@@ -2415,8 +2431,14 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                       </button>
                                     )}
                                   </div>
+                                  ) : null
                                 ) : !allFilled ? (
                                   "Fill all other fields first"
+                                ) : isCurrentUser && signatureMethod === 'aadhaarSignature' ? (
+                                  <span className="inline-flex items-center gap-1">
+                                    <PenLine className="h-3.5 w-3.5" />
+                                    {recipientSignature ? 'Sign with Aadhaar' : 'Draw signature'}
+                                  </span>
                                 ) : isCurrentUser && recipientSignature ? (
                                   <span className="inline-flex items-center gap-1">
                                     <PenLine className="h-3.5 w-3.5" />

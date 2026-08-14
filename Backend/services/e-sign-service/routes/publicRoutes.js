@@ -163,6 +163,12 @@ router.post('/signer-access/verify-code', verifySignerAccessCode);
 //V Sign
 // router.post('/start-esign', vSignController.startEsign);
 router.post('/v-sign/response', vSignController.esignResponse);
+router.get('/v-sign/response', vSignController.esignResponse);
+
+router.get('/vsign-status', (_req, res) => {
+  const { getPublicVSignStatus } = require('../utils/vsignConfigPolicy');
+  return res.json(getPublicVSignStatus());
+});
 
 // Prevent unmatched /api/e-sign/public/* requests from falling through to JWT-protected routes.
 router.use((req, res) => {

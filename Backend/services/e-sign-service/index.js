@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const verifyJWT  = require('@draftnsign/auth-lib');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -16,20 +17,96 @@ const verificationRoutes = require('./routes/verificationRoutes');
 const anchorRoutes = require('./routes/anchorRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const envelopeTypeRoutes = require('./routes/envelopeTypeRoutes');
+const {
+  vsignCallbackBodyMiddleware,
+  VSIGN_CALLBACK_PATH,
+} = require('./middleware/vsignCallbackBody');
 
-dotenv.config();
+function isVSignCallback(req) {
+  const original = req.originalUrl || req.url || '';
+  return req.path === VSIGN_CALLBACK_PATH || original.startsWith('/api/e-sign/public/v-sign/response');
+}
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+if (process.env.VSIGN_CALLBACK_URL) {
+  console.log('[VSign] VSIGN_CALLBACK_URL loaded:', process.env.VSIGN_CALLBACK_URL);
+}
+const {
+  resolveVSignEnv,
+  resolveVSignCertMode,
+  resolveVSignAspId,
+  resolveVSignAuthPage,
+  resolveVSignCallbackUrl,
+  resolveVSignPfxPath,
+  resolveVSignUsesLiveCert,
+} = require('./utils/vsignAssets');
+const {
+  refreshVSignConfigCache,
+  isVSignEnabledAndReady,
+  getVSignReadinessIssues,
+} = require('./utils/vsignConfigPolicy');
+const serviceRoot = __dirname;
+const vsignEnv = resolveVSignEnv(serviceRoot);
+const vsignCertMode = resolveVSignCertMode(serviceRoot);
+console.log('[VSign] BUILD 2026-08-14 live-v15-admin');
+console.log('[VSign] cert:', vsignCertMode, 'esp:', vsignEnv, 'auth:', resolveVSignAuthPage(serviceRoot));
+console.log('[VSign] callback:', resolveVSignCallbackUrl(serviceRoot));
 const app = express(); 
 applySecurityHeaders(app);
-app.use(cors(getCorsOptions()));
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+// VSign POST/redirect callback must accept esignuat.vsign.in (and server posts with no Origin).
+const defaultCors = cors(getCorsOptions());
+const vsignCallbackCors = cors({ origin: true, credentials: true });
+app.use((req, res, next) => {
+  if (req.path === '/api/e-sign/public/v-sign/response') {
+    return vsignCallbackCors(req, res, next);
+  }
+  return defaultCors(req, res, next);
+});
+
+// VSign callback: parse raw body before urlencoded (EsignResp XML contains & and breaks msg= parsing).
+app.use(vsignCallbackBodyMiddleware);
+
+app.use((req, res, next) => {
+  if (isVSignCallback(req)) return next();
+  express.json({ limit: '100mb' })(req, res, next);
+});
+app.use((req, res, next) => {
+  if (isVSignCallback(req)) return next();
+  express.urlencoded({ extended: true, limit: '100mb' })(req, res, next);
+});
 app.get('/uploads/:filename', optionalJwt(), serveUploadFile);
 
 // DB Connection
 connectDB();
+refreshVSignConfigCache().then((cfg) => {
+  console.log('[VSign] config cache loaded, enabled:', cfg.enabled, 'source:', cfg.source);
+}).catch((err) => {
+  console.warn('[VSign] initial config cache load failed:', err.message);
+});
+setInterval(() => {
+  refreshVSignConfigCache().catch(() => {});
+}, 60 * 1000);
 // Health check route
 app.get('/health', (req, res) => {
-  res.send(`E-Sign service is running ${req.user?.data?.fullname || ''}`);
+  const aspId = resolveVSignAspId(serviceRoot);
+  const fs = require('fs');
+  const pfxPath = resolveVSignPfxPath(serviceRoot);
+  res.json({
+    ok: true,
+    service: 'e-sign',
+    vsignBuild: '2026-08-14-live-v15-admin',
+    vsignCertMode: resolveVSignCertMode(serviceRoot),
+    vsignEnv,
+    vsignEnabled: isVSignEnabledAndReady(),
+    vsignReadinessIssues: getVSignReadinessIssues(),
+    aspId: aspId || null,
+    aspIdPendingFromVSign: aspId === 'IIPLUAT001' && resolveVSignUsesLiveCert(serviceRoot),
+    vsignAuthPage: resolveVSignAuthPage(serviceRoot),
+    vsignCallbackUrl: resolveVSignCallbackUrl(serviceRoot),
+    pfxConfigured: fs.existsSync(pfxPath.replace(/\//g, require('path').sep)),
+    user: req.user?.data?.fullname || null,
+  });
 });
 // API Routes
 app.use('/api/e-sign/public', publicRoutes);

@@ -764,6 +764,7 @@ const envelopExists = async (envelopeId) => {
   }
 };
 const sendEnvelope = async (req, res) => {
+  // Public + authenticated envelope send (VSign uses vSign provider for aadhaarSignature)
   try {
     const { envelopeId } = req.params;
     const envelope = await Envelope.findById(envelopeId);
@@ -821,7 +822,8 @@ const sendEnvelope = async (req, res) => {
       } else if (result.success) {
         sentRecipients.push({
           recipientId: result.recipientId,
-          permissionId: result.permissionId
+          permissionId: result.permissionId,
+          signLink: result.signLink,
         });
       }
 
@@ -877,6 +879,9 @@ const sendEnvelope = async (req, res) => {
         message: "Envelope sent to recipients",
         recipientsSent: sentRecipients.length,
         recipients: sentRecipients,
+        ...(process.env.SKIP_ENVELOPE_EMAIL === 'true' && sentRecipients[0]?.signLink
+          ? { signLink: sentRecipients[0].signLink }
+          : {}),
         referralMilestone,
       });
     } else {
@@ -1033,6 +1038,14 @@ const buildSigningLinks = async (envelopeId) => {
     }));
 };
 const dispatchEnvelopeEmail = async ({ userId, toEmail, subject, html, attachments }) => {
+  if (
+    String(process.env.SKIP_ENVELOPE_EMAIL || '').toLowerCase() === 'true' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
+    console.log(`[dev] SKIP_ENVELOPE_EMAIL: skipped email to ${toEmail}`);
+    return;
+  }
+
   const emailServiceUrl = process.env.EMAIL_SERVICE_URL;
   if (!emailServiceUrl) {
     throw new Error('EMAIL_SERVICE_URL is not configured');
@@ -1109,9 +1122,14 @@ const sendSignEmailToPermission = async ({
   waitingPermission.status = 'sent';
   await waitingPermission.save();
 
+  if (String(process.env.SKIP_ENVELOPE_EMAIL || '').toLowerCase() === 'true') {
+    console.log(`[dev] Sign link for ${waitingPermission.recipientId.email}: ${signLink}`);
+  }
+
   return {
     recipientId: waitingPermission.recipientId._id,
     permissionId: waitingPermission._id,
+    signLink,
   };
 };
 
@@ -1269,7 +1287,20 @@ const sendToAllRecipients = async (
 const addSignature = async (req, res) => {
   try {
     console.log("Signature Started...");
-    const { fieldId, signatureImageBase64, envelopeId, documentId, recipientId, certificateId, signerName, selfValue, cycleId, initials,signatureMethod,signatureProvider } = req.body;
+    let {
+      fieldId,
+      signatureImageBase64,
+      envelopeId,
+      documentId,
+      recipientId,
+      certificateId,
+      signerName,
+      selfValue,
+      cycleId,
+      initials,
+      signatureMethod,
+      signatureProvider,
+    } = req.body;
 
     let mode= "";
     if(selfValue === "1" || selfValue === 1){
@@ -1278,9 +1309,33 @@ const addSignature = async (req, res) => {
       mode = "Recipient";
     }
     // Validation...
-    if (!fieldId || !signatureImageBase64 || !envelopeId || !documentId || !recipientId) {
+    if (!fieldId || !envelopeId || !documentId || !recipientId) {
       return res.status(400).json({ message: 'All required parameters are missing' });
     }
+
+    const isPublicSign = String(req.originalUrl || req.baseUrl || '').includes('/api/e-sign/public/');
+    if (isPublicSign && mode === 'Recipient') {
+      const { isVSignEnabledAndReady } = require('../utils/vsignConfigPolicy');
+      const envelopeMeta = await Envelope.findById(envelopeId)
+        .select('signatureType envelopetype')
+        .lean();
+      const qualifiesForVSign =
+        isVSignEnabledAndReady() && (
+          envelopeMeta?.signatureType === 'qualified'
+          || String(envelopeMeta?.envelopetype || '').toLowerCase() === 'qualified'
+        );
+      if (qualifiesForVSign) {
+        signatureMethod = 'aadhaarSignature';
+        signatureProvider = 'vSign';
+      }
+    }
+
+    const requiresDrawnSignature =
+      signatureMethod !== 'aadhaarSignature' && signatureMethod !== 'aadharSignature';
+    if (!signatureImageBase64 && requiresDrawnSignature) {
+      return res.status(400).json({ message: 'Signature image is required' });
+    }
+
     if (mode === 'Recipient') {
       const turnCheck = await signatureOperationServices.assertSignerTurn(envelopeId, recipientId);
       if (!turnCheck.ok) {
@@ -1295,7 +1350,7 @@ const addSignature = async (req, res) => {
     if (!document) {
       return res.status(404).json({ message: 'Document not found' });
     }
-    if(signatureMethod == "aadharSignature"){
+    if (signatureMethod === 'aadhaarSignature' || signatureMethod === 'aadharSignature') {
     // Fetch Signature Field to get coordinates and page number
     const AllFields = await signatureOperationServices.fetchAllFieldsOfDocument(envelopeId, documentId);
     const withSignatureFlag = false;
@@ -1352,6 +1407,21 @@ const addSignature = async (req, res) => {
       if (!updateDocWithPreparedFile) {
         return res.status(500).json({ message: 'Failed to update document with prepared PDF' });
       }
+    if (signatureImageBase64 && fieldId && signatureMethod !== 'aadhaarSignature' && signatureMethod !== 'aadharSignature') {
+      await SignatureFields.findByIdAndUpdate(fieldId, {
+        $set: { signature: signatureImageBase64 },
+      }).catch(() => {});
+      const permission = await RecipientPermission.findOne({ envelopeId, recipientId });
+      if (permission) {
+        const { mergeSigningEvidence, sanitizeSigningEvidence } = require('../utils/signingEvidenceHelper');
+        permission.signingEvidence = sanitizeSigningEvidence(
+          mergeSigningEvidence(permission.signingEvidence || {}, {
+            handwrittenSignature: signatureImageBase64,
+          }),
+        );
+        await permission.save();
+      }
+    }
     }
     if(signatureMethod == "Digital_Signature"){
     // Generate certificate if not exist...
@@ -1506,7 +1576,20 @@ const completeSignature = async(req, res)=>{
         if(pendingRecipient.length === 0 ){
           try{
             const documents = await Document.find({ envelopeId });
+            const signatureTransactions = require('../models/signatureTransactions');
+            const usedVSign = await signatureTransactions.exists({ envelopeId });
+
             for (const doc of documents) {
+              if (usedVSign) {
+                // VSign callback already produced the Aadhaar-signed PDF via ESP utility.
+                // Skipping digital finalize avoids overwriting it with a drawn-signature stamp.
+                if (!doc.signedFilePath || !fs.existsSync(doc.signedFilePath)) {
+                  console.warn(
+                    `[VSign] Envelope ${envelopeId} document ${doc._id} has no signed PDF on disk`,
+                  );
+                }
+                continue;
+              }
               const prepared = await prepareDocumentForFinalSigning(envelopeId, doc._id);
               if (prepared) {
                 await finalizeSigning(envelopeId, doc._id);
