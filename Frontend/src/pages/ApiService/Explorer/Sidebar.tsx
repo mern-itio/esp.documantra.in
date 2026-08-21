@@ -1,141 +1,14 @@
 import React from "react";
 import type { ApiType } from "./types";
+import { apiList } from "../../../data/documantraSignApi";
+
+export { apiList };
 
 type SidebarProps = {
   onApiSelect: (api: ApiType) => void;
   activeEndpoint: string;
   selectedApi: ApiType;
 };
-
-export const apiList: ApiType[] = [
-  {
-    name: "Envelope Upload",
-    endpoint: "/api/api-service/sign/upload-envelope",
-    method: "POST",
-    showFile: true,
-    description: "This endpoint is used to upload an envelope for signing.",
-    showBody: false,
-    showEnvelopeId: false,
-    bodyTemplate: ""
-  },
-  {
-    name: "Add Recipient",
-    endpoint: "/api/api-service/sign/add-recipients",
-    method: "POST",
-    showFile: false,
-    description: "This endpoint is used to add recipient.",
-    showBody: true,
-    showEnvelopeId: false,
-    bodyTemplate: `{
-  "envelopeId": "",
-  "recipients": [
-    {
-      "name": "",
-      "email": "",
-      "role": "signer",
-      "order": 1,
-      "status": "waiting",
-      "authentication": "email"
-    }
-  ]
-}`
-  },
-  {
-    name: "Fetch Envelope Details",
-    endpoint: "/api/api-service/sign/envelope/:id",
-    method: "GET",
-    showFile: false,
-    description: "This endpoint is used to fetch envelope details by its id.",
-    showBody: false,
-    showEnvelopeId: true,
-    bodyTemplate: ""
-  },
-  {
-    name: "Save signature Fields",
-    endpoint: "/api/api-service/sign/save-signature-fields",
-    method: "POST",
-    showFile: false,
-    description: "This endpoint is used to save signature fields on document.",
-    showBody: true,
-    showEnvelopeId: false,
-    bodyTemplate: `{
-  "envelopeId": "",
-  "signatureFields": [
-    {
-      "documentId": "",
-      "recipientId": "",
-      "page": 1,
-      "x": 100,
-      "y": 200,
-      "width": 120,
-      "height": 50,
-      "type": "signature",
-      "status": "pending"
-    }
-  ]
-}`
-  },
-  {
-    name: "Update Envelope",
-    endpoint: "/api/api-service/sign/update",
-    method: "POST",
-    showFile: false,
-    description: "This endpoint is used to update envelope.",
-    showBody: true,
-    showEnvelopeId: false,
-    bodyTemplate: `{
-  "envelopeId": "",
-  "envelopeData": {
-    "subject": "",
-    "message": "",
-    "priority": "normal",
-    "signingOrder": "In-Order",
-    "expiresAt": "2025-08-30T10:00:00Z",
-    "reminderEnabled": true,
-    "reminderInterval": 2,
-    "requireAllSignatures": true,
-    "allowDecline": false,
-    "signatureType": "standard",
-    "status": "draft"
-  }
-}`
-  },
-  {
-    name: "Send Envelope",
-    endpoint: "/api/api-service/sign/send/:id",
-    method: "PUT",
-    showFile: false,
-    description: "This endpoint is used to send envelope to recipients.",
-    showBody: false,
-    showEnvelopeId: true,
-    bodyTemplate: ""
-  },
-  {
-    name: "Get Signature Fields",
-    endpoint: "/api/api-service/sign/signature/:id",
-    method: "GET",
-    showFile: false,
-    description: "This endpoint is used to get all signature fields.",
-    showBody: false,
-    showEnvelopeId: false,
-    showDocumentId: true,
-    bodyTemplate: ""
-  },
-   {
-    name: "Add Signature",
-    endpoint: "/api/api-service/sign/add-signature",
-    method: "POST",
-    showFile: false,
-    description: "This endpoint is used to add signature.",
-    showBody: true,
-    showEnvelopeId: false,
-    bodyTemplate: `{
-  "fieldId": "",
-  "signature": ""
-}`
-  },
-];
-
 
 function Sidebar({ onApiSelect, activeEndpoint }: SidebarProps): React.ReactElement {
     return (

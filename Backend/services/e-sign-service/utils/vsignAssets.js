@@ -7,20 +7,22 @@ const { getCachedEffectiveConfig, resolveEspResponseUrl } = require('./vsignConf
 const OFFICIAL_TICK_FILENAME = 'tick.png';
 const FALLBACK_TICK_FILENAME = 'aadhaar-green-check.png';
 
-/** Arun reference layout — fixed 250×60 keeps text at top (taller box pushes content down). */
-const VSIGN_SIGNATURE_BOX_WIDTH = 250;
-const VSIGN_SIGNATURE_BOX_HEIGHT = 60;
-const VSIGN_REFERENCE_APPEARANCE = { w: 250, h: 60, fontSize: '10' };
+/** Readable Aadhaar appearance — light-blue box, checkmark bottom-left, no duplicate watermark text. */
+const VSIGN_SIGNATURE_BOX_WIDTH = 280;
+const VSIGN_SIGNATURE_BOX_HEIGHT = 85;
+const VSIGN_REFERENCE_APPEARANCE = { w: 280, h: 85, fontSize: '9' };
 const VSIGN_SIGNATURE_BOX_MAX_WIDTH = 320;
 const VSIGN_SIGNATURE_BOX_MAX_HEIGHT = 110;
 const HANDWRITTEN_HEIGHT_RATIO = 0.38;
 const HANDWRITTEN_MIN_HEIGHT = 36;
-const VSIGN_SIGNATURE_MIN_HEIGHT = 60;
-const VSIGN_SIGNATURE_FONT_REF_HEIGHT = 60;
+const VSIGN_SIGNATURE_MIN_HEIGHT = 85;
+const VSIGN_SIGNATURE_FONT_REF_HEIGHT = 85;
 /** Light blue — Arun Dixit reference box (#E8F2FF). */
 const VSIGN_BOX_BG_RGB = { r: 232, g: 242, b: 255 };
 const VSIGN_LINE_HEIGHT_PT = 14;
 const VSIGN_BOX_PADDING_PT = 18;
+/** Approx chars per line at default box width (280pt) — used to estimate wrapped lines. */
+const VSIGN_CHARS_PER_LINE = 40;
 
 function readEnvFile(serviceRoot) {
   const envPath = path.join(serviceRoot, '.env');
@@ -88,17 +90,45 @@ function resolveVSignAspId(serviceRoot) {
   return 'IIPLUAT001';
 }
 
+const VSIGN_UAT_PFX_PASSWORD = 'abc1234';
+const VSIGN_UAT_PFX_ALIAS = '{05ae2e10-4f6d-41a6-9f83-4d0025ca28a0}';
+
+function loadVSignUatSecrets(serviceRoot) {
+  const secretsPath = path.join(serviceRoot, 'config', 'vsign', 'secrets', 'uat.env');
+  if (!fs.existsSync(secretsPath)) return {};
+  try {
+    return dotenv.parse(fs.readFileSync(secretsPath));
+  } catch (err) {
+    console.warn('[VSign] Failed to read UAT secrets file:', err.message);
+    return {};
+  }
+}
+
 function resolveVSignPfxCredentials(serviceRoot) {
   const cfg = getEffectiveVSign();
-  const password = (cfg.pfxPassword || process.env.PFX_PASSWORD || '').trim();
-  const alias = (cfg.pfxAlias || process.env.PFX_ALIAS || '').trim();
+  const fromFile = readEnvFile(serviceRoot);
+  const password = (
+    cfg.pfxPassword
+    || fromFile.PFX_PASSWORD
+    || process.env.PFX_PASSWORD
+    || ''
+  ).trim();
+  let alias = (
+    cfg.pfxAlias
+    || fromFile.PFX_ALIAS
+    || process.env.PFX_ALIAS
+    || ''
+  ).trim().replace(/^"|"$/g, '');
   const usesLiveCert = resolveVSignUsesLiveCert(serviceRoot);
   if (usesLiveCert) {
     return { password, alias, usesLiveCert };
   }
+  const uatSecrets = loadVSignUatSecrets(serviceRoot);
+  const uatPassword = (uatSecrets.PFX_PASSWORD || VSIGN_UAT_PFX_PASSWORD).trim();
+  const uatAlias = (uatSecrets.PFX_ALIAS || VSIGN_UAT_PFX_ALIAS).trim().replace(/^"|"$/g, '');
   return {
-    password: password || 'abc1234',
-    alias: alias || '{05AE2E10-4F6D-41A6-9F83-4D0025CA28A0}',
+    password: uatPassword,
+    alias: uatAlias,
     usesLiveCert,
   };
 }
@@ -108,8 +138,57 @@ function resolveVSignAuthPage(serviceRoot) {
   const configured = (cfg.vsignAuthPage || process.env.VSIGN_AUTHPAGE || '').trim();
   if (configured) return configured.replace(/\/+$/, '');
   return resolveVSignEnv(serviceRoot) === 'production'
-    ? 'https://esign.vsign.in/esp'
+    ? 'https://esign.verasys.in/esp'
     : 'https://esignuat.vsign.in/esp';
+}
+
+/** Public HTTPS logo URL for VSign authpagev4 — production (live) only. */
+function resolveVSignAuthLogoUrl(serviceRoot) {
+  if (resolveVSignEnv(serviceRoot) !== 'production') return '';
+  const cfg = getEffectiveVSign();
+  const fromDb = (cfg.vsignAuthLogoUrl || '').trim();
+  if (fromDb) return fromDb;
+  const fromFile = readEnvFile(serviceRoot).VSIGN_AUTH_LOGO_URL;
+  return (fromFile || process.env.VSIGN_AUTH_LOGO_URL || '').trim();
+}
+
+/**
+ * VSign authdata: logoVal|colorid|aadhaarno (use "-" for unused parts).
+ * @see ASP Auth Page Logo kit — encode result as Base64 URL segment before /authpagev4
+ */
+function buildVSignAuthDataString({ logoUrl, colorId, aadhaarNumber } = {}) {
+  const logoVal = (logoUrl && String(logoUrl).trim()) || '-';
+  const color = (colorId && String(colorId).trim()) || '-';
+  const aadhaar = String(aadhaarNumber || '').replace(/\D/g, '');
+  const aadhaarVal = aadhaar || '-';
+  return `${logoVal}|${color}|${aadhaarVal}`;
+}
+
+function encodeVSignAuthDataSegment(authData) {
+  return Buffer.from(String(authData), 'utf8').toString('base64');
+}
+
+function resolveVSignEspBaseUrl(authPageBase) {
+  const base = String(authPageBase || '').replace(/\/+$/, '');
+  if (base.endsWith('/authpage')) return base.replace(/\/authpage$/, '');
+  return base;
+}
+
+/**
+ * UAT & production: {espBase}/{base64(logo|-|-|aadhaar)}/authpagev4
+ * @see https://esign.verasys.in/esp/<logobase64>/authpagev4
+ */
+function buildVSignAuthUrl(serviceRoot, aadhaarNumber) {
+  const authPage = resolveVSignAuthPage(serviceRoot);
+  const base = authPage.replace(/\/+$/, '');
+  const logoUrl = resolveVSignAuthLogoUrl(serviceRoot);
+  const authData = buildVSignAuthDataString({
+    logoUrl: logoUrl || undefined,
+    aadhaarNumber,
+  });
+  const espBase = resolveVSignEspBaseUrl(base);
+  const segment = encodeVSignAuthDataSegment(authData);
+  return `${espBase}/${segment}/authpagev4`;
 }
 
 /** ASP browser redirect after utility/VSign processes OTP */
@@ -172,31 +251,41 @@ function resolveVSignSignatureFontSizeForBox(boxHeight, serviceRoot) {
 
 function formatVSignIstDate(date = new Date()) {
   try {
-    return date.toLocaleString('en-IN', {
+    const d = date instanceof Date ? date : new Date(date);
+    const datePart = d.toLocaleString('en-IN', {
       timeZone: 'Asia/Kolkata',
       weekday: 'short',
       month: 'short',
       day: '2-digit',
+    });
+    const timePart = d.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
       hour12: false,
-    }).replace(',', '') + ' IST ' + date.getFullYear();
+    });
+    const dayMonth = datePart.replace(/^(\w+),\s*/, '$1 ').trim();
+    return `${dayMonth}, ${timePart} IST ${d.getFullYear()}`;
   } catch (_) {
     return date.toString();
   }
 }
 
 /** Lines matching reference attachment (utility may add one more at render time). */
-function estimateVSignAppearanceLines(recipient = {}) {
+function estimateVSignAppearanceLines(recipient = {}, verifiedAt = null) {
   const name = String(recipient?.name || 'Signer').trim();
   const aadhaar = String(recipient?.aadhaarNumber || '').replace(/\D/g, '');
-  const last4 = aadhaar.slice(-4) || '0000';
+  const last4 =
+    String(recipient?.aadhaarLast4 || '').replace(/\D/g, '').slice(-4) ||
+    aadhaar.slice(-4) ||
+    '';
+  const at = verifiedAt ? new Date(verifiedAt) : new Date();
   return [
     'Digitally Signed by',
     `Name : ${name}`,
-    `Aadhaar No : **** **** ${last4}`,
-    `Date : ${formatVSignIstDate()}`,
+    `Aadhaar No : **** **** ${last4 || '----'}`,
+    `Date : ${formatVSignIstDate(at)}`,
   ];
 }
 
@@ -236,14 +325,22 @@ function computeSignatureAppearanceBox(field, scale, hasHandwritten, appearanceS
   const pageNum = Number(field.page || 1);
   const x = Math.round(Number(field.x || 0) * scale);
   const baseY = Math.round(Number(field.y || 0) * scale);
+  const fieldW = Math.max(1, Number(field.width || VSIGN_SIGNATURE_BOX_WIDTH) * scale);
   const fieldH = Math.max(1, Number(field.height || VSIGN_SIGNATURE_BOX_HEIGHT) * scale);
 
-  const w = appearanceSize?.w || VSIGN_SIGNATURE_BOX_WIDTH;
-  const h = appearanceSize?.h || VSIGN_SIGNATURE_BOX_HEIGHT;
-
+  let w = appearanceSize?.w || VSIGN_SIGNATURE_BOX_WIDTH;
+  let h = appearanceSize?.h || VSIGN_SIGNATURE_BOX_HEIGHT;
   let y = baseY;
+
   if (hasHandwritten) {
-    y = Math.round(baseY + computeHandwrittenStripHeight(fieldH));
+    // Place full Aadhaar block below the handwritten strip. Do NOT clamp to
+    // leftover field height — small signature fields leave ~1pt remaining and
+    // the downloaded PDF only shows a thin blue line (UI React overlay still
+    // looks fine because it expands freely).
+    const handH = computeHandwrittenStripHeight(fieldH);
+    w = Math.round(Math.max(w, Math.min(fieldW, VSIGN_SIGNATURE_BOX_WIDTH)));
+    h = Math.max(Number(h) || VSIGN_SIGNATURE_BOX_HEIGHT, VSIGN_SIGNATURE_MIN_HEIGHT);
+    y = Math.round(baseY + handH);
   }
 
   return { pageNum, x, y, w, h };
@@ -273,6 +370,22 @@ function resolveGreenCheckImagePath(serviceRoot) {
     }
   }
   return normalizeVSignPath(candidates[0]);
+}
+
+/** Green checkmark only (no blue box) — for background watermark behind signer text. */
+function resolveGreenCheckmarkOnlyPath(serviceRoot) {
+  const candidates = [
+    path.join(serviceRoot, 'utility', FALLBACK_TICK_FILENAME),
+    path.join(serviceRoot, 'uploads', 'vSign', FALLBACK_TICK_FILENAME),
+    path.join(serviceRoot, 'utility', 'tick-official-src.png'),
+    path.join(serviceRoot, 'uploads', 'vSign', 'tick-official-src.png'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return normalizeVSignPath(candidate);
+    }
+  }
+  return resolveGreenCheckImagePath(serviceRoot);
 }
 
 async function buildVSignSignatureDetailsString(pdfPath, signatureFields, options = {}) {
@@ -322,8 +435,9 @@ async function buildVSignSignatureDetailsString(pdfPath, signatureFields, option
     : maxHeight || appearanceSize?.h || VSIGN_SIGNATURE_BOX_HEIGHT;
   const fontSize = referenceAppearance
     ? VSIGN_REFERENCE_APPEARANCE.fontSize
-    : appearanceSize?.fontSize
-      || (serviceRoot ? resolveVSignSignatureFontSizeForBox(h, serviceRoot) : '10');
+    : (serviceRoot ? resolveVSignSignatureFontSizeForBox(h, serviceRoot) : null)
+      || appearanceSize?.fontSize
+      || '10';
 
   /** Postman kit native format — utility renders tick/background with this shape. */
   const signaturedetails = boxes.map((box) => ({
@@ -347,7 +461,7 @@ async function buildVSignSignatureDetailsString(pdfPath, signatureFields, option
 }
 
 /** Copy tick/logo beside utility temp folder (EXE sometimes resolves relative paths). */
-function stageVSignAppearanceAssets(serviceRoot, tempInfoPath, appearanceExtras) {
+function stageVSignAppearanceAssets(serviceRoot, tempInfoPath, appearanceExtras, txn) {
   const staged = { ...appearanceExtras };
   try {
     fs.mkdirSync(tempInfoPath, { recursive: true });
@@ -364,6 +478,14 @@ function stageVSignAppearanceAssets(serviceRoot, tempInfoPath, appearanceExtras)
       const dest = path.join(tempInfoPath, fileName);
       fs.copyFileSync(src.replace(/\//g, path.sep), dest);
       staged[key] = normalizeVSignPath(dest);
+    }
+    if (txn && staged.tickImgPath) {
+      const srcTick = staged.tickImgPath.replace(/\//g, path.sep);
+      for (const sub of [path.join(tempInfoPath, String(txn)), path.join(tempInfoPath, String(txn), '1')]) {
+        fs.mkdirSync(sub, { recursive: true });
+        const txnTick = path.join(sub, 'tick.png');
+        fs.copyFileSync(srcTick, txnTick);
+      }
     }
   } catch (err) {
     console.warn('[VSign] could not stage appearance assets:', err.message);
@@ -398,6 +520,7 @@ module.exports = {
   buildVSignAppearanceExtras,
   stageVSignAppearanceAssets,
   resolveGreenCheckImagePath,
+  resolveGreenCheckmarkOnlyPath,
   resolveVSignCallbackUrl,
   resolveVSignEspResponseUrl,
   resolveVSignServerIp,
@@ -410,6 +533,10 @@ module.exports = {
   resolveVSignAspId,
   resolveVSignPfxCredentials,
   resolveVSignAuthPage,
+  resolveVSignAuthLogoUrl,
+  buildVSignAuthDataString,
+  encodeVSignAuthDataSegment,
+  buildVSignAuthUrl,
   resolveVSignUtilityUrl,
   resolveVSignSignatureFontSize,
   resolveVSignSignatureFontSizeForBox,

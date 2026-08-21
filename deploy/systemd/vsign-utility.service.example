@@ -1,0 +1,15 @@
+[Unit]
+Description=VSign ESP Utility (gettxnrefv4_1 / signpdfv4_1)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/Draft-and-Sign/Backend/services/e-sign-service/utility
+Environment=JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+ExecStart=/usr/lib/jvm/java-8-openjdk-amd64/bin/java -jar Verasays-eSign-Web-ASP-4.2.jar
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

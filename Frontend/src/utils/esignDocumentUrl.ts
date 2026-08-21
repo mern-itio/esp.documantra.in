@@ -1,5 +1,6 @@
 import { eSignApi } from '../services/apiHelper';
 import { getMemoryAccessToken } from './authSession';
+import { resolveServiceUrl } from './secureApiUrl';
 
 type EsignDocRef = {
   id?: string;
@@ -12,11 +13,48 @@ type EsignDocRef = {
 
 const getAccessToken = (): string | null => getMemoryAccessToken();
 
-const getEsignBaseUrl = (): string =>
-  String(import.meta.env.VITE_ESIGN_SERVICE_URL || 'https://esp.documantra.in/esign').replace(
-    /\/+$/,
-    ''
-  );
+function isLocalDevHost(): boolean {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname.toLowerCase();
+  return host === 'localhost' || host === '127.0.0.1';
+}
+
+const getEsignBaseUrl = (): string => {
+  if (isLocalDevHost()) {
+    // Vite proxies /api/e-sign → local e-sign-service (2103)
+    return '';
+  }
+  return resolveServiceUrl(import.meta.env.VITE_ESIGN_SERVICE_URL, {
+    productionPath: '/esign',
+    localUrl: 'http://localhost:2103',
+  }).replace(/\/+$/, '');
+};
+
+/** Rewrite production/loopback e-sign URLs to same-origin proxy paths on localhost. */
+function rewriteEsignUrlForLocal(url: string): string {
+  if (!url || !isLocalDevHost()) return url;
+  if (url.startsWith('/api/e-sign')) return url;
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    const path = parsed.pathname;
+    const search = parsed.search;
+
+    const apiIdx = path.indexOf('/api/e-sign/');
+    if (apiIdx >= 0) {
+      return `${path.slice(apiIdx)}${search}`;
+    }
+
+    const uploadsIdx = path.indexOf('/uploads/');
+    if (uploadsIdx >= 0) {
+      return `/esign${path.slice(uploadsIdx)}${search}`;
+    }
+  } catch {
+    return url;
+  }
+
+  return url;
+}
 
 /**
  * Resolve a browser-loadable URL for an e-sign document.
@@ -28,7 +66,7 @@ export const resolveEsignDocumentUrl = (
 ): string => {
   const fromApi = doc.filePath || doc.signedFilePath || doc.url;
   if (fromApi) {
-    return fromApi;
+    return rewriteEsignUrlForLocal(fromApi);
   }
 
   const base = getEsignBaseUrl();
@@ -38,6 +76,9 @@ export const resolveEsignDocumentUrl = (
     params.set('envelopeId', envelopeId);
   }
   const query = params.toString() ? `?${params.toString()}` : '';
+  if (isLocalDevHost()) {
+    return `/esign/uploads/${encodeURIComponent(name)}${query}`;
+  }
   return `${base}/uploads/${encodeURIComponent(name)}${query}`;
 };
 
@@ -73,10 +114,12 @@ const buildDocumentViewUrl = (
       }
     }
     const query = params.toString();
-    return query ? `${base}${path}?${query}` : `${base}${path}`;
+    const relative = query ? `${path}?${query}` : path;
+    return rewriteEsignUrlForLocal(base ? `${base}${relative}` : relative);
   }
 
-  return `${base}${path}`;
+  const relative = path;
+  return rewriteEsignUrlForLocal(base ? `${base}${relative}` : relative);
 };
 
 /**
@@ -103,7 +146,6 @@ export const resolveEsignDocumentFileProp = (
       if (token) {
         return { url, httpHeaders: { Authorization: `Bearer ${token}` } };
       }
-      // Same-origin httpOnly cookie auth — browser sends cookies on direct URL fetch.
       return url;
     }
 

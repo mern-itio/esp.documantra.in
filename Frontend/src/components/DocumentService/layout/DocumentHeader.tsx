@@ -158,7 +158,7 @@ export function DocumentHeader() {
   // Check if any filters are applied
   const hasActiveFilters = searchQuery || Object.keys(searchFilters).length > 0;
   return (
-    <div className="border-b border-border bg-card px-6 py-4 text-card-foreground">
+    <div className="border-b border-border/80 bg-card/95 px-6 py-4 text-card-foreground shadow-sm backdrop-blur-md">
       {/* Breadcrumb */}
       <BreadcrumbNavigation />
 

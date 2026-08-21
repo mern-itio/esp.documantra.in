@@ -122,6 +122,9 @@ const publicGuestId = isPublicUpload && !userId ? getPublicGuestId(req) : null;
       }
       if (typeof envelopetype === 'string' && envelopetype.trim().length > 0) {
         envelope.envelopetype = envelopetype.trim();
+        if (envelopetype.trim().toLowerCase() === 'qualified') {
+          envelope.signatureType = 'qualified';
+        }
       }
       if (typeof message === 'string') {
         envelope.message = message.trim();
@@ -159,6 +162,10 @@ const publicGuestId = isPublicUpload && !userId ? getPublicGuestId(req) : null;
  name: typeof name === 'string' && name.trim().length > 0 ? name.trim() : undefined,
         subject: typeof subject === 'string' ? subject.trim() : undefined,
         envelopetype: typeof envelopetype === 'string' && envelopetype.trim().length > 0 ? envelopetype.trim() : (typeof subject === 'string' ? subject.trim() : undefined),
+        signatureType:
+          typeof envelopetype === 'string' && envelopetype.trim().toLowerCase() === 'qualified'
+            ? 'qualified'
+            : undefined,
         message: typeof message === 'string' ? message.trim() : undefined,
         isAIGenerated: aiGenerated,
         isOrganization: isOrgContext,

@@ -399,21 +399,75 @@ export default function SignerStatusPage() {
     );
   }, [envelope]);
 
-  const esignBase = ((import.meta as any).env?.VITE_ESIGN_SERVICE_URL || "")
-    .toString()
-    .trim()
-    .replace(/\/+$/, "");
+  const [downloadBusy, setDownloadBusy] = useState<"" | "all" | "certificate">("");
 
-  const handleDownloadAll = () => {
-    if (!envelopeId || !esignBase || !recipientId) return;
-    const url = `${esignBase}/api/e-sign/signatures/download-all/${envelopeId}?recipientId=${encodeURIComponent(recipientId)}`;
-    window.open(url, "_blank");
+  const triggerBlobDownload = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
-  const handleDownloadAuditCertificate = () => {
-    if (!envelopeId || !esignBase || !recipientId) return;
-    const url = `${esignBase}/api/e-sign/signatures/completion-certificate/${envelopeId}?recipientId=${encodeURIComponent(recipientId)}`;
-    window.open(url, "_blank");
+  const readDownloadError = async (e: any, fallback: string) => {
+    const data = e?.response?.data;
+    if (data instanceof Blob) {
+      try {
+        const parsed = JSON.parse(await data.text());
+        return parsed?.message || fallback;
+      } catch {
+        return fallback;
+      }
+    }
+    return e?.response?.data?.message || fallback;
+  };
+
+  const handleDownloadAll = async () => {
+    if (!envelopeId || !recipientId || downloadBusy) return;
+    setDownloadBusy("all");
+    setError("");
+    try {
+      const response = await eSignApi.get(`/api/e-sign/signatures/download-all/${envelopeId}`, {
+        params: { recipientId },
+        responseType: "blob",
+      });
+      const blob =
+        response.data instanceof Blob
+          ? response.data
+          : new Blob([response.data], { type: "application/zip" });
+      triggerBlobDownload(blob, `signed_documents_${envelopeId}.zip`);
+    } catch (e: any) {
+      setError(await readDownloadError(e, "Failed to download signed documents."));
+    } finally {
+      setDownloadBusy("");
+    }
+  };
+
+  const handleDownloadAuditCertificate = async () => {
+    if (!envelopeId || !recipientId || downloadBusy) return;
+    setDownloadBusy("certificate");
+    setError("");
+    try {
+      const response = await eSignApi.get(
+        `/api/e-sign/signatures/completion-certificate/${envelopeId}`,
+        {
+          params: { recipientId },
+          responseType: "blob",
+        },
+      );
+      const blob =
+        response.data instanceof Blob
+          ? response.data
+          : new Blob([response.data], { type: "application/pdf" });
+      triggerBlobDownload(blob, `completion-certificate-${envelopeId}.pdf`);
+    } catch (e: any) {
+      setError(await readDownloadError(e, "Failed to download audit certificate."));
+    } finally {
+      setDownloadBusy("");
+    }
   };
 
   const title = viewerDeclined
@@ -872,15 +926,15 @@ export default function SignerStatusPage() {
                         <button
                           type="button"
                           onClick={handleDownloadAuditCertificate}
-                          disabled={!allSignersCompleted}
+                          disabled={!allSignersCompleted || downloadBusy === "certificate"}
                           className={
                             allSignersCompleted
-                              ? "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-200 sm:w-52"
+                              ? "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-100 px-6 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-200 sm:w-52 disabled:opacity-60"
                               : "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-500 cursor-not-allowed sm:w-52"
                           }
                         >
                           <ShieldCheck className="h-4 w-4" />
-                          Audit Certificate
+                          {downloadBusy === "certificate" ? "Downloading…" : "Audit Certificate"}
                         </button>
                       </div>
 
@@ -888,15 +942,15 @@ export default function SignerStatusPage() {
                         <button
                           type="button"
                           onClick={handleDownloadAll}
-                          disabled={!allSignersCompleted}
+                          disabled={!allSignersCompleted || downloadBusy === "all"}
                           className={
                             allSignersCompleted
-                              ? "inline-flex items-center justify-center gap-2 rounded-xl bg-[#260559] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#260559]/90"
+                              ? "inline-flex items-center justify-center gap-2 rounded-xl bg-[#260559] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#260559]/90 disabled:opacity-60"
                               : "hidden"
                           }
                         >
                           <Download className="h-4 w-4" />
-                          Download all
+                          {downloadBusy === "all" ? "Downloading…" : "Download all"}
                         </button>
                       </div>
 

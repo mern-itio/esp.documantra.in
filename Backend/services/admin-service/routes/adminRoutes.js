@@ -34,6 +34,8 @@ const {
 } = require('../controllers/platformEmailController');
 const {
   getVSignConfig,
+  getVSignProfileStatus,
+  switchVSignProfile,
   updateVSignConfig,
   testVSignConfig,
 } = require('../controllers/vsignConfigController');
@@ -135,6 +137,8 @@ router.post('/platform-email/test', testPlatformEmail);
 
 // VSign / Aadhaar eSign settings
 router.get('/vsign-config', getVSignConfig);
+router.get('/vsign-config/status', getVSignProfileStatus);
+router.post('/vsign-config/switch', switchVSignProfile);
 router.put('/vsign-config', updateVSignConfig);
 router.post('/vsign-config/test', testVSignConfig);
 

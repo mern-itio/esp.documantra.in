@@ -3,10 +3,13 @@ import { getAdminAccessToken } from '../utils/adminSession';
 
 export type VSignAdminConfig = {
   enabled: boolean;
+  activeProfile?: 'uat' | 'live' | null;
+  tunnelUrl?: string | null;
   vsignEnv: 'uat' | 'production';
   certMode: 'live' | 'uat';
   aspId: string;
   vsignAuthPage: string;
+  vsignAuthLogoUrl?: string;
   vsignCallbackUrl: string;
   vsignEspResponseUrl: string;
   utilityUrl: string;
@@ -27,6 +30,35 @@ export type VSignAdminConfig = {
   pfxPresent: boolean;
   updatedAt?: string;
   message?: string;
+};
+
+export type VSignProfileSummary = {
+  name: 'uat' | 'live';
+  label: string;
+  aspId: string;
+  pfxPath: string;
+  pfxPresent: boolean;
+};
+
+export type VSignProfileStatus = {
+  activeProfile: 'uat' | 'live' | null;
+  tunnelUrl: string | null;
+  profiles: VSignProfileSummary[];
+  config?: VSignAdminConfig;
+};
+
+export type VSignSwitchResult = {
+  switchedTo: 'uat' | 'live';
+  label: string;
+  aspId: string;
+  callbackUrl: string;
+  utilityEspProps: string;
+  pfxPresent: boolean;
+  readinessIssues: string[];
+  nextSteps: string[];
+  requiresRestart: string[];
+  message: string;
+  config: VSignAdminConfig;
 };
 
 export type VSignTestResult = {
@@ -57,13 +89,28 @@ export async function testVSignAdminConfig(): Promise<VSignTestResult> {
   return res.data;
 }
 
+export async function fetchVSignProfileStatus(): Promise<VSignProfileStatus> {
+  const res = await adminServiceApi.get('/admin/vsign-config/status');
+  return res.data;
+}
+
+export async function switchVSignProfile(payload: {
+  profile: 'uat' | 'live';
+  tunnelUrl?: string;
+}): Promise<VSignSwitchResult> {
+  const res = await adminServiceApi.post('/admin/vsign-config/switch', payload);
+  return res.data;
+}
+
 export async function uploadVSignCertFile(
   file: File,
   uploadTarget: 'signingPfx' | 'publicCert' | 'encryptionPfx',
+  profile?: 'uat' | 'live',
 ): Promise<VSignAdminConfig> {
   const form = new FormData();
   form.append('file', file);
   form.append('uploadTarget', uploadTarget);
+  if (profile) form.append('profile', profile);
   const token = getAdminAccessToken();
   const res = await eSignApi.post('/admin/vsign-config/upload', form, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,

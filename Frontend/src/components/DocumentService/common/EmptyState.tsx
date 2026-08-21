@@ -1,8 +1,8 @@
 import React from 'react';
-import { DivideIcon as LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface EmptyStateProps {
-  icon: typeof LucideIcon;
+  icon: LucideIcon;
   title: string;
   description: string;
   action?: React.ReactNode;
@@ -10,13 +10,13 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4">
-      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-        <Icon className="w-8 h-8 text-muted-foreground" />
+    <div className="dm-empty mx-auto max-w-lg">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-[#260559]/10">
+        <Icon className="h-8 w-8 text-primary" />
       </div>
-      <h3 className="text-lg font-medium text-foreground mb-2">{title}</h3>
-      <p className="text-muted-foreground text-center mb-6 max-w-sm">{description}</p>
-      {action}
+      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">{description}</p>
+      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }

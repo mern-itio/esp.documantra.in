@@ -1,8 +1,29 @@
 const fs = require('fs');
 const axios = require('axios'); 
 const FormData = require('form-data'); 
-const ESIGN_API_BASE = process.env.ESIGN_URL ;
-const ESignApiKey = require('../models/apiKey');
+const ESIGN_API_BASE =
+  process.env.ESIGN_URL ||
+  process.env.ESIGN_SERVICE_URL ||
+  process.env.ESING_SERVICE_URL ||
+  'http://127.0.0.1:2103';
+
+const { incrementSandboxKeyUsage } = require('../utils/recordSandboxKeyUsage');
+
+function buildProxyHeaders(req, extra = {}) {
+  const headers = { ...extra };
+  if (req.authToken) {
+    headers.Authorization = `Bearer ${req.authToken}`;
+  } else if (req.headers.authorization) {
+    headers.Authorization = req.headers.authorization;
+  }
+  if (req.headers.cookie) {
+    headers.Cookie = req.headers.cookie;
+  }
+  if (req.headers['x-sandbox-api-key']) {
+    headers['X-Sandbox-Api-Key'] = req.headers['x-sandbox-api-key'];
+  }
+  return headers;
+}
 
 const createEnvelope = async (req, res) => {
   try { 
@@ -20,7 +41,7 @@ const createEnvelope = async (req, res) => {
       formData, {
         headers: {
           ...formData.getHeaders(),
-          'Authorization': req.headers.authorization
+          ...buildProxyHeaders(req),
         },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
@@ -36,16 +57,15 @@ const createEnvelope = async (req, res) => {
     return res.status(response.status).json(response.data);
 }catch (err) {
   console.error('Error:', err);
+  const status = err.response?.status || 500;
   res.locals.analyticsResponse = {
-    status: err.response ? err.response.status : 500,
-    statusText: err.response ? err.response.statusText : "Error",
-    message:err.response.data.message,
-     data: err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+    status,
+    statusText: err.response?.statusText || 'Error',
+    message: err.response?.data?.message || err.message,
+    data: err.response?.data || { error: 'Proxy request failed', details: err.message || 'Unknown error' },
   };
-  return res.status(
-    err.response ? err.response.status : 500
-  ).json(
-    err.response ? err.response.data : { error: 'Proxy request failed', details: err.message || 'Unknown error' }
+  return res.status(status).json(
+    err.response?.data || { error: 'Proxy request failed', details: err.message || 'Unknown error' },
   );
 }
 };  
@@ -60,11 +80,7 @@ const forwardRecipientsRequest = async (req, res) => {
       `${ESIGN_API_BASE}/api/e-sign/add-recipients`,
       payload,
       {
-        headers: {
-          'Authorization': req.headers.authorization,
-         'X-Sandbox-Api-Key': req.headers['x-sandbox-api-key'],
-          'Content-Type': 'application/json'
-        }
+        headers: buildProxyHeaders(req, { 'Content-Type': 'application/json' }),
       }
     );
     res.locals.analyticsResponse = {
@@ -98,11 +114,7 @@ const getEnvelopeDetail = async (req, res) => {
     const response = await axios.get(
       `${ESIGN_API_BASE}/api/e-sign/envelope/${envelopeId}`,
       {
-        headers: {
-          'Authorization': req.headers.authorization,
-         'X-Sandbox-Api-Key': req.headers['x-sandbox-api-key'],
-          'Content-Type': 'application/json'
-        }
+        headers: buildProxyHeaders(req, { 'Content-Type': 'application/json' }),
       }
     );
     
@@ -141,11 +153,7 @@ const saveSignatureFields = async (req, res) => {
       `${ESIGN_API_BASE}/api/e-sign/save-signature-fields`,
       payload,
       {
-        headers: {
-          'Authorization': req.headers.authorization,
-         'X-Sandbox-Api-Key': req.headers['x-sandbox-api-key'],
-          'Content-Type': 'application/json'
-        }
+        headers: buildProxyHeaders(req, { 'Content-Type': 'application/json' }),
       }
     );
 
@@ -182,11 +190,7 @@ const updateEnvelope = async (req, res) => {
     const response = await axios.post(
       `${ESIGN_API_BASE}/api/e-sign/update-envelope`, payload,
       {
-        headers: {
-          'Authorization': req.headers.authorization,
-         'X-Sandbox-Api-Key': req.headers['x-sandbox-api-key'],
-          'Content-Type': 'application/json'
-        }
+        headers: buildProxyHeaders(req, { 'Content-Type': 'application/json' }),
     });
 
     res.locals.analyticsResponse = {
@@ -216,13 +220,13 @@ const sendEnvelope = async (req, res) => {
   try {
     const { envelopeId } = req.params;
 
-    const headers = {
-      "Authorization": req.headers.authorization,
-      "X-Sandbox-Api-Key": req.headers["x-sandbox-api-key"],
-      "Content-Type": "application/json"
-    };
+    const headers = buildProxyHeaders(req, { 'Content-Type': 'application/json' });
 
     const response = await axios.post(`${ESIGN_API_BASE}/api/e-sign/send-envelope/${envelopeId}`, {}, { headers });
+
+    if (response.status >= 200 && response.status < 300 && req.keyDoc) {
+      await incrementSandboxKeyUsage(req.keyDoc);
+    }
 
     res.locals.analyticsResponse = {
       status: response.status,
@@ -251,11 +255,7 @@ const getSignatureFields = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const headers = {
-      "Authorization": req.headers.authorization,
-      "X-Sandbox-Api-Key": req.headers["x-sandbox-api-key"],
-      "Content-Type": "application/json"
-    };
+    const headers = buildProxyHeaders(req, { 'Content-Type': 'application/json' });
 
     const response = await axios.get(`${ESIGN_API_BASE}/api/e-sign/public/document/signature-fields/${id}`, { headers });
 
@@ -289,62 +289,16 @@ const addSignature = async (req, res) => {
       signature: req.body.signature
     };
 
-    const headers = {
-      "Authorization": req.headers.authorization || "",    
-      "X-Sandbox-Api-Key": req.headers["x-sandbox-api-key"] || "",
-      "Content-Type": "application/json"
-    };
+    const headers = buildProxyHeaders(req, { 'Content-Type': 'application/json' });
 
     // Forward POST request to microservice
     const response = await axios.post(`${ESIGN_API_BASE}/api/e-sign/public/add-signature`, payload, { headers });
-// --- Sandbox API Key usage update ---
-    const apiKey = req.headers["x-sandbox-api-key"];
-    const fieldId = payload.fieldId;
-    if (apiKey) {
-      // Find API key document
-      const esignApiKey = await ESignApiKey.findOne({ apiKey, mode: 'sandbox', isActive: true });
 
-      if (esignApiKey) {
-        // Update usageCount
-       esignApiKey.usageCount = (esignApiKey.usageCount || 0) + 1;
-
-        // Get current year and month
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1; // getMonth() is 0-indexed
-
-        // Update usageLogs OR push new month/year log
-        let logUpdated = false;
-        esignApiKey.usageLogs = esignApiKey.usageLogs.map(log => {
-          if (log.year === year && log.month === month) {
-            log.count = (log.count || 0) + 1;
-            logUpdated = true;
-          }
-          return log;
-        });
-        if (!logUpdated) {
-          esignApiKey.usageLogs.push({ year, month, count: 1 });
-        }
-
-        // Save fieldId in a separate array, limit to 10 entries max
-        esignApiKey.fieldIds = esignApiKey.fieldIds || [];
-        if (!esignApiKey.fieldIds.includes(fieldId)) {
-          esignApiKey.fieldIds.push(fieldId);
-          // ensure fieldIds length does not exceed limit (10)
-          if (esignApiKey.fieldIds.length > 10) {
-            esignApiKey.fieldIds = esignApiKey.fieldIds.slice(-10); // keep latest 10 IDs
-          }
-        }
-
-        // Update lastUsedAt timestamp
-        esignApiKey.lastUsedAt = now;
-
-        await esignApiKey.save();
-      }
+    if (response.status >= 200 && response.status < 300 && req.keyDoc) {
+      await incrementSandboxKeyUsage(req.keyDoc, { fieldId: payload.fieldId });
     }
 
-    // --- End sandbox usage update ---
-res.locals.analyticsResponse = {
+    res.locals.analyticsResponse = {
       status: response.status,
       statusText: response.statusText,
       message:response.data.status,
@@ -389,11 +343,7 @@ const initiateRecipientAuth = async (req, res) => {
       `${SUBSCRIPTION_API_BASE}/api/authproviders/initiate/auth`,
       { providerId, recipientData, envelopeId },
       {
-        headers: {
-          Authorization: req.headers.authorization,
-          'X-Sandbox-Api-Key': req.headers['x-sandbox-api-key'],
-          'Content-Type': 'application/json',
-        },
+        headers: buildProxyHeaders(req, { 'Content-Type': 'application/json' }),
       }
     );
 

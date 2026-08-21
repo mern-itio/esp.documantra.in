@@ -10,7 +10,7 @@ export function DocumentLayout({ children }: DocumentLayoutProps) {
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col overflow-hidden">
           <DocumentHeader />
-          <main className="flex-1 overflow-auto p-1">{children}</main>
+          <main className="dm-main-bg flex-1 overflow-auto p-2 md:p-4">{children}</main>
         </div>
       </div>
     </div>

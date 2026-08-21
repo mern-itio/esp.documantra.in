@@ -1,8 +1,12 @@
 import { API_CONFIG } from '../config/environment';
 import { getAccountContextHeaders, withAuthFetch } from '../utils/authSession';
+import { resolveServiceUrl } from '../utils/secureApiUrl';
 
 // Base API configuration for document service
-const DOCUMENT_API_BASE_URL = import.meta.env.VITE_DOCUMENT_SERVICE_URL || 'http://localhost:2102';
+const DOCUMENT_API_BASE_URL = resolveServiceUrl(import.meta.env.VITE_DOCUMENT_SERVICE_URL, {
+  productionPath: '/document',
+  localUrl: 'http://localhost:2102',
+});
 
 // API Configuration
 export const API_ENDPOINTS = {

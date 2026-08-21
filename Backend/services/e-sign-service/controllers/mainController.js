@@ -397,7 +397,7 @@ const envelopesDetail = async (req, res) => {
       .populate("documentIds")   // fetch docs
       .populate({
         path: 'recipientIds',           // populate recipients
-        select: 'name email phone UserId signature initials',    // only global info
+        select: 'name email phone UserId signature initials aadhaarNumber',    // aadhaarNumber used only to derive last-4
         populate: {
           path: 'permissions',          // populate envelope-specific permissions
           model: 'RecipientPermission',
@@ -414,7 +414,7 @@ const envelopesDetail = async (req, res) => {
       const fallbackPerms = await RecipientPermission.find({ envelopeId })
         .populate({
           path: 'recipientId',
-          select: 'name email phone UserId signature initials'
+          select: 'name email phone UserId signature initials aadhaarNumber'
         })
         .select('recipientId role order status authLevel signingEvidence')
         .lean();
@@ -510,6 +510,25 @@ if (senderId) {
         baseUrl: process.env.PUBLIC_ESIGN_URL || `https://${req.get('host')}`,
       });
 
+    const recipientIdsForEnvelope = (envelope.recipientIds || [])
+      .map((r) => r?._id)
+      .filter(Boolean);
+    const [permissionRows, recipientAadhaarRows] = await Promise.all([
+      RecipientPermission.find({
+        envelopeId,
+        ...(recipientIdsForEnvelope.length ? { recipientId: { $in: recipientIdsForEnvelope } } : {}),
+      }).select('recipientId role order status authLevel signingEvidence').lean(),
+      recipientIdsForEnvelope.length
+        ? Recipient.find({ _id: { $in: recipientIdsForEnvelope } }).select('aadhaarNumber').lean()
+        : [],
+    ]);
+    const permissionByRecipientId = new Map(
+      (permissionRows || []).map((p) => [String(p.recipientId), p]),
+    );
+    const aadhaarByRecipientId = new Map(
+      (recipientAadhaarRows || []).map((r) => [String(r._id), r.aadhaarNumber]),
+    );
+
     // Step 4: Format the response (single envelope object)
     const formattedEnvelope = {
       id: envelope._id,
@@ -552,8 +571,14 @@ if (senderId) {
         preparedDoc: doc.preparedDoc ? toPublicUploadUrl(doc.preparedDoc, doc._id) : null,
       })),
       recipients: envelope.recipientIds.map(recipient => {
-        const perm = recipient.permissions?.[0] || {};
-        const declineMeta = declineByRecipient.get(String(recipient._id)) || null;
+        const rid = String(recipient._id);
+        const perm = permissionByRecipientId.get(rid) || recipient.permissions?.[0] || {};
+        const declineMeta = declineByRecipient.get(rid) || null;
+        const { resolveAadhaarLast4 } = require('../utils/signingEvidenceHelper');
+        const aadhaarLast4 = resolveAadhaarLast4({
+          aadhaarNumber: aadhaarByRecipientId.get(rid) || recipient.aadhaarNumber,
+          signingEvidence: perm.signingEvidence,
+        });
         return {
           id: recipient._id,
           name: recipient.name,
@@ -573,6 +598,7 @@ if (senderId) {
             return JSON.stringify([perm.authLevel]);
           })(),
           signature: recipient.signature,
+          aadhaarLast4: aadhaarLast4 || null,
           signingEvidence: perm.signingEvidence || null,
           rejectionReason: declineMeta?.reason || null,
           rejectedAt: declineMeta?.timestamp || null,
@@ -1402,16 +1428,29 @@ const addSignature = async (req, res) => {
       if (!updateDocWithPreparedFile) {
         return res.status(500).json({ message: 'Failed to update document with prepared PDF' });
       }
-    if (signatureImageBase64 && fieldId && signatureMethod !== 'aadhaarSignature' && signatureMethod !== 'aadharSignature') {
+    if (signatureImageBase64 && fieldId) {
       await SignatureFields.findByIdAndUpdate(fieldId, {
         $set: { signature: signatureImageBase64 },
       }).catch(() => {});
       const permission = await RecipientPermission.findOne({ envelopeId, recipientId });
       if (permission) {
-        const { mergeSigningEvidence, sanitizeSigningEvidence } = require('../utils/signingEvidenceHelper');
+        const { mergeSigningEvidence, sanitizeSigningEvidence, resolveAadhaarLast4 } = require('../utils/signingEvidenceHelper');
+        const isAadhaarMethod =
+          signatureMethod === 'aadhaarSignature' || signatureMethod === 'aadharSignature';
+        const recipientRecord = isAadhaarMethod
+          ? await require('../models/Recipient').findById(recipientId).select('aadhaarNumber').lean()
+          : null;
+        const aadhaarLast4 = isAadhaarMethod
+          ? resolveAadhaarLast4({
+            aadhaarNumber: recipientRecord?.aadhaarNumber,
+            signingEvidence: permission.signingEvidence,
+          })
+          : '';
         permission.signingEvidence = sanitizeSigningEvidence(
           mergeSigningEvidence(permission.signingEvidence || {}, {
             handwrittenSignature: signatureImageBase64,
+            ...(isAadhaarMethod ? { dualSignature: true } : {}),
+            ...(aadhaarLast4 ? { aadhaarLast4 } : {}),
           }),
         );
         await permission.save();
@@ -3836,7 +3875,8 @@ const fetchCurrentRecipient = async (req, res) =>{
   }
 }
 const validateRecipient = async (req, res) =>{
-  const {signatureMethod, currentUserId, selfValue} = req.body;
+  const { signatureMethod, currentUserId, selfValue, envelopeID, envelopeId } = req.body;
+  const envelopeKey = envelopeID || envelopeId;
   if (!signatureMethod || !currentUserId) {
     return res.status(400).json({
       success: false,
@@ -3858,7 +3898,8 @@ const validateRecipient = async (req, res) =>{
       });
     case "Recipient" :
       const data = {
-        recipientId:currentUserId
+        recipientId: currentUserId,
+        envelopeId: envelopeKey,
       }
       try{
         const validator = signingServices.validate?.[signatureMethod];

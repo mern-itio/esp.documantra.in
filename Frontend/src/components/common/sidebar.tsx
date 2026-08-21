@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FileText, ChevronLeft, ChevronDown, ChevronRight, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Plus, HelpCircle, CreditCard, Share, Library, Gift } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronDown, ChevronRight, FileSignature, Scissors, Repeat, Edit3, Copy, Settings, Search, FileSpreadsheet, Wrench, Lock, Clock, Star, Share2, Archive, Folder, Trash2, File, Mail, FileEdit, Pencil, CheckCircle, Trash2Icon, FormInput, Plus, HelpCircle, CreditCard, Share, Library, Gift, Key, Code, Play } from 'lucide-react';
 import { useAuth } from '../AuthService/AuthContext';
 import { APP_NAME } from '../constants/appConfig';
 import BrandLogo from '../BrandLogo';
@@ -266,6 +266,17 @@ const Sidebar: React.FC<SidebarProps> = ({
     //   ]
     // },
     {
+      id: 'developer',
+      label: 'Developer',
+      icon: Key,
+      children: [
+        { id: 'api-keys', label: 'API Keys', path: '/api-service/keys', icon: Key },
+        { id: 'api-demo', label: 'Integration Demo', path: '/api-service/demo', icon: Play },
+        { id: 'api-explorer', label: 'API Explorer', path: '/api-service/explorer', icon: Code },
+        { id: 'api-docs', label: 'API Docs', path: '/api-documentation', icon: FileText },
+      ],
+    },
+    {
       id: 'pdf-tools',
       label: 'PDF Tools',
       icon: Scissors,
@@ -335,7 +346,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className={`bg-sidebar shadow-lg border-r border-sidebar-border transition-all duration-300 ease-in-out ${isOpen ? 'w-64' : 'w-16'} flex flex-col h-full relative overflow-visible`}>
   
-      <div className="flex items-center justify-between px-3 py-3 border-b border-sidebar-border flex-shrink-0 bg-gradient-to-r from-sidebar to-muted/40">
+      <div className="flex items-center justify-between px-3 py-3 border-b border-sidebar-border flex-shrink-0 bg-gradient-to-r from-[#155E4B]/8 via-sidebar to-[#260559]/5">
         <Link
           to="/dashboard"
           className={`flex items-center min-w-0 ${isOpen ? 'gap-2 animate-fade-in' : 'justify-center flex-1'}`}

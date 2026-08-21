@@ -93,9 +93,13 @@ async function markFieldAsCompleted(fieldId) {
 }
 async function markAllFieldsOfRecipientAsCompleted(envelopeId, recipientId, documentId, signBase64) {
   try{
+    const update = { status: "completed" };
+    if (signBase64) {
+      update.signature = signBase64;
+    }
     const result = await SignatureFields.updateMany(
         { envelopeId: envelopeId, recipientId: recipientId, documentId: documentId },
-        { $set: { status: "completed", signature: signBase64 } }
+        { $set: update }
     );
     return result;
   }catch (err){
@@ -162,7 +166,15 @@ async function updateDocumentWithSignedPdf(documentId, signedPdfPath){
       console.error(`Document with ID ${documentId} not found`);
       return;
     }
-    const finalPath = signedPdfPath.replace(".pdf", "Final.pdf");
+    let finalPath = signedPdfPath;
+    const altPath = String(signedPdfPath).replace(/\.pdf$/i, 'Final.pdf');
+    // VSign utility typically writes `*Final.pdf` — prefer that when present.
+    if (fs.existsSync(altPath)) {
+      finalPath = altPath;
+    } else if (!fs.existsSync(finalPath)) {
+      console.error(`Signed PDF not found at ${signedPdfPath}`);
+      return;
+    }
     docRecord.preparedDoc = finalPath;
     docRecord.signedFileName = path.basename(finalPath);
     docRecord.signedFilePath = finalPath;

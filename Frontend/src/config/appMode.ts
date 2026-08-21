@@ -36,6 +36,8 @@ export const isPublicSignOnlyApp = (): boolean => {
 export function isPublicSignRoute(pathname?: string): boolean {
   const path =
     pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '');
+  // Public-sign-only app (local + esign host): wizard lives at /
+  if (isPublicSignOnlyApp() && (path === '/' || path === '')) return true;
   if (isEsignPublicHost() && path === '/') return true;
   return ESIGN_PUBLIC_PATH_PREFIXES.some((prefix) => path.startsWith(prefix));
 }

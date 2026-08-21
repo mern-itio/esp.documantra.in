@@ -101,6 +101,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { toTitleCase } from '../../utils/formatName';
 import { APP_NAME } from '../../components/constants/appConfig';
 import { BRAND, formatEnvelopeSubject } from '../../config/brand';
+import { isVSignEnabled } from '../../config/vsign';
 
 /** Match saved recipient rows by name, email, company, title, or phone (digits normalized). */
 function recipientListRowMatchesQuery(
@@ -239,8 +240,8 @@ const isPublicFlow =
     requireAllSignatures: true,
     allowDecline: true,
     signingOrder: 'sequential' as const,
-    signatureType: 'standard' as 'standard' | 'advanced' | 'qualified',
-    complianceLevel: 'basic' as 'basic' | 'enhanced' | 'qualified'
+    signatureType: (isPublicFlow && isVSignEnabled() ? 'qualified' : 'standard') as 'standard' | 'advanced' | 'qualified',
+    complianceLevel: (isPublicFlow && isVSignEnabled() ? 'qualified' : 'basic') as 'basic' | 'enhanced' | 'qualified'
   });
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
@@ -3539,7 +3540,14 @@ const sendResp = await eSignApi.post(sendUrl);
         });
         navigate(isPublicFlow ? `/sent?envelopeId=${envelopeId}` : '/e-sign/aggrement');
       } else if (isPublicFlow) {
-        navigate(`/sent?envelopeId=${envelopeId}`);
+        const signLink =
+          sendResp?.data?.signLink ||
+          sendResp?.data?.recipients?.[0]?.signLink ||
+          null;
+        if (signLink && envelopeId) {
+          sessionStorage.setItem(`vsignDevSignLink:${envelopeId}`, signLink);
+        }
+        navigate(`/sent?envelopeId=${envelopeId}`, { state: { signLink } });
       } else {
         // Keep existing app flow: Agreement page shows the standard success popup via `sent=true`.
         navigate('/e-sign/aggrement?sent=true');

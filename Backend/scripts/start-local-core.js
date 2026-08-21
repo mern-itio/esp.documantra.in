@@ -12,6 +12,8 @@ const services = [
   { name: 'document', cwd: 'services/document-service', entry: 'index.js', port: 2102 },
   { name: 'esign', cwd: 'services/e-sign-service', entry: 'index.js', port: 2103 },
   { name: 'pdf', cwd: 'services/pdf-service', entry: 'index.js', port: 2104 },
+  { name: 'api', cwd: 'services/api-service', entry: 'index.js', port: 2105 },
+  { name: 'email', cwd: 'services/email-service', entry: 'index.js', port: 2112 },
   { name: 'subscription', cwd: 'services/subscription-service', entry: 'index.js', port: 2110 },
   { name: 'organization', cwd: 'services/organization-service', entry: 'index.js', port: 2111 },
   { name: 'support', cwd: 'services/support-service', entry: 'index.js', port: 2107 },

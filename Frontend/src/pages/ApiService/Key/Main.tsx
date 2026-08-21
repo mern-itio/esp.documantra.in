@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Plus, FlaskConical } from "lucide-react";
 import ApiKeyCards from "./KeyCards";
 import { toast } from "react-hot-toast";
 import Modal from "../../../components/common/types/Modal"; 
 import { apiServiceApi } from "../../../services/apiHelper"; 
+import { BRAND } from "../../../config/brand";
 
+
+const DEMO_KEY_STORAGE = 'documantra_demo_sandbox_key';
 
 const Main = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -39,10 +43,23 @@ const Main = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">API Keys</h1>
           <p className="text-gray-600">
-            Manage API keys for secure access to the DraftnSign API.
+            Manage API keys for secure access to the {BRAND.name} Sign API.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <Link
+            to="/api-service/demo"
+            onClick={() => {
+              try {
+                const raw = sessionStorage.getItem('documantra_last_sandbox_key');
+                if (raw) sessionStorage.setItem(DEMO_KEY_STORAGE, raw);
+              } catch { /* ignore */ }
+            }}
+            className="flex items-center gap-2 px-3 py-2 border border-[#155E4B]/40 rounded-lg text-[#155E4B] text-sm font-medium hover:bg-[#155E4B]/5 transition-colors"
+          >
+            <FlaskConical className="w-4 h-4" />
+            Integration demo
+          </Link>
           {!hasSandbox || !hasProduction ? (
           <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm hover:bg-gray-100 transition-colors cursor-pointer"  onClick={() => { if (!hasSandbox) setMode('sandbox'); else if (!hasProduction) setMode('production'); setModalOpen(true);}}>
             <Plus className="w-4 h-4" />

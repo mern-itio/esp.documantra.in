@@ -56,10 +56,11 @@ const AIAuditInsights: React.FC = () => {
         const insights = calculateInsights(allEnvelopes);
         setInsightsData(insights);
       }
-    } catch (error) {
-      console.error('Error fetching AI insights data:', error);
-      // Use mock data on error
-    //   setInsightsData(getMockData());
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status !== 401 && status !== 403 && status !== 404) {
+        console.error('Error fetching AI insights data:', error);
+      }
     } finally {
       setLoading(false);
     }

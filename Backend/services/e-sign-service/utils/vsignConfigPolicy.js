@@ -16,11 +16,12 @@ function defaultConfig() {
     certMode: 'live',
     aspId: process.env.ASP_ID || 'IIPLUAT001',
     vsignAuthPage: process.env.VSIGN_AUTHPAGE || 'https://esignuat.vsign.in/esp',
+    vsignAuthLogoUrl: process.env.VSIGN_AUTH_LOGO_URL || '',
     vsignCallbackUrl:
       process.env.VSIGN_CALLBACK_URL
       || 'https://esp.documantra.in/esign/api/e-sign/public/v-sign/response',
     vsignEspResponseUrl: process.env.VSIGN_ESP_RESPONSE_URL || '',
-    utilityUrl: process.env.UTILITY_URL || 'http://127.0.0.1:7077',
+    utilityUrl: process.env.UTILITY_URL || 'http://127.0.0.1:7078',
     pfxPath: process.env.PFX_PATH || 'uploads/vSign/signCertificate.pfx',
     pfxPassword: process.env.PFX_PASSWORD || '',
     pfxAlias: process.env.PFX_ALIAS || '',
@@ -70,6 +71,7 @@ function docToEffective(doc) {
     certMode: doc.certMode || base.certMode,
     aspId: (doc.aspId || base.aspId || '').trim(),
     vsignAuthPage: (doc.vsignAuthPage || base.vsignAuthPage || '').replace(/\/+$/, ''),
+    vsignAuthLogoUrl: (doc.vsignAuthLogoUrl || base.vsignAuthLogoUrl || '').trim(),
     vsignCallbackUrl: (doc.vsignCallbackUrl || base.vsignCallbackUrl || '').trim(),
     vsignEspResponseUrl: (doc.vsignEspResponseUrl || '').trim(),
     utilityUrl: (doc.utilityUrl || base.utilityUrl || '').trim(),
@@ -117,9 +119,37 @@ function qualifiesEnvelopeForVSign(envelopeMeta) {
   return isVSignEnabledAndReady() && isQualified;
 }
 
+function envProfileOperational() {
+  if (process.env.NODE_ENV === 'production') return false;
+  const aspId = (process.env.ASP_ID || '').trim();
+  const pfxPath = (process.env.PFX_PATH || '').trim();
+  if (!aspId || !pfxPath) return false;
+  const abs = resolveAbsolutePath(pfxPath);
+  if (!abs || !fs.existsSync(abs)) return false;
+  const certMode = (process.env.VSIGN_CERT_MODE || 'uat').trim().toLowerCase();
+  if (certMode === 'live') {
+    return Boolean(process.env.PFX_PASSWORD && process.env.PFX_ALIAS);
+  }
+  return true;
+}
+
 function getCachedEffectiveConfig() {
-  if (cachedConfig && Date.now() < cacheExpiresAt) {
+  if (cachedConfig && Date.now() >= cacheExpiresAt) {
+    refreshVSignConfigCache().catch(() => {});
+  }
+  if (cachedConfig) {
     return cachedConfig;
+  }
+  if (envProfileOperational()) {
+    const base = defaultConfig();
+    return {
+      ...base,
+      enabled: true,
+      vsignEnv: process.env.VSIGN_ENV === 'production' ? 'production' : 'uat',
+      certMode: (process.env.VSIGN_CERT_MODE || 'uat') === 'live' ? 'live' : 'uat',
+      source: 'env-profile',
+      adminConfigured: false,
+    };
   }
   return docToEffective(null);
 }
@@ -153,10 +183,14 @@ function isVSignPfxReady(cfg) {
   if (cfg.certMode === 'live') {
     return Boolean(cfg.pfxPassword && cfg.pfxAlias);
   }
-  return Boolean(cfg.pfxPassword || cfg.pfxAlias);
+  // UAT kit: password/alias come from code defaults; file on disk is enough.
+  return true;
 }
 
 function isVSignEnabledAndReady(cfg = getCachedEffectiveConfig()) {
+  if (envProfileOperational()) {
+    return true;
+  }
   if (isLegacyEnvMode(cfg)) {
     return legacyEnvVSignOperational(cfg);
   }
@@ -186,12 +220,27 @@ async function getAdminVSignConfigPayload() {
   const pfxAbs = resolveAbsolutePath(cfg.pfxPath);
   const publicCertAbs = resolveAbsolutePath(cfg.publicCertPath);
   const encAbs = resolveAbsolutePath(cfg.dmEncryptionKeyPath);
+  let activeProfile = null;
+  let tunnelUrl = null;
+  try {
+    const { readActiveProfile } = require('../scripts/vsign-profile-lib');
+    const profileFile = path.join(serviceRoot, 'config', 'vsign', 'tunnel.url');
+    activeProfile = readActiveProfile();
+    if (fs.existsSync(profileFile)) {
+      tunnelUrl = fs.readFileSync(profileFile, 'utf8').trim().replace(/\/+$/, '') || null;
+    }
+  } catch (_) {
+    /* optional */
+  }
   return {
     enabled: cfg.enabled,
+    activeProfile,
+    tunnelUrl,
     vsignEnv: cfg.vsignEnv,
     certMode: cfg.certMode,
     aspId: cfg.aspId,
     vsignAuthPage: cfg.vsignAuthPage,
+    vsignAuthLogoUrl: cfg.vsignAuthLogoUrl,
     vsignCallbackUrl: cfg.vsignCallbackUrl,
     vsignEspResponseUrl: resolveEspResponseUrl(cfg),
     utilityUrl: cfg.utilityUrl,
@@ -247,4 +296,5 @@ module.exports = {
   isVSignPfxReady,
   maskSecret,
   docToEffective,
+  envProfileOperational,
 };

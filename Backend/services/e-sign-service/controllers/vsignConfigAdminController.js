@@ -13,8 +13,24 @@ const {
   maskSecret,
 } = require('../utils/vsignConfigPolicy');
 const { normalizeVSignPath } = require('../utils/vsignAssets');
+const { switchProfile, status: getProfileStatus, readActiveProfile } = require('../scripts/vsign-profile-lib');
 
 const vSignUploadDir = path.join(__dirname, '..', 'uploads', 'vSign');
+
+function certFilenameMap(profileName) {
+  const isUat = profileName === 'uat';
+  return {
+    signingPfx: isUat ? 'signCertificate.uat.pfx' : 'signCertificate.pfx',
+    publicCert: isUat ? 'ITIO_PUBLIC_KEY.uat.cer' : 'ITIO_PUBLIC_KEY.cer',
+    encryptionPfx: isUat ? 'dm_encryption_key.uat.pfx' : 'dm_encryption_key.pfx',
+  };
+}
+
+function resolveUploadProfile(req) {
+  const requested = String(req.body?.profile || req.query?.profile || '').trim().toLowerCase();
+  if (requested === 'uat' || requested === 'live') return requested;
+  return readActiveProfile() || 'live';
+}
 
 const certStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -23,11 +39,8 @@ const certStorage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const field = req.body?.uploadTarget || file.fieldname;
-    const map = {
-      signingPfx: 'signCertificate.pfx',
-      publicCert: 'ITIO_PUBLIC_KEY.cer',
-      encryptionPfx: 'dm_encryption_key.pfx',
-    };
+    const profile = resolveUploadProfile(req);
+    const map = certFilenameMap(profile);
     cb(null, map[field] || `${Date.now()}-${file.originalname}`);
   },
 });
@@ -71,6 +84,9 @@ async function updateVSignConfig(req, res) {
     if (body.vsignAuthPage !== undefined) {
       doc.vsignAuthPage = String(body.vsignAuthPage || '').trim().replace(/\/+$/, '');
     }
+    if (body.vsignAuthLogoUrl !== undefined) {
+      doc.vsignAuthLogoUrl = String(body.vsignAuthLogoUrl || '').trim();
+    }
     if (body.vsignCallbackUrl !== undefined) {
       doc.vsignCallbackUrl = String(body.vsignCallbackUrl || '').trim();
     }
@@ -103,7 +119,17 @@ async function updateVSignConfig(req, res) {
     }
 
     if (body.vsignEnv === 'production' && !doc.vsignAuthPage.includes('esignuat')) {
-      doc.vsignAuthPage = 'https://esign.vsign.in/esp';
+      if (doc.vsignAuthPage.endsWith('/authpage')) {
+        doc.vsignAuthPage = doc.vsignAuthPage.replace(/\/authpage$/, '');
+      }
+      if (!doc.vsignAuthPage.includes('esign.verasys.in')) {
+        doc.vsignAuthPage = 'https://esign.verasys.in/esp';
+      }
+    }
+    if (body.vsignEnv === 'uat') {
+      doc.vsignAuthLogoUrl = '';
+    } else if (body.vsignEnv === 'production' && !doc.vsignAuthLogoUrl) {
+      doc.vsignAuthLogoUrl = 'https://esp.documantra.in/Logo.png';
     }
 
     const adminId = getAdminId(req);
@@ -123,10 +149,44 @@ async function updateVSignConfig(req, res) {
   }
 }
 
+async function getVSignProfileStatus(req, res) {
+  try {
+    const profileStatus = getProfileStatus();
+    const payload = await getAdminVSignConfigPayload();
+    return res.status(200).json({ ...profileStatus, config: payload });
+  } catch (err) {
+    console.error('getVSignProfileStatus', err);
+    return res.status(500).json({ message: err.message || 'Failed to load VSign profile status' });
+  }
+}
+
+async function switchVSignProfile(req, res) {
+  try {
+    const profile = String(req.body?.profile || '').trim().toLowerCase();
+    if (!['uat', 'live'].includes(profile)) {
+      return res.status(400).json({ message: 'profile must be "uat" or "live"' });
+    }
+    const tunnelUrl = String(req.body?.tunnelUrl || '').trim();
+    const result = await switchProfile(profile, tunnelUrl);
+    await refreshVSignConfigCache();
+    const payload = await getAdminVSignConfigPayload();
+    return res.status(200).json({
+      ...result,
+      config: payload,
+      requiresRestart: ['utility', 'e-sign-service'],
+      message: `Switched to ${profile.toUpperCase()} (${result.aspId}). Restart utility JAR and create a new envelope before signing.`,
+    });
+  } catch (err) {
+    console.error('switchVSignProfile', err);
+    return res.status(400).json({ message: err.message || 'Profile switch failed' });
+  }
+}
+
 async function uploadVSignCert(req, res) {
   try {
     const doc = await getOrCreateVSignConfigDoc();
     const target = req.body?.uploadTarget || 'signingPfx';
+    const profile = resolveUploadProfile(req);
     const file = req.file;
     if (!file) return res.status(400).json({ message: 'No file uploaded' });
 
@@ -143,7 +203,7 @@ async function uploadVSignCert(req, res) {
     const payload = await getAdminVSignConfigPayload();
     return res.status(200).json({
       ...payload,
-      message: `Uploaded ${path.basename(file.filename)}`,
+      message: `Uploaded ${path.basename(file.filename)} (${profile} profile)`,
     });
   } catch (err) {
     console.error('uploadVSignCert', err);
@@ -202,7 +262,7 @@ async function testVSignConfig(req, res) {
           signedPdfPath: normalizeVSignPath(path.join(baseDir, 'signed', 'admin-test')),
           tempInfoPath: normalizeVSignPath(path.join(baseDir, 'vSignTemp')),
           pdfDestinationPath: normalizeVSignPath(path.join(baseDir, 'signed', 'admin-test', `${txn}.pdf`)),
-          responseUrl: payload.vsignEspResponseUrl || resolveEspResponseUrl(payload),
+          responseUrl: payload.vsignCallbackUrl,
           redirectUrl: payload.vsignCallbackUrl,
           txn,
           aspId: payload.aspId,
@@ -271,6 +331,8 @@ async function testVSignConfig(req, res) {
 module.exports = {
   certUpload,
   getVSignConfig,
+  getVSignProfileStatus,
+  switchVSignProfile,
   updateVSignConfig,
   uploadVSignCert,
   testVSignConfig,

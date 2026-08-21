@@ -14,28 +14,49 @@ const {
   listTrackedEnvelopeIdsForGuest,
 } = require('../helpers/publicGuestSend');
 
-const formatEnvelopeRow = (envelope, recipients = []) => ({
-  id: String(envelope._id),
-  name: envelope.name || envelope.subject || 'Untitled document',
-  subject: envelope.subject || envelope.name || 'Untitled document',
-  status: envelope.status,
-  createdAt: envelope.createdAt,
-  updatedAt: envelope.updatedAt,
-  recipientCount: recipients.length,
-  completedCount: recipients.filter((r) => String(r.status || '').toLowerCase() === 'completed').length,
-});
+const { buildPublicSignerUrl } = require('../helpers/signerAccessToken');
+
+const formatEnvelopeRow = (envelope, recipients = [], permissions = []) => {
+  const row = {
+    id: String(envelope._id),
+    name: envelope.name || envelope.subject || 'Untitled document',
+    subject: envelope.subject || envelope.name || 'Untitled document',
+    status: envelope.status,
+    createdAt: envelope.createdAt,
+    updatedAt: envelope.updatedAt,
+    recipientCount: recipients.length,
+    completedCount: recipients.filter((r) => String(r.status || '').toLowerCase() === 'completed').length,
+  };
+
+  if (
+    String(process.env.SKIP_ENVELOPE_EMAIL || '').toLowerCase() === 'true' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
+    const waitingPermission = permissions.find((p) => {
+      const role = String(p.role || 'signer').toLowerCase();
+      if (['carbon_copy', 'cc', 'in_person_signer'].includes(role)) return false;
+      return ['waiting', 'sent'].includes(String(p.status || '').toLowerCase());
+    });
+    const recipientId = waitingPermission?.recipientId?._id || waitingPermission?.recipientId;
+    if (recipientId) {
+      row.devSignLink = buildPublicSignerUrl(envelope._id, recipientId);
+    }
+  }
+
+  return row;
+};
 
 const getSendUsage = async (req, res) => {
   try {
     const quota = await assertPublicSendQuota(req);
     if (!quota.ok) {
       return res.status(200).json({
-        ...buildLimitResponse(quota.used || PUBLIC_FREE_MONTHLY_LIMIT),
+        ...buildLimitResponse(quota.used || PUBLIC_FREE_MONTHLY_LIMIT, quota.limit),
         limitReached: true,
       });
     }
     return res.status(200).json({
-      ...buildLimitResponse(quota.used || 0),
+      ...buildLimitResponse(quota.used || 0, quota.limit),
       limitReached: false,
     });
   } catch (error) {
@@ -71,7 +92,7 @@ const listSentEnvelopes = async (req, res) => {
         const recipients = permissions
           .map((p) => p.recipientId)
           .filter(Boolean);
-        return formatEnvelopeRow(envelope, recipients);
+        return formatEnvelopeRow(envelope, recipients, permissions);
       }),
     );
 
@@ -84,6 +105,11 @@ const listSentEnvelopes = async (req, res) => {
     return res.status(200).json({
       envelopes: rows,
       usage: buildLimitResponse(used),
+      ...(String(process.env.SKIP_ENVELOPE_EMAIL || '').toLowerCase() === 'true' &&
+      process.env.NODE_ENV !== 'production' &&
+      process.env.VSIGN_CALLBACK_URL
+        ? { devVSignCallbackUrl: process.env.VSIGN_CALLBACK_URL }
+        : {}),
     });
   } catch (error) {
     console.error('listSentEnvelopes failed:', error);

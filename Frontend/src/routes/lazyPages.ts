@@ -107,6 +107,7 @@ export const ApiServiceMarketPlace = lazyPage(() => import('../pages/ApiService/
 export const ApiServiceCommunity = lazyPage(() => import('../pages/ApiService/Community/Main'));
 export const ApiServiceSupport = lazyPage(() => import('../pages/ApiService/Support/Main'));
 export const PublicSignerPage = lazyPage(() => import('../pages/eSign/PublicSignerPage'));
+export const SignAppearanceDemoPage = lazyPage(() => import('../pages/eSign/SignAppearanceDemoPage'));
 export const RecipientPortalPage = lazyPage(() => import('../pages/eSign/RecipientPortalPage'));
 export const CreatePdfFormPage = lazyPage(() => import('../pages/PDFTools/CreatePdfFormPage'));
 export const OAuthCallback = lazyPage(() => import('../pages/OAuthCallback'));

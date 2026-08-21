@@ -4,11 +4,13 @@ import { Outlet } from 'react-router-dom';
 
 const DashboardNoSidebarLayout: React.FC = () => {
   return (
-    <div className="flex h-screen bg-gray-100">
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* <Header sidebarOpen={false} setSidebarOpen={() => {}} /> */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-2">
-          <Outlet />
+    <div className="flex h-screen overflow-hidden bg-background">
+      <div className="relative flex flex-1 flex-col overflow-hidden">
+        <main className="dm-main-bg flex-1 overflow-x-hidden overflow-y-auto p-3 md:p-5 lg:p-6">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(38,5,89,0.04),transparent_50%)]" />
+          <div className="relative">
+            <Outlet />
+          </div>
         </main>
         {/* <GiftWidget /> */}
       </div>
@@ -17,5 +19,3 @@ const DashboardNoSidebarLayout: React.FC = () => {
 };
 
 export default DashboardNoSidebarLayout;
-
-

@@ -264,7 +264,7 @@ const CustomerChatWidget: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-24 right-6 z-50 rounded-full bg-primary p-4 text-primary-foreground shadow-lg transition-all hover:scale-110 hover:bg-primary/90"
+          className="fixed bottom-5 right-5 z-50 rounded-full bg-primary p-4 text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:scale-105 hover:bg-primary/90 md:right-6"
           aria-label="Open support chat"
         >
           <MessageSquare className="h-6 w-6" />

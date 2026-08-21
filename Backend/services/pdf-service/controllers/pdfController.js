@@ -71,12 +71,78 @@ async function getLibreOfficeFormats() {
   }
 }
 /**
+ * Fallback DOCX→PDF when LibreOffice is unavailable (local Windows dev).
+ * Uses mammoth text extraction + PDFKit — layout/images are not preserved.
+ */
+async function convertDocxToPdfViaMammoth(inputPath, outputPath) {
+  const ext = path.extname(inputPath).toLowerCase();
+  if (ext === '.doc') {
+    throw new Error(
+      'Legacy .doc files need LibreOffice for conversion. Upload a PDF or DOCX, or install LibreOffice.',
+    );
+  }
+
+  const inputStats = await fs.stat(inputPath);
+  const { value: textContent } = await mammoth.extractRawText({ path: inputPath });
+  const trimmed = String(textContent || '').trim();
+  if (!trimmed) {
+    throw new Error('Could not extract text from the document');
+  }
+
+  await fs.ensureDir(path.dirname(outputPath));
+
+  const doc = new PDFDocument({ margin: 50, size: 'A4', font: 'Helvetica' });
+  const stream = fsSync.createWriteStream(outputPath);
+  doc.pipe(stream);
+
+  trimmed.split(/\n\s*\n/).filter((p) => p.trim()).forEach((paragraph) => {
+    doc.fontSize(11).text(paragraph.trim(), { width: 500, align: 'left' });
+    doc.moveDown(0.5);
+  });
+
+  doc.end();
+  await new Promise((resolve, reject) => {
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+  });
+
+  const outputStats = await fs.stat(outputPath);
+  return {
+    success: true,
+    fileSize: outputStats.size,
+    inputFileSize: inputStats.size,
+    message: 'DOCX converted to PDF via text extraction (LibreOffice unavailable)',
+    outputFile: path.basename(outputPath),
+    conversionMethod: 'mammoth+pdfkit',
+  };
+}
+
+function getLibreOfficeCandidates() {
+  const candidates = [];
+  if (process.platform === 'win32') {
+    const programFiles = process.env['ProgramFiles'] || 'C:\\Program Files';
+    const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+    [
+      path.join(programFiles, 'LibreOffice', 'program', 'soffice.exe'),
+      path.join(programFilesX86, 'LibreOffice', 'program', 'soffice.exe'),
+    ].forEach((binPath) => {
+      if (fsSync.existsSync(binPath)) candidates.push(`"${binPath}"`);
+    });
+    return candidates;
+  }
+  ['soffice', 'libreoffice'].forEach((bin) => candidates.push(bin));
+  return candidates;
+}
+
+/**
  * Convert DOC/DOCX to PDF using LibreOffice for layout preservation
  * @param {string} inputPath - Path to input DOC/DOCX file
  * @param {string} outputPath - Path where PDF will be saved
  * @returns {Promise<Object>} - Result object with file size
  */
 async function convertDocToPdf(inputPath, outputPath) {
+  const loTimeoutMs = Number(process.env.LIBREOFFICE_CONVERT_TIMEOUT_MS) || 20000;
+
   try {
     console.log('Starting DOC to PDF conversion using LibreOffice for layout preservation...');
 
@@ -93,6 +159,11 @@ async function convertDocToPdf(inputPath, outputPath) {
     const outputDir = path.dirname(outputPath);
     await fs.ensureDir(outputDir);
 
+    const candidates = getLibreOfficeCandidates();
+    if (!candidates.length) {
+      throw new Error('LibreOffice not installed');
+    }
+
     // Use LibreOffice for DOC/DOCX to PDF conversion with enhanced parameters for better layout preservation
     const inputFileName = path.basename(inputPath, path.extname(inputPath));
 
@@ -101,8 +172,6 @@ async function convertDocToPdf(inputPath, outputPath) {
     await fs.ensureDir(profileDir);
     const profileUrl = `file://${profileDir.replace(/\\/g, '/')}`;
 
-    // Two candidate binaries to try
-    const candidates = ['soffice', 'libreoffice'];
     let conversionOk = false;
     let lastStdout = '';
     let lastStderr = '';
@@ -111,16 +180,16 @@ async function convertDocToPdf(inputPath, outputPath) {
       console.log(`Executing LibreOffice command (DOC to PDF): ${cmd}`);
       try {
         const { stdout, stderr } = await execAsync(cmd, {
-          timeout: 300000,
+          timeout: loTimeoutMs,
           maxBuffer: 1024 * 1024 * 20,
           env: {
             ...process.env,
-            HOME: '/tmp',
+            HOME: process.env.HOME || os.tmpdir(),
             SAL_USE_VCLPLUGIN: 'headless',
             SAL_DISABLE_OPENCL: '1',
             SAL_DISABLE_OPENCL_IMAGING: '1',
-            DISPLAY: ''
-          }
+            DISPLAY: '',
+          },
         });
         lastStdout = stdout || '';
         lastStderr = stderr || '';
@@ -133,41 +202,41 @@ async function convertDocToPdf(inputPath, outputPath) {
       if (await fs.pathExists(expectedOutputPath)) {
         conversionOk = true;
         break;
-      } else {
-        console.warn(`LibreOffice attempt with ${bin} did not produce output. stdout:`, lastStdout);
-        console.warn(`LibreOffice attempt with ${bin} stderr:`, lastStderr);
-
-        // Fallback: try running via xvfb-run if available
-        const xvfbCmd = `xvfb-run -a ${cmd}`;
-        console.log(`Retrying with xvfb-run: ${xvfbCmd}`);
-        try {
-          const { stdout, stderr } = await execAsync(xvfbCmd, {
-            timeout: 300000,
-            maxBuffer: 1024 * 1024 * 20,
-            env: {
-              ...process.env,
-              HOME: '/tmp',
-              SAL_USE_VCLPLUGIN: 'gen',
-              SAL_DISABLE_OPENCL: '1',
-              SAL_DISABLE_OPENCL_IMAGING: '1'
-            }
-          });
-          lastStdout = stdout || '';
-          lastStderr = stderr || '';
-        } catch (e2) {
-          lastStdout = e2.stdout || '';
-          lastStderr = e2.stderr || e2.message || '';
-        }
-
-        const expectedOutputPathX = path.join(outputDir, `${inputFileName}.pdf`);
-        if (await fs.pathExists(expectedOutputPathX)) {
-          conversionOk = true;
-          break;
-        } else {
-          console.warn(`xvfb-run attempt did not produce output. stdout:`, lastStdout);
-          console.warn(`xvfb-run attempt stderr:`, lastStderr);
-        }
       }
+
+      console.warn(`LibreOffice attempt with ${bin} did not produce output. stdout:`, lastStdout);
+      console.warn(`LibreOffice attempt with ${bin} stderr:`, lastStderr);
+
+      // Linux-only fallback (xvfb). Skip on Windows — it hangs and blocks mammoth.
+      if (process.platform === 'win32') continue;
+
+      const xvfbCmd = `xvfb-run -a ${cmd}`;
+      console.log(`Retrying with xvfb-run: ${xvfbCmd}`);
+      try {
+        const { stdout, stderr } = await execAsync(xvfbCmd, {
+          timeout: loTimeoutMs,
+          maxBuffer: 1024 * 1024 * 20,
+          env: {
+            ...process.env,
+            HOME: process.env.HOME || os.tmpdir(),
+            SAL_USE_VCLPLUGIN: 'gen',
+            SAL_DISABLE_OPENCL: '1',
+            SAL_DISABLE_OPENCL_IMAGING: '1',
+          },
+        });
+        lastStdout = stdout || '';
+        lastStderr = stderr || '';
+      } catch (e2) {
+        lastStdout = e2.stdout || '';
+        lastStderr = e2.stderr || e2.message || '';
+      }
+
+      if (await fs.pathExists(path.join(outputDir, `${inputFileName}.pdf`))) {
+        conversionOk = true;
+        break;
+      }
+      console.warn(`xvfb-run attempt did not produce output. stdout:`, lastStdout);
+      console.warn(`xvfb-run attempt stderr:`, lastStderr);
     }
 
     // Cleanup the temp profile
@@ -183,13 +252,8 @@ async function convertDocToPdf(inputPath, outputPath) {
       await fs.move(expectedOutputPath, outputPath, { overwrite: true });
     }
 
-    // console.log('LibreOffice DOC to PDF conversion successful');
-
-    // Get output file stats
     const outputStats = await fs.stat(outputPath);
     const outputSize = outputStats.size;
-
-    // console.log('DOC to PDF conversion completed successfully using LibreOffice.');
 
     return {
       success: true,
@@ -198,15 +262,12 @@ async function convertDocToPdf(inputPath, outputPath) {
       message: 'DOC/DOCX converted to PDF using LibreOffice with full layout and image preservation',
       outputFile: path.basename(outputPath),
       conversionMethod: 'LibreOffice CLI',
-      compressionRatio: inputSize > 0 ? ((inputSize - outputSize) / inputSize * 100).toFixed(2) + '%' : 'N/A'
+      compressionRatio: inputSize > 0 ? ((inputSize - outputSize) / inputSize * 100).toFixed(2) + '%' : 'N/A',
     };
-    
   } catch (error) {
-    console.error('Error in DOC to PDF conversion using LibreOffice:', error);
-    
-    // Fallback to simple text extraction method if LibreOffice fails
-    console.log('LibreOffice conversion failed, falling back to text extraction method...');   
-    
+    console.error('Error in DOC to PDF conversion using LibreOffice:', error.message);
+    console.log('LibreOffice conversion failed, falling back to mammoth text extraction...');
+    return convertDocxToPdfViaMammoth(inputPath, outputPath);
   }
 }
 

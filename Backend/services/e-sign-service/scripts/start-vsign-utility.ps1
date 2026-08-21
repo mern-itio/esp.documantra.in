@@ -1,14 +1,16 @@
-# Start VSign ESP Utility on port 7077 (gettxnrefv4_1 / signpdfv4_1).
+# Start VSign ESP Utility on port 7078 (gettxnrefv4_1 / signpdfv4_1).
 # Prefers vendor JAR when VSIGN_USE_JAR=1 or esp-utility.jar exists.
 param(
-  [switch]$ForceJar
+  [switch]$ForceJar,
+  [switch]$Restart
 )
 
 $ErrorActionPreference = 'Stop'
 
 $serviceRoot = Split-Path $PSScriptRoot -Parent
 $utilityDir = Join-Path $serviceRoot 'utility'
-$port = if ($env:UTILITY_PORT) { $env:UTILITY_PORT } else { '7077' }
+# Match utility/application.properties server.port (7078 for Verasays-eSign-Web-ASP-4.2.jar)
+$port = if ($env:UTILITY_PORT) { $env:UTILITY_PORT } else { '7078' }
 
 function Test-PortListen {
   param([int]$P)
@@ -23,6 +25,30 @@ function Stop-PortProcess {
     }
   }
   Start-Sleep -Seconds 2
+}
+
+function Resolve-UtilityJava {
+  $candidates = @()
+  if ($env:VSIGN_JAVA_HOME) { $candidates += (Join-Path $env:VSIGN_JAVA_HOME 'bin\java.exe') }
+  $candidates += @(
+    'C:\Users\DELL\Desktop\ASP eSign 2.1_ITIO Innovex Private Limited(UAT)_17-Feb-26\ASP eSign 2.1_ITIO Innovex Private Limited(UAT)_17-Feb-26\UAT\jre\bin\java.exe',
+    (Join-Path $utilityDir 'jre\bin\java.exe')
+  )
+  foreach ($javaPath in $candidates) {
+    if ($javaPath -and (Test-Path -LiteralPath $javaPath)) {
+      return (Resolve-Path -LiteralPath $javaPath).Path
+    }
+  }
+  $javaCmd = Get-Command java -ErrorAction SilentlyContinue
+  if ($javaCmd) {
+    $versionLine = & $javaCmd.Source -version 2>&1 | Select-Object -First 1
+    if ($versionLine -match 'version "1\.8') {
+      return $javaCmd.Source
+    }
+    Write-Host "WARNING: default java is not 1.8 ($versionLine). Set VSIGN_JAVA_HOME to Java 8 for Verasays JAR." -ForegroundColor Yellow
+    return $javaCmd.Source
+  }
+  return $null
 }
 
 $envFile = Join-Path $serviceRoot '.env'
@@ -41,7 +67,14 @@ if ($jarFromEnv -and (Test-Path -LiteralPath $jarFromEnv)) {
   }
 }
 
-$jarPath = Join-Path $utilityDir 'esp-utility.jar'
+$verasaysJar = Get-ChildItem $utilityDir -Filter 'Verasays-eSign-Web-ASP*.jar' -ErrorAction SilentlyContinue |
+  Sort-Object LastWriteTime -Descending |
+  Select-Object -First 1 -ExpandProperty FullName
+$jarPath = if ($verasaysJar -and (Test-Path $verasaysJar)) {
+  $verasaysJar
+} else {
+  Join-Path $utilityDir 'esp-utility.jar'
+}
 if (-not (Test-Path $jarPath)) {
   $jarPath = Get-ChildItem $utilityDir -Filter '*.jar' -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -notmatch '^(access-bridge|rt|jce|jsse)' } |
@@ -56,21 +89,27 @@ if (-not (Test-Path $exePath)) {
 }
 
 if (Test-PortListen -P ([int]$port)) {
-  Write-Host "ESP Utility already running on port $port" -ForegroundColor Green
-  Write-Host "Status: http://127.0.0.1:$port"
-  exit 0
+  if (-not $Restart) {
+    Write-Host "ESP Utility already running on port $port" -ForegroundColor Green
+    Write-Host "Status: http://127.0.0.1:$port"
+    Write-Host "Use -Restart after switching UAT/live (utility reads application.properties only at startup)." -ForegroundColor DarkGray
+    exit 0
+  }
+  Write-Host "Restarting ESP Utility on port $port..." -ForegroundColor Cyan
+  Stop-PortProcess -P ([int]$port)
 }
 
 if ($useJar -and $jarPath -and (Test-Path $jarPath)) {
-  $javaCmd = Get-Command java -ErrorAction SilentlyContinue
-  if (-not $javaCmd) {
-    Write-Host 'Java not found. Install JDK 17+ (winget install EclipseAdoptium.Temurin.17.JDK).' -ForegroundColor Red
+  $javaExe = Resolve-UtilityJava
+  if (-not $javaExe) {
+    Write-Host 'Java not found. Install Java 8 (JRE) or set VSIGN_JAVA_HOME.' -ForegroundColor Red
     exit 1
   }
   Stop-PortProcess -P ([int]$port)
   Write-Host 'Starting VSign ESP Utility JAR...' -ForegroundColor Cyan
   Write-Host "  $jarPath"
-  Start-Process -FilePath 'java' -ArgumentList @('-jar', $jarPath) -WorkingDirectory $utilityDir -WindowStyle Normal
+  Write-Host "  java: $javaExe"
+  Start-Process -FilePath $javaExe -ArgumentList @('-jar', $jarPath) -WorkingDirectory $utilityDir -WindowStyle Normal
   Start-Sleep -Seconds 8
   if (Test-PortListen -P ([int]$port)) {
     Write-Host "ESP Utility JAR started on port $port" -ForegroundColor Green

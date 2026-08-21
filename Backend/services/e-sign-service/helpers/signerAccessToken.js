@@ -61,7 +61,11 @@ function buildPublicSignerUrl(envelopeId, recipientId) {
 }
 
 function isSignerAccessOtpEnabled() {
-  return process.env.DISABLE_SIGNER_ACCESS_OTP !== 'true';
+  if (process.env.DISABLE_SIGNER_ACCESS_OTP === 'true') return false;
+  if (process.env.DISABLE_SIGNER_ACCESS_OTP === 'false') return true;
+  // Local dev: skip email OTP by default (Mailgun/SMTP often not configured)
+  if (process.env.NODE_ENV !== 'production') return false;
+  return true;
 }
 
 module.exports = {

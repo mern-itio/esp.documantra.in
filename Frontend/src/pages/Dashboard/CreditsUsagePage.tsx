@@ -4,7 +4,6 @@ import { subscriptionApi } from '../../services/apiHelper';
 import { SubscriptionService } from '../../services/subscriptionService';
 import { useSubscription } from '../../context/SubscriptionContext';
 import {
-  ArrowLeft,
   FileText,
   ExternalLink,
   ChevronDown,
@@ -16,6 +15,7 @@ import type { Invoice } from '../../types';
 import CreditPurchaseModal from '../../components/common/CreditPurchaseModal';
 import { CHART_HEX } from '../../components/common/ChartErrorBoundary';
 import { formatBillingAmount } from '../../utils/billingCurrency';
+import { PageShell, PageHero, PagePanel } from '../../components/common/PageShell';
 
 interface UsageRow {
   _id?: string;
@@ -266,62 +266,48 @@ const CreditsUsagePage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="mb-2 flex items-center gap-3">
-              <Link
-                to="/dashboard"
-                aria-label="Back to Dashboard"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">Credits & Usage</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Track your billing and usage history</p>
-              </div>
-            </div>
-          </div>
+    <PageShell wide>
+      <PageHero
+        compact
+        title="Credits & Usage"
+        subtitle="Track your billing and usage history"
+        backTo="/dashboard"
+        action={
           <button
             type="button"
             onClick={() => setIsCreditPurchaseModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
+            className="dm-btn-primary bg-white text-[#155E4B] hover:bg-white/90"
           >
             <Zap className="h-4 w-4" />
             Add credits
           </button>
-        </div>
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-          <div className="border-b border-border bg-gradient-to-r from-muted/40 to-card px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Included Usage</h2>
-                {selectedIncludedMonthKey && (
-                  <p className="mt-1 text-sm text-muted-foreground">{monthLabelFromKey(selectedIncludedMonthKey)}</p>
-                )}
-              </div>
-              {availableIncludedMonths.length > 0 && (
-                <div className="relative">
-                  <select
-                    value={selectedIncludedMonthKey}
-                    onChange={(e) => setSelectedIncludedMonthKey(e.target.value)}
-                    className="cursor-pointer appearance-none rounded-lg border border-border bg-background px-4 py-2 pr-8 text-sm font-medium text-foreground hover:border-muted-foreground/40 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-                    aria-label="Filter included usage by month"
-                  >
-                    {availableIncludedMonths.map((monthKey) => (
-                      <option key={monthKey} value={monthKey}>
-                        {monthLabelFromKey(monthKey)}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                </div>
-              )}
+        }
+      />
+      <PagePanel
+        title="Included Usage"
+        subtitle={selectedIncludedMonthKey ? monthLabelFromKey(selectedIncludedMonthKey) : undefined}
+        headerAction={
+          availableIncludedMonths.length > 0 ? (
+            <div className="relative">
+              <select
+                value={selectedIncludedMonthKey}
+                onChange={(e) => setSelectedIncludedMonthKey(e.target.value)}
+                className="cursor-pointer appearance-none rounded-xl border border-border bg-background px-4 py-2 pr-8 text-sm font-medium text-foreground hover:border-primary/30 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+                aria-label="Filter included usage by month"
+              >
+                {availableIncludedMonths.map((monthKey) => (
+                  <option key={monthKey} value={monthKey}>
+                    {monthLabelFromKey(monthKey)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
-          </div>
-          <div className="p-6">
+          ) : undefined
+        }
+        noPadding
+        bodyClassName="p-6"
+      >
             {loading ? (
               <div className="py-8 text-center text-muted-foreground">
                 <Calendar className="mx-auto mb-2 h-6 w-6 animate-spin" />
@@ -399,32 +385,29 @@ const CreditsUsagePage: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-          <div className="border-b border-border bg-gradient-to-r from-muted/40 to-card px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Invoices</h2>
-              </div>
-              {availableInvoiceMonths.length > 0 && (
-                <div className="relative">
-                  <select
-                    value={selectedInvoiceMonth}
-                    onChange={(e) => setSelectedInvoiceMonth(e.target.value)}
-                    className="cursor-pointer appearance-none rounded-lg border border-border bg-background px-4 py-2 pr-8 text-sm font-medium text-foreground hover:border-muted-foreground/40 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    {availableInvoiceMonths.map(month => (
-                      <option key={month} value={month}>{month}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          </div>
+      </PagePanel>
 
-          <div className="p-6">
+      <PagePanel
+        title="Invoices"
+        headerAction={
+          availableInvoiceMonths.length > 0 ? (
+            <div className="relative">
+              <select
+                value={selectedInvoiceMonth}
+                onChange={(e) => setSelectedInvoiceMonth(e.target.value)}
+                className="cursor-pointer appearance-none rounded-xl border border-border bg-background px-4 py-2 pr-8 text-sm font-medium text-foreground hover:border-primary/30 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {availableInvoiceMonths.map(month => (
+                  <option key={month} value={month}>{month}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            </div>
+          ) : undefined
+        }
+        noPadding
+        bodyClassName="p-6"
+      >
             {loadingInvoices ? (
               <div className="py-8 text-center text-muted-foreground">
                 <FileText className="mx-auto mb-2 h-6 w-6 animate-spin" />
@@ -481,9 +464,7 @@ const CreditsUsagePage: React.FC = () => {
                 </tbody>
               </table>
             )}
-          </div>
-        </div>
-      </div>
+      </PagePanel>
 
       <CreditPurchaseModal
         open={isCreditPurchaseModalOpen}
@@ -495,7 +476,7 @@ const CreditsUsagePage: React.FC = () => {
             .catch(() => {})
         }}
       />
-    </div>
+    </PageShell>
   );
 };
 

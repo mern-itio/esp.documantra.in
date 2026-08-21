@@ -121,7 +121,13 @@ const SignerAccessGate: React.FC<SignerAccessGateProps> = ({
       });
       setMaskedEmail(response.data?.maskedEmail || maskedEmail);
       setResendSeconds(Number(response.data?.resendAfterSeconds || 60));
-      setInfo(response.data?.message || 'Access code sent to your email.');
+      const devCode = response.data?.devAccessCode;
+      if (devCode) {
+        setCode(String(devCode));
+        setInfo(`Local dev code: ${devCode} (email not configured on this machine)`);
+      } else {
+        setInfo(response.data?.message || 'Access code sent to your email.');
+      }
     } catch (err: any) {
       const retryAfter = Number(err?.response?.data?.resendAfterSeconds || 0);
       if (retryAfter > 0) {

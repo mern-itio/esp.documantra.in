@@ -16,7 +16,7 @@ const AIAssistantButton: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-44 right-6 w-14 h-14 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 hover:scale-110"
+          className="fixed bottom-[5.75rem] right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#260559] to-purple-700 text-white shadow-lg shadow-[#260559]/25 transition-all duration-300 hover:scale-105 hover:shadow-xl md:right-6"
           title="Open AI Assistant"
         >
           <Bot className="w-6 h-6" />

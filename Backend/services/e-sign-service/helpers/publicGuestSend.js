@@ -4,6 +4,9 @@ const { getUserId } = require('./envelopeAccess');
 
 const PUBLIC_FREE_MONTHLY_LIMIT = Number(process.env.PUBLIC_FREE_ENVELOPE_LIMIT || 10);
 
+const isPublicSendLimitDisabled = () =>
+  String(process.env.SKIP_PUBLIC_SEND_LIMIT || '').toLowerCase() === 'true';
+
 const getMonthKey = (date = new Date()) => {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -71,6 +74,10 @@ const buildLimitResponse = (used, limit = PUBLIC_FREE_MONTHLY_LIMIT) => ({
 });
 
 const assertPublicSendQuota = async (req) => {
+  if (isPublicSendLimitDisabled()) {
+    return { ok: true, ...buildLimitResponse(0, 999999) };
+  }
+
   const userId = getUserId(req);
   const guestId = getPublicGuestId(req);
 

@@ -4,12 +4,8 @@ import ScrollToTop from '../components/common/ScrollToTop';
 
 const SharedDocumentLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#F5F2EE]">
-      {/* Simple header without navigation */}
-    
-      
-      {/* Main content */}
-      <main className="w-full">
+    <div className="min-h-screen dm-main-bg">
+      <main className="relative w-full">
         <ScrollToTop />
         <Outlet />
       </main>

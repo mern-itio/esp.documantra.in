@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast"; 
 import { apiServiceApi } from "../../../services/apiHelper";
+import { useAuth } from "../../../components/AuthService/AuthContext";
 
 type ApiKeyCardsProps = {
   refresh?: number;
@@ -8,17 +9,29 @@ type ApiKeyCardsProps = {
 };
 
 export default function ApiKeyCards({ refresh = 0, onModesFound }: ApiKeyCardsProps) {
+  const { isAuthenticated } = useAuth();
   const [visible, setVisible] = useState<boolean[]>([]);
   const [keys, setKeys] = useState<any[]>([]);
 
-  // Fetch keys on mount
+  // Fetch keys on mount (authenticated only)
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const fetchKeys = async () => {
       try {
         const response = await apiServiceApi.get('/api/api-service/keys');
         if (response.status === 200 && response.data.apiKeys) {
           setKeys(response.data.apiKeys);
           setVisible(Array(response.data.apiKeys.length).fill(false));
+          const sandbox = response.data.apiKeys.find(
+            (key: { mode: string; isActive: boolean; apiKey?: string }) =>
+              key.mode === 'sandbox' && key.isActive && key.apiKey,
+          );
+          if (sandbox?.apiKey) {
+            try {
+              sessionStorage.setItem('documantra_last_sandbox_key', sandbox.apiKey);
+            } catch { /* ignore */ }
+          }
            const hasSandbox = response.data.apiKeys.some(
             (key: any) => key.mode === "sandbox" && key.isActive
           );
@@ -27,14 +40,16 @@ export default function ApiKeyCards({ refresh = 0, onModesFound }: ApiKeyCardsPr
           );
           if (onModesFound) onModesFound({ hasSandbox, hasProduction });
         }
-      } catch (error) {
+      } catch (error: any) {
+        const status = error?.response?.status;
+        if (status === 401 || status === 403) return;
         toast.error("Failed to fetch API keys. Please try again.", { id: "api-key-fetch-error" });
         console.error('Error fetching API keys:', error);
       }
     };
     
     fetchKeys();
-  }, [refresh]);
+  }, [refresh, isAuthenticated, onModesFound]);
 
   const handleToggle = (idx: number) => {
     setVisible(vis => vis.map((v, i) => (i === idx ? !v : v)));

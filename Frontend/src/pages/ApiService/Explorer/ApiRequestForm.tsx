@@ -57,10 +57,10 @@ export default function APIRequestForm({
       // Handle :id for envelope APIs
       let endpoint = selectedApi.endpoint;
       if (selectedApi.showEnvelopeId && envelopeId) {
-        endpoint = endpoint.replace(":id", envelopeId);
+        endpoint = endpoint.replace(":envelopeId", envelopeId).replace(":id", envelopeId);
       }
       if (selectedApi.showDocumentId && documentId) {
-        endpoint = endpoint.replace(":id", documentId);
+        endpoint = endpoint.replace(":documentId", documentId).replace(":id", documentId);
       }
 
       const customHeaders: { [key: string]: string } = {

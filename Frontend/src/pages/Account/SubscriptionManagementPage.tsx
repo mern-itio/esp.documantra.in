@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { PageShell, PageHero } from '../../components/common/PageShell';
 import SubscriptionInfo from '../../components/common/SubscriptionInfo';
 import SubscriptionPlansModal from '../../components/common/SubscriptionPlansModal';
 import CreditPurchaseModal from '../../components/common/CreditPurchaseModal';
 import InvoiceModal from '../../components/common/InvoiceModal';
 import { 
   CreditCard,
-  ArrowLeft, 
   Zap,
   HelpCircle, 
   BarChart3,
@@ -203,26 +203,15 @@ const SubscriptionManagementPage: React.FC = () => {
   }, [location.search, location.pathname, refreshPlan, navigate]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div>
-        <div>
-          <div className="border-b border-border bg-card/30 px-6 py-5">
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => navigate('/account/profile')}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-muted"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">Subscription Management</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Manage your plan, credits, and invoices from one place.</p>
-              </div>
-            </div>
-          </div>
+    <PageShell wide flush className="space-y-0">
+      <PageHero
+        compact
+        title="Subscription Management"
+        subtitle="Manage your plan, credits, and invoices from one place."
+        backTo="/account/profile"
+      />
 
-          <div className="px-6 py-6">
+      <div className="px-0 py-5 md:px-1">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="rounded-xl border border-border bg-card p-5">
                 <div className="mb-3 flex items-center justify-between">
@@ -452,8 +441,6 @@ const SubscriptionManagementPage: React.FC = () => {
                 </section>
               </div>
             </div>
-          </div>
-        </div>
       </div>
 
       <SubscriptionPlansModal 
@@ -485,7 +472,7 @@ const SubscriptionManagementPage: React.FC = () => {
         invoice={latestInvoice}
         onClose={() => setIsInvoiceModalOpen(false)}
       />
-    </div>
+    </PageShell>
   );
 };
 

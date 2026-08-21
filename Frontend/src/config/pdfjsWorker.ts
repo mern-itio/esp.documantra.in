@@ -1,8 +1,10 @@
 /**
  * Global PDF.js worker configuration for Vite.
- * Served from public/pdf.worker.min.mjs (copied at build from pdfjs-dist by vite.config.ts).
+ * Use ?url so the dev server serves the worker module (public/ path 404s with ?import).
  */
-export const PDFJS_WORKER_SRC = '/pdf.worker.min.mjs';
+import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+export const PDFJS_WORKER_SRC = workerUrl;
 
 if (typeof window !== 'undefined') {
   (window as Window & { __PDFJS_WORKER_SRC__?: string; pdfjsLib?: { GlobalWorkerOptions?: { workerSrc: string } } })

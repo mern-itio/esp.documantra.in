@@ -5,11 +5,19 @@ const ESignApiKey = require('../models/apiKey');
 const ApiEndpointAnalytics = require('../models/apiEndpoint');
 const mongoose = require('mongoose');
 
+function getUserId(req) {
+  const raw = req.user?.data?.id ?? req.user?.id ?? req.user?.userId;
+  return raw != null ? String(raw) : null;
+}
+
 
 module.exports = {
   createApiKey: async (req, res) => {
     try {
-      const userId = req.user.data.id;
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
       const mode = req.body.mode;
 
       if (!['sandbox', 'production'].includes(mode)) {
@@ -50,7 +58,10 @@ module.exports = {
   },
   getAllApiKeys: async (req, res) => {
     try {
-      const userId = req.user.data.id;
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
       const apiKeys = await ESignApiKey.find({ userId }).select('-__v');
       res.json({ apiKeys });
     } catch (err) {

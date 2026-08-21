@@ -43,6 +43,16 @@ export const getEsignUploadErrorMessage = (
   if (status === 413) {
     return `${prefix} is too large. Please upload a file smaller than ${limit}.`;
   }
+
+  const conversionHint =
+    'Document conversion failed. Upload a PDF, or make sure pdf-service is running on port 2104.';
+  if (
+    typeof serverMessage === 'string' &&
+    /timeout|ECONNREFUSED|ENOTFOUND|conversion|pdf-service|pdf service/i.test(serverMessage)
+  ) {
+    return conversionHint;
+  }
+
   if (status === 400 && serverMessage) {
     return serverMessage;
   }
@@ -51,6 +61,10 @@ export const getEsignUploadErrorMessage = (
   }
   if (status === 401) {
     return 'Your session expired. Please sign in again and retry the upload.';
+  }
+  const rawMsg = (error as Error)?.message || '';
+  if (/timeout|ECONNREFUSED|Network Error/i.test(rawMsg)) {
+    return conversionHint;
   }
 
   return `Upload failed. Please use ${ESIGN_UPLOAD_FORMAT_LABEL} under ${limit} and try again.`;

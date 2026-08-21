@@ -14,6 +14,8 @@ export default function BrandLogo({
 }: BrandLogoProps) {
   const { data } = useDocumantraBranding();
 
+  if (!BRAND.showLogo) return null;
+
   return (
     <img
       src={src || data.logoUrl || DEFAULT_BRAND_LOGO_URL}

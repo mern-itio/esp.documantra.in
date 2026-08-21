@@ -16,14 +16,13 @@ const baseDir = path.join(serviceRoot, 'uploads');
 
 async function main() {
   const aspCallbackUrl = resolveVSignCallbackUrl(serviceRoot);
-  const espResponseUrl = resolveVSignEspResponseUrl(serviceRoot);
   const txn = `diag-${Date.now()}`;
 
   const payload = {
     signedPdfPath: normalizeVSignPath(path.join(baseDir, 'signed', 'diag')),
     tempInfoPath: normalizeVSignPath(path.join(baseDir, 'vSignTemp')),
     pdfDestinationPath: normalizeVSignPath(path.join(baseDir, 'signed', 'diag', `${txn}.pdf`)),
-    responseUrl: espResponseUrl,
+    responseUrl: aspCallbackUrl,
     redirectUrl: aspCallbackUrl,
     txn,
     aspId: process.env.ASP_ID || 'IIPLUAT001',
@@ -53,14 +52,20 @@ async function main() {
   };
 
   console.log('aspCallbackUrl:', aspCallbackUrl);
-  console.log('espResponseUrl:', espResponseUrl);
-  console.log('mode: espResponseUrl + redirectUrl (v3)');
+  console.log('mode: responseUrl + redirectUrl = ASP callback (VSign production)');
 
   const { data } = await axios.post(`${process.env.UTILITY_URL || 'http://127.0.0.1:7077'}/gettxnrefv4_1`, payload, {
     timeout: 120000,
   });
 
-  console.log('utility status:', data?.status);
+  console.log('utility status:', data?.status, 'txnref:', data?.txnref);
+  if (data && typeof data === 'object') {
+    console.log('utility keys:', Object.keys(data));
+    if (data.msg || data.message || data.error || data.errorMessage) {
+      console.log('utility message:', data.msg || data.message || data.error || data.errorMessage);
+    }
+    if (data.errorCode) console.log('utility errorCode:', data.errorCode);
+  }
   if (data?.requestXML) {
     const xml = Buffer.from(data.requestXML, 'base64').toString('utf8');
     const responseUrl = xml.match(/responseUrl="([^"]+)"/)?.[1];

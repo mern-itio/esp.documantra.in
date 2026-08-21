@@ -1,0 +1,21 @@
+{
+  "name": "live",
+  "label": "Production — IIPL001, esign.verasys.in",
+  "vsignEnv": "production",
+  "certMode": "live",
+  "aspId": "IIPL001",
+  "vsignAuthPage": "https://esign.verasys.in/esp",
+  "vsignAuthLogoUrl": "https://esp.documantra.in/Logo.png",
+  "vsignEspResponseUrl": "https://esign.verasys.in/esign/2.1/signature",
+  "utilityEspMode": "production",
+  "utilityUrl": "http://127.0.0.1:7078",
+  "pfxPath": "uploads/vSign/signCertificate.pfx",
+  "publicCertPath": "uploads/vSign/ITIO_PUBLIC_KEY.cer",
+  "dmEncryptionKeyPath": "uploads/vSign/dm_encryption_key.pfx",
+  "localCallbackUrl": "http://127.0.0.1:2103/api/e-sign/public/v-sign/response",
+  "productionCallbackUrl": "https://esp.documantra.in/esign/api/e-sign/public/v-sign/response",
+  "useKitPfxDefaults": false,
+  "vsignUseJar": "1",
+  "vsignAppearanceMode": "custom-tick",
+  "vsignSignatureFontSize": "10"
+}

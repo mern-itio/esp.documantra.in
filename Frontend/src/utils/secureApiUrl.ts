@@ -18,7 +18,12 @@ export const resolveServiceUrl = (
     return upgradeToHttpsIfPageIsSecure(sanitized);
   }
 
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname.toLowerCase();
+    if (host === 'localhost' || host === '127.0.0.1') {
+      // Vite dev server proxies these paths to local microservices (avoids CORS).
+      return options.productionPath;
+    }
     return `${window.location.origin}${options.productionPath}`;
   }
 
@@ -47,7 +52,12 @@ export const sanitizeServiceEnvUrl = (envUrl: string | undefined): string | unde
     const pageHost =
       typeof window !== 'undefined' ? window.location.hostname.toLowerCase() : '';
     const pageIsLocal = pageHost === 'localhost' || pageHost === '127.0.0.1';
-    if (!pageIsLocal && (host === 'localhost' || host === '127.0.0.1')) {
+    const isLoopbackBackend = host === 'localhost' || host === '127.0.0.1';
+    // Local Vite dev uses same-origin proxy paths (/auth, /esign, …) — direct loopback URLs break CORS on /login.
+    if (pageIsLocal && isLoopbackBackend) {
+      return undefined;
+    }
+    if (!pageIsLocal && isLoopbackBackend) {
       return undefined;
     }
 

@@ -41,7 +41,18 @@ async function embedHandwrittenSignaturesInPdf(pdfPath, signatureFields, signatu
     const yTop = Number(field.y || 0) * scale;
     const y = page.getHeight() - yTop - handH;
 
-    page.drawImage(img, { x, y, width: w, height: handH });
+    const imgAspect = img.width / img.height;
+    let drawW = w;
+    let drawH = handH;
+    if (imgAspect > w / handH) {
+      drawH = w / imgAspect;
+    } else {
+      drawW = handH * imgAspect;
+    }
+    const drawX = x;
+    const drawY = y + (handH - drawH) / 2;
+
+    page.drawImage(img, { x: drawX, y: drawY, width: drawW, height: drawH });
   }
 
   fs.writeFileSync(pdfPath, Buffer.from(await pdfDoc.save({ useObjectStreams: false })));

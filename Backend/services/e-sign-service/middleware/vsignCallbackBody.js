@@ -75,9 +75,32 @@ function isVSignCallbackRequest(req) {
   const original = req.originalUrl || req.url || '';
   return (
     path === VSIGN_CALLBACK_PATH ||
-    path === '/v-sign/response' ||
-    original.startsWith('/api/e-sign/public/v-sign/response')
+    path.endsWith('/v-sign/response') ||
+    /\/v-sign\/response(?:\?|$)/.test(original)
   );
+}
+
+function vsignCallbackAccessMiddleware(req, res, next) {
+  if (!isVSignCallbackRequest(req)) return next();
+
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,HEAD,OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    req.headers['access-control-request-headers'] || 'Content-Type, Authorization',
+  );
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  return next();
 }
 
 function vsignCallbackBodyMiddleware(req, res, next) {
@@ -106,7 +129,7 @@ function vsignCallbackBodyMiddleware(req, res, next) {
 }
 
 function skipGlobalBodyParserForVSignCallback(req, res, next) {
-  if (req.path === VSIGN_CALLBACK_PATH) return next();
+  if (isVSignCallbackRequest(req)) return next();
   next();
 }
 
@@ -114,4 +137,7 @@ module.exports = {
   VSIGN_CALLBACK_PATH,
   vsignCallbackBodyMiddleware,
   parseVSignCallbackBody,
+  isVSignCallbackRequest,
+  vsignCallbackAccessMiddleware,
+  skipGlobalBodyParserForVSignCallback,
 };

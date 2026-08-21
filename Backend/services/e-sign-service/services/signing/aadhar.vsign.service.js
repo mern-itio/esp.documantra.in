@@ -9,8 +9,17 @@ const {
   isVSignEnabledAndReady,
   isLegacyEnvMode,
   getVSignReadinessIssues,
+  envProfileOperational,
 } = require('../../utils/vsignConfigPolicy');
 const { fetchRecipientById } = require('../recipientService');
+const signatureOperationServices = require('../signatureOperationServices');
+const {
+  embedHandwrittenSignaturesInPdf,
+} = require('./vsignHandwrittenEmbed');
+const {
+  paintAadhaarAppearanceBackground,
+  boxesFromSignatureDetails,
+} = require('./vsignAppearanceEmbed');
 const {
   resolveVSignCallbackUrl,
   resolveVSignEnv,
@@ -20,6 +29,8 @@ const {
   resolveVSignAspId,
   resolveVSignPfxCredentials,
   resolveVSignAuthPage,
+  resolveVSignAuthLogoUrl,
+  buildVSignAuthUrl,
   resolveVSignUtilityUrl,
   normalizeVSignPath,
   buildVSignSignatureDetailsString,
@@ -28,19 +39,26 @@ const {
   VSIGN_REFERENCE_APPEARANCE,
 } = require('../../utils/vsignAssets');
 const serviceRoot = path.join(__dirname, '../..');
-const VSIGN_ENV = resolveVSignEnv(serviceRoot);
-const VSIGN_CERT_MODE = resolveVSignCertMode(serviceRoot);
-const VSIGN_AUTHPAGE = resolveVSignAuthPage(serviceRoot);
-const ASP_ID = resolveVSignAspId(serviceRoot);
+
+/** Resolve at request time — module-load values were stale before Mongo VSignConfig cache. */
+function getVSignRuntimeConfig() {
+  return {
+    vsignEnv: resolveVSignEnv(serviceRoot),
+    certMode: resolveVSignCertMode(serviceRoot),
+    authPage: resolveVSignAuthPage(serviceRoot),
+    aspId: resolveVSignAspId(serviceRoot),
+  };
+}
 
 console.log('[VSign] aadhar.vsign.service BUILD:', VSIGN_SERVICE_BUILD);
-console.log('[VSign] cert:', VSIGN_CERT_MODE, 'esp:', VSIGN_ENV, 'aspId:', ASP_ID);
+console.log('[VSign] runtime config (per request):', getVSignRuntimeConfig());
 
-function stageAppearance(serviceRoot, tempInfoPath) {
+function stageAppearance(serviceRoot, tempInfoPath, txn) {
   return stageVSignAppearanceAssets(
     serviceRoot,
     tempInfoPath,
     buildVSignAppearanceExtras(serviceRoot),
+    txn,
   );
 }
 
@@ -53,7 +71,7 @@ function withAppearancePayload(base, appearance = {}) {
 
 module.exports = {
   aadhaarSignature: async (data) => {
-    if (!isLegacyEnvMode() && !isVSignEnabledAndReady()) {
+    if (!envProfileOperational() && !isLegacyEnvMode() && !isVSignEnabledAndReady()) {
       const issues = getVSignReadinessIssues();
       return {
         status: 503,
@@ -65,7 +83,7 @@ module.exports = {
       };
     }
 
-    const { documentId, recipientId, fieldId, envelopeId } = data;
+    const { documentId, recipientId, fieldId, envelopeId, signatureImageBase64 } = data;
     const time = Date.now();
     const recipient = await fetchRecipientById(recipientId);
     const docRecord = await Document.findById(documentId);
@@ -81,32 +99,83 @@ module.exports = {
     const baseDir = path.join(__dirname, '../..', 'uploads');
     fs.mkdirSync(path.join(baseDir, 'signed', envelopeId.toString()), { recursive: true });
     fs.mkdirSync(path.join(baseDir, 'vSignTemp'), { recursive: true });
-    const pdfPath = docRecord?.preparedDoc;
+    let pdfPath = docRecord?.preparedDoc;
+    const hasHandwritten = Boolean(
+      signatureImageBase64
+      || allFields.some((f) => f.type === 'signature' && f.signature),
+    );
+    if (hasHandwritten && pdfPath) {
+      const imageForEmbed = signatureImageBase64
+        || allFields.find((f) => f.type === 'signature' && f.signature)?.signature;
+      if (imageForEmbed) {
+        pdfPath = await embedHandwrittenSignaturesInPdf(pdfPath, allFields, imageForEmbed);
+        await signatureOperationServices.updateDocument(documentId, { preparedDoc: pdfPath });
+      }
+    }
 
     const {
+      signaturedetails,
       signaturedetailsString,
       signatureFontSize,
       appearanceWidth,
       appearanceHeight,
     } = await buildVSignSignatureDetailsString(pdfPath, allFields, {
-      referenceAppearance: true,
+      recipient,
       serviceRoot,
+      hasHandwritten,
     });
 
+    const appearanceBoxes = boxesFromSignatureDetails(signaturedetails);
+    const txn = `${Date.now()}`;
     const tempInfoPath = path.join(baseDir, 'vSignTemp');
-    const appearance = stageAppearance(serviceRoot, tempInfoPath);
+    const appearance = stageAppearance(serviceRoot, tempInfoPath, txn);
+
+    // Dual (handwritten) flow: skip pre-sign blue box — post-sign paint on Final.pdf
+    // is the single source of truth (avoids coord-scale duplicates).
+    if (!hasHandwritten && appearanceBoxes.length && pdfPath) {
+      try {
+        await paintAadhaarAppearanceBackground(pdfPath, {
+          boxes: appearanceBoxes,
+          serviceRoot,
+        });
+        console.log('[VSign] painted appearance background before gettxnref');
+      } catch (bgErr) {
+        console.warn('[VSign] appearance background paint skipped:', bgErr.message);
+      }
+    }
 
     const signedPdfPath = path.join(baseDir, 'signed', envelopeId.toString());
     const signedFileName = `${time}-signed-${documentId}.pdf`;
     const pdfDestinationPath = path.join(baseDir, 'signed', envelopeId, signedFileName);
     const aspCallbackUrl = resolveVSignCallbackUrl(serviceRoot);
 
-    console.log('[VSign] mode: restore-previous-v14 (250x60, light-green tick, no aspLogo)');
+    console.log('[VSign] mode: production appearance (280x85, check-only tick, dynamic box)');
     console.log('[VSign] box:', `${appearanceWidth}x${appearanceHeight}`, 'font=', signatureFontSize);
     console.log('[VSign] tickImgPath:', appearance.tickImgPath);
     console.log('[VSign] signaturedetailsString:', signaturedetailsString);
 
-    if (!ASP_ID) {
+    // Keep the PDF certificate visible but push VSign's own rendered strip off-page
+    // when we already have a handwritten+custom Aadhaar appearance to paint ourselves.
+    const utilitySignaturedetailsString = hasHandwritten
+      ? (signaturedetails || [])
+        .map((entry) => `${entry.page}-5000,5000,1,1`)
+        .join(';')
+      : signaturedetailsString;
+    if (hasHandwritten) {
+      console.log('[VSign] utility signaturedetailsString (hidden):', utilitySignaturedetailsString);
+    }
+
+    const { vsignEnv, authPage: vsignAuthPage, aspId } = getVSignRuntimeConfig();
+    console.log('[VSign] runtime:', { vsignEnv, aspId, authPage: vsignAuthPage });
+    console.log('[VSign] payload flags:', {
+      isresponseXML: '1',
+      responseUrl: aspCallbackUrl,
+      redirectUrl: aspCallbackUrl,
+      authUrlPattern: buildVSignAuthUrl(serviceRoot, '000000000000'),
+      authLogoUrl: resolveVSignAuthLogoUrl(serviceRoot) || '(none)',
+    });
+
+    if (!aspId) {
       return {
         status: 500,
         response: {
@@ -128,20 +197,19 @@ module.exports = {
       };
     }
 
-    if (VSIGN_ENV === 'production' && ASP_ID === 'IIPLUAT001') {
+    if (vsignEnv === 'production' && aspId === 'IIPLUAT001') {
       console.warn(
         '[VSign] production ESP with UAT ASP ID — VSign will assign production ASP ID after ITIO_PUBLIC KEY.cer registration',
       );
     }
 
-    const txn = `${Date.now()}`;
     const pfxPath = resolveVSignPfxPath(serviceRoot);
     if (!fs.existsSync(pfxPath.replace(/\//g, path.sep))) {
       return {
         status: 500,
         response: {
           success: false,
-          message: `Signing PFX not found: ${pfxPath}`,
+          message: `Signing PFX not found: ${pfxPath}. For UAT run switch-vsign-env uat after placing signCertificate.uat.pfx.`,
         },
       };
     }
@@ -151,8 +219,9 @@ module.exports = {
       tempInfoPath: normalizeVSignPath(tempInfoPath),
       pdfDestinationPath: normalizeVSignPath(pdfDestinationPath),
       responseUrl: aspCallbackUrl,
+      redirectUrl: aspCallbackUrl,
       txn,
-      aspId: ASP_ID,
+      aspId,
       pfxPath,
       pfxPassword,
       pfxAlias,
@@ -161,9 +230,13 @@ module.exports = {
       ver: '21',
       AuthMode: '1',
       fileType: 'path',
+      // isresponseXML=1: VSign POSTs full EsignResp (with cert/signature) in callback `msg`.
+      // isresponseXML=0 only stores XML in utility temp — local tunnel setup never receives it.
       isresponseXML: '1',
       isrequestXML: '1',
-      signatureFontSize,
+      signatureFontSize: hasHandwritten
+        ? VSIGN_REFERENCE_APPEARANCE.fontSize
+        : signatureFontSize,
       pdfdetails: [
         {
           pdfbase64val: normalizeVSignPath(pdfPath),
@@ -171,15 +244,18 @@ module.exports = {
           docUrl: '',
           reason: '',
           signaturedetailsType: 'signaturedetailsString',
-          signaturedetailsString,
+          signaturedetailsString: utilitySignaturedetailsString,
         },
       ],
-    }, appearance);
+      // Handwritten dual: no utility tick/logo — we paint one custom appearance after sign.
+    }, hasHandwritten ? {} : appearance);
 
     const response = await axios.post(`${resolveVSignUtilityUrl()}/gettxnrefv4_1`, payload);
     const resData = response?.data;
+    const txnRef = resData?.txnref;
+    const utilityOk = resData?.status == '1' || resData?.status == 1;
 
-    if (resData?.status == '1') {
+    if (utilityOk && txnRef) {
       await new signatureTransactions({
         txn,
         txnRef: resData.txnref,
@@ -193,6 +269,8 @@ module.exports = {
         signatureFontSize,
         tickImgPath: appearance.tickImgPath,
         aspLogo: appearance.aspLogo || '',
+        appearanceBoxes,
+        aadhaarLast4: String(recipient?.aadhaarNumber || '').replace(/\D/g, '').slice(-4) || undefined,
       }).save();
 
       const aadhaarNumber = recipient?.aadhaarNumber;
@@ -206,23 +284,57 @@ module.exports = {
         };
       }
 
+      try {
+        const RecipientPermission = require('../../models/RecipientPermission');
+        const { mergeSigningEvidence } = require('../../utils/signingEvidenceHelper');
+        const aadhaarLast4 = String(aadhaarNumber).replace(/\D/g, '').slice(-4);
+        const permission = await RecipientPermission.findOne({ envelopeId, recipientId });
+        if (permission && aadhaarLast4) {
+          permission.signingEvidence = mergeSigningEvidence(permission.signingEvidence || {}, {
+            aadhaarLast4,
+          });
+          await permission.save();
+        }
+      } catch (evidenceErr) {
+        console.warn('[VSign] aadhaarLast4 pre-save skipped:', evidenceErr.message);
+      }
+
       return {
         status: 200,
         response: {
           success: true,
           signMethod: 'V_Sign',
           message: 'V-Sign process initiated',
-          authUrl: `${VSIGN_AUTHPAGE}/${Buffer.from(`-|-|${aadhaarNumber}`).toString('base64')}/authpagev4`,
+          authUrl: buildVSignAuthUrl(serviceRoot, aadhaarNumber),
           txnRef: resData.txnref,
+          aadhaarLast4: String(aadhaarNumber).replace(/\D/g, '').slice(-4) || null,
         },
       };
     }
 
+    const emptyUtilityResponse = !resData || (typeof resData === 'object' && Object.keys(resData).length === 0);
+    let failureMessage = 'VSign utility failed to create transaction';
+    if (resData?.errorMessage || resData?.errorCode) {
+      failureMessage = [resData.errorCode, resData.errorMessage].filter(Boolean).join(': ');
+    } else if (usesLiveCert && emptyUtilityResponse) {
+      failureMessage =
+        'Live PFX password or alias is incorrect. Set the correct values from dmsignaturekey.pfx in /e-sign/admin/vsign, then restart e-sign and try a new envelope.';
+    } else if (usesLiveCert) {
+      failureMessage =
+        'VSign utility rejected the live signing certificate. Verify PFX password, alias, and that ESP utility is running on port 7077.';
+    } else if (!usesLiveCert && emptyUtilityResponse) {
+      failureMessage =
+        'UAT signing PFX could not be unlocked. Use the VSign email attachment Class II Organization 2 Year Document Signer Signature-2024.pfx (password abc1234) at uploads/vSign/signCertificate.uat.pfx. Desktop TEST DOCUMENT SIGNER.pfx is a different/wrong copy.';
+    } else if (!usesLiveCert) {
+      failureMessage =
+        'UAT VSign transaction failed. Confirm signCertificate.uat.pfx is from the VSign onboarding email and utility uses esignuat.vsign.in URLs.';
+    }
+
     return {
-      status: 502,
+      status: 503,
       response: {
         success: false,
-        message: 'VSign utility failed to create transaction',
+        message: failureMessage,
         detail: resData || null,
       },
     };
@@ -239,23 +351,34 @@ module.exports = {
       aspLogo,
       txn,
       txnRef,
+      skipAppearanceAssets,
     } = data;
     const baseTemp = tempInfoPath || path.join(serviceRoot, 'uploads', 'vSignTemp');
+    const parentPath = signedFileParentPath || path.dirname(pdfDestinationPath || baseTemp);
+    const appearanceExtras = skipAppearanceAssets
+      ? {}
+      : {
+        tickImgPath: tickImgPath || buildVSignAppearanceExtras(serviceRoot).tickImgPath,
+        ...(aspLogo ? { aspLogo } : {}),
+      };
     const payload = withAppearancePayload({
       tempInfoPath: normalizeVSignPath(baseTemp),
-      signedFileParentPath: normalizeVSignPath(signedFileParentPath),
+      signedPdfPath: normalizeVSignPath(parentPath),
+      signedFileParentPath: normalizeVSignPath(parentPath),
       responseXML: Buffer.from(responseXML || '').toString('base64'),
       pdfDestinationPath: normalizeVSignPath(pdfDestinationPath),
       signatureFontSize: signatureFontSize || VSIGN_REFERENCE_APPEARANCE.fontSize,
-    }, {
-      tickImgPath: tickImgPath || buildVSignAppearanceExtras(serviceRoot).tickImgPath,
-      aspLogo: aspLogo || null,
-    });
+    }, appearanceExtras);
     if (txn) payload.txn = String(txn);
     if (txnRef) payload.txnRef = String(txnRef);
 
-    console.log('[VSign] signpdf tickImgPath:', payload.tickImgPath || '(utility built-in)');
-    if (payload.aspLogo) console.log('[VSign] signpdf aspLogo:', payload.aspLogo);
+    console.log('[VSign] signpdf', {
+      txn: payload.txn,
+      txnRef: payload.txnRef ? '(set)' : '(missing)',
+      responseXmlBytes: responseXML ? Buffer.byteLength(responseXML, 'utf8') : 0,
+      tickImgPath: payload.tickImgPath || '(none — custom paint)',
+      skipAppearanceAssets: Boolean(skipAppearanceAssets),
+    });
 
     try {
       const response = await axios.post(`${resolveVSignUtilityUrl()}/signpdfv4_1`, payload, { timeout: 120000 });

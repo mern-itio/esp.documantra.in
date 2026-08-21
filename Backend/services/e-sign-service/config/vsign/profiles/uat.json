@@ -1,0 +1,21 @@
+{
+  "name": "uat",
+  "label": "UAT — IIPLUAT001, esignuat.vsign.in",
+  "vsignEnv": "uat",
+  "certMode": "uat",
+  "aspId": "IIPLUAT001",
+  "vsignAuthPage": "https://esignuat.vsign.in/esp",
+  "vsignAuthLogoUrl": "",
+  "vsignEspResponseUrl": "https://esignuat.vsign.in/esp/2.1.1/aspesignresponse",
+  "utilityEspMode": "uat",
+  "utilityUrl": "http://127.0.0.1:7078",
+  "pfxPath": "uploads/vSign/signCertificate.uat.pfx",
+  "publicCertPath": "uploads/vSign/ITIO_PUBLIC_KEY.uat.cer",
+  "dmEncryptionKeyPath": "uploads/vSign/dm_encryption_key.uat.pfx",
+  "localCallbackUrl": "http://127.0.0.1:2103/api/e-sign/public/v-sign/response",
+  "productionCallbackUrl": null,
+  "useKitPfxDefaults": true,
+  "vsignUseJar": "1",
+  "vsignAppearanceMode": "custom-tick",
+  "vsignSignatureFontSize": "10"
+}

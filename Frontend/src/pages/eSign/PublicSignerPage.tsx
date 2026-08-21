@@ -99,6 +99,14 @@ const EnvelopeDetails: React.FC = () => {
     }
   }, [location.pathname, location.search]);
 
+  const isSignAppearanceDemo = useMemo(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('signDemo') === '1';
+    } catch {
+      return false;
+    }
+  }, [location.search]);
+
   // Some copied links drop the "/" between envelopeId and recipientId (48–49 hex chars).
   useEffect(() => {
     const rawId = String(id ?? "").trim();
@@ -251,11 +259,12 @@ const EnvelopeDetails: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isPreviewMode) return;
+    if (!isPreviewMode && !isSignAppearanceDemo) return;
+    if (isSignAppearanceDemo) setTermsAccepted(true);
     setLoading(true);
     fetchEnvelopeDetails();
     console.log('Fetched Envelope details');
-  }, [isPreviewMode]);
+  }, [isPreviewMode, isSignAppearanceDemo]);
 
   const fetchEnvelopeDetails = async (tokenOverride?: string | null) => {
     try {
@@ -1323,14 +1332,21 @@ const EnvelopeDetails: React.FC = () => {
 
   const isEnvelopeCompleted =
     (envelope?.status || "").toString().toLowerCase() === "completed";
-  const canBrowseDocument = isPreviewMode || termsAccepted;
-  const canSignDocument = isPreviewMode || (termsAccepted && isAuthenticated);
-  const authStillPending = !isPreviewMode && termsAccepted && !isAuthenticated;
+  const canBrowseDocument = isPreviewMode || isSignAppearanceDemo || termsAccepted;
+  const canSignDocument =
+    !isSignAppearanceDemo && (isPreviewMode || (termsAccepted && isAuthenticated));
+  const authStillPending =
+    !isPreviewMode && !isSignAppearanceDemo && termsAccepted && !isAuthenticated;
   const inDocumentReviewPhase = authStillPending && !showAuthModal;
 
   const shouldRenderDocumentInBackground =
-    (isPreviewMode || !isEnvelopeCompleted || showSigningDoneModal) &&
-    (isPreviewMode || canBrowseDocument || showAuthModal || showTermsModal || showSigningDoneModal);
+    (isPreviewMode || isSignAppearanceDemo || !isEnvelopeCompleted || showSigningDoneModal) &&
+    (isPreviewMode ||
+      isSignAppearanceDemo ||
+      canBrowseDocument ||
+      showAuthModal ||
+      showTermsModal ||
+      showSigningDoneModal);
 
   const openDocumentDownload = (doc: any) => {
     const fileProp = resolveEsignDocumentFileProp(doc, {
@@ -1704,6 +1720,7 @@ const EnvelopeDetails: React.FC = () => {
                 currentUserId={isPreviewMode ? "" : (recipientId || "")}
                 envelopeID={id || ""}
                 isPublicFlow
+                signAppearanceDemo={isSignAppearanceDemo}
                 onClose={() => setActiveDocument(null)}
                 onSignatureSave={handleSignatureSave}
                 cycleId={cycleId || ""}
@@ -1736,6 +1753,7 @@ const EnvelopeDetails: React.FC = () => {
                   if (isInPerson) handleRecipientComplete();
                   handleSigningCompleted();
                 }}
+                onSigningRefresh={fetchEnvelopeDetails}
                 onRequestActions={() => {
                   if (isPreviewMode) return;
                   setShowOtherOptions((v) => !v);

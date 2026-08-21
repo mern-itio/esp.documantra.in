@@ -2,11 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authApi } from '../../services/apiHelper';
 import {
-  Gift,
   Copy,
   Check,
   Link2,
-  ArrowLeft,
   Sparkles,
   Clock,
   Users,
@@ -18,6 +16,7 @@ import {
   Fingerprint,
   History,
 } from 'lucide-react';
+import { PageShell, PageHero, PagePanel } from '../../components/common/PageShell';
 
 interface RewardRow {
   _id: string;
@@ -110,72 +109,40 @@ const RewardsPage: React.FC = () => {
   const completedReferrals = useMemo(() => referrals.filter((r) => r.status === 'completed'), [referrals]);
 
   return (
-
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-background via-muted/30 to-background dark:via-muted/20">
-      {/* Background Gift Icons */}
-      <div className="absolute inset-0 pointer-events-none">
-        <Gift className="absolute top-16 left-16 h-12 w-12 text-primary/15 dark:text-primary/20 animate-pulse" />
-        <Gift className="absolute top-32 right-24 h-8 w-8 text-primary/10 dark:text-primary/15 animate-bounce" style={{ animationDelay: '0.5s' }} />
-        <Gift className="absolute top-64 left-1/4 h-10 w-10 text-muted-foreground/20 animate-pulse" style={{ animationDelay: '1s' }} />
-        <Gift className="absolute top-80 right-1/3 h-6 w-6 text-emerald-500/15 dark:text-emerald-400/20 animate-bounce" style={{ animationDelay: '1.5s' }} />
-        <Gift className="absolute bottom-32 left-20 h-14 w-14 text-amber-500/15 dark:text-amber-400/15 animate-pulse" style={{ animationDelay: '2s' }} />
-        <Gift className="absolute bottom-48 right-16 h-9 w-9 text-rose-500/15 dark:text-rose-400/15 animate-bounce" style={{ animationDelay: '2.5s' }} />
-        <Gift className="absolute top-1/2 left-1/2 h-7 w-7 text-primary/12 animate-pulse" style={{ animationDelay: '3s' }} />
-        <Gift className="absolute top-96 right-1/4 h-11 w-11 text-cyan-500/12 dark:text-cyan-400/15 animate-bounce" style={{ animationDelay: '3.5s' }} />
-        <Gift className="absolute bottom-16 left-1/3 h-8 w-8 text-emerald-500/12 dark:text-emerald-400/15 animate-pulse" style={{ animationDelay: '4s' }} />
-        <Gift className="absolute top-24 left-3/4 h-10 w-10 text-sky-500/12 dark:text-sky-400/15 animate-bounce" style={{ animationDelay: '4.5s' }} />
-      </div>
-      <div className="relative z-10px-4 py-10 sm:px-6 lg:px-8">
-        <Link to="/account/profile" className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-          <ArrowLeft className="h-4 w-4" />
-          Back to profile
-        </Link>
-
-        <div className="rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-15">
-            <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md">
-                <Gift className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold text-foreground">Rewards & referrals</h1>
-                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                  Share your referral link. When your invite sends their first document, both users unlock reward credits.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={copyLink}
-                disabled={!referralLink}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? 'Copied Link' : 'Copy Referral Link'}
-              </button>
-
-              <Link
-                to="/account/rewards/coupons"
-                className="coupon-btn inline-flex min-h-[40px] items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition"
-              >
-                View Coupons
-              </Link>
-            </div>
-
-
+    <PageShell wide>
+      <PageHero
+        compact
+        title="Rewards & referrals"
+        subtitle="Share your link — when your invite sends their first document, both of you unlock reward credits."
+        backTo="/account/profile"
+        action={
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={copyLink}
+              disabled={!referralLink}
+              className="dm-btn-primary bg-white text-[#155E4B] hover:bg-white/90 disabled:opacity-50"
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? 'Copied!' : 'Copy link'}
+            </button>
+            <Link to="/account/rewards/coupons" className="dm-btn-secondary border-white/30 bg-white/10 text-white hover:bg-white/15">
+              View coupons
+            </Link>
           </div>
+        }
+      />
 
-          <div className="mt-5 rounded-2xl bg-muted/50 px-4 py-3 text-sm text-foreground ring-1 ring-border">
-            <div className="mb-1 inline-flex items-center gap-2 font-semibold text-primary">
-              <Link2 className="h-4 w-4" />
-              Your referral link
-            </div>
-
-            <div className="truncate text-muted-foreground">{referralLink || '—'}</div>
+      <PagePanel noPadding bodyClassName="p-5 md:p-6 space-y-5">
+        <div className="rounded-2xl bg-muted/50 px-4 py-3 ring-1 ring-border">
+          <div className="mb-1 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+            <Link2 className="h-4 w-4" />
+            Your referral link
           </div>
+          <div className="truncate text-sm text-muted-foreground">{referralLink || '—'}</div>
+        </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-border bg-background p-4">
               <div className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                 <Users className="h-4 w-4" />
@@ -205,9 +172,8 @@ const RewardsPage: React.FC = () => {
               <div className="mt-2 text-2xl font-semibold text-foreground">{stats?.creditsPerReward ?? 10}</div>
             </div>
           </div>
-        </div>
 
-        {loading && <div className="mt-6 rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">Loading rewards dashboard…</div>}
+        {loading && <div className="rounded-xl border border-border bg-muted/30 p-8 text-center text-muted-foreground">Loading rewards dashboard…</div>}
         {!loading && error && <div className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive dark:border-destructive/40 dark:bg-destructive/15">{error}</div>}
 
         {!loading && !error && (
@@ -309,8 +275,8 @@ const RewardsPage: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </PagePanel>
+    </PageShell>
   );
 };
 

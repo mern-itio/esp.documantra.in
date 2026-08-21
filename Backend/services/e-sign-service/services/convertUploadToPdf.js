@@ -17,7 +17,10 @@ function isPdfFile(file) {
 }
 
 function getPdfServiceBaseUrl() {
-  return String(process.env.PDF_SERVICE_URL || 'http://pdf-service:2104').replace(/\/$/, '');
+  const fromEnv = String(process.env.PDF_SERVICE_URL || '').trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, '');
+  // Local Windows/Mac: Docker hostname `pdf-service` does not resolve.
+  return 'http://127.0.0.1:2104';
 }
 
 function imageToPdfLocal(inputPath, outputPath) {
@@ -82,12 +85,21 @@ async function convertViaPdfService(filePath, originalName, mimeType) {
     contentType: mimeType || 'application/octet-stream',
   });
 
-  const response = await axios.post(endpoint, form, {
-    headers: form.getHeaders(),
-    maxBodyLength: Infinity,
-    maxContentLength: Infinity,
-    timeout: 180000,
-  });
+  let response;
+  try {
+    response = await axios.post(endpoint, form, {
+      headers: form.getHeaders(),
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+      timeout: 180000,
+    });
+  } catch (err) {
+    const detail =
+      err.response?.data?.message ||
+      err.response?.data?.error ||
+      err.message;
+    throw new Error(detail || 'Document conversion failed');
+  }
 
   if (endpoint.includes('images-to-pdf')) {
     const downloadPath = response.data?.pdf || response.data?.downloadUrl;

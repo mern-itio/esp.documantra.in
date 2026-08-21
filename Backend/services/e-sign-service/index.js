@@ -19,12 +19,12 @@ const adminRoutes = require('./routes/adminRoutes');
 const envelopeTypeRoutes = require('./routes/envelopeTypeRoutes');
 const {
   vsignCallbackBodyMiddleware,
-  VSIGN_CALLBACK_PATH,
+  vsignCallbackAccessMiddleware,
+  isVSignCallbackRequest,
 } = require('./middleware/vsignCallbackBody');
 
 function isVSignCallback(req) {
-  const original = req.originalUrl || req.url || '';
-  return req.path === VSIGN_CALLBACK_PATH || original.startsWith('/api/e-sign/public/v-sign/response');
+  return isVSignCallbackRequest(req);
 }
 
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -49,17 +49,17 @@ const serviceRoot = __dirname;
 const vsignEnv = resolveVSignEnv(serviceRoot);
 const vsignCertMode = resolveVSignCertMode(serviceRoot);
 console.log('[VSign] BUILD 2026-08-14 live-v15-admin');
+console.log('[VSign] profile gate: env-profile bypass active for local UAT/live switch');
 console.log('[VSign] cert:', vsignCertMode, 'esp:', vsignEnv, 'auth:', resolveVSignAuthPage(serviceRoot));
 console.log('[VSign] callback:', resolveVSignCallbackUrl(serviceRoot));
 const app = express(); 
 applySecurityHeaders(app);
 
-// VSign POST/redirect callback must accept esignuat.vsign.in (and server posts with no Origin).
+// VSign callback: skip strict CORS (browser redirect from esign.verasys.in / esignuat.vsign.in).
 const defaultCors = cors(getCorsOptions());
-const vsignCallbackCors = cors({ origin: true, credentials: true });
 app.use((req, res, next) => {
-  if (req.path === '/api/e-sign/public/v-sign/response') {
-    return vsignCallbackCors(req, res, next);
+  if (isVSignCallbackRequest(req)) {
+    return vsignCallbackAccessMiddleware(req, res, next);
   }
   return defaultCors(req, res, next);
 });

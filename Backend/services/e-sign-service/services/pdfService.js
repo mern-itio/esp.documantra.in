@@ -1,47 +1,71 @@
 const axios = require('axios');
 const fs = require('fs');
 
-async function prepareDocForSignature(payload) {
+const JAVA_PDF_URL = () =>
+  process.env.PDF_SIGNATURE_JAVA_SERVICE_URL || 'http://localhost:2115';
 
+function shouldPassthroughPdf(error) {
+  if (process.env.LOCAL_DEV_SKIP_JAVA_PDF === 'true') return true;
+  if (process.env.NODE_ENV !== 'development') return false;
+  return error?.code === 'ECONNREFUSED' || error?.cause?.code === 'ECONNREFUSED';
+}
+
+async function prepareDocForSignature(payload) {
   try {
-    const javaServiceUrl = process.env.PDF_SIGNATURE_JAVA_SERVICE_URL || 'http://localhost:2115';
     const response = await axios.post(
-      `${javaServiceUrl}/api/pdf/prepare-template`,
+      `${JAVA_PDF_URL()}/api/pdf/prepare-template`,
       payload,
       {
         headers: {
-          'Content-Type': 'application/json'
-        }
-      }
+          'Content-Type': 'application/json',
+        },
+      },
     );
 
     console.log('Response:', response.data);
     return response.data;
-
   } catch (error) {
+    if (shouldPassthroughPdf(error)) {
+      console.warn(
+        '[dev] pdf-java-service unavailable; using original PDF for prepare-template',
+      );
+      return {
+        pdfBase64: payload.pdfBase64,
+        success: true,
+        message: 'dev passthrough (pdf-java-service not running)',
+      };
+    }
     console.error('Error preparing document:', error.response?.data || error.message);
     throw error;
   }
 }
 
 async function embedFieldsValueToPDF(payload) {
-  try{
-    const javaServiceUrl = process.env.PDF_SIGNATURE_JAVA_SERVICE_URL || 'http://localhost:2115';
+  try {
     const response = await axios.post(
-      `${javaServiceUrl}/api/pdf/embed-values`,
+      `${JAVA_PDF_URL()}/api/pdf/embed-values`,
       payload,
       {
         headers: {
-          'Content-Type': 'application/json'
-        }
-      }
+          'Content-Type': 'application/json',
+        },
+      },
     );
     console.log('Response:', response.data);
     return response.data;
-
-  }catch (err){
+  } catch (err) {
+    if (shouldPassthroughPdf(err)) {
+      console.warn(
+        '[dev] pdf-java-service unavailable; using prepared PDF for embed-values',
+      );
+      return {
+        pdfBase64: payload.pdfBase64,
+        success: true,
+        message: 'dev passthrough (pdf-java-service not running)',
+      };
+    }
     console.log(err);
-    throw new Error("Error occurred while embedding fields value to PDF");
+    throw new Error('Error occurred while embedding fields value to PDF');
   }
 }
 

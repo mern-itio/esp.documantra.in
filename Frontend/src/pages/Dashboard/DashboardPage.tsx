@@ -5,7 +5,6 @@ import { eSignApi, subscriptionApi } from '../../services/apiHelper';
 import {
   ArrowRight,
   CreditCard,
-  Zap,
   Loader2,
   FileText,
   CheckCircle2,
@@ -13,12 +12,36 @@ import {
   BarChart3,
   Plus,
   FolderOpen,
-  Activity,
-  ArrowUpRight
+  PenLine,
+  Share2,
+  Sparkles,
+  Layers,
+  BookOpen,
+  Key,
+  type LucideIcon,
 } from 'lucide-react';
 import AIAuditInsights from '../../components/ESign/AIAuditInsights';
-import { CHART_HEX } from '../../components/common/ChartErrorBoundary';
 import { BRAND } from '../../config/brand';
+import { toTitleCase } from '../../utils/formatName';
+import { PageShell, SectionLabel } from '../../components/common/PageShell';
+
+type StatItem = {
+  label: string;
+  value: string | number;
+  icon: LucideIcon;
+  accent: string;
+  glow: string;
+  hint?: string;
+  link?: string;
+};
+
+type ShortcutItem = {
+  label: string;
+  desc: string;
+  icon: LucideIcon;
+  path: string;
+  accent: string;
+};
 
 const DashboardPage: React.FC = () => {
   const { user, accountType, dismissFirstLogin } = useAuth();
@@ -26,9 +49,7 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user?.isFirstLogin) {
-      setShowTutorial(true);
-    }
+    if (user?.isFirstLogin) setShowTutorial(true);
   }, [user]);
 
   const handleCloseTutorial = () => {
@@ -39,15 +60,15 @@ const DashboardPage: React.FC = () => {
   const handleFeatureClick = (feature: string) => {
     setShowTutorial(false);
     dismissFirstLogin();
-    // Navigate to the selected feature
-    if (feature === 'esign') navigate('/e-sign/dashboard');
+    if (feature === 'esign') navigate('/e-sign/create');
     else if (feature === 'pdf') navigate('/pdf-tools');
-    else if (feature === 'sharing') navigate('/document-sharing');
-    // else do nothing (for dashboard explore)
+    else if (feature === 'sharing') navigate('/all-documents');
   };
+
   const [balance, setBalance] = React.useState<number | null>(null);
-  const [usage, setUsage] = React.useState<Array<{ action: string; creditsDelta: number; balanceAfter: number; createdAt: string; toolId?: string }>>([]);
-  const toolNameByIdRef = React.useRef<Record<string, string>>({});
+  const [usage, setUsage] = React.useState<
+    Array<{ action: string; creditsDelta: number; balanceAfter: number; createdAt: string; toolId?: string }>
+  >([]);
   const [loading, setLoading] = React.useState(true);
   const [envStatesLoading, setEnvStatesLoading] = React.useState(true);
   const [envelopeStats, setEnvelopeStats] = React.useState<any>(null);
@@ -60,15 +81,17 @@ const DashboardPage: React.FC = () => {
     try {
       setEnvStatesLoading(true);
       const response = await eSignApi.get(`/api/e-sign/envelope/all-stats/${accountType}`);
-      const data = response.data;
-      setEnvelopeStats(data);
-      // Process the data as needed
-    } catch (error) {
-      console.error('Error fetching envelope stats:', error);
+      setEnvelopeStats(response.data);
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status !== 401 && status !== 403 && status !== 404) {
+        console.error('Error fetching envelope stats:', error);
+      }
     } finally {
       setEnvStatesLoading(false);
     }
   };
+
   React.useEffect(() => {
     let mounted = true;
     (async () => {
@@ -80,362 +103,349 @@ const DashboardPage: React.FC = () => {
         ]);
         if (!mounted) return;
         setBalance((bRes as any).data?.data?.creditsBalance ?? null);
-        try {
-          const raw = localStorage.getItem('toolCatalogNameMap');
-          toolNameByIdRef.current = raw ? JSON.parse(raw) : {};
-        } catch { toolNameByIdRef.current = {}; }
-        setUsage(((uRes as any).data?.data?.records || []).map((r: any) => ({ action: r.action, creditsDelta: r.creditsDelta, balanceAfter: r.balanceAfter, createdAt: r.createdAt, toolId: r.toolId })));
+        setUsage(
+          ((uRes as any).data?.data?.records || []).map((r: any) => ({
+            action: r.action,
+            creditsDelta: r.creditsDelta,
+            balanceAfter: r.balanceAfter,
+            createdAt: r.createdAt,
+            toolId: r.toolId,
+          })),
+        );
       } catch {
         if (!mounted) return;
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [accountType]);
 
-  // Helper function to categorize module from action
   const getModuleFromAction = (action: string, toolId?: string): string => {
-    if (!action) return 'Other';
-    const actionLower = action.toLowerCase();
-
-    if (actionLower.startsWith('esign:') || actionLower.includes('envelope') || actionLower.includes('sign')) {
-      return 'E-Sign';
-    }
-    if (actionLower.startsWith('pdf:') || toolId?.toLowerCase().includes('pdf')) {
-      return 'PDF Tools';
-    }
-    if (actionLower.startsWith('document:') || actionLower.includes('document') || actionLower.includes('share')) {
-      return 'Document';
-    }
-    if (actionLower.startsWith('auth:') || actionLower.includes('auth')) {
-      return 'Authentication';
-    }
+    const a = action.toLowerCase();
+    if (a.startsWith('esign:') || a.includes('envelope') || a.includes('sign')) return 'E-Sign';
+    if (a.startsWith('pdf:') || toolId?.toLowerCase().includes('pdf')) return 'PDF Tools';
+    if (a.startsWith('document:') || a.includes('document')) return 'Document';
     return 'Other';
   };
 
-  // Calculate module totals for summary
-  const moduleTotals = useMemo(() => {
-    const totals: Record<string, number> = {
-      'E-Sign': 0,
-      'PDF Tools': 0,
-      'Document': 0
-    };
-
-    usage.forEach((record) => {
-      if (record.creditsDelta < 0) {
-        const module = getModuleFromAction(record.action, record.toolId);
-        totals[module] = (totals[module] || 0) + Math.abs(record.creditsDelta);
+  const moduleBarChartData = useMemo(() => {
+    const totals: Record<string, number> = { 'E-Sign': 0, 'PDF Tools': 0, Document: 0 };
+    usage.forEach((r) => {
+      if (r.creditsDelta < 0) {
+        const m = getModuleFromAction(r.action, r.toolId);
+        totals[m] = (totals[m] || 0) + Math.abs(r.creditsDelta);
       }
     });
-
-    return totals;
+    return Object.entries(totals)
+      .map(([name, value]) => ({ name, value }))
+      .filter((e) => e.value > 0)
+      .sort((a, b) => b.value - a.value);
   }, [usage]);
 
-  // Calculate completion rate
+  const moduleUsageMax = useMemo(
+    () => Math.max(1, ...moduleBarChartData.map((e) => e.value)),
+    [moduleBarChartData],
+  );
+
   const completionRate = useMemo(() => {
-    if (!envelopeStats?.totalEnvelopes || envelopeStats.totalEnvelopes === 0) return 0;
+    if (!envelopeStats?.totalEnvelopes) return 0;
     return Math.round((envelopeStats.completedEnvelopes / envelopeStats.totalEnvelopes) * 100);
   }, [envelopeStats]);
 
-  // Prepare data for pie chart (usage by module)
-  // const pieChartData = useMemo(() => {
-  //   return Object.entries(moduleTotals)
-  //     .filter(([_, total]) => total > 0)
-  //     .map(([name, value]) => ({ name, value }));
-  // }, [moduleTotals]);
+  const displayName = toTitleCase(user?.fullname || user?.email?.split('@')[0] || 'there');
+  const hasEnvelopes = (envelopeStats?.totalEnvelopes ?? 0) > 0;
+  const isNewUser = !envStatesLoading && !hasEnvelopes;
+  const credits = loading ? '…' : (balance ?? 0);
 
-  const moduleBarData = useMemo(() => {
-    return Object.entries(moduleTotals)
-      .map(([name, value]) => ({
-        name: String(name || '').trim(),
-        value: Number(value) || 0,
-      }))
-      .filter((entry) => entry.name.length > 0)
-      .sort((a, b) => b.value - a.value);
-  }, [moduleTotals]);
+  const dateLabel = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  const moduleBarChartData = useMemo(
-    () => moduleBarData.filter((entry) => entry.value > 0 && entry.name),
-    [moduleBarData]
-  );
+  const stats: StatItem[] = [
+    {
+      label: 'Envelopes',
+      value: envStatesLoading ? '—' : envelopeStats?.totalEnvelopes || 0,
+      icon: FileText,
+      accent: 'from-[#260559] to-[#5b3aa0]',
+      glow: 'group-hover:shadow-[#260559]/20',
+    },
+    {
+      label: 'Completed',
+      value: envStatesLoading ? '—' : envelopeStats?.completedEnvelopes || 0,
+      icon: CheckCircle2,
+      accent: 'from-emerald-600 to-[#155E4B]',
+      glow: 'group-hover:shadow-emerald-500/25',
+      hint: `${completionRate}% rate`,
+    },
+    {
+      label: 'Pending',
+      value: envStatesLoading ? '—' : envelopeStats?.pendingEnvelopes ?? 0,
+      icon: Clock,
+      accent: 'from-amber-500 to-orange-500',
+      glow: 'group-hover:shadow-amber-500/25',
+    },
+    {
+      label: 'Credits',
+      value: credits,
+      icon: BarChart3,
+      accent: 'from-[#155E4B] to-emerald-400',
+      glow: 'group-hover:shadow-primary/25',
+      link: '/credits-usage',
+    },
+  ];
 
-  const moduleChartColors: Record<string, string> = {
-    'E-Sign': CHART_HEX.chart1,
-    'PDF Tools': CHART_HEX.chart2,
-    Document: CHART_HEX.chart3,
-    Authentication: CHART_HEX.chart4,
-    Other: CHART_HEX.chart5,
+  const apiKeysShortcut: ShortcutItem = {
+    label: 'API keys',
+    desc: 'Integrate your app',
+    icon: Key,
+    path: '/api-service/keys',
+    accent: 'from-[#260559] to-violet-600',
   };
 
-  // Recharts removed from dashboard — its resize/color path crashes production
-  // (`toUpperCase` on undefined) and escapes React error boundaries via event handlers.
-  const moduleUsageMax = useMemo(
-    () => Math.max(1, ...moduleBarChartData.map((entry) => Number(entry.value) || 0)),
-    [moduleBarChartData]
-  );
+  const shortcuts: ShortcutItem[] = isNewUser
+    ? [
+        { label: 'PDF tools', desc: '66+ utilities', icon: Layers, path: '/pdf-tools', accent: 'from-emerald-600 to-teal-500' },
+        { label: 'Documents', desc: 'Store & share', icon: Share2, path: '/all-documents', accent: 'from-[#260559] to-[#155E4B]' },
+        { label: 'Setup guide', desc: '2 min walkthrough', icon: BookOpen, path: '/e-sign/guide', accent: 'from-violet-600 to-[#260559]' },
+        apiKeysShortcut,
+      ]
+    : [
+        { label: 'Manage envelopes', desc: 'Track & remind', icon: FolderOpen, path: '/e-sign/aggrement', accent: 'from-[#260559] to-[#155E4B]' },
+        { label: 'PDF tools', desc: '66+ utilities', icon: Layers, path: '/pdf-tools', accent: 'from-emerald-600 to-teal-500' },
+        { label: 'Documents', desc: 'Store & share', icon: Share2, path: '/all-documents', accent: 'from-teal-600 to-emerald-500' },
+        { label: 'Billing', desc: 'Usage & top-up', icon: CreditCard, path: '/credits-usage', accent: 'from-[#155E4B] to-emerald-400' },
+        apiKeysShortcut,
+      ];
+
+  const tutorialFeatures = [
+    { id: 'esign', title: 'E-Signature', icon: PenLine },
+    { id: 'pdf', title: 'PDF Tools', icon: FileText },
+    { id: 'sharing', title: 'Documents', icon: Share2 },
+  ];
 
   return (
-    <div className=" space-y-8">
-      {/* Advanced Tutorial Modal */}
+    <PageShell>
+      <div className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-[#155E4B]/12 blur-[80px]" />
+      <div className="pointer-events-none absolute -right-20 top-32 h-56 w-56 rounded-full bg-[#260559]/10 blur-[70px]" />
+
       {showTutorial && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-          <div className="bg-card/95 backdrop-blur-sm  shadow-lg border border-border p-8 max-w-xl w-full relative text-card-foreground">
-            <h2 className="text-3xl font-bold mb-4 text-center text-foreground">Welcome to {BRAND.name}!</h2>
-            <p className="text-lg text-muted-foreground mb-6 text-center">Our system can do the following things:</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <button onClick={() => handleFeatureClick('esign')} className="flex flex-col items-center p-6 bg-muted/60 rounded-lg border border-border hover:bg-muted transition">
-                <span className="text-4xl mb-2">✍️</span>
-                <span className="font-semibold text-primary">E-Signature</span>
-                <span className="text-xs text-muted-foreground mt-1 text-center">Send, sign, and manage documents digitally</span>
-              </button>
-              <button onClick={() => handleFeatureClick('pdf')} className="flex flex-col items-center p-6 bg-muted/60 rounded-lg border border-border hover:bg-muted transition">
-                <span className="text-4xl mb-2">📝</span>
-                <span className="font-semibold text-chart-3">PDF Tools</span>
-                <span className="text-xs text-muted-foreground mt-1 text-center">Edit, merge, split, and convert PDFs</span>
-              </button>
-              <button onClick={() => handleFeatureClick('sharing')} className="flex flex-col items-center p-6 bg-muted/60 rounded-lg border border-border hover:bg-muted transition">
-                <span className="text-4xl mb-2">🔗</span>
-                <span className="font-semibold text-chart-2">Document Sharing</span>
-                <span className="text-xs text-muted-foreground mt-1 text-center">Securely share documents with others</span>
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#260559]/50 backdrop-blur-md" onClick={handleCloseTutorial} />
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-white/20 bg-card shadow-2xl">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#155E4B] via-[#1a7058] to-[#260559] px-6 py-7 text-white">
+              <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
+              <Sparkles className="mb-2 h-5 w-5 text-emerald-200" />
+              <h2 className="text-xl font-bold tracking-tight">Welcome to {BRAND.name}</h2>
+              <p className="mt-1 text-sm text-white/80">Choose once — we won&apos;t ask again.</p>
             </div>
-            <div className="flex flex-col items-center">
-              <span className="text-muted-foreground mb-2">or</span>
+            <div className="grid grid-cols-3 gap-2.5 p-4">
+              {tutorialFeatures.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => handleFeatureClick(f.id)}
+                  className="group flex flex-col items-center gap-2 rounded-2xl border border-border/80 bg-secondary/30 p-3.5 transition hover:border-primary/30 hover:bg-primary/5 hover:shadow-md"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-[#260559]/10 transition group-hover:scale-105">
+                    <f.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-[11px] font-bold text-foreground">{f.title}</span>
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-border/80 px-4 py-3.5">
               <button
-                className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
+                type="button"
+                className="w-full rounded-xl bg-gradient-to-r from-[#155E4B] to-[#260559] py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:opacity-95"
                 onClick={handleCloseTutorial}
               >
-                Explore the Dashboard
+                Go to dashboard
               </button>
             </div>
-            <button
-              className="absolute top-2 right-2 text-muted-foreground hover:text-foreground text-xl leading-none rounded-md p-1 hover:bg-muted"
-              onClick={handleCloseTutorial}
-              aria-label="Close tutorial"
-            >
-              &times;
-            </button>
           </div>
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Total Envelopes Card */}
-        <div className="group relative bg-card rounded-xl border border-border p-6 hover:border-primary/35 hover:shadow-lg transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-chart-5/25 to-chart-4/20 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="relative">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-chart-5 to-chart-4 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/15 text-primary uppercase tracking-wide">All time</span>
+
+      {/* Hero — sole home for New envelope CTA */}
+      <section className="relative overflow-hidden rounded-[1.25rem] border border-white/10 shadow-2xl shadow-[#155E4B]/25">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#155E4B] via-[#176b56] to-[#260559]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:28px_28px]" />
+        <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-emerald-300/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 left-1/4 h-40 w-40 rounded-full bg-[#260559]/30 blur-3xl" />
+
+        <div className="relative flex flex-col gap-5 p-5 md:flex-row md:items-end md:justify-between md:gap-6 md:p-7">
+          <div className="min-w-0 flex-1">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-white/90 backdrop-blur-md">
+              <Sparkles className="h-3 w-3 text-emerald-200" />
+              {dateLabel}
             </div>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Envelopes</p>
-              <p className="text-3xl font-bold text-foreground mb-1">
-                {envStatesLoading ? '—' : envelopeStats?.totalEnvelopes || 0}
-              </p>
-              <p className="text-xs text-muted-foreground">All documents</p>
+            <h1 className="text-[1.65rem] font-black leading-tight tracking-tight text-white md:text-4xl">
+              Hello,{' '}
+              <span className="bg-gradient-to-r from-white via-emerald-50 to-emerald-200 bg-clip-text text-transparent">
+                {displayName}
+              </span>
+            </h1>
+            <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/75 md:text-[15px]">
+              {isNewUser
+                ? `${BRAND.name} — secure e-signatures & document workflows, ready when you are.`
+                : `Your ${BRAND.name} command center for signing and documents.`}
+            </p>
+          </div>
+
+          {/* Decorative doc — desktop only, not a duplicate CTA */}
+          <div className="pointer-events-none relative hidden h-28 w-36 shrink-0 md:block lg:h-32 lg:w-40">
+            <div className="absolute inset-0 rotate-6 rounded-2xl border border-white/20 bg-white/10 p-3 shadow-xl backdrop-blur-md">
+              <div className="mb-2 flex gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-emerald-300/80" />
+                <div className="h-2 w-2 rounded-full bg-white/30" />
+                <div className="h-2 w-2 rounded-full bg-white/30" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="h-1.5 w-full rounded-full bg-white/25" />
+                <div className="h-1.5 w-4/5 rounded-full bg-white/15" />
+                <div className="h-1.5 w-3/5 rounded-full bg-white/15" />
+              </div>
+              <div className="mt-3 inline-flex rounded-md bg-emerald-400/25 px-2 py-0.5 text-[9px] font-bold text-emerald-100">
+                Signed
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Completed Envelopes Card */}
-        <div className="group relative bg-card rounded-xl border border-border p-6 hover:border-accent-green/50 hover:shadow-lg transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-accent-green/15 to-accent-green/5 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="relative">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-accent-green to-emerald-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                <CheckCircle2 className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-accent-green/15 text-accent-green uppercase tracking-wide">Done</span>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Completed Envelopes</p>
-              <p className="text-3xl font-bold text-foreground mb-1">
-                {envStatesLoading ? '—' : envelopeStats?.completedEnvelopes || 0}
-              </p>
-              <div className="flex items-center gap-1.5">
-                <Activity className="w-3 h-3 text-accent-green" />
-                <p className="text-xs text-accent-green font-medium">{completionRate}% completion rate</p>
-              </div>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/e-sign/create')}
+            className="group relative inline-flex shrink-0 items-center justify-center gap-2.5 self-stretch overflow-hidden rounded-2xl bg-white px-6 py-3 text-sm font-bold text-[#155E4B] shadow-xl shadow-black/15 transition hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] md:self-end"
+          >
+            <span className="absolute inset-0 bg-gradient-to-r from-emerald-50/0 via-emerald-100/50 to-emerald-50/0 opacity-0 transition group-hover:opacity-100" />
+            <Plus className="relative h-4 w-4" />
+            <span className="relative">New envelope</span>
+          </button>
         </div>
+      </section>
 
-        {/* Pending Envelopes Card */}
-        <div className="group relative bg-card rounded-xl border border-border p-6 hover:border-accent-orange/50 hover:shadow-lg transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-accent-orange/15 to-accent-orange/5 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="relative">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-accent-orange to-amber-600 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                <Clock className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-accent-orange/15 text-accent-orange uppercase tracking-wide">In queue</span>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pending Envelopes</p>
-              <p className="text-3xl font-bold text-foreground mb-1">
-                {envStatesLoading ? '—' : (envelopeStats?.pendingEnvelopes ?? 0)}
-              </p>
-              <p className="text-xs text-muted-foreground">Awaiting action</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Credits Balance Card */}
-        <Link to="/credits-usage" className="group block">
-          <div className="relative bg-card rounded-xl border border-border p-6 hover:border-primary/40 hover:shadow-lg transition-all duration-300 cursor-pointer h-full overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/15 to-secondary/30 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-chart-2 shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                  <BarChart3 className="w-5 h-5 text-primary-foreground" />
+      {/* Main panel — stats + shortcuts */}
+      <div className="overflow-hidden rounded-[1.25rem] border border-border/70 bg-card/80 shadow-lg shadow-black/[0.03] backdrop-blur-sm">
+        <SectionLabel>Overview</SectionLabel>
+        <div className="grid grid-cols-2 gap-3 px-4 pb-4 lg:grid-cols-4">
+          {stats.map((s) => {
+            const Icon = s.icon;
+            const card = (
+              <div
+                className={`group relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card to-secondary/20 p-4 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg ${s.glow}`}
+              >
+                <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${s.accent}`} />
+                <div
+                  className={`pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full bg-gradient-to-br ${s.accent} opacity-[0.08] blur-xl transition group-hover:opacity-[0.15]`}
+                />
+                <div className="relative flex items-center gap-3">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${s.accent} text-white shadow-md`}>
+                    <Icon className="h-[18px] w-[18px]" strokeWidth={2.25} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[1.65rem] font-black tabular-nums leading-none tracking-tight text-foreground">{s.value}</p>
+                    <p className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {s.label}
+                      {s.hint ? <span className="ml-1 font-semibold normal-case text-foreground/40">· {s.hint}</span> : null}
+                    </p>
+                  </div>
                 </div>
-                <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground uppercase tracking-wide">Billing</span>
               </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Credits Balance</p>
-                <p className="text-3xl font-bold text-foreground mb-1">{loading ? '—' : (balance ?? 0)}</p>
-                <div className="flex items-center gap-1.5">
-                  <ArrowUpRight className="w-3 h-3 text-primary" />
-                  <p className="text-xs text-muted-foreground">Available credits</p>
+            );
+            return s.link ? (
+              <Link key={s.label} to={s.link} className="block">
+                {card}
+              </Link>
+            ) : (
+              <div key={s.label}>{card}</div>
+            );
+          })}
+        </div>
+
+        <div className="mx-4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+
+        <SectionLabel>Go to</SectionLabel>
+        <div className={`grid gap-3 px-4 pb-4 sm:grid-cols-2 ${shortcuts.length >= 5 ? 'lg:grid-cols-3 xl:grid-cols-5' : 'lg:grid-cols-4'}`}>
+          {shortcuts.map((a) => {
+            const Icon = a.icon;
+            return (
+              <button
+                key={a.label}
+                type="button"
+                onClick={() => navigate(a.path)}
+                className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card to-secondary/10 p-4 text-left transition duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-lg"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${a.accent} opacity-0 transition duration-300 group-hover:opacity-[0.06]`} />
+                <div className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${a.accent} text-white shadow-md transition group-hover:scale-105 group-hover:shadow-lg`}>
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={2.25} />
                 </div>
-              </div>
-            </div>
-          </div>
-        </Link>
+                <div className="relative min-w-0 flex-1">
+                  <p className="text-sm font-bold text-foreground">{a.label}</p>
+                  <p className="text-xs text-muted-foreground">{a.desc}</p>
+                </div>
+                <ArrowRight className="relative h-4 w-4 shrink-0 text-muted-foreground/30 transition group-hover:translate-x-0.5 group-hover:text-primary" />
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <button
-          onClick={() => navigate('/e-sign/create')}
-          className="group bg-card border border-border rounded-xl p-5 flex items-center gap-4 hover:border-primary/40 hover:shadow-lg transition-all duration-300 text-left"
-        >
-          <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-chart-2 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
-            <Plus className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground mb-0.5">Create Envelope</p>
-            <p className="text-xs text-muted-foreground">Upload docs and add recipients</p>
-          </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
-        </button>
-        <button
-          onClick={() => navigate('/e-sign/aggrement')}
-          className="group bg-card border border-border rounded-xl p-5 flex items-center gap-4 hover:border-accent-green/50 hover:shadow-lg transition-all duration-300 text-left"
-        >
-          <div className="p-3 rounded-xl bg-gradient-to-br from-accent-green to-emerald-600 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
-            <FolderOpen className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground mb-0.5">Manage Envelopes</p>
-            <p className="text-xs text-muted-foreground">Track progress & resend</p>
-          </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-accent-green group-hover:translate-x-1 transition-all flex-shrink-0" />
-        </button>
-        <button
-          onClick={() => navigate('/credits-usage')}
-          className="group bg-card border border-border rounded-xl p-5 flex items-center gap-4 hover:border-primary/40 hover:shadow-lg transition-all duration-300 text-left"
-        >
-          <div className="p-3 rounded-xl bg-gradient-to-br from-chart-3 to-chart-4 shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all duration-300 flex-shrink-0">
-            <CreditCard className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground mb-0.5">Credits & Billing</p>
-            <p className="text-xs text-muted-foreground">See usage and balance</p>
-          </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
-        </button>
-      </div>
-
-      {/* Recent credit usage */}
-      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300">
-        {/* Header */}
-        <div className="px-6 pt-6 pb-5 border-b border-border bg-gradient-to-r from-muted/40 to-card">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-chart-3 shadow-sm">
-                <CreditCard className="w-5 h-5 text-primary-foreground" />
+      {(loading || moduleBarChartData.length > 0) && (
+        <section className="overflow-hidden rounded-[1.25rem] border border-border/70 bg-card/80 p-5 shadow-lg shadow-black/[0.03] backdrop-blur-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#155E4B] to-emerald-500 text-white shadow-sm">
+                <BarChart3 className="h-4 w-4" />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Credit Usage Analytics</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">Track your credit transactions and usage patterns</p>
-              </div>
+              <h2 className="text-sm font-bold text-foreground">Recent credit usage</h2>
             </div>
-         
+            {!loading && (
+              <Link to="/credits-usage" className="text-xs font-bold text-primary transition hover:text-primary/80">
+                Full history →
+              </Link>
+            )}
           </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 text-primary animate-spin" />
-              <span className="ml-3 text-sm text-muted-foreground">Loading usage history...</span>
+            <div className="flex items-center gap-2.5 py-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              Loading activity…
             </div>
-          ) : moduleBarChartData.length > 0 ? (
+          ) : (
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-foreground">Module Usage</h3>
               {moduleBarChartData.map((entry) => {
-                const pct = Math.round((Number(entry.value) / moduleUsageMax) * 100);
+                const pct = Math.round((entry.value / moduleUsageMax) * 100);
+                const barGrad =
+                  entry.name === 'E-Sign'
+                    ? 'from-[#155E4B] to-emerald-400'
+                    : entry.name === 'PDF Tools'
+                      ? 'from-[#260559] to-violet-400'
+                      : 'from-teal-600 to-emerald-300';
                 return (
-                  <div key={entry.name} className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="font-medium text-foreground">{entry.name}</span>
-                      <span className="tabular-nums text-muted-foreground">{Number(entry.value).toLocaleString()} credits</span>
+                  <div key={entry.name}>
+                    <div className="mb-2 flex justify-between text-xs">
+                      <span className="font-bold text-foreground">{entry.name}</span>
+                      <span className="font-black tabular-nums text-primary">{entry.value} cr</span>
                     </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-2.5 overflow-hidden rounded-full bg-secondary/80">
                       <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${Math.max(4, pct)}%`,
-                          backgroundColor: moduleChartColors[entry.name] || CHART_HEX.chart1,
-                        }}
+                        className={`h-full rounded-full bg-gradient-to-r ${barGrad} transition-all duration-700 ease-out`}
+                        style={{ width: `${Math.max(10, pct)}%` }}
                       />
                     </div>
                   </div>
                 );
               })}
             </div>
-          ) : usage.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="p-4 rounded-full bg-muted mb-3">
-                <Zap className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium text-foreground mb-1">No recent usage</p>
-              <p className="text-xs text-muted-foreground">Your credit transactions will appear here</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="p-4 rounded-full bg-muted mb-3">
-                <Zap className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium text-foreground mb-1">No chart data available</p>
-              <p className="text-xs text-muted-foreground">Your credit transactions will appear here</p>
-            </div>
           )}
-        </div>
+        </section>
+      )}
 
-        {/* Footer */}
-        {!loading && usage.length > 0 && (
-          <div className="px-6 py-4 bg-gradient-to-r from-muted/40 to-card border-t border-border">
-            <Link
-              to="/credits-usage"
-              className="flex items-center justify-center gap-2 text-sm font-semibold text-primary hover:text-primary/80 transition-colors group"
-            >
-              <span>View all credit transactions</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-        )}
-      </div>
-      <div className="bg-muted/40 rounded-xl p-6 border border-border">
-        <AIAuditInsights />
-      </div>
-    </div>
+      {hasEnvelopes && (
+        <section className="overflow-hidden rounded-[1.25rem] border border-border/70 bg-card/80 p-4 shadow-lg backdrop-blur-sm">
+          <AIAuditInsights />
+        </section>
+      )}
+    </PageShell>
   );
 };
 

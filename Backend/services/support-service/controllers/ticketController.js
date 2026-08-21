@@ -279,7 +279,14 @@ exports.createPublicQuery = exports.createPublicTicket;
 exports.createTicket = async (req, res) => {
   try {
     const { subject, category, priority, initialMessage, metadata } = req.body;
-    const customerId = req.user.data.id;
+    const customerId = req.user?.data?.id || req.user?.id;
+    if (!customerId) {
+      return res.status(401).json({
+        status: 401,
+        message: 'User not authenticated',
+        data: null,
+      });
+    }
     
     // Convert customerId to ObjectId to ensure proper storage
     let customerObjectId;
@@ -407,7 +414,14 @@ exports.createTicket = async (req, res) => {
 // Get customer's tickets
 exports.getCustomerTickets = async (req, res) => {
   try {
-    const customerId = req.user.data.id;
+    const customerId = req.user?.data?.id || req.user?.id;
+    if (!customerId) {
+      return res.status(401).json({
+        status: 401,
+        message: 'User not authenticated',
+        data: null,
+      });
+    }
     
     // Convert customerId to ObjectId to ensure proper matching
     // This prevents issues where customerId might be a string while database stores ObjectId
@@ -448,7 +462,14 @@ exports.getCustomerTickets = async (req, res) => {
 exports.getTicket = async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const customerId = req.user.data.id;
+    const customerId = req.user?.data?.id || req.user?.id;
+    if (!customerId) {
+      return res.status(401).json({
+        status: 401,
+        message: 'User not authenticated',
+        data: null,
+      });
+    }
     
     // Convert customerId to ObjectId to ensure proper matching
     let customerObjectId;
@@ -519,7 +540,14 @@ exports.getTicket = async (req, res) => {
 exports.closeTicket = async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const customerId = req.user.data.id;
+    const customerId = req.user?.data?.id || req.user?.id;
+    if (!customerId) {
+      return res.status(401).json({
+        status: 401,
+        message: 'User not authenticated',
+        data: null,
+      });
+    }
     
     // Convert customerId to ObjectId to ensure proper matching
     let customerObjectId;
@@ -604,7 +632,14 @@ exports.submitRating = async (req, res) => {
   try {
     const { ticketId } = req.params;
     const { score, feedback } = req.body;
-    const customerId = req.user.data.id;
+    const customerId = req.user?.data?.id || req.user?.id;
+    if (!customerId) {
+      return res.status(401).json({
+        status: 401,
+        message: 'User not authenticated',
+        data: null,
+      });
+    }
     
     // Convert customerId to ObjectId to ensure proper matching
     let customerObjectId;

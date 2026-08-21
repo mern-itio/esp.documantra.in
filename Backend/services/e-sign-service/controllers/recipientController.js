@@ -234,18 +234,46 @@ exports.patchSigningEvidence = async (req, res) => {
 exports.saveAadhaar = async (req, res) => {
   try {
     const { currentUserId, aadhaarNumber } = req.body;
+    const envelopeID = req.body.envelopeID || req.body.envelopeId;
     if (!currentUserId || !aadhaarNumber) {
       return res.status(400).json({ message: 'currentUserId and aadhaarNumber are required' });
     }
     const updated = await Recipient.findByIdAndUpdate(
-      { _id: currentUserId },
-      { aadhaarNumber: aadhaarNumber },
+      currentUserId,
+      { aadhaarNumber },
       { new: true }
     );
     if (!updated) {
       return res.status(404).json({ message: 'Recipient not found' });
-    } 
-    return res.status(200).json({ data: updated });
+    }
+
+    const aadhaarLast4 = String(aadhaarNumber || '').replace(/\D/g, '').slice(-4);
+    if (envelopeID && aadhaarLast4) {
+      const mongoose = require('mongoose');
+      const RecipientPermission = require('../models/RecipientPermission');
+      const { mergeSigningEvidence } = require('../utils/signingEvidenceHelper');
+      const envelopeQuery = mongoose.Types.ObjectId.isValid(envelopeID)
+        ? { $in: [envelopeID, new mongoose.Types.ObjectId(envelopeID)] }
+        : envelopeID;
+      const recipientQuery = mongoose.Types.ObjectId.isValid(currentUserId)
+        ? { $in: [currentUserId, new mongoose.Types.ObjectId(currentUserId)] }
+        : currentUserId;
+      const permission = await RecipientPermission.findOne({
+        envelopeId: envelopeQuery,
+        recipientId: recipientQuery,
+      });
+      if (permission) {
+        permission.signingEvidence = mergeSigningEvidence(permission.signingEvidence || {}, {
+          aadhaarLast4,
+        });
+        await permission.save();
+      }
+    }
+
+    return res.status(200).json({
+      data: updated,
+      aadhaarLast4: aadhaarLast4 || null,
+    });
   } catch (err) {
     console.error('saveAadhaar error', err);
     return res.status(500).json({ message: 'Failed to save Aadhaar number' });

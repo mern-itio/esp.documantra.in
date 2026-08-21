@@ -234,7 +234,7 @@ function drawLocationRows(doc, x, y, w, evidence) {
 
 function drawTimeline(doc, x, y, w, timeline) {
   let rowY = y;
-  const items = (timeline || []).slice(0, 5);
+  const items = (timeline || []).slice(0, 6);
   items.forEach((item, idx) => {
     const event = String(item.event || '—');
     const ts = formatGmtTs(item.at);
@@ -374,7 +374,7 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
     const timeline = signer.timeline || [];
     const hasAuth = countAuthSlots(evidence) > 0;
     const showLocation = hasLocationEvidence(evidence);
-    const timelineRows = Math.min((timeline || []).length || 1, 5);
+    const timelineRows = Math.min((timeline || []).length || 1, 6);
     const timelineBlockH = 14 + timelineRows * 20;
     const metaRows = ['device', 'os', 'browser', 'ip', 'isp', 'org', 'asn'].filter(
       (k) => evidence[k],

@@ -942,6 +942,7 @@ async function generateAndStoreCompletionCertificate(envelopeId) {
   const SignatureField = require('../models/SignatureFields');
   const Recipient = require('../models/Recipient');
   const RecipientPermission = require('../models/RecipientPermission');
+  const signatureTransactions = require('../models/signatureTransactions');
 
   const envelope = await Envelope.findById(envelopeId).lean();
   if (!envelope) throw new Error('Envelope not found');
@@ -956,6 +957,12 @@ async function generateAndStoreCompletionCertificate(envelopeId) {
     : [];
   const recipientById = {};
   recipients.forEach((r) => { recipientById[String(r._id)] = r; });
+
+  const vsignTxByRecipient = {};
+  const vsignTxs = await signatureTransactions.find({ envelopeId }).lean();
+  vsignTxs.forEach((tx) => {
+    vsignTxByRecipient[String(tx.recipientId)] = tx;
+  });
 
   const [certs, signatures, fields] = await Promise.all([
     Certificate.find({ envelopeId }).lean(),
@@ -983,6 +990,7 @@ async function generateAndStoreCompletionCertificate(envelopeId) {
   const signers = await Promise.all(permissions.map(async (permission) => {
     const rid = String(permission.recipientId);
     const recipient = recipientById[rid] || {};
+    const vsignTx = vsignTxByRecipient[rid];
     const permissionId = String(permission._id);
     const evidence = permission.signingEvidence || {};
     const verifiedAuthMethods = buildVerifiedAuthMethodsFromEvidence(evidence, permission.authLevel || []);
@@ -1002,6 +1010,11 @@ async function generateAndStoreCompletionCertificate(envelopeId) {
       recipient,
       signatureFieldCount: signatureFieldCountByRecipient[rid] || 0,
       signingEvidence: mergedEvidence,
+      vsignVerified: Boolean(vsignTx),
+      aadhaarVerifiedAt:
+        mergedEvidence.aadhaarVerifiedAt ||
+        mergedEvidence.vsignVerifiedAt ||
+        (vsignTx?.txn && /^\d+$/.test(String(vsignTx.txn)) ? new Date(Number(vsignTx.txn)) : null),
     });
 
     const cert = certByPermissionId[permissionId];
@@ -1012,6 +1025,7 @@ async function generateAndStoreCompletionCertificate(envelopeId) {
     if (sig?.signedAt && !timeline.find((t) => t.event === 'Document Cryptographically Signed')) {
       timeline.push({ event: 'Document Cryptographically Signed', at: sig.signedAt });
     }
+    timeline.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 
     return {
       name: recipient.name || recipient.email || 'Signer',

@@ -30,8 +30,29 @@ const testVSignConfig = async (req, res) => {
   return res.status(200).json(result.data);
 };
 
+const getVSignProfileStatus = async (req, res) => {
+  const result = await serviceGet(req, 'esign', { url: '/admin/vsign-config/status' });
+  if (!result.ok) {
+    return res.status(result.status).json({ message: result.message });
+  }
+  return res.status(200).json(result.data);
+};
+
+const switchVSignProfile = async (req, res) => {
+  const result = await servicePost(req, 'esign', {
+    url: '/admin/vsign-config/switch',
+    data: req.body,
+  });
+  if (!result.ok) {
+    return res.status(result.status).json(result.data || { message: result.message });
+  }
+  return res.status(200).json(result.data);
+};
+
 module.exports = {
   getVSignConfig,
+  getVSignProfileStatus,
+  switchVSignProfile,
   updateVSignConfig,
   testVSignConfig,
 };

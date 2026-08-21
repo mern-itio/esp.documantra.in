@@ -970,9 +970,9 @@ export const mockPDFTools = {
 // the original structure is returned to avoid hiding all tools when the
 // admin service is unreachable.
 export const getActiveMockTools = (activeToolIds?: Set<string> | string[]) => {
-  if (!activeToolIds) return {} as any;
+  if (!activeToolIds) return mockPDFTools as any;
   const ids = Array.isArray(activeToolIds) ? new Set(activeToolIds) : activeToolIds;
-  if (!ids || ids.size === 0) return {} as any;
+  if (!ids || ids.size === 0) return mockPDFTools as any;
 
   const clone: any = {};
   for (const [categoryKey, categoryVal] of Object.entries<any>(mockPDFTools)) {

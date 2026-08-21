@@ -1,7 +1,15 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const dotenv = require('dotenv');
-const verifyJWT  = require('@draftnsign/auth-lib');
 dotenv.config();
+
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const verifyJWT  = require('@draftnsign/auth-lib');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
 const { getCorsOptions, applySecurityHeaders, createErrorHandler } = require('@draftnsign/validators');
@@ -26,10 +34,10 @@ connectDB();
 app.use(express.json());
  app.get('/api/api-service/health', (_, res) => res.send('API Service is running'));
 
-app.use('/api/api-service', verifyJWT(process.env.ACCESS_TOKEN_SECRET), apiRoutes);
-app.use('/api/api-service/community', verifyJWT(process.env.ACCESS_TOKEN_SECRET), community);
-app.use('/api/api-service/tickets', verifyJWT(process.env.ACCESS_TOKEN_SECRET), supportTickets);
-app.use('/api/api-service/sign', verifyJWT(process.env.ACCESS_TOKEN_SECRET), analyticsMiddleware, esignRoutes );
+app.use('/api/api-service', verifyJWT('user'), apiRoutes);
+app.use('/api/api-service/community', verifyJWT('user'), community);
+app.use('/api/api-service/tickets', verifyJWT('user'), supportTickets);
+app.use('/api/api-service/sign', verifyJWT('user'), analyticsMiddleware, esignRoutes );
 
 app.use(createErrorHandler('API-Service'));
 

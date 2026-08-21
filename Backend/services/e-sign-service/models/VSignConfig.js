@@ -11,6 +11,11 @@ const VSignConfigSchema = new mongoose.Schema(
     certMode: { type: String, enum: ['live', 'uat'], default: 'live' },
     aspId: { type: String, default: 'IIPLUAT001' },
     vsignAuthPage: { type: String, default: 'https://esignuat.vsign.in/esp' },
+    /** Public HTTPS logo URL for live VSign auth page (authpagev4) only. */
+    vsignAuthLogoUrl: {
+      type: String,
+      default: '',
+    },
     vsignCallbackUrl: {
       type: String,
       default: 'https://esp.documantra.in/esign/api/e-sign/public/v-sign/response',

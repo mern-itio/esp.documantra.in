@@ -19,6 +19,15 @@ import {
 } from "./EnvelopeCommentLayer";
 import type { EnvelopeComment } from "../../services/envelopeCommentService";
 import { PDFJS_WORKER_SRC } from "../../config/pdfjsWorker";
+import { getStoredVSignAadhaar, getStoredVSignAadhaarLast4, storeVSignAadhaar, storeVSignAadhaarLast4 } from "../../utils/vsignAadhaarStorage";
+import {
+  isAadhaarSigningVerified,
+  resolveVSignAppearanceRecipient,
+} from "../../utils/vsignAppearance";
+import {
+  DEMO_HANDWRITTEN_SIGNATURE_SRC,
+  DualSignatureAppearance,
+} from "./AadhaarSignatureAppearance";
 
 interface Props {
   // Backward compatible single document
@@ -43,6 +52,8 @@ interface Props {
   signingEnabled?: boolean;
   /** Called when current recipient completes all required signing actions (fieldRemmaning === false) */
   onRecipientComplete?: () => void;
+  /** Refresh envelope + fields after VSign Aadhaar redirect. */
+  onSigningRefresh?: () => void | Promise<void>;
   /** Opens the terms/conditions modal (with the same options dropdown) */
   onRequestActions?: () => void;
   /** Show header Actions menu even in view-only / pre-verification review */
@@ -66,6 +77,8 @@ interface Props {
   allowDocumentComments?: boolean;
   signatureProvider:string
   signatureMethod:string
+  /** Show reference dual-signature layout on fields without signing (?signDemo=1). */
+  signAppearanceDemo?: boolean
 }
 
 Modal.setAppElement("#root");
@@ -192,6 +205,7 @@ const DocumentViewerContent: React.FC<Props> = ({
   isViewOnly = false,
   signingEnabled = true,
   onRecipientComplete,
+  onSigningRefresh,
   onRequestActions,
   showActionsMenu,
   headerTitle,
@@ -204,9 +218,34 @@ const DocumentViewerContent: React.FC<Props> = ({
   onCommentsPanelClose,
   allowDocumentComments,
   signatureProvider,
-  signatureMethod
+  signatureMethod,
+  signAppearanceDemo = false,
 }) => {
   const navigate = useNavigate();
+  const [aadhaarLast4ByRecipientId, setAadhaarLast4ByRecipientId] = useState<Record<string, string>>({});
+
+  const cacheAadhaarLast4 = useCallback((recipientId: string, last4: string, email?: string) => {
+    const digits = String(last4 || '').replace(/\D/g, '').slice(-4);
+    if (digits.length !== 4) return;
+    const id = normalizeMongoId(recipientId);
+    if (!id) return;
+    setAadhaarLast4ByRecipientId((prev) => ({ ...prev, [id]: digits }));
+    storeVSignAadhaarLast4(email, digits, id);
+  }, []);
+
+  useEffect(() => {
+    setAadhaarLast4ByRecipientId((prev) => {
+      const merged = { ...prev };
+      for (const r of allRecipients || []) {
+        const id = normalizeMongoId(r?.id ?? r?._id);
+        const last4 = String(r?.aadhaarLast4 || r?.signingEvidence?.aadhaarLast4 || '')
+          .replace(/\D/g, '')
+          .slice(-4);
+        if (id && last4.length === 4) merged[id] = last4;
+      }
+      return merged;
+    });
+  }, [allRecipients]);
   const actionsMenuVisible = showActionsMenu ?? !isViewOnly;
   const toolbarTitle = headerTitle || (isViewOnly ? "View only" : "Review and complete");
   const displayTitle = documentTitle || toolbarTitle;
@@ -427,14 +466,22 @@ const DocumentViewerContent: React.FC<Props> = ({
     const params = new URLSearchParams(window.location.search);
     const rawData = params.get("data");
     if (!rawData) return;
-    const data = JSON.parse(decodeURIComponent(rawData));
-    const response = {
-      data
-    };
-    console.log(response);
-    handleSuccess(response,data?.fieldId);
 
-}, []);
+    (async () => {
+      try {
+        const data = JSON.parse(decodeURIComponent(rawData));
+        await onSigningRefresh?.();
+        await handleSuccess({ data }, data?.fieldId);
+        params.delete("data");
+        const qs = params.toString();
+        const nextUrl = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`;
+        window.history.replaceState({}, "", nextUrl);
+      } catch (err) {
+        console.error("VSign redirect handling failed:", err);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on return from VSign
+  }, []);
 
   // Update signature when data changes based on mode
   useEffect(() => {
@@ -1014,6 +1061,19 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     }
     if (!field) return;
 
+    if (
+      options?.isEdit &&
+      signatureMethod === 'aadhaarSignature'
+    ) {
+      const assigneeId = normalizeMongoId(field.recipientId || currentUserId);
+      const assignee = (allRecipients || []).find((r: any) =>
+        normalizeMongoId(r?.id ?? r?._id) === assigneeId,
+      );
+      if (isAadhaarSigningVerified(assignee?.signingEvidence)) {
+        return;
+      }
+    }
+
     setIsEditingSignature(!!options?.isEdit);
 
     const af: ActiveField = {
@@ -1504,8 +1564,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
 
       const payload = {
         fieldId: fieldKey,
-        ...(signatureMethod !== 'aadhaarSignature' &&
-        (options?.signatureOverride ?? recipientSignature)
+        ...( (options?.signatureOverride ?? recipientSignature)
           ? { signatureImageBase64: options?.signatureOverride ?? recipientSignature }
           : {}),
         envelopeId: envelopeID || '',
@@ -1527,6 +1586,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       });
       if (response?.status === 200) {
         if (response?.data?.signMethod == 'V_Sign') {
+          if (response?.data?.aadhaarLast4) {
+            cacheAadhaarLast4(currentUserId, response.data.aadhaarLast4);
+          }
           if (!response?.data?.authUrl || !response?.data?.txnRef) {
             alert('VSign could not start. Check ESP utility on port 7077 and try again.');
             return;
@@ -1590,7 +1652,18 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     options?: { signatureOverride?: string },
   ) => {
     if (isSigningBatchRef.current) return;
-    if (isSignatureFieldCompleted(field)) return;
+    if (isSignatureFieldCompleted(field)) {
+      // Handwritten may already be saved; still allow Aadhaar OTP until verified.
+      if (signatureMethod === 'aadhaarSignature') {
+        const assigneeId = normalizeMongoId(field.recipientId || currentUserId);
+        const assignee = (allRecipients || []).find((r: any) =>
+          normalizeMongoId(r?.id ?? r?._id) === assigneeId,
+        );
+        if (isAadhaarSigningVerified(assignee?.signingEvidence)) return;
+      } else {
+        return;
+      }
+    }
 
     const signatureToUse = options?.signatureOverride ?? recipientSignature;
     if (!signatureToUse && signatureMethod !== 'aadhaarSignature') {
@@ -1599,10 +1672,34 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     }
     if (signatureMethod == 'aadhaarSignature') {
       const response = await checkRecipientRequireDetails(currentUserId);
+      const matchedRecipient = allRecipients?.find((r) =>
+        normalizeMongoId(r?.id ?? r?._id) === normalizeMongoId(currentUserId),
+      );
+      const recipientEmail = matchedRecipient?.email;
+      const resolvedLast4 =
+        response?.data?.data?.aadhaarLast4 ||
+        matchedRecipient?.aadhaarLast4 ||
+        matchedRecipient?.signingEvidence?.aadhaarLast4 ||
+        getStoredVSignAadhaarLast4(recipientEmail, currentUserId) ||
+        getStoredVSignAadhaar(recipientEmail)?.slice(-4);
+      if (resolvedLast4) {
+        cacheAadhaarLast4(currentUserId, resolvedLast4, recipientEmail);
+      }
       if (response?.status == 200 && response?.data?.data?.flag === false) {
-        setPendingField(field);
-        setShowAadhaarModal(true);
-        return;
+        const storedAadhaar = getStoredVSignAadhaar(recipientEmail);
+        if (storedAadhaar) {
+          cacheAadhaarLast4(currentUserId, storedAadhaar.slice(-4), recipientEmail);
+          const saved = await persistAadhaarForSigning(storedAadhaar, recipientEmail);
+          if (!saved) {
+            setPendingField(field);
+            setShowAadhaarModal(true);
+            return;
+          }
+        } else {
+          setPendingField(field);
+          setShowAadhaarModal(true);
+          return;
+        }
       }
     }
 
@@ -1656,12 +1753,38 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     const response = await eSignApi.post('/api/e-sign/public/recipients/validate',{
       signatureMethod:signatureMethod,
       currentUserId:currentUserId,
+      envelopeID,
       selfValue
     });
     if(response.status==200){
       return response;
     }
   }
+
+  const persistAadhaarForSigning = async (
+    aadhaar: string,
+    recipientEmail?: string,
+  ): Promise<boolean> => {
+    try {
+      const response = await eSignApi.post('/api/e-sign/public/save-aadhaar', {
+        aadhaarNumber: aadhaar,
+        currentUserId,
+        envelopeID,
+        selfValue,
+      });
+      if (response?.status === 200) {
+        storeVSignAadhaar(recipientEmail, aadhaar, currentUserId);
+        const last4 = response?.data?.aadhaarLast4 || aadhaar.slice(-4);
+        cacheAadhaarLast4(currentUserId, last4, recipientEmail);
+        setAadhaarSaved(true);
+        await onSigningRefresh?.();
+        return true;
+      }
+    } catch (err) {
+      console.error('Error saving Aadhaar:', err);
+    }
+    return false;
+  };
 
   const handleAadhaarSubmit = async () => {
     // Validation
@@ -1673,27 +1796,19 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     setAadhaarSaving(true);
 
     try {
-      // Assume API to save Aadhaar
-      const response = await eSignApi.post('/api/e-sign/public/save-aadhaar', {
-        aadhaarNumber,
-        currentUserId,
-        envelopeID,
-        selfValue
-      });
-      if (response?.status === 200) {
-        setAadhaarSaved(true);
+      const recipientEmail = allRecipients?.find((r) =>
+        normalizeMongoId(r?.id ?? r?._id) === normalizeMongoId(currentUserId),
+      )?.email;
+      const saved = await persistAadhaarForSigning(aadhaarNumber, recipientEmail);
+      if (saved) {
         setShowAadhaarModal(false);
         setAadhaarNumber('');
-        // Proceed with signing
         const field = pendingField;
         setPendingField(null);
         doSign(field);
       } else {
         setAadhaarError('Failed to save Aadhaar number. Please try again.');
       }
-    } catch (err) {
-      console.error('Error saving Aadhaar:', err);
-      setAadhaarError('An error occurred. Please try again.');
     } finally {
       setAadhaarSaving(false);
     }
@@ -2006,6 +2121,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     currentUserId: string;
     selfValue: string | null;
     selfSigner: any[];
+    allRecipients?: any[];
+    aadhaarLast4ByRecipientId?: Record<string, string>;
+    signatureMethod: string;
     localSignedMap: Record<string, string>;
     recipientSignature: string | null;
     onFieldClick: (field: any, options?: { isEdit?: boolean }) => void;
@@ -2043,6 +2161,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
     commentsReadEnabled?: boolean;
     activeCommentId?: string | null;
     onCommentHighlightClick?: (comment: EnvelopeComment) => void;
+    signAppearanceDemo?: boolean;
   };
 
   const SingleDoc = useMemo(() => {
@@ -2054,6 +2173,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         currentUserId,
         selfValue: _selfValue,
         selfSigner: _selfSigner,
+        allRecipients = [],
+        aadhaarLast4ByRecipientId = {},
+        signatureMethod: signatureMethodProp,
         localSignedMap,
         recipientSignature,
         onFieldClick,
@@ -2091,6 +2213,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         commentsReadEnabled = false,
         activeCommentId = null,
         onCommentHighlightClick,
+        signAppearanceDemo = false,
       } = props;
       const [numPages, setNumPages] = useState<number>(0);
       const docId = String(doc?.id || doc?._id || doc?.documentId || '');
@@ -2322,6 +2445,93 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             }
                           }
                           const isActiveNavField = currentNavFieldKey === keyId;
+                          const isAadhaarFlow = signatureMethodProp === 'aadhaarSignature';
+                          const assigneeRecipientId = normalizeMongoId(field.recipientId || currentUserId);
+                          const fieldRecipient = (allRecipients || []).find((r: any) =>
+                            normalizeMongoId(r?.id ?? r?._id) === assigneeRecipientId,
+                          );
+                          const fieldEvidence = fieldRecipient?.signingEvidence || {};
+                          const isAadhaarVerified = isAadhaarSigningVerified(fieldEvidence);
+                          const demoActive =
+                            signAppearanceDemo && isAadhaarFlow && isSignatureType;
+                          const handwrittenSrc = demoActive
+                            ? DEMO_HANDWRITTEN_SIGNATURE_SRC
+                            : signedImage
+                              || field.signature
+                              || fieldEvidence.handwrittenSignature
+                              || (isCurrentUser ? recipientSignature : null);
+                          const aadhaarAppearanceFontPx = Math.max(
+                            9,
+                            Math.min(13, scaledHeight * 0.16),
+                          );
+                          const appearanceRecipient = demoActive
+                            ? {
+                                name: fieldRecipient?.name || 'Demo Signer',
+                                aadhaarNumber: '1234567894693',
+                                verifiedAt: new Date(),
+                              }
+                            : resolveVSignAppearanceRecipient(fieldRecipient, {
+                                storedAadhaar: getStoredVSignAadhaar(fieldRecipient?.email),
+                                last4:
+                                  aadhaarLast4ByRecipientId[assigneeRecipientId] ||
+                                  getStoredVSignAadhaarLast4(
+                                    fieldRecipient?.email,
+                                    assigneeRecipientId,
+                                  ),
+                              });
+                          const showAadhaarDualLayout =
+                            isAadhaarFlow &&
+                            (demoActive ||
+                              // After Aadhaar OTP the signed PDF already has the dual stamp —
+                              // keep React overlay off or it stacks as a double appearance.
+                              (!isAadhaarVerified &&
+                                Boolean(handwrittenSrc) &&
+                                (isCurrentUser || isViewOnly)));
+                          // Handwritten is saved before Aadhaar OTP — still allow SignPad edit.
+                          const canEditAadhaarHandwritten =
+                            showAadhaarDualLayout &&
+                            !demoActive &&
+                            !isViewOnly &&
+                            !isAadhaarVerified &&
+                            isCurrentUser &&
+                            Boolean(handwrittenSrc) &&
+                            signingEnabled &&
+                            !isSigning;
+                          const renderDualSignatureStack = (opts: {
+                            showDigital: boolean;
+                            bottomAction?: React.ReactNode;
+                            showEdit?: boolean;
+                          }) => {
+                            // Size to dual content only. A forced ~720px white cover
+                            // (scaledWidth*3 / pageScale*320) created the empty top-right gap.
+                            return (
+                              <div
+                                className={`relative z-20 w-max max-w-full rounded bg-white ${
+                                  opts.showEdit ? "overflow-visible" : "overflow-hidden"
+                                }`}
+                                aria-hidden={!opts.showDigital}
+                              >
+                                <DualSignatureAppearance
+                                  handwrittenSrc={handwrittenSrc}
+                                  recipient={appearanceRecipient}
+                                  fontSizePx={
+                                    opts.showDigital
+                                      ? aadhaarAppearanceFontPx
+                                      : Math.max(12, aadhaarAppearanceFontPx + 2)
+                                  }
+                                  showDigital={opts.showDigital}
+                                  showEdit={opts.showEdit}
+                                  bottomAction={opts.bottomAction}
+                                  fitContent
+                                  minWidth={opts.showDigital ? undefined : Math.max(260, pageScale * 280)}
+                                  onEditClick={(e) => {
+                                    e.stopPropagation();
+                                    onFieldClick(field, { isEdit: true });
+                                  }}
+                                />
+                              </div>
+                            );
+                          };
                           return (
                             <div
                               key={field._id?.$oid || field._id}
@@ -2330,9 +2540,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                 position: "absolute",
                                 top: rawY * pageScale,
                                 left: rawX * pageScale,
-                                width: scaledWidth,
-                                height: scaledHeight + labelOffset,
-                                zIndex: isActiveNavField ? 20 : 10
+                                width: showAadhaarDualLayout ? "max-content" : scaledWidth,
+                                height: showAadhaarDualLayout
+                                  ? "max-content"
+                                  : scaledHeight + labelOffset,
+                                zIndex: showAadhaarDualLayout ? 50 : isActiveNavField ? 20 : 10,
+                                overflow: canEditAadhaarHandwritten
+                                  ? "visible"
+                                  : showAadhaarDualLayout
+                                    ? "hidden"
+                                    : undefined,
                               }}
                             >
                               {isCurrentUser && isActiveNavField && signingEnabled && (
@@ -2349,42 +2566,72 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                               )}
                               <div
                                 style={{
-                                  position: "absolute",
+                                  position: showAadhaarDualLayout ? "relative" : "absolute",
                                   top: 0,
                                   left: 0,
-                                  width: scaledWidth,
-                                  height: scaledHeight,
+                                  width: showAadhaarDualLayout ? "max-content" : scaledWidth,
+                                  height: showAadhaarDualLayout ? "max-content" : scaledHeight,
                                   // Keep signature boxes clickable whenever signing is enabled for this user.
                                   pointerEvents: isViewOnly
                                     ? "auto"
+                                    : canEditAadhaarHandwritten
+                                      ? "auto"
+                                    : isSigned && isAadhaarFlow
+                                      ? "none"
+                                    : demoActive
+                                      ? "none"
                                     : isSigned || (isCurrentUser && signingEnabled && !isSigning)
                                       ? "auto"
                                       : "none",
                                   fontSize: fieldFontSize,
-                                  padding: `0px ${boxPaddingX-15}px`,
+                                  padding: showAadhaarDualLayout ? 0 : `0px ${boxPaddingX - 15}px`,
+                                  overflow: canEditAadhaarHandwritten
+                                    ? "visible"
+                                    : showAadhaarDualLayout
+                                      ? "hidden"
+                                      : undefined,
                                 }}
-                                className={`flex items-center justify-center gap-1 cursor-pointer font-semibold rounded ${
-                                  isSigned
-                                    ? signatureMethod === 'aadhaarSignature'
-                                      ? "border-0 bg-transparent text-transparent"
-                                      : "border-2 border-rose-300 bg-white"
-                                    : isViewOnly && isCurrentUser
-                                      ? "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-80 cursor-pointer"
-                                      : isCurrentUser
-                                        ? isSigning
-                                          ? "bg-rose-100 border-2 border-rose-400 text-rose-600 cursor-progress"
-                                          : !signingEnabled
-                                            ? "bg-rose-50 border-2 border-rose-300 text-rose-500 opacity-70 cursor-default"
-                                            : isActiveNavField
-                                            ? "bg-rose-50 border-2 border-rose-500 text-rose-700 cursor-pointer shadow-sm ring-2 ring-rose-200"
-                                            : "bg-rose-50 border-2 border-rose-400 text-rose-600 cursor-pointer hover:bg-rose-100"
-                                        : "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-50"
+                                className={`relative ${
+                                  showAadhaarDualLayout
+                                    ? `${canEditAadhaarHandwritten ? "overflow-visible" : "overflow-hidden"} border-0 bg-transparent shadow-none`
+                                    : isAadhaarFlow && (handwrittenSrc || isSigned)
+                                    ? 'flex flex-col border-0 bg-transparent shadow-none'
+                                    : 'flex items-center justify-center'
+                                } gap-1 ${
+                                  canEditAadhaarHandwritten
+                                    ? "cursor-default"
+                                    : isSigned
+                                      ? "cursor-default"
+                                      : "cursor-pointer"
+                                } font-semibold rounded ${
+                                  showAadhaarDualLayout
+                                    ? "border-0 bg-transparent shadow-none ring-0"
+                                    : isSigned && !showAadhaarDualLayout
+                                      ? isAadhaarFlow
+                                        ? "border-0 bg-transparent overflow-visible shadow-none"
+                                        : "border-2 border-rose-300 bg-white"
+                                      : !showAadhaarDualLayout && isAadhaarFlow && handwrittenSrc
+                                        ? "border-0 bg-transparent overflow-visible shadow-none"
+                                        : isViewOnly && isCurrentUser
+                                          ? "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-80 cursor-pointer"
+                                          : isCurrentUser
+                                            ? isSigning
+                                              ? "bg-rose-100 border-2 border-rose-400 text-rose-600 cursor-progress"
+                                              : !signingEnabled
+                                                ? "bg-rose-50 border-2 border-rose-300 text-rose-500 opacity-70 cursor-default"
+                                                : isActiveNavField
+                                                  ? "bg-rose-50 border-2 border-rose-500 text-rose-700 cursor-pointer shadow-sm ring-2 ring-rose-200"
+                                                  : "bg-rose-50 border-2 border-rose-400 text-rose-600 cursor-pointer hover:bg-rose-100"
+                                            : "bg-gray-100 border-2 border-gray-300 text-gray-500 opacity-50"
                                 }`}
                                 onClick={() => {
                                   if (isViewOnly) {
                                     openAuditTrailModal();
                                     return;
                                   }
+                                  // Pending Aadhaar card: only the edit pencil opens SignPad.
+                                  if (canEditAadhaarHandwritten) return;
+                                  if (isSigned) return;
                                   if (!signingEnabled || isSigning) return;
                                   if (!isCurrentUser) return;
                                   if (!allFilled) {
@@ -2404,20 +2651,55 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     <span className="h-4 w-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
                                     <span>{signingStatusText || "Finalizing document..."}</span>
                                   </div>
-                                ) : isSigned ? (
-                                  signatureMethod === 'aadhaarSignature' ? (
-                                    <span className="text-[10px] leading-tight text-emerald-700 font-semibold text-center px-1">
-                                      Digitally Signed
-                                    </span>
-                                  ) : signedImage ? (
+                                ) : showAadhaarDualLayout ? (
+                                  renderDualSignatureStack({
+                                    showDigital: isAadhaarVerified || demoActive,
+                                    showEdit:
+                                      !isViewOnly &&
+                                      !isAadhaarVerified &&
+                                      isCurrentUser &&
+                                      Boolean(handwrittenSrc),
+                                    bottomAction:
+                                      !isAadhaarVerified &&
+                                      !demoActive &&
+                                      isCurrentUser &&
+                                      handwrittenSrc ? (
+                                        <button
+                                          type="button"
+                                          className="pointer-events-auto w-full border-t border-[#c5d9f0] bg-gradient-to-r from-[#eef5ff] to-[#e8f2ff] px-3 py-2.5 text-left transition hover:from-[#e6f0ff] hover:to-[#ddeeff]"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (!signingEnabled || isSigning) return;
+                                            doSign(field);
+                                          }}
+                                        >
+                                          <span className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-wide text-[#1B4D3E]">
+                                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#1B4D3E]/10 text-[#1B4D3E]">
+                                              <PenLine className="h-3.5 w-3.5" />
+                                            </span>
+                                            Sign with Aadhaar
+                                          </span>
+                                          <p className="mt-1 pl-8 text-[10px] font-medium leading-snug text-slate-500">
+                                            Verify with OTP to complete signing
+                                          </p>
+                                        </button>
+                                      ) : undefined,
+                                  })
+                              ) : isSigned && isAadhaarFlow && isAadhaarVerified ? (
+                                  // PDF already carries the dual Aadhaar stamp — no HTML overlay.
+                                  null
+                              ) : isSigned ? (
+                                  signedImage ? (
                                   <div className="relative w-full h-full">
                                     <img
                                       src={signedImage as string}
                                       alt="Signed"
                                       className="h-full w-full object-contain rounded"
                                     />
-                                    {/* Only show edit button for current user's signed fields (not for CC view-only) */}
-                                    {isCurrentUser && !isViewOnly && (
+                                    {isCurrentUser &&
+                                      !isViewOnly &&
+                                      !(isAadhaarFlow && isAadhaarVerified) && (
                                       <button
                                         type="button"
                                         className="absolute -top-2 -right-2 flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 via-purple-500 to-pink-500 text-white shadow-lg border-2 border-white p-1.5 hover:scale-105 focus:scale-105 transition-transform focus:outline-none"
@@ -2434,10 +2716,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   ) : null
                                 ) : !allFilled ? (
                                   "Fill all other fields first"
-                                ) : isCurrentUser && signatureMethod === 'aadhaarSignature' ? (
+                                ) : isCurrentUser && isAadhaarFlow && !handwrittenSrc ? (
                                   <span className="inline-flex items-center gap-1">
                                     <PenLine className="h-3.5 w-3.5" />
-                                    {recipientSignature ? 'Sign with Aadhaar' : 'Draw signature'}
+                                    Draw signature
                                   </span>
                                 ) : isCurrentUser && recipientSignature ? (
                                   <span className="inline-flex items-center gap-1">
@@ -2964,7 +3246,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         </Document>
       );
     };
-  }, []);
+  }, [signatureMethod, signAppearanceDemo]);
 
   return (
     <form
@@ -2985,6 +3267,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       <div className="relative flex flex-col items-stretch min-h-screen bg-[#f3f4f6]">
         {/* PandaDoc-style main header */}
         <div className="pointer-events-auto fixed top-0 left-0 right-0 z-[60] border-b border-gray-200 bg-white">
+          {signAppearanceDemo ? (
+            <div className="border-b border-amber-200 bg-amber-50 px-4 py-1.5 text-center text-xs text-amber-900">
+              Sign appearance demo — preview only. Remove{' '}
+              <span className="font-mono">?signDemo=1</span> from the URL to sign for real.
+            </div>
+          ) : null}
           <div className="flex h-14 items-center justify-between px-4 sm:px-6">
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <BrandLogo className="h-7 w-auto shrink-0" />
@@ -3276,6 +3564,9 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 currentUserId={currentUserId}
                 selfValue={selfValue}
                 selfSigner={selfSigner}
+                allRecipients={allRecipients}
+                aadhaarLast4ByRecipientId={aadhaarLast4ByRecipientId}
+                signatureMethod={signatureMethod}
                 localSignedMap={localSignedMap}
                 recipientSignature={recipientSignature}
                 onFieldClick={handleFieldClick}
@@ -3313,6 +3604,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 commentsReadEnabled={commentsReadEnabled}
                 activeCommentId={activeCommentId}
                 onCommentHighlightClick={jumpToComment}
+                signAppearanceDemo={signAppearanceDemo}
               />
 
               {/* separator between documents with next document name */}

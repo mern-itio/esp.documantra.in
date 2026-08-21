@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Bell, Check, CheckCheck, ExternalLink } from 'lucide-react';
 import { apiGateway } from '../../services/apiHelper';
 import toast from 'react-hot-toast';
+import { PageShell, PageHero, PagePanel } from '../../components/common/PageShell';
 
 interface Notification {
   _id: string;
@@ -36,7 +37,6 @@ const NotificationsPage: React.FC = () => {
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      // const unreadOnly = filter === 'unread' ? 'true' : 'false';
       const response = await apiGateway.get('/get-notifications');
       if (response.data?.status === 'success') {
         setNotifications(response.data.data.notifications || []);
@@ -52,7 +52,6 @@ const NotificationsPage: React.FC = () => {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
@@ -157,15 +156,17 @@ const NotificationsPage: React.FC = () => {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case 'signature_completed':
-        return 'bg-blue-100 text-blue-700';
-      case 'envelope_completed':
-        return 'bg-green-100 text-green-700';
-      case 'reminder':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'document_comment':
         return 'bg-emerald-100 text-emerald-700';
+      case 'envelope_completed':
+        return 'bg-primary/10 text-primary';
+      case 'reminder':
+        return 'bg-amber-100 text-amber-700';
+      case 'document_comment':
+        return 'bg-[#260559]/10 text-[#260559]';
+      case 'ORG_INVITATION':
+        return 'bg-secondary text-secondary-foreground';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -174,135 +175,106 @@ const NotificationsPage: React.FC = () => {
     : notifications;
 
   return (
-    <div className="min-h-screen bg-[#F5F2EE]">
-      <div className="px-4 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  
-                  Notifications
-                </h1>
-                <p className="text-sm text-gray-500 mt-1">
-                  {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'All caught up!'}
-                </p>
-              </div>
-            </div>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllAsRead}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-              >
-                <CheckCheck className="w-4 h-4" />
-                Mark all as read
-              </button>
-            )}
-          </div>
-
-          {/* Filter Tabs */}
-          <div className="flex gap-2 border-b border-gray-200">
+    <PageShell wide>
+      <PageHero
+        compact
+        title="Notifications"
+        subtitle={unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'All caught up!'}
+        backTo="/dashboard"
+        action={
+          unreadCount > 0 ? (
             <button
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                filter === 'all'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              onClick={handleMarkAllAsRead}
+              className="dm-btn-primary bg-white text-[#155E4B] hover:bg-white/90"
             >
-              All ({notifications.length})
+              <CheckCheck className="h-4 w-4" />
+              Mark all read
             </button>
-            <button
-              onClick={() => setFilter('unread')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                filter === 'unread'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Unread ({unreadCount})
-            </button>
-          </div>
-        </div>
+          ) : undefined
+        }
+      />
 
-        {/* Notifications List */}
+      <div className="dm-filter-tabs w-fit">
+        <button
+          onClick={() => setFilter('all')}
+          className={`dm-filter-tab ${filter === 'all' ? 'dm-filter-tab--active' : ''}`}
+        >
+          All ({notifications.length})
+        </button>
+        <button
+          onClick={() => setFilter('unread')}
+          className={`dm-filter-tab ${filter === 'unread' ? 'dm-filter-tab--active' : ''}`}
+        >
+          Unread ({unreadCount})
+        </button>
+      </div>
+
+      <PagePanel noPadding bodyClassName="p-0">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="bg-[#F7F3EE] rounded-lg border border-gray-200 p-12 text-center">
-            <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 font-medium">
+          <div className="dm-empty m-4">
+            <Bell className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
+            <p className="font-medium text-foreground">
               {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
             </p>
-            <p className="text-sm text-gray-500 mt-2">
-              {filter === 'unread' 
-                ? 'You\'re all caught up!' 
-                : 'You\'ll see notifications here when recipients sign your documents.'}
+            <p className="mt-2 text-sm text-muted-foreground">
+              {filter === 'unread'
+                ? "You're all caught up!"
+                : "You'll see notifications here when recipients sign your documents."}
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="divide-y divide-border/70">
             {filteredNotifications.map((notification) => (
               <div
                 key={notification._id}
-                className={`bg-[#F7F3EE] rounded-lg border transition-all cursor-pointer hover:shadow-md ${
-                  !notification.isRead ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
-                }`}
+                className={`cursor-pointer px-5 py-4 transition hover:bg-muted/30 ${!notification.isRead ? 'bg-primary/[0.04]' : ''}`}
                 onClick={() => handleNotificationClick(notification)}
               >
-                <div className="p-4">
-                  <div className="flex items-start gap-4">
-                    {/* Icon */}
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-semibold ${getNotificationColor(notification.type)}`}>
-                      {getNotificationIcon(notification.type)}
+                <div className="flex items-start gap-4">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-semibold ${getNotificationColor(notification.type)}`}>
+                    {getNotificationIcon(notification.type)}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className={`text-sm ${!notification.isRead ? 'font-semibold text-foreground' : 'text-foreground'}`}>
+                          {notification.message}
+                        </p>
+                        {notification.envelopeSubject && (
+                          <p className="mt-1 truncate text-xs text-muted-foreground">
+                            {notification.envelopeSubject}
+                          </p>
+                        )}
+                      </div>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {formatNotificationTime(notification.createdAt)}
+                      </span>
                     </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <p className={`text-sm font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-700'}`}>
-                            {notification.message}
-                          </p>
-                          <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
-                            <span>{formatNotificationTime(notification.createdAt)}</span>
-                            {notification?.metadata?.envelopeId && (
-                              <span className="flex items-center gap-1">
-                                <ExternalLink className="w-3 h-3" />
-                                {notification?.metadata?.envelopeId.subject}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                          {!notification.isRead && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMarkAsRead(notification._id, notification?.source);
-                              }}
-                              className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
-                              title="Mark as read"
-                            >
-                              <Check className="w-4 h-4 text-blue-600" />
-                            </button>
-                          )}
-                          {!notification.isRead && (
-                            <div className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-                          )}
-                        </div>
-                      </div>
+                    <div className="mt-2 flex items-center gap-3">
+                      {!notification.isRead && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkAsRead(notification._id || notification.id, notification.source);
+                          }}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80"
+                        >
+                          <Check className="h-3 w-3" />
+                          Mark read
+                        </button>
+                      )}
+                      {getNotificationTarget(notification) && (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <ExternalLink className="h-3 w-3" />
+                          Open
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -310,10 +282,9 @@ const NotificationsPage: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </PagePanel>
+    </PageShell>
   );
 };
 
 export default NotificationsPage;
-

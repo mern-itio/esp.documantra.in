@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import { getMemoryAdminAccessToken } from '../utils/authSession';
+import { resolveServiceUrl } from '../utils/secureApiUrl';
 
 const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance => {
   const instance = axios.create({
@@ -27,7 +28,10 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
   instance.interceptors.response.use(
     (response) => response,
     (error) => {
-      console.error(`${serviceName} API Error:`, error);
+      const status = error.response?.status;
+      if (status !== 502 && status !== 503) {
+        console.error(`${serviceName} API Error:`, error);
+      }
       return Promise.reject(error);
     }
   );
@@ -35,7 +39,10 @@ const createApiInstance = (baseURL: string, serviceName: string): AxiosInstance 
   return instance;
 };
 
-const SUPPORT_SERVICE_URL = import.meta.env.VITE_SUPPORT_SERVICE_URL || 'http://localhost:2107';
+const SUPPORT_SERVICE_URL = resolveServiceUrl(import.meta.env.VITE_SUPPORT_SERVICE_URL, {
+  productionPath: '/support',
+  localUrl: 'http://localhost:2107',
+});
 
 export const supportApi = createApiInstance(
   SUPPORT_SERVICE_URL,

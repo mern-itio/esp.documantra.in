@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../AuthService/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { Bell, LogOut, Menu, Search, Crown, X, User, Building2, Mail, FileText, Gift, ArrowLeftRight, ArrowRight, Sun, Moon } from 'lucide-react';
+import { Bell, LogOut, Menu, Search, Crown, X, User, Building2, Mail, FileText, Gift, ArrowLeftRight, ArrowRight, Sun, Moon, Key } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SubscriptionStorage } from '../../services/subscriptionService';
@@ -345,6 +346,8 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
       { id: 'credits-usage', label: 'Credits & Billing', action: () => navigate('/credits-usage') },
       { id: 'documents', label: 'Documents', action: () => navigate('/all-documents') },
       { id: 'pdf-tools', label: 'PDF Tools', action: () => navigate('/pdf-tools') },
+      { id: 'api-keys', label: 'API Keys', action: () => navigate('/api-service/keys') },
+      { id: 'api-explorer', label: 'API Explorer', action: () => navigate('/api-service/explorer') },
     ];
     if (!paletteQuery.trim()) return items;
     const q = paletteQuery.toLowerCase();
@@ -354,7 +357,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const lowCredits = credits != null && credits <= 10;
 
   return (
-    <header className="bg-background shadow-sm border-b border-border text-foreground">
+    <header className="sticky top-0 z-30 border-b border-border/80 bg-card/85 text-foreground shadow-sm backdrop-blur-md">
       <div className="flex items-center justify-between px-6 py-2">
         <div className="flex items-center space-x-4">
           <button
@@ -535,9 +538,9 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
         </div>
       </div>
 
-      {/* Right sidebar user menu */}
-      {showUserMenu && (
-        <div className="fixed inset-0 z-[95]" onClick={() => setShowUserMenu(false)}>
+      {/* Right sidebar user menu — portaled so header backdrop-blur does not trap fixed positioning */}
+      {showUserMenu && createPortal(
+        <div className="fixed inset-0 z-[200]" onClick={() => setShowUserMenu(false)}>
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
           <aside
             className="absolute right-0 top-0 h-full w-full max-w-md bg-card shadow-2xl ring-1 ring-border animate-user-menu-slide"
@@ -584,6 +587,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                 <div className="space-y-2">
                   {[
                     { label: 'Manage Account', icon: User, action: () => navigate('/account/profile') },
+                    { label: 'API Keys', icon: Key, action: () => navigate('/api-service/keys') },
                     { label: 'Organizations', icon: Building2, action: () => navigate('/organizations/') },
                     { label: 'Email Configuration', icon: Mail, action: () => navigate('/account/email-configuration/') },
                     { label: 'Email Templates', icon: FileText, action: () => navigate('/account/email-templates/') },
@@ -617,7 +621,7 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
           </aside>
           {showSwitcher && (
             <div
-              className="fixed right-4 top-24 z-[130] w-72 rounded-sm border border-border bg-muted p-2 shadow-2xl"
+              className="fixed right-4 top-24 z-[210] w-72 rounded-sm border border-border bg-muted p-2 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Switch account</div>
@@ -644,12 +648,13 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
               ))}
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Command Palette */}
-      {showPalette && (
-        <div className="fixed inset-0 z-[100] animate-palette-fade-in">
+      {showPalette && createPortal(
+        <div className="fixed inset-0 z-[200] animate-palette-fade-in">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowPalette(false)} />
           <div className="relative mx-auto mt-24 max-w-xl bg-card rounded-2xl shadow-2xl border border-border overflow-hidden animate-palette-slide">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/40">
@@ -682,7 +687,8 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </header>
   );

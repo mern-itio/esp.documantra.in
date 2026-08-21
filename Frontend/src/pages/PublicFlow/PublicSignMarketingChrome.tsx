@@ -19,6 +19,7 @@ import {
   resolveDocumantraAsset,
   resolveDocumantraHref,
 } from '../../services/documantraSiteContent';
+import { BRAND } from '../../config/brand';
 import '../../styles/documantra-chrome.css';
 
 const primaryGreen = 'documantra-chrome-btn-primary';
@@ -117,14 +118,18 @@ export const PublicSignHeader = () => {
 
   return (
     <header className="documantra-chrome-header sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-[hsl(40,33%,98%)]/60">
-      <div className={`${chromeContainer} flex h-28 items-center justify-between`}>
-        <a href={DOCUMANTRA_SITE} className="group flex items-center gap-2.5">
-          <img
-            src={resolveDocumantraAsset(header.logoUrl)}
-            alt={header.siteName || 'DocuMantra'}
-            className="h-24 w-auto max-w-[660px] object-contain transition-transform group-hover:scale-105"
-          />
-        </a>
+      <div className={`${chromeContainer} flex ${BRAND.showLogo ? 'h-28 justify-between' : 'h-14 justify-end'} items-center`}>
+        {BRAND.showLogo ? (
+          <a href={DOCUMANTRA_SITE} className="group flex items-center gap-2.5">
+            <img
+              src={resolveDocumantraAsset(header.logoUrl)}
+              alt={header.siteName || 'DocuMantra'}
+              className="h-24 w-auto max-w-[660px] object-contain transition-transform group-hover:scale-105"
+            />
+          </a>
+        ) : (
+          <span className="sr-only">{header.siteName || BRAND.name}</span>
+        )}
 
         <nav className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (
@@ -158,7 +163,7 @@ export const PublicSignHeader = () => {
       </div>
 
       <div
-        className={`absolute left-0 right-0 top-28 border-b border-[hsl(40,20%,88%)] bg-[hsl(40,33%,98%)] transition-all duration-300 ease-in-out md:hidden ${
+        className={`absolute left-0 right-0 ${BRAND.showLogo ? 'top-28' : 'top-14'} border-b border-[hsl(40,20%,88%)] bg-[hsl(40,33%,98%)] transition-all duration-300 ease-in-out md:hidden ${
           isMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
         }`}
       >
@@ -334,13 +339,15 @@ export const PublicSignFooter = () => {
 
         <div className="flex flex-col items-start justify-between gap-8 border-t border-[hsl(40,20%,88%)] py-8 lg:flex-row lg:items-center">
           <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
-            <a href={DOCUMANTRA_SITE} className="group flex items-center gap-2.5">
-              <img
-                src={resolveDocumantraAsset(header.logoUrl)}
-                alt="DocuMantra"
-                className="h-14 w-auto max-w-[280px] object-contain transition-transform group-hover:scale-105"
-              />
-            </a>
+            {BRAND.showLogo ? (
+              <a href={DOCUMANTRA_SITE} className="group flex items-center gap-2.5">
+                <img
+                  src={resolveDocumantraAsset(header.logoUrl)}
+                  alt="DocuMantra"
+                  className="h-14 w-auto max-w-[280px] object-contain transition-transform group-hover:scale-105"
+                />
+              </a>
+            ) : null}
             <div>
               <p className="max-w-xs text-sm text-[hsl(24,10%,40%)]">{footer.tagline}</p>
               {footer.contactEmail ? (

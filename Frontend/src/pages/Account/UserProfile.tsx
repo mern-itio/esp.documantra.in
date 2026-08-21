@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { PageShell, PageHero } from '../../components/common/PageShell';
 import { useAuth } from '../../components/AuthService/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useNavigate } from 'react-router-dom';
@@ -203,16 +204,16 @@ const UserProfile: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="bg-gradient-to-r from-primary via-primary/95 to-primary/80 text-primary-foreground">
-        <div className="mx-auto max-w-7xl px-6 py-10">
-          <p className="text-xs uppercase tracking-[0.2em] text-primary-foreground/80">Account Center</p>
-          <h1 className="mt-1 text-3xl font-semibold">Profile</h1>
-          <p className="mt-1 text-sm text-primary-foreground/85">Manage identity, security, sessions, and plan settings from one place.</p>
-        </div>
-      </div>
+    <PageShell wide flush className="space-y-0">
+      <PageHero
+        title="Profile"
+        subtitle="Manage identity, security, sessions, and plan settings from one place."
+        badge={
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">Account Center</p>
+        }
+      />
 
-      <div className="mx-auto -mt-8 max-w-7xl px-6 pb-12">
+      <div className="mx-auto -mt-6 max-w-7xl px-0 pb-12 md:px-1">
         <div className="rounded-md border border-border bg-card p-6 shadow-sm">
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative">
@@ -498,7 +499,7 @@ const UserProfile: React.FC = () => {
         </div>
       )}
 
-    </div>
+    </PageShell>
   );
 };
 

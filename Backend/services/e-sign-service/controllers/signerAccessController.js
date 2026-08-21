@@ -207,6 +207,16 @@ const requestSignerAccessCode = async (req, res) => {
       });
     } catch (mailErr) {
       console.error('signer access OTP email failed:', mailErr?.message || mailErr);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[dev] Signer access OTP (email not sent): ${otpCode} → ${email}`);
+        return res.status(200).json({
+          status: 'success',
+          message: 'Local dev: use the code below (email is not configured).',
+          maskedEmail: maskEmail(email),
+          resendAfterSeconds: RESEND_COOLDOWN_SECONDS,
+          devAccessCode: otpCode,
+        });
+      }
       return res.status(502).json({ message: 'Unable to send access code email right now' });
     }
 

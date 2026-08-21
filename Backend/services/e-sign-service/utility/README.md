@@ -16,6 +16,21 @@ cd Backend/services/e-sign-service
 
 Default port: **7077** (`UTILITY_URL=http://127.0.0.1:7077`)
 
+## Production ESP URL (`application.properties`)
+
+Place or edit `utility/application.properties` (loaded when the JAR starts):
+
+```properties
+esp21.url.value=https://esign.verasys.in/esign/2.1/signature
+esp32.url.value=https://esign.verasys.in/esign/3.2/signature
+```
+
+Restart the utility after changes. Mirror the same URL in e-sign `.env`:
+
+```env
+VSIGN_ESP_RESPONSE_URL=https://esign.verasys.in/esign/2.1/signature
+```
+
 ## Obtain JAR
 
 1. **VSign ASP onboarding kit** — contact Verasys / your ASP account manager (ASP ID: `IIPLUAT001`).

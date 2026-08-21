@@ -4,9 +4,9 @@ import ScrollToTop from '../components/common/ScrollToTop';
 
 const GuestLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#F7F3EE]">
+    <div className="min-h-screen dm-main-bg">
       <ScrollToTop />
-      <main>
+      <main className="relative min-h-screen">
         <Outlet />
       </main>
     </div>

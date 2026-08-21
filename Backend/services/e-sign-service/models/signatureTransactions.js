@@ -14,5 +14,8 @@ const signatureTransactions = new mongoose.Schema({
     signatureFontSize:{type:String},
     tickImgPath:{type:String},
     aspLogo:{type:String},
+    appearanceBoxes:{ type: Array, default: undefined },
+    aadhaarLast4:{ type: String },
+    aadhaarSignerName:{ type: String },
 });
 module.exports = mongoose.model("SignatureTransaction", signatureTransactions);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BRAND } from '../../config/brand';
 import { 
   MessageSquare, 
   Users, 
@@ -117,7 +118,7 @@ const ContactSales: React.FC = () => {
       icon: Mail,
       title: 'Email Sales',
       description: 'Send us an email',
-      contact: 'sales@draftnsign.com',
+      contact: BRAND.salesEmail,
       responseTime: 'Within 2 hours',
       color: 'text-blue-600'
     },

@@ -3,6 +3,11 @@ import SignatureCanvas from "react-signature-canvas";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { eSignApi } from "../../services/apiHelper";
 import ActionButton from "./ActionButton"; // <-- adjust path as needed
+import {
+  compositeCanvasOnDualBlue,
+  transparentizeWhiteCanvas,
+  trimTransparentCanvas,
+} from "../../utils/vsignAppearance";
 
 
 interface ActiveField {
@@ -99,8 +104,12 @@ export default function SignPad({
 
   const handleSaveDraw = () => {
     if (canvasRef.current && !canvasRef.current.isEmpty()) {
-      const dataUrl = canvasRef.current.toDataURL();
-      setIsSignImg(dataUrl);
+      // Ink-only on dual blue — no white canvas stored for live/PDF appearance.
+      let canvas = canvasRef.current.getTrimmedCanvas();
+      transparentizeWhiteCanvas(canvas);
+      canvas = trimTransparentCanvas(canvas);
+      compositeCanvasOnDualBlue(canvas);
+      setIsSignImg(canvas.toDataURL("image/png"));
     }
   };
 
@@ -334,7 +343,11 @@ export default function SignPad({
                 <SignatureCanvas
                     ref={(c) => { canvasRef.current = c; }}
                     penColor={penColor}
-                    canvasProps={{ className: "border rounded-md w-full h-[170px]" }}
+                    backgroundColor="rgba(0,0,0,0)"
+                    canvasProps={{
+                      // Match dual-box blue so CSS white never looks like part of the stamp.
+                      className: "border rounded-md w-full h-[170px] bg-[#E8F2FF]",
+                    }}
                     dotSize={1}
                     onEnd={handleSaveDraw}
                   />

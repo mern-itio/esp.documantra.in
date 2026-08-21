@@ -22,6 +22,18 @@ function maskAadhaar(value) {
   return `XXXX XXXX ${tail}`;
 }
 
+/** Last 4 digits only — safe to expose in API/UI. */
+function extractAadhaarLast4(aadhaarNumber) {
+  const digits = String(aadhaarNumber || '').replace(/\D/g, '');
+  return digits.length >= 4 ? digits.slice(-4) : '';
+}
+
+function resolveAadhaarLast4({ aadhaarNumber, signingEvidence } = {}) {
+  const fromEvidence = extractAadhaarLast4(signingEvidence?.aadhaarLast4);
+  if (fromEvidence) return fromEvidence;
+  return extractAadhaarLast4(aadhaarNumber);
+}
+
 function parseClientFromUserAgent(ua = '') {
   const agent = String(ua || '');
   let os = 'Unknown OS';
@@ -85,6 +97,8 @@ function mergeSigningEvidence(existing = {}, incoming = {}, reqMeta = {}) {
     idPic: incoming.idPic || existing.idPic || '',
     liveMatchPercent: incoming.liveMatchPercent ?? existing.liveMatchPercent,
     handwrittenSignature: incoming.handwrittenSignature || existing.handwrittenSignature || '',
+    aadhaarLast4: incoming.aadhaarLast4 || existing.aadhaarLast4 || '',
+    aadhaarSignerName: incoming.aadhaarSignerName || existing.aadhaarSignerName || '',
     dualSignature: Boolean(incoming.dualSignature || existing.dualSignature),
     authMethods: Array.isArray(incoming.authMethods) && incoming.authMethods.length
       ? incoming.authMethods
@@ -113,26 +127,59 @@ function mergeSigningEvidence(existing = {}, incoming = {}, reqMeta = {}) {
   return sanitizeSigningEvidence(merged);
 }
 
-function buildDefaultTimeline({ permission, recipient, signatureFieldCount = 0, signingEvidence = {} }) {
+function buildDefaultTimeline({
+  permission,
+  recipient,
+  signatureFieldCount = 0,
+  signingEvidence = {},
+  vsignVerified = false,
+  aadhaarVerifiedAt = null,
+}) {
   const events = [];
   const push = (event, at) => {
     if (!at) return;
-    events.push({ event, at });
+    events.push({ event, at: new Date(at) });
   };
 
   push('Notification Sent', permission?.createdAt || signingEvidence.notificationSentAt);
   push('Document Viewed', signingEvidence.documentViewedAt || signingEvidence.openedAt);
   if (signatureFieldCount > 0) {
-    push(`Sign Invited at ${signatureFieldCount} place${signatureFieldCount === 1 ? '' : 's'}`, signingEvidence.openedAt);
+    push(
+      `Sign Invited at ${signatureFieldCount} place${signatureFieldCount === 1 ? '' : 's'}`,
+      signingEvidence.openedAt,
+    );
   }
-  push('Sign Completed', signingEvidence.signCompletedAt || permission?.updatedAt);
 
   (signingEvidence.authMethods || [])
     .filter((m) => m && m.status === 'completed')
     .forEach((m) => {
-      push(`${m.name || m.type || 'Authentication'} Verified`, m.completedAt || signingEvidence.signCompletedAt);
+      const label = getAuthCategory(m) === 'aadhaar'
+        ? 'Aadhaar eSign Verified'
+        : `${m.name || m.type || 'Authentication'} Verified`;
+      push(label, m.completedAt || signingEvidence.aadhaarVerifiedAt || signingEvidence.signCompletedAt);
     });
 
+  const hasAadhaarEvent = events.some((e) => /aadhaar/i.test(String(e.event)));
+  const resolvedAadhaarAt =
+    aadhaarVerifiedAt ||
+    signingEvidence.aadhaarVerifiedAt ||
+    signingEvidence.vsignVerifiedAt ||
+    null;
+  const shouldShowAadhaar =
+    !hasAadhaarEvent &&
+    (resolvedAadhaarAt || vsignVerified);
+  if (shouldShowAadhaar) {
+    push(
+      'Aadhaar eSign Verified',
+      resolvedAadhaarAt ||
+        signingEvidence.signCompletedAt ||
+        permission?.updatedAt,
+    );
+  }
+
+  push('Sign Completed', signingEvidence.signCompletedAt || permission?.updatedAt);
+
+  events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   return events.length ? events : signingEvidence.timeline || [];
 }
 
@@ -274,6 +321,8 @@ async function enrichEvidenceWithIpGeo(evidence = {}) {
 module.exports = {
   FAILED_AUDIT_ACTIONS,
   maskAadhaar,
+  extractAadhaarLast4,
+  resolveAadhaarLast4,
   parseClientFromUserAgent,
   buildEvidenceHash,
   mergeSigningEvidence,

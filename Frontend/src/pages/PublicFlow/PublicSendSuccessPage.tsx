@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, FileText, Mail, Sparkles } from 'lucide-react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { CheckCircle2, Copy, ExternalLink, FileText, Mail, Sparkles } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
 import { BRAND } from '../../config/brand';
 import { useAuth } from '../../components/AuthService/AuthContext';
@@ -21,6 +21,7 @@ type SentEnvelope = {
   updatedAt: string;
   recipientCount: number;
   completedCount: number;
+  devSignLink?: string;
 };
 
 type SendUsage = {
@@ -43,12 +44,28 @@ const statusLabel = (status: string) => {
 
 export default function PublicSendSuccessPage() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
   const [envelopes, setEnvelopes] = useState<SentEnvelope[]>([]);
   const [usage, setUsage] = useState<SendUsage | null>(null);
   const [loading, setLoading] = useState(true);
+  const [signLinkCopied, setSignLinkCopied] = useState(false);
+  const [devVSignCallbackUrl, setDevVSignCallbackUrl] = useState('');
 
   const latestEnvelopeId = searchParams.get('envelopeId') || '';
+  const navSignLink =
+    typeof location.state === 'object' &&
+    location.state !== null &&
+    'signLink' in location.state
+      ? String((location.state as { signLink?: string }).signLink || '')
+      : '';
+  const storedSignLink = latestEnvelopeId
+    ? sessionStorage.getItem(`vsignDevSignLink:${latestEnvelopeId}`) || ''
+    : '';
+  const apiSignLink =
+    envelopes.find((item) => item.id === latestEnvelopeId)?.devSignLink || '';
+  const devSignLink = navSignLink || storedSignLink || apiSignLink;
+  const showDevSignLink = import.meta.env.DEV && Boolean(devSignLink);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +83,7 @@ export default function PublicSendSuccessPage() {
         if (cancelled) return;
         setEnvelopes(response.data?.envelopes || []);
         setUsage(response.data?.usage || null);
+        setDevVSignCallbackUrl(String(response.data?.devVSignCallbackUrl || ''));
       } catch (error) {
         console.error('Failed to load sent documents:', error);
       } finally {
@@ -107,6 +125,58 @@ export default function PublicSendSuccessPage() {
                   {usage.used}/{usage.limit}
                 </strong>{' '}
                 documents sent
+              </div>
+            ) : null}
+
+            {showDevSignLink ? (
+              <div className="mx-auto mt-6 max-w-2xl rounded-xl border border-dashed border-[hsl(160,48%,21%)]/35 bg-[hsl(160,48%,21%)]/5 px-4 py-4 text-left">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[hsl(160,48%,21%)]">
+                  Local testing — recipient sign link
+                </p>
+                <p className="mt-1 text-xs text-[hsl(24,10%,40%)]">
+                  Email is skipped in local dev. Open this link to complete Aadhaar / VSign signing.
+                </p>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <a
+                    href={devSignLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="documantra-chrome-btn-primary inline-flex items-center justify-center gap-2 text-sm"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Open sign link
+                  </a>
+                  <button
+                    type="button"
+                    className="documantra-chrome-btn-ghost inline-flex items-center justify-center gap-2 text-sm"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(devSignLink);
+                        setSignLinkCopied(true);
+                        window.setTimeout(() => setSignLinkCopied(false), 2000);
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                    {signLinkCopied ? 'Copied' : 'Copy link'}
+                  </button>
+                </div>
+                <p className="mt-3 break-all rounded-lg bg-white/80 px-3 py-2 font-mono text-xs text-[hsl(24,10%,40%)]">
+                  {devSignLink}
+                </p>
+                {devVSignCallbackUrl ? (
+                  <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left">
+                    <p className="text-xs font-semibold text-amber-900">VSign callback (this envelope)</p>
+                    <p className="mt-1 break-all font-mono text-xs text-amber-800">{devVSignCallbackUrl}</p>
+                    <p className="mt-2 text-xs text-amber-900">
+                      After OTP, VSign redirects here. If you see 503 on a{' '}
+                      <span className="font-mono">loca.lt</span> URL, that envelope used an old dead tunnel —
+                      send a <strong>new</strong> document from this page.
+                    </p>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
