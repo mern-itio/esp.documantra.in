@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Surepass e-Stamp Local Lab</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div>
+      <h1>Surepass e-Stamp Local Lab</h1>
+      <p class="subtitle">Full flow: list-articles → order-stamp → status → PDF → verification</p>
+    </div>
+    <div id="health" class="health">Checking…</div>
+  </header>
+
+  <nav class="tabs">
+    <button type="button" class="tab active" data-tab="flow">Full e-Stamp flow</button>
+    <button type="button" class="tab" data-tab="verify">Verify only</button>
+    <button type="button" class="tab" data-tab="order">Order only</button>
+    <button type="button" class="tab" data-tab="log">API log</button>
+  </nav>
+
+  <main>
+    <!-- FULL FLOW -->
+    <section id="panel-flow" class="panel active">
+      <ol class="stepper" id="flow-stepper">
+        <li class="step active" data-step="1">1. Articles</li>
+        <li class="step" data-step="2">2. Order</li>
+        <li class="step" data-step="3">3. Status</li>
+        <li class="step" data-step="4">4. PDF</li>
+        <li class="step" data-step="5">5. Verify</li>
+        <li class="step" data-step="6">6. Result</li>
+      </ol>
+
+      <div class="card flow-actions">
+        <button type="button" class="btn primary" id="btn-run-full-flow">Run full flow (auto)</button>
+        <button type="button" class="btn ghost" id="btn-reset-flow">Reset</button>
+        <span id="flow-status-text" class="flow-status">Ready — configure step 1 and run, or use auto.</span>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="card flow-step" data-flow-step="1">
+        <h2>Step 1 — List articles (Stamper V2)</h2>
+        <div class="grid-2">
+          <label>State code
+            <select id="flow-state-code"></select>
+          </label>
+          <label>Article
+            <select id="flow-article-select"></select>
+          </label>
+        </div>
+        <p class="hint">Selected: <code id="flow-article-label">—</code></p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="card flow-step" data-flow-step="2">
+        <h2>Step 2 — Place order</h2>
+        <div class="grid-2">
+          <label>First party <input id="flow-first" type="text" value="ABC Pvt Ltd" /></label>
+          <label>Second party <input id="flow-second" type="text" value="Borrower" /></label>
+          <label>article_id <input id="flow-article-id" type="number" readonly /></label>
+          <label>Amount (₹) <input id="flow-amount" type="number" value="40" /></label>
+          <label>Consideration <input id="flow-consideration" type="number" value="1" /></label>
+          <label>Description <input id="flow-desc" type="text" value="Estamp" /></label>
+        </div>
+        <button type="button" class="btn" id="btn-flow-order">Order stamp only</button>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="card flow-step" data-flow-step="3">
+        <h2>Step 3 — Order status</h2>
+        <p class="hint">client_id: <code id="flow-client-id">—</code></p>
+        <p id="flow-order-status" class="status-pill">—</p>
+        <button type="button" class="btn ghost" id="btn-flow-poll">Poll status</button>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="card flow-step" data-flow-step="4">
+        <h2>Step 4 — e-Stamp PDF</h2>
+        <div id="flow-stamp-card" class="stamp-card hidden">
+          <div class="stamp-row"><span>State</span><strong id="flow-card-state">—</strong></div>
+          <div class="stamp-row"><span>Article ID</span><strong id="flow-card-article">—</strong></div>
+          <div class="stamp-row"><span>Amount</span><strong id="flow-card-amount">—</strong></div>
+          <div class="stamp-row"><span>Parties</span><strong id="flow-card-parties">—</strong></div>
+          <div class="stamp-row"><span>Status</span><strong id="flow-card-status">—</strong></div>
+          <a id="flow-pdf-link" class="btn primary" href="#" target="_blank" rel="noopener">Download e-Stamp PDF</a>
+        </div>
+        <p id="flow-pdf-hint" class="hint">PDF link appears when status is <code>available</code> (expires ~10 min).</p>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="card flow-step" data-flow-step="5">
+        <h2>Step 5 — Verification setup</h2>
+        <p class="hint">Verification uses state <strong>slug</strong> + duty code from <code>get-estamp-list</code>.</p>
+        <div class="grid-2">
+          <label>Verify state (slug) <input id="flow-verify-slug" type="text" readonly /></label>
+          <label>estamp_duty_type
+            <select id="flow-verify-duty"></select>
+          </label>
+          <label>Certificate number <input id="flow-verify-cert" type="text" placeholder="From PDF or certificate_details" /></label>
+          <label>Issue date <input id="flow-verify-date" type="date" /></label>
+        </div>
+        <button type="button" class="btn" id="btn-flow-verify">Verify certificate</button>
+      </div>
+
+      <!-- Step 6 -->
+      <div class="card flow-step" data-flow-step="6">
+        <h2>Step 6 — Verification result</h2>
+        <pre id="flow-verify-result" class="result">—</pre>
+      </div>
+
+      <div class="card">
+        <h2>Flow log</h2>
+        <pre id="flow-log" class="result">—</pre>
+      </div>
+    </section>
+
+    <!-- VERIFY -->
+    <section id="panel-verify" class="panel">
+      <div class="card">
+        <h2>1. Select state &amp; document type</h2>
+        <div class="grid-2">
+          <label>State <select id="verify-state"></select></label>
+          <label>Document / duty type <select id="verify-duty"></select></label>
+        </div>
+        <p class="hint">Duty code e.g. <code>UP-NRG-3</code>, <code>DL-RG-83</code></p>
+      </div>
+      <div class="card">
+        <h2>2. Certificate details</h2>
+        <div class="grid-2">
+          <label>Certificate number <input id="verify-cert" type="text" placeholder="IN-UP1234567890" /></label>
+          <label>Issue date <input id="verify-date" type="date" /></label>
+          <label>estamp_duty_type <input id="verify-duty-code" type="text" maxlength="10" readonly /></label>
+        </div>
+        <button type="button" class="btn primary" id="btn-verify">Verify certificate</button>
+      </div>
+      <div class="card">
+        <h2>Result</h2>
+        <pre id="verify-result" class="result">—</pre>
+      </div>
+    </section>
+
+    <!-- ORDER -->
+    <section id="panel-order" class="panel">
+      <div class="card warn">
+        <strong>Sandbox:</strong> pick <code>article_id</code> from <code>list-articles</code> — not hardcoded <code>22128</code>.
+      </div>
+      <div class="card">
+        <h2>1. List articles</h2>
+        <div class="grid-2">
+          <label>State code <select id="order-state-code"></select></label>
+          <label>Article <select id="order-article-select"></select></label>
+        </div>
+        <p class="hint">Selected: <code id="order-article-label">—</code></p>
+        <button type="button" class="btn ghost" id="btn-reload-articles">Reload articles</button>
+      </div>
+      <div class="card">
+        <h2>2. Place order</h2>
+        <div class="grid-2">
+          <label>First party <input id="order-first" type="text" value="ABC Pvt Ltd" /></label>
+          <label>Second party <input id="order-second" type="text" value="Borrower" /></label>
+          <label>article_id <input id="order-article-id" type="number" readonly /></label>
+          <label>Stamp amount (₹) <input id="order-amount" type="number" value="40" /></label>
+          <label>Consideration <input id="order-consideration" type="number" value="1" /></label>
+          <label>Description <input id="order-desc" type="text" value="Estamp" /></label>
+        </div>
+        <button type="button" class="btn primary" id="btn-order">Order stamp</button>
+      </div>
+      <div class="card">
+        <h2>3. Order status</h2>
+        <div class="row">
+          <input id="order-client-id" type="text" placeholder="stamp_v2_…" class="grow" />
+          <button type="button" class="btn" id="btn-status">Check status</button>
+          <button type="button" class="btn ghost" id="btn-poll">Poll every 5s</button>
+          <button type="button" class="btn ghost" id="btn-stats">Inventory stats</button>
+        </div>
+        <p id="order-status-summary" class="hint">—</p>
+        <pre id="order-result" class="result">—</pre>
+      </div>
+    </section>
+
+    <!-- LOG -->
+    <section id="panel-log" class="panel">
+      <div class="card">
+        <div class="row">
+          <h2>API log</h2>
+          <button type="button" class="btn ghost" id="btn-clear-log">Clear</button>
+        </div>
+        <pre id="api-log" class="result log">—</pre>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js?v=3"></script>
+</body>
+</html>
