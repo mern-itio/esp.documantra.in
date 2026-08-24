@@ -402,8 +402,21 @@ const DocumentViewerContent: React.FC<Props> = ({
     }
   };
 
+  const isAadhaarVerifiedForField = (field: any): boolean => {
+    if (signatureMethod !== 'aadhaarSignature') return true;
+    if (mode === MODE.SELF_SIGNER) {
+      return isAadhaarSigningVerified(getMatchedSigner(field)?.signingEvidence);
+    }
+    const assigneeId = normalizeMongoId(field?.recipientId || currentUserId);
+    const assignee = (allRecipients || []).find(
+      (r: any) => normalizeMongoId(r?.id ?? r?._id) === assigneeId,
+    );
+    return isAadhaarSigningVerified(assignee?.signingEvidence);
+  };
+
   // Check if signature field is completed
   const isSignatureFieldCompleted = (field: any): boolean => {
+    let hasInk = false;
     switch (mode) {
       case MODE.SELF_SIGNER: {
         const matchedSigner = getMatchedSigner(field);
@@ -414,18 +427,23 @@ const DocumentViewerContent: React.FC<Props> = ({
           const fieldEntry = matchedSigner.signatureFields.find(
             (sf: any) => sf.fieldId && (sf.fieldId.toString() === (field._id || field.fieldId)?.toString())
           );
-          return fieldEntry ? fieldEntry.state === 'signed' : false;
+          hasInk = fieldEntry ? fieldEntry.state === 'signed' : false;
+        } else {
+          hasInk = !!matchedSigner.signature;
         }
-        // Fallback: check if signature exists in selfSigner
-        return !!matchedSigner.signature;
+        break;
       }
       case MODE.RECIPIENT: {
         const fieldKey = normalizeMongoId(field._id || field.fieldId);
-        return !!field.signature || !!localSignedMap[fieldKey];
+        hasInk = !!field.signature || !!localSignedMap[fieldKey];
+        break;
       }
       default:
         return false;
     }
+    if (!hasInk) return false;
+    // Handwritten ink is only step 1 for Aadhaar — keep Sign visible until OTP.
+    return isAadhaarVerifiedForField(field);
   };
 
   // Get initials value for a field
@@ -951,7 +969,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         // Then sort by page number
         return a.pageNum - b.pageNum;
       });
-  }, [signatureFields, selfSigner, mode, currentUserId, localSignedMap, localFieldValues, isViewOnly]);
+  }, [signatureFields, selfSigner, mode, currentUserId, localSignedMap, localFieldValues, isViewOnly, signatureMethod, allRecipients]);
 
   const showRequiredFieldsBanner =
     !isViewOnly && (actionableFields.length > 0 || showCompleteButton);
@@ -2060,6 +2078,13 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         if (!options?.suppressConfetti) {
           triggerConfetti();
         }
+
+        const signedField = signatureFields.find(
+          (f: any) => normalizeMongoId(f._id || f.fieldId) === key,
+        );
+        const aadhaarStillPending =
+          signatureMethod === 'aadhaarSignature' &&
+          !isAadhaarVerifiedForField(signedField || { recipientId: currentUserId });
         
         if (!options?.suppressNavigation) {
         // Handle post-signature navigation based on mode
@@ -2078,12 +2103,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             break;
           }
           case MODE.RECIPIENT: {
-            if (
-              !(
-                response?.data?.fieldRemmaining === false ||
-                response?.data?.fieldRemmaning == false
-              )
-            ) {
+            const remainingFalse =
+              response?.data?.fieldRemmaining === false ||
+              response?.data?.fieldRemmaning == false;
+            if (!remainingFalse || aadhaarStillPending) {
               setTimeout(() => {
                 goToNext();
               }, 300);
@@ -2093,7 +2116,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
         }
         }
 
-        if (response?.data?.fieldRemmaining === false || response?.data?.fieldRemmaning == false) {
+        if (
+          !aadhaarStillPending &&
+          (response?.data?.fieldRemmaining === false || response?.data?.fieldRemmaning == false)
+        ) {
           console.log("All fields completed!");
           if (mode === MODE.RECIPIENT) {
             try {
@@ -2545,9 +2571,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                   ? "max-content"
                                   : scaledHeight + labelOffset,
                                 zIndex: showAadhaarDualLayout ? 50 : isActiveNavField ? 20 : 10,
-                                overflow: canEditAadhaarHandwritten
-                                  ? "visible"
-                                  : showAadhaarDualLayout
+                                overflow:
+                                  showAadhaarDualLayout && !isAadhaarVerified
+                                    ? "visible"
+                                    : showAadhaarDualLayout
                                     ? "hidden"
                                     : undefined,
                               }}
@@ -2585,21 +2612,22 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                       : "none",
                                   fontSize: fieldFontSize,
                                   padding: showAadhaarDualLayout ? 0 : `0px ${boxPaddingX - 15}px`,
-                                  overflow: canEditAadhaarHandwritten
-                                    ? "visible"
-                                    : showAadhaarDualLayout
-                                      ? "hidden"
-                                      : undefined,
+                                  overflow:
+                                    showAadhaarDualLayout && !isAadhaarVerified
+                                      ? "visible"
+                                      : showAadhaarDualLayout
+                                        ? "hidden"
+                                        : undefined,
                                 }}
                                 className={`relative ${
                                   showAadhaarDualLayout
-                                    ? `${canEditAadhaarHandwritten ? "overflow-visible" : "overflow-hidden"} border-0 bg-transparent shadow-none`
+                                    ? `${showAadhaarDualLayout && !isAadhaarVerified ? "overflow-visible" : "overflow-hidden"} border-0 bg-transparent shadow-none`
                                     : isAadhaarFlow && (handwrittenSrc || isSigned)
                                     ? 'flex flex-col border-0 bg-transparent shadow-none'
                                     : 'flex items-center justify-center'
                                 } gap-1 ${
                                   canEditAadhaarHandwritten
-                                    ? "cursor-default"
+                                    ? "cursor-pointer"
                                     : isSigned
                                       ? "cursor-default"
                                       : "cursor-pointer"
@@ -2629,8 +2657,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                     openAuditTrailModal();
                                     return;
                                   }
-                                  // Pending Aadhaar card: only the edit pencil opens SignPad.
-                                  if (canEditAadhaarHandwritten) return;
+                                  // Pending Aadhaar card: box click starts OTP; pencil still edits ink.
+                                  if (canEditAadhaarHandwritten) {
+                                    if (!signingEnabled || isSigning) return;
+                                    doSign(field);
+                                    return;
+                                  }
                                   if (isSigned) return;
                                   if (!signingEnabled || isSigning) return;
                                   if (!isCurrentUser) return;
@@ -2666,7 +2698,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                       handwrittenSrc ? (
                                         <button
                                           type="button"
-                                          className="pointer-events-auto w-full border-t border-[#c5d9f0] bg-gradient-to-r from-[#eef5ff] to-[#e8f2ff] px-3 py-2.5 text-left transition hover:from-[#e6f0ff] hover:to-[#ddeeff]"
+                                          className="pointer-events-auto w-full border-t border-[#e0c14a] bg-[#f5c518] px-3 py-2.5 text-center transition hover:bg-[#e6b800]"
                                           onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
@@ -2674,14 +2706,12 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                                             doSign(field);
                                           }}
                                         >
-                                          <span className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-wide text-[#1B4D3E]">
-                                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#1B4D3E]/10 text-[#1B4D3E]">
-                                              <PenLine className="h-3.5 w-3.5" />
-                                            </span>
-                                            Sign with Aadhaar
+                                          <span className="inline-flex items-center justify-center gap-2 text-[14px] font-bold tracking-wide text-gray-900">
+                                            <PenLine className="h-4 w-4" />
+                                            Sign
                                           </span>
-                                          <p className="mt-1 pl-8 text-[10px] font-medium leading-snug text-slate-500">
-                                            Verify with OTP to complete signing
+                                          <p className="mt-0.5 text-[10px] font-medium leading-snug text-gray-700">
+                                            Verify with Aadhaar OTP
                                           </p>
                                         </button>
                                       ) : undefined,
@@ -3963,7 +3993,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                   goToNext();
                 }, 300);
                 
-                if (fieldRemmaning === false) {
+                const aadhaarStillPending =
+                  signatureMethod === 'aadhaarSignature' &&
+                  !isAadhaarVerifiedForField(activeField || { recipientId: currentUserId });
+                if (fieldRemmaning === false && !aadhaarStillPending) {
                   try {
                     onRecipientComplete?.();
                   } catch (err) {

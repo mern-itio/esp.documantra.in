@@ -1,8 +1,10 @@
 import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SignatureCanvas from 'react-signature-canvas';
+import { PenLine } from 'lucide-react';
 import {
   AadhaarSignatureAppearance,
+  DEMO_HANDWRITTEN_SIGNATURE_SRC,
   DualSignatureAppearance,
 } from '../../components/ESign/AadhaarSignatureAppearance';
 import { resolveVSignAppearanceRecipient } from '../../utils/vsignAppearance';
@@ -108,24 +110,51 @@ const SignAppearanceDemoPage: React.FC = () => {
 
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <p className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">
-            Dual signature (self + Aadhaar)
+            Pending Aadhaar (after draw, before OTP) — yellow Sign must stay visible
           </p>
-          {realSignature ? (
-            <DualSignatureAppearance
-              handwrittenSrc={realSignature}
-              recipient={resolveVSignAppearanceRecipient(demoRecipientBase, {
-                storedAadhaar: null,
-              })}
-              fontSizePx={9}
-              showDigital
-            />
-          ) : (
-            <p className="text-sm text-gray-500">Draw or upload a signature above to preview.</p>
-          )}
+          <DualSignatureAppearance
+            handwrittenSrc={realSignature || DEMO_HANDWRITTEN_SIGNATURE_SRC}
+            recipient={resolveVSignAppearanceRecipient(demoRecipientBase, {
+              storedAadhaar: null,
+            })}
+            fontSizePx={12}
+            showDigital={false}
+            showEdit
+            fitContent
+            minWidth={280}
+            bottomAction={
+              <button
+                type="button"
+                className="pointer-events-auto w-full border-t border-[#e0c14a] bg-[#f5c518] px-3 py-2.5 text-center transition hover:bg-[#e6b800]"
+              >
+                <span className="inline-flex items-center justify-center gap-2 text-[14px] font-bold tracking-wide text-gray-900">
+                  <PenLine className="h-4 w-4" />
+                  Sign
+                </span>
+                <p className="mt-0.5 text-[10px] font-medium leading-snug text-gray-700">
+                  Verify with Aadhaar OTP
+                </p>
+              </button>
+            }
+          />
+        </div>
 
+        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">
+            After Aadhaar OTP (dual stamp)
+          </p>
+          <DualSignatureAppearance
+            handwrittenSrc={realSignature || DEMO_HANDWRITTEN_SIGNATURE_SRC}
+            recipient={resolveVSignAppearanceRecipient(demoRecipientBase, {
+              storedAadhaar: null,
+            })}
+            fontSizePx={9}
+            showDigital
+            fitContent
+          />
           <p className="mt-4 text-xs text-gray-500">
-            On a live envelope, draw/upload in SignPad — the same layout appears before and after
-            Aadhaar OTP.
+            Live envelopes keep the yellow Sign until OTP completes — Finish only appears after
+            verification.
           </p>
         </div>
 

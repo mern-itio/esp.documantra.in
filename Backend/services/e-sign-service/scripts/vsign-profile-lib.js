@@ -184,7 +184,6 @@ function buildMongoPatch(profile, secrets, callbackUrl) {
     useJar: profile.vsignUseJar !== '0',
     appearanceMode: profile.vsignAppearanceMode || 'custom-tick',
     signatureFontSize: profile.vsignSignatureFontSize || '10',
-    enabled: true,
   };
 
   if (profile.useKitPfxDefaults) {

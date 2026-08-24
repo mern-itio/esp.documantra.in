@@ -36,10 +36,29 @@ function readEnvFile(serviceRoot) {
   return {};
 }
 
-/** Java utility reads paths reliably with forward slashes on Windows. */
+/** Forward slashes for in-container fs (do not remap — Node cannot read host /root paths). */
 function normalizeVSignPath(filePath) {
   if (!filePath) return filePath;
   return path.resolve(filePath).replace(/\\/g, '/');
+}
+
+/** Paths sent to host VSign JAR (utility runs outside Docker). */
+function toHostUtilityPath(filePath) {
+  if (!filePath) return filePath;
+  const resolved = normalizeVSignPath(filePath);
+  const dockerPrefix = (process.env.VSIGN_DOCKER_PATH_PREFIX || '/app/services/e-sign-service')
+    .replace(/\\/g, '/')
+    .replace(/\/+$/, '');
+  const hostPrefix = (process.env.VSIGN_HOST_PATH_PREFIX || '')
+    .replace(/\\/g, '/')
+    .replace(/\/+$/, '');
+  if (hostPrefix && dockerPrefix && resolved.startsWith(`${dockerPrefix}/`)) {
+    return hostPrefix + resolved.slice(dockerPrefix.length);
+  }
+  if (hostPrefix && dockerPrefix && resolved === dockerPrefix) {
+    return hostPrefix;
+  }
+  return resolved;
 }
 
 function getEffectiveVSign() {
@@ -477,7 +496,7 @@ function stageVSignAppearanceAssets(serviceRoot, tempInfoPath, appearanceExtras,
       if (!src || !fs.existsSync(src.replace(/\//g, path.sep))) continue;
       const dest = path.join(tempInfoPath, fileName);
       fs.copyFileSync(src.replace(/\//g, path.sep), dest);
-      staged[key] = normalizeVSignPath(dest);
+      staged[key] = toHostUtilityPath(dest);
     }
     if (txn && staged.tickImgPath) {
       const srcTick = staged.tickImgPath.replace(/\//g, path.sep);
@@ -538,6 +557,7 @@ module.exports = {
   encodeVSignAuthDataSegment,
   buildVSignAuthUrl,
   resolveVSignUtilityUrl,
+  toHostUtilityPath,
   resolveVSignSignatureFontSize,
   resolveVSignSignatureFontSizeForBox,
   normalizeVSignPath,

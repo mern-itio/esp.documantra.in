@@ -108,15 +108,8 @@ function qualifiesEnvelopeForVSign(envelopeMeta) {
   const isQualified =
     envelopeMeta?.signatureType === 'qualified'
     || String(envelopeMeta?.envelopetype || '').toLowerCase() === 'qualified';
-
-  if (isLegacyEnvMode()) {
-    if (process.env.NODE_ENV !== 'production' && process.env.ASP_ID) {
-      return true;
-    }
-    return isQualified && legacyEnvVSignOperational();
-  }
-
-  return isVSignEnabledAndReady() && isQualified;
+  if (!isQualified) return false;
+  return isVSignEnabledAndReady();
 }
 
 function envProfileOperational() {
@@ -188,6 +181,9 @@ function isVSignPfxReady(cfg) {
 }
 
 function isVSignEnabledAndReady(cfg = getCachedEffectiveConfig()) {
+  if (cfg.source === 'db' && cfg.adminConfigured && cfg.enabled !== true) {
+    return false;
+  }
   if (envProfileOperational()) {
     return true;
   }
@@ -267,9 +263,11 @@ async function getAdminVSignConfigPayload() {
 function getPublicVSignStatus() {
   const cfg = getCachedEffectiveConfig();
   const legacy = isLegacyEnvMode(cfg);
-  const operational = isVSignEnabledAndReady(cfg);
+  const adminOff = cfg.source === 'db' && cfg.adminConfigured && cfg.enabled !== true;
+  const operational = !adminOff && isVSignEnabledAndReady(cfg);
+  const enabled = cfg.source === 'db' ? Boolean(cfg.enabled) : operational;
   return {
-    enabled: legacy ? operational : cfg.enabled,
+    enabled,
     ready: operational,
     legacyMode: legacy,
     certMode: cfg.certMode,

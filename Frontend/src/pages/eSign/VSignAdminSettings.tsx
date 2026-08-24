@@ -25,7 +25,7 @@ import {
 } from '../../services/vsignAdminService';
 import { getAdminAccessToken } from '../../utils/adminSession';
 
-const DOCUMANTRA_LOGO_URL = 'https://esp.documantra.in/Logo.png';
+const DOCUMANTRA_LOGO_URL = 'https://tgkqdagmnbgmrtjpymbz.supabase.co/storage/v1/object/public/branding/logo.png?v=2026-08-07T04%3A55%3A35.520Z';
 
 const profileLabel = (p: string | null | undefined) => {
   if (p === 'live') return 'Live / Production (IIPL001)';
@@ -200,16 +200,46 @@ const VSignAdminSettings: React.FC = () => {
             VSign / Aadhaar eSign
           </h1>
           <p className="text-sm text-gray-600 mt-1">
-            Switch UAT or Live from here — updates MongoDB, .env, and ESP utility URLs together.
+            Turn <strong>Aadhaar eSign</strong> off for live draw-and-finish signing. UAT/Live profile
+            switch keeps certificates; it does not force Aadhaar back on.
           </p>
         </div>
         <label className="flex items-center gap-3 cursor-pointer bg-white border rounded-lg px-4 py-2 shadow-sm">
-          <span className="text-sm font-medium">Enable VSign</span>
+          <div className="text-right">
+            <span className="block text-sm font-medium">Aadhaar eSign (VSign)</span>
+            <span className="block text-[11px] text-gray-500">
+              {form.enabled ? 'On — OTP after draw' : 'Off — draw & finish only'}
+            </span>
+          </div>
           <input
             type="checkbox"
             className="w-5 h-5 accent-[#155E4B]"
             checked={Boolean(form.enabled)}
-            onChange={(e) => setForm((f) => ({ ...f, enabled: e.target.checked }))}
+            disabled={saving}
+            onChange={async (e) => {
+              const next = e.target.checked;
+              setForm((f) => ({ ...f, enabled: next }));
+              setSaving(true);
+              setError('');
+              setMessage('');
+              try {
+                const payload: Record<string, unknown> = { ...form, enabled: next };
+                if (pfxPassword.trim()) payload.pfxPassword = pfxPassword.trim();
+                const data = await saveVSignAdminConfig(payload);
+                setMessage(
+                  next
+                    ? data.message || 'Aadhaar eSign enabled'
+                    : 'Aadhaar eSign disabled — signers use draw & finish only',
+                );
+                setPfxPassword('');
+                await load();
+              } catch (err: any) {
+                setForm((f) => ({ ...f, enabled: !next }));
+                setError(err.response?.data?.message || err.message || 'Failed to update Aadhaar toggle');
+              } finally {
+                setSaving(false);
+              }
+            }}
           />
         </label>
       </div>

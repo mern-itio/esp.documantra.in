@@ -101,7 +101,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { toTitleCase } from '../../utils/formatName';
 import { APP_NAME } from '../../components/constants/appConfig';
 import { BRAND, formatEnvelopeSubject } from '../../config/brand';
-import { isVSignEnabled } from '../../config/vsign';
+import { refreshVSignPublicStatus } from '../../config/vsign';
 
 /** Match saved recipient rows by name, email, company, title, or phone (digits normalized). */
 function recipientListRowMatchesQuery(
@@ -240,8 +240,8 @@ const isPublicFlow =
     requireAllSignatures: true,
     allowDecline: true,
     signingOrder: 'sequential' as const,
-    signatureType: (isPublicFlow && isVSignEnabled() ? 'qualified' : 'standard') as 'standard' | 'advanced' | 'qualified',
-    complianceLevel: (isPublicFlow && isVSignEnabled() ? 'qualified' : 'basic') as 'basic' | 'enhanced' | 'qualified'
+    signatureType: 'standard' as 'standard' | 'advanced' | 'qualified',
+    complianceLevel: 'basic' as 'basic' | 'enhanced' | 'qualified'
   });
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
@@ -277,6 +277,22 @@ const isPublicFlow =
     [recipients]
   );
   const isInPersonOnlyFlow = hasInPersonSigner && !hasNonInPersonSigner;
+  useEffect(() => {
+    let cancelled = false;
+    refreshVSignPublicStatus()
+      .then((status) => {
+        if (cancelled || !isPublicFlow || !status.enabled) return;
+        setEnvelopeData((prev) =>
+          prev.signatureType === 'qualified'
+            ? prev
+            : { ...prev, signatureType: 'qualified', complianceLevel: 'qualified' },
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isPublicFlow]);
   useEffect(() => {
     const loadDocument = async () => {
       const documentData = location.state?.documentData;

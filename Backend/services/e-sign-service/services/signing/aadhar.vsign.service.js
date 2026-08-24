@@ -33,6 +33,7 @@ const {
   buildVSignAuthUrl,
   resolveVSignUtilityUrl,
   normalizeVSignPath,
+  toHostUtilityPath,
   buildVSignSignatureDetailsString,
   buildVSignAppearanceExtras,
   stageVSignAppearanceAssets,
@@ -215,14 +216,14 @@ module.exports = {
     }
 
     const payload = withAppearancePayload({
-      signedPdfPath: normalizeVSignPath(signedPdfPath),
-      tempInfoPath: normalizeVSignPath(tempInfoPath),
-      pdfDestinationPath: normalizeVSignPath(pdfDestinationPath),
+      signedPdfPath: toHostUtilityPath(signedPdfPath),
+      tempInfoPath: toHostUtilityPath(tempInfoPath),
+      pdfDestinationPath: toHostUtilityPath(pdfDestinationPath),
       responseUrl: aspCallbackUrl,
       redirectUrl: aspCallbackUrl,
       txn,
       aspId,
-      pfxPath,
+      pfxPath: toHostUtilityPath(pfxPath),
       pfxPassword,
       pfxAlias,
       signingAlgorithm: 'RSA',
@@ -239,7 +240,7 @@ module.exports = {
         : signatureFontSize,
       pdfdetails: [
         {
-          pdfbase64val: normalizeVSignPath(pdfPath),
+          pdfbase64val: toHostUtilityPath(pdfPath),
           docInfo: signedFileName,
           docUrl: '',
           reason: '',
@@ -250,8 +251,34 @@ module.exports = {
       // Handwritten dual: no utility tick/logo — we paint one custom appearance after sign.
     }, hasHandwritten ? {} : appearance);
 
-    const response = await axios.post(`${resolveVSignUtilityUrl()}/gettxnrefv4_1`, payload);
+    const utilityUrl = resolveVSignUtilityUrl();
+    console.log('[VSign] gettxnref request', {
+      utilityUrl: `${utilityUrl}/gettxnrefv4_1`,
+      pfxPath: payload.pfxPath,
+      pfxAlias,
+      pdfPath: payload.pdfdetails?.[0]?.pdfbase64val,
+      tempInfoPath: payload.tempInfoPath,
+      aspId,
+    });
+
+    let response;
+    try {
+      response = await axios.post(`${utilityUrl}/gettxnrefv4_1`, payload, { timeout: 120000 });
+    } catch (err) {
+      console.error('[VSign] gettxnref HTTP error', err.message, err.response?.data || '');
+      throw err;
+    }
     const resData = response?.data;
+    console.log('[VSign] gettxnref response', {
+      httpStatus: response?.status,
+      type: typeof resData,
+      keys: resData && typeof resData === 'object' ? Object.keys(resData) : [],
+      status: resData?.status,
+      txnref: resData?.txnref || null,
+      errorCode: resData?.errorCode || resData?.errorcode || null,
+      errorMessage: resData?.errorMessage || resData?.error || resData?.message || null,
+      preview: typeof resData === 'string' ? resData.slice(0, 500) : JSON.stringify(resData || {}).slice(0, 800),
+    });
     const txnRef = resData?.txnref;
     const utilityOk = resData?.status == '1' || resData?.status == 1;
 
@@ -362,11 +389,11 @@ module.exports = {
         ...(aspLogo ? { aspLogo } : {}),
       };
     const payload = withAppearancePayload({
-      tempInfoPath: normalizeVSignPath(baseTemp),
-      signedPdfPath: normalizeVSignPath(parentPath),
-      signedFileParentPath: normalizeVSignPath(parentPath),
+      tempInfoPath: toHostUtilityPath(baseTemp),
+      signedPdfPath: toHostUtilityPath(parentPath),
+      signedFileParentPath: toHostUtilityPath(parentPath),
       responseXML: Buffer.from(responseXML || '').toString('base64'),
-      pdfDestinationPath: normalizeVSignPath(pdfDestinationPath),
+      pdfDestinationPath: toHostUtilityPath(pdfDestinationPath),
       signatureFontSize: signatureFontSize || VSIGN_REFERENCE_APPEARANCE.fontSize,
     }, appearanceExtras);
     if (txn) payload.txn = String(txn);

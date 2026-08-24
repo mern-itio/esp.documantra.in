@@ -11,6 +11,13 @@ function shouldPassthroughPdf(error) {
 }
 
 async function prepareDocForSignature(payload) {
+  if (!payload?.fields?.length) {
+    return {
+      pdfBase64: payload.pdfBase64,
+      success: true,
+      message: 'passthrough (no non-signature fields for prepare-template)',
+    };
+  }
   try {
     const response = await axios.post(
       `${JAVA_PDF_URL()}/api/pdf/prepare-template`,
@@ -41,6 +48,13 @@ async function prepareDocForSignature(payload) {
 }
 
 async function embedFieldsValueToPDF(payload) {
+  if (!payload?.fieldValues?.length) {
+    return {
+      pdfBase64: payload.pdfBase64,
+      success: true,
+      message: 'passthrough (no field values to embed)',
+    };
+  }
   try {
     const response = await axios.post(
       `${JAVA_PDF_URL()}/api/pdf/embed-values`,

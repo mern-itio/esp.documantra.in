@@ -13,8 +13,7 @@ import DocumentSignatureBackground from "../../components/common/DocumentSignatu
 import BrandLogo from "../../components/BrandLogo";
 import { resolveEsignDocumentFileProp } from "../../utils/esignDocumentUrl";
 import { markDocumentOpened, persistBiometricEvidence } from "../../utils/signingContext";
-import { resolvePublicSignatureMethod, isVSignEnabled, refreshVSignPublicStatus } from "../../config/vsign";
-import { isPublicSignOnlyApp } from "../../config/appMode";
+import { resolvePublicSignatureMethod, refreshVSignPublicStatus } from "../../config/vsign";
 import { formatDocuMantraEnvelopeId } from "../../utils/envelopeIdFormat";
 import * as Icons from "lucide-react";
 import {
@@ -137,7 +136,6 @@ const EnvelopeDetails: React.FC = () => {
     }
   }, [id, recipientId]);
 
-  const usesVSignByDefault = isVSignEnabled() || isPublicSignOnlyApp();
   const skipSignerAccessGate =
     import.meta.env.DEV || import.meta.env.VITE_SKIP_SIGNER_ACCESS_OTP === "true";
 
@@ -178,12 +176,8 @@ const EnvelopeDetails: React.FC = () => {
   const [showSigningDoneModal, setShowSigningDoneModal] = useState(false);
   const initialCompletionRedirectRef = useRef(true);
   const [sessionIp, setSessionIp] = useState<string>(""); // best-effort
-  const [signatureProvider, setSignatureProvider] = useState<string>(
-    usesVSignByDefault ? "vSign" : "draftAndSign",
-  );
-  const [signatureMethod, setSignatureMethod] = useState<string>(
-    usesVSignByDefault ? "aadhaarSignature" : "Digital_Signature",
-  );
+  const [signatureProvider, setSignatureProvider] = useState<string>("draftAndSign");
+  const [signatureMethod, setSignatureMethod] = useState<string>("Digital_Signature");
 
   useEffect(() => {
     // Close the dropdown when clicking outside it
@@ -276,6 +270,7 @@ const EnvelopeDetails: React.FC = () => {
         setEnvelope(response.data.data);
         const docs = response.data.data.documents || [];
         setAllDocuments(docs);
+        await refreshVSignPublicStatus();
         const method = resolvePublicSignatureMethod(
           response.data.data?.signatureType,
           response.data.data?.envelopetype,

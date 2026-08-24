@@ -5,7 +5,7 @@
   "certMode": "live",
   "aspId": "IIPL001",
   "vsignAuthPage": "https://esign.verasys.in/esp",
-  "vsignAuthLogoUrl": "https://esp.documantra.in/Logo.png",
+  "vsignAuthLogoUrl": "https://tgkqdagmnbgmrtjpymbz.supabase.co/storage/v1/object/public/branding/logo.png?v=2026-08-07T04%3A55%3A35.520Z",
   "vsignEspResponseUrl": "https://esign.verasys.in/esign/2.1/signature",
   "utilityEspMode": "production",
   "utilityUrl": "http://127.0.0.1:7078",

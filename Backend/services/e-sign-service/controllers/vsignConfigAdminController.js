@@ -129,7 +129,7 @@ async function updateVSignConfig(req, res) {
     if (body.vsignEnv === 'uat') {
       doc.vsignAuthLogoUrl = '';
     } else if (body.vsignEnv === 'production' && !doc.vsignAuthLogoUrl) {
-      doc.vsignAuthLogoUrl = 'https://esp.documantra.in/Logo.png';
+      doc.vsignAuthLogoUrl = 'https://tgkqdagmnbgmrtjpymbz.supabase.co/storage/v1/object/public/branding/logo.png?v=2026-08-07T04%3A55%3A35.520Z';
     }
 
     const adminId = getAdminId(req);
