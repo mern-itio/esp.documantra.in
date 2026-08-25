@@ -541,14 +541,6 @@ const isPublicFlow =
     }
   };
 
-  const stringifyAuthentication = (auth: string[] | null | undefined): string | null => {
-    if (!auth || auth.length === 0) return null;
-    const items = auth
-      .filter((id) => typeof id === 'string' && id.trim().length > 0)
-      .map((id) => ({ authMethodId: id, status: 'pending' }));
-    return items.length > 0 ? JSON.stringify(items) : null;
-  };
-
   const loadAvailableAuthMethods = async (): Promise<any[]> => {
     if (authMethods.length > 0) return authMethods;
     try {
