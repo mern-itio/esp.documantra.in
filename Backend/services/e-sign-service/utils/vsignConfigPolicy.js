@@ -246,8 +246,10 @@ async function getAdminVSignConfigPayload() {
     certMode: cfg.certMode,
     aspId: cfg.aspId,
     vsignAuthPage: cfg.vsignAuthPage,
-    vsignAuthLogoUrl: isLive ? brandingLogoUrl : '',
-    vsignAuthLogoSource: 'website-branding',
+    vsignAuthLogoUrl: isLive
+      ? (cfg.vsignAuthLogoUrl || brandingLogoUrl || '')
+      : '',
+    vsignAuthLogoSource: cfg.vsignAuthLogoUrl ? 'custom-url' : 'website-branding',
     vsignCallbackUrl: cfg.vsignCallbackUrl,
     vsignEspResponseUrl: resolveEspResponseUrl(cfg),
     utilityUrl: cfg.utilityUrl,

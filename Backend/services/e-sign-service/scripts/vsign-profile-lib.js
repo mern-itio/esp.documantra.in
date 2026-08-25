@@ -33,6 +33,8 @@ const VSIGN_ENV_KEYS = [
   'VSIGN_USE_JAR',
   'VSIGN_APPEARANCE_MODE',
   'VSIGN_SIGNATURE_FONT_SIZE',
+  'VSIGN_HOST_PATH_PREFIX',
+  'VSIGN_DOCKER_PATH_PREFIX',
 ];
 
 function profilePath(name) {
@@ -133,6 +135,8 @@ function buildEnvValues(profile, secrets, callbackUrl) {
     VSIGN_USE_JAR: profile.vsignUseJar || '1',
     VSIGN_APPEARANCE_MODE: profile.vsignAppearanceMode || 'custom-tick',
     VSIGN_SIGNATURE_FONT_SIZE: profile.vsignSignatureFontSize || '10',
+    VSIGN_HOST_PATH_PREFIX: serviceRoot.replace(/\\/g, '/'),
+    VSIGN_DOCKER_PATH_PREFIX: '/app/services/e-sign-service',
   };
 
   if (profile.useKitPfxDefaults) {
@@ -174,7 +178,6 @@ function buildMongoPatch(profile, secrets, callbackUrl) {
     certMode: profile.certMode,
     aspId: profile.aspId,
     vsignAuthPage: profile.vsignAuthPage,
-    vsignAuthLogoUrl: '',
     vsignEspResponseUrl: profile.vsignEspResponseUrl,
     vsignCallbackUrl: callbackUrl,
     utilityUrl: profile.utilityUrl,

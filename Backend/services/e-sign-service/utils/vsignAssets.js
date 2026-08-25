@@ -171,7 +171,9 @@ function resolveVSignAuthPage(serviceRoot) {
  */
 function resolveVSignAuthLogoUrl(serviceRoot) {
   if (resolveVSignEnv(serviceRoot) !== 'production') return '';
-  // Optional site-wide override (same as emails); otherwise live branding logo.
+  const cfg = getEffectiveVSign();
+  const fromStored = String(cfg.vsignAuthLogoUrl || '').trim();
+  if (fromStored) return fromStored;
   const fromBrandEnv = String(process.env.BRAND_LOGO_URL || '').trim();
   if (fromBrandEnv) return fromBrandEnv;
   return getBrandLogoUrl();

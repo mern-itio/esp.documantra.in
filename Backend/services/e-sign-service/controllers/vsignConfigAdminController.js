@@ -84,9 +84,8 @@ async function updateVSignConfig(req, res) {
     if (body.vsignAuthPage !== undefined) {
       doc.vsignAuthPage = String(body.vsignAuthPage || '').trim().replace(/\/+$/, '');
     }
-    // Auth page logo always comes from website branding (Supabase) — ignore separate URL.
     if (body.vsignAuthLogoUrl !== undefined) {
-      doc.vsignAuthLogoUrl = '';
+      doc.vsignAuthLogoUrl = String(body.vsignAuthLogoUrl || '').trim();
     }
     if (body.vsignCallbackUrl !== undefined) {
       doc.vsignCallbackUrl = String(body.vsignCallbackUrl || '').trim();
@@ -126,12 +125,6 @@ async function updateVSignConfig(req, res) {
       if (!doc.vsignAuthPage.includes('esign.verasys.in')) {
         doc.vsignAuthPage = 'https://esign.verasys.in/esp';
       }
-    }
-    if (body.vsignEnv === 'uat') {
-      doc.vsignAuthLogoUrl = '';
-    } else if (body.vsignEnv === 'production') {
-      // Logo is resolved at OTP time from Supabase branding — do not store a stale URL.
-      doc.vsignAuthLogoUrl = '';
     }
 
     const adminId = getAdminId(req);

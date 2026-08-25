@@ -58,6 +58,7 @@ const VSignAdminSettings: React.FC = () => {
       certMode: data.certMode,
       aspId: data.aspId,
       vsignAuthPage: data.vsignAuthPage,
+      vsignAuthLogoUrl: data.vsignAuthLogoUrl,
       vsignCallbackUrl: data.vsignCallbackUrl,
       vsignEspResponseUrl: data.vsignEspResponseUrl,
       utilityUrl: data.utilityUrl,
@@ -397,26 +398,41 @@ const VSignAdminSettings: React.FC = () => {
               esp.documantra.in (managed from DocuMantra admin branding upload).
             </p>
           ) : (
-            <div className="md:col-span-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-              <p className="text-sm font-medium text-gray-800">Aadhaar OTP page logo</p>
-              <p className="mt-1 text-xs text-gray-600">
-                Same logo as the website and ESP UI — upload once in DocuMantra website branding
-                admin. Changes apply on the next Sign / OTP (new auth URL).
-              </p>
-              <div className="mt-3 flex items-center gap-4">
+            <div className="md:col-span-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-3">
+              <div>
+                <p className="text-sm font-medium text-gray-800">Aadhaar OTP page logo (live)</p>
+                <p className="mt-1 text-xs text-gray-600">
+                  Leave blank to use website branding logo. Or paste a public HTTPS logo URL to keep a
+                  fixed logo on the VSign OTP page.
+                </p>
+              </div>
+              <label className="block text-sm">
+                <span className="text-gray-700">Logo URL (optional override)</span>
+                <input
+                  className="mt-1 w-full border rounded-lg px-3 py-2 font-mono text-xs"
+                  value={form.vsignAuthLogoUrl || ''}
+                  placeholder={branding.logoUrl || DEFAULT_BRAND_LOGO_URL}
+                  onChange={(e) => setForm((f) => ({ ...f, vsignAuthLogoUrl: e.target.value }))}
+                />
+              </label>
+              <div className="flex items-center gap-4">
                 <div className="flex h-14 items-center rounded-md border bg-white px-3 py-2">
                   <img
                     src={
+                      form.vsignAuthLogoUrl?.trim() ||
                       config?.vsignAuthLogoUrl ||
                       branding.logoUrl ||
                       DEFAULT_BRAND_LOGO_URL
                     }
-                    alt="Website branding logo"
+                    alt="Aadhaar OTP page logo preview"
                     className="h-10 w-auto max-w-[180px] object-contain"
                   />
                 </div>
                 <p className="break-all font-mono text-[10px] text-gray-500">
-                  {config?.vsignAuthLogoUrl || branding.logoUrl || DEFAULT_BRAND_LOGO_URL}
+                  {form.vsignAuthLogoUrl?.trim() ||
+                    config?.vsignAuthLogoUrl ||
+                    branding.logoUrl ||
+                    DEFAULT_BRAND_LOGO_URL}
                 </p>
               </div>
             </div>
