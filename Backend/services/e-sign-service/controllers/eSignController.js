@@ -331,6 +331,26 @@ role: (r.role || 'signer').toLowerCase(),
   );
 
   // Step 3: Save updated envelope
+  const { authMethodIdsIncludeAadhaar } = require('../utils/vsignAuthRequirement');
+  const authIdsFromPayload = recipients.flatMap((r) => {
+    if (!r.authentication) return [];
+    try {
+      const parsed =
+        typeof r.authentication === 'string' ? JSON.parse(r.authentication) : r.authentication;
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((item) => (typeof item === 'string' ? item : item?.authMethodId))
+        .filter(Boolean);
+    } catch {
+      return [];
+    }
+  });
+  if (await authMethodIdsIncludeAadhaar(authIdsFromPayload)) {
+    envelope.signatureType = 'qualified';
+    if (!envelope.envelopetype || String(envelope.envelopetype).toLowerCase() === 'standard') {
+      envelope.envelopetype = 'qualified';
+    }
+  }
   await envelope.save();
 
   // Log envelope updated (recipients added)

@@ -14,6 +14,7 @@ import BrandLogo from "../../components/BrandLogo";
 import { resolveEsignDocumentFileProp } from "../../utils/esignDocumentUrl";
 import { markDocumentOpened, persistBiometricEvidence } from "../../utils/signingContext";
 import { resolvePublicSignatureMethod, refreshVSignPublicStatus } from "../../config/vsign";
+import { recipientAuthenticationRequiresAadhaar } from "../../utils/vsignAuthRequirement";
 import { formatDocuMantraEnvelopeId } from "../../utils/envelopeIdFormat";
 import * as Icons from "lucide-react";
 import {
@@ -278,18 +279,25 @@ const EnvelopeDetails: React.FC = () => {
         const docs = response.data.data.documents || [];
         setAllDocuments(docs);
         await refreshVSignPublicStatus();
+        const recipients = response.data.data.recipients || [];
+        const rowcurrentRecipient = !cycleId
+          ? recipients.find((r: any) => normId(r) === String(recipientId ?? ""))
+          : null;
+        const requiresAadhaar =
+          rowcurrentRecipient?.requiresAadhaarVSign === true
+          || response.data.data?.requiresAadhaarVSign === true
+          || await recipientAuthenticationRequiresAadhaar(
+            rowcurrentRecipient?.authentication,
+          );
         const method = resolvePublicSignatureMethod(
           response.data.data?.signatureType,
           response.data.data?.envelopetype,
+          requiresAadhaar,
         );
         setSignatureMethod(method);
         setSignatureProvider(method === 'aadhaarSignature' ? 'vSign' : 'draftAndSign');
-        const recipients = response.data.data.recipients || [];
         setAllRecipients(recipients);
         if(!cycleId){
-          const rowcurrentRecipient = recipients.find(
-            (r: any) => normId(r) === String(recipientId ?? "")
-          );
           setCurrentRecipient(rowcurrentRecipient);
           const email = (rowcurrentRecipient?.email || '').toString().trim().toLowerCase();
           if (email) {

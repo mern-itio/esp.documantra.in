@@ -24,10 +24,12 @@ export const isVSignReady = (): boolean => Boolean(cachedPublicStatus?.ready);
 export const resolvePublicSignatureMethod = (
   envelopeSignatureType?: string,
   envelopeType?: string,
+  recipientRequiresAadhaar = false,
 ): 'Digital_Signature' | 'aadhaarSignature' => {
   if (!isVSignEnabled()) return 'Digital_Signature';
   const type = String(envelopeSignatureType || '').toLowerCase();
   const envType = String(envelopeType || '').toLowerCase();
-  const isQualified = type === 'qualified' || envType === 'qualified';
+  const isQualified =
+    type === 'qualified' || envType === 'qualified' || recipientRequiresAadhaar;
   return isQualified ? 'aadhaarSignature' : 'Digital_Signature';
 };

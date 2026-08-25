@@ -21,6 +21,11 @@ VSIGN_USE_JAR=1
 VSIGN_APPEARANCE_MODE=custom-tick
 VSIGN_SIGNATURE_FONT_SIZE=10
 
+# Docker e-sign → host utility (Linux default gateway)
+UTILITY_URL=http://172.17.0.1:7078
+VSIGN_HOST_PATH_PREFIX=/root/Draft-and-Sign/Backend/services/e-sign-service
+VSIGN_DOCKER_PATH_PREFIX=/app/services/e-sign-service
+
 PFX_PATH=uploads/vSign/signCertificate.pfx
 PFX_PASSWORD=
 PFX_ALIAS=

@@ -343,16 +343,25 @@ const DocumentViewerContent: React.FC<Props> = ({
       dualSignature: false,
       handwrittenSignature: undefined,
     });
-    const response = await eSignApi.post('/api/e-sign/public/signature-complete',{
-      envelopeId:envelopeID,
-      currentUserId:currentUserId,
-      selfValue:selfValue,
-      signingContext,
-    }, {
-      headers: getSignerAccessHeaders?.(),
-    });
-    if (response?.status === 200) {
-      window.location.replace(`/e-sign/signer/status/${env}/${rid}`);
+    try {
+      const response = await eSignApi.post('/api/e-sign/public/signature-complete',{
+        envelopeId:envelopeID,
+        currentUserId:currentUserId,
+        selfValue:selfValue,
+        signingContext,
+      }, {
+        headers: getSignerAccessHeaders?.(),
+      });
+      if (response?.status === 200) {
+        window.location.replace(`/e-sign/signer/status/${env}/${rid}`);
+      }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        'Could not complete signing. Complete Aadhaar verification on the Sign button first.';
+      alert(msg);
+      setCompleteCtaState('idle');
+      completionTriggeredRef.current = false;
     }
   }
 
@@ -410,6 +419,20 @@ const DocumentViewerContent: React.FC<Props> = ({
     const assigneeId = normalizeMongoId(field?.recipientId || currentUserId);
     const assignee = (allRecipients || []).find(
       (r: any) => normalizeMongoId(r?.id ?? r?._id) === assigneeId,
+    );
+    return isAadhaarSigningVerified(assignee?.signingEvidence);
+  };
+
+  const isCurrentUserAadhaarVerified = (): boolean => {
+    if (signatureMethod !== 'aadhaarSignature') return true;
+    if (mode === MODE.SELF_SIGNER) {
+      const signer = (selfSigner || []).find(
+        (s: any) => normalizeMongoId(s?._id) === normalizeMongoId(currentUserId),
+      );
+      return isAadhaarSigningVerified(signer?.signingEvidence);
+    }
+    const assignee = (allRecipients || []).find(
+      (r: any) => normalizeMongoId(r?.id ?? r?._id) === normalizeMongoId(currentUserId),
     );
     return isAadhaarSigningVerified(assignee?.signingEvidence);
   };
@@ -523,17 +546,27 @@ const DocumentViewerContent: React.FC<Props> = ({
   const completionTriggeredRef = useRef(false);
   const isSigningBatchRef = useRef(false);
   const [isCompleteCtaGuidanceDismissed, setIsCompleteCtaGuidanceDismissed] = useState(false);
+
+  const readyToFinish =
+    showCompleteButton
+    && (signatureMethod !== 'aadhaarSignature' || isCurrentUserAadhaarVerified());
+
+  const aadhaarFinishPending =
+    showCompleteButton
+    && signatureMethod === 'aadhaarSignature'
+    && !isCurrentUserAadhaarVerified();
+
   const shouldHighlightCompleteCta =
     !isViewOnly &&
-    showCompleteButton &&
+    readyToFinish &&
     completeCtaState === "idle" &&
     !isCompleteCtaGuidanceDismissed;
 
   useEffect(() => {
-    if (showCompleteButton && completeCtaState === "idle") {
+    if (readyToFinish && completeCtaState === "idle") {
       setIsCompleteCtaGuidanceDismissed(false);
     }
-  }, [showCompleteButton, completeCtaState]);
+  }, [readyToFinish, completeCtaState]);
 
   // ==================== CC / View-only Audit Trail ====================
   const [auditTrailOpen, setAuditTrailOpen] = useState(false);
@@ -972,7 +1005,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
   }, [signatureFields, selfSigner, mode, currentUserId, localSignedMap, localFieldValues, isViewOnly, signatureMethod, allRecipients]);
 
   const showRequiredFieldsBanner =
-    !isViewOnly && (actionableFields.length > 0 || showCompleteButton);
+    !isViewOnly && (actionableFields.length > 0 || showCompleteButton || aadhaarFinishPending);
 
   const participantAvatars = useMemo(() => {
     const list = (allRecipients || []).filter((r: any) => {
@@ -3401,14 +3434,16 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
             <FileText className="hidden h-4 w-4 shrink-0 text-gray-400 sm:block" />
             <p className="min-w-0 flex-1 text-center text-sm text-gray-700">
               <span className="inline-block rounded bg-sky-50 px-2.5 py-1">
-                {showCompleteButton
+                {readyToFinish
                   ? "All required fields are complete."
-                  : hasStarted
-                    ? `${actionableFields.length} field${actionableFields.length === 1 ? "" : "s"} required.`
-                    : `Please fill in ${actionableFields.length} required field${actionableFields.length === 1 ? "" : "s"}.`}
+                  : aadhaarFinishPending
+                    ? "Tap Sign on the document and complete Aadhaar OTP before Finish."
+                    : hasStarted
+                      ? `${actionableFields.length} field${actionableFields.length === 1 ? "" : "s"} required.`
+                      : `Please fill in ${actionableFields.length} required field${actionableFields.length === 1 ? "" : "s"}.`}
               </span>
             </p>
-            {showCompleteButton ? (
+            {readyToFinish ? (
               <div className={`relative shrink-0 ${shouldHighlightCompleteCta ? "z-[70]" : ""}`}>
                 {shouldHighlightCompleteCta && (
                   <div className="pointer-events-none absolute bottom-full right-0 mb-2 flex flex-col items-center rounded-md bg-amber-100 px-3 py-1.5 text-[11px] font-semibold text-gray-900 shadow-md whitespace-nowrap">
@@ -3418,10 +3453,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 )}
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     if (completeCtaState === "done") return;
-                    completeSignature(envelopeID, currentUserId);
                     setCompleteCtaState("done");
+                    await completeSignature(envelopeID, currentUserId);
                   }}
                   disabled={completeCtaState === "done"}
                   className={

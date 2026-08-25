@@ -528,6 +528,51 @@ if (senderId) {
     const aadhaarByRecipientId = new Map(
       (recipientAadhaarRows || []).map((r) => [String(r._id), r.aadhaarNumber]),
     );
+    const { permissionRequiresAadhaar } = require('../utils/vsignAuthRequirement');
+    const envelopeRequiresQualified =
+      envelope.signatureType === 'qualified'
+      || String(envelope.envelopetype || '').toLowerCase() === 'qualified';
+
+    const formattedRecipients = await Promise.all(
+      (envelope.recipientIds || []).map(async (recipient) => {
+        const rid = String(recipient._id);
+        const perm = permissionByRecipientId.get(rid) || recipient.permissions?.[0] || {};
+        const declineMeta = declineByRecipient.get(rid) || null;
+        const { resolveAadhaarLast4 } = require('../utils/signingEvidenceHelper');
+        const aadhaarLast4 = resolveAadhaarLast4({
+          aadhaarNumber: aadhaarByRecipientId.get(rid) || recipient.aadhaarNumber,
+          signingEvidence: perm.signingEvidence,
+        });
+        const authRequiresAadhaar = await permissionRequiresAadhaar(perm.authLevel);
+        return {
+          id: recipient._id,
+          name: recipient.name,
+          email: recipient.email,
+          phone: recipient.phone || '',
+          initials: recipient.initials || '',
+          role: perm.role,
+          order: perm.order,
+          status: perm.status,
+          authentication: (() => {
+            if (!perm.authLevel) return null;
+            if (Array.isArray(perm.authLevel)) {
+              return perm.authLevel.length > 0 ? JSON.stringify(perm.authLevel) : null;
+            }
+            return JSON.stringify([perm.authLevel]);
+          })(),
+          signature: recipient.signature,
+          aadhaarLast4: aadhaarLast4 || null,
+          signingEvidence: perm.signingEvidence || null,
+          requiresAadhaarVSign: authRequiresAadhaar || envelopeRequiresQualified,
+          rejectionReason: declineMeta?.reason || null,
+          rejectedAt: declineMeta?.timestamp || null,
+        };
+      }),
+    );
+
+    const currentRecipientRequiresAadhaar = recipientId
+      ? formattedRecipients.find((r) => String(r.id) === String(recipientId))?.requiresAadhaarVSign
+      : undefined;
 
     // Step 4: Format the response (single envelope object)
     const formattedEnvelope = {
@@ -570,40 +615,8 @@ if (senderId) {
         signedFilePath: toPublicUploadUrl(doc.signedFilePath, doc._id),
         preparedDoc: doc.preparedDoc ? toPublicUploadUrl(doc.preparedDoc, doc._id) : null,
       })),
-      recipients: envelope.recipientIds.map(recipient => {
-        const rid = String(recipient._id);
-        const perm = permissionByRecipientId.get(rid) || recipient.permissions?.[0] || {};
-        const declineMeta = declineByRecipient.get(rid) || null;
-        const { resolveAadhaarLast4 } = require('../utils/signingEvidenceHelper');
-        const aadhaarLast4 = resolveAadhaarLast4({
-          aadhaarNumber: aadhaarByRecipientId.get(rid) || recipient.aadhaarNumber,
-          signingEvidence: perm.signingEvidence,
-        });
-        return {
-          id: recipient._id,
-          name: recipient.name,
-          email: recipient.email,
-          phone: recipient.phone || '',
-          initials: recipient.initials || '',
-          role: perm.role,
-          order: perm.order,
-          status: perm.status,
-          authentication: (() => {
-            // Handle authLevel: can be array (new) or single value (old data for backward compatibility)
-            if (!perm.authLevel) return null;
-            if (Array.isArray(perm.authLevel)) {
-              return perm.authLevel.length > 0 ? JSON.stringify(perm.authLevel) : null;
-            }
-            // Old format: single ObjectId - convert to array format for frontend
-            return JSON.stringify([perm.authLevel]);
-          })(),
-          signature: recipient.signature,
-          aadhaarLast4: aadhaarLast4 || null,
-          signingEvidence: perm.signingEvidence || null,
-          rejectionReason: declineMeta?.reason || null,
-          rejectedAt: declineMeta?.timestamp || null,
-        };
-      })
+      recipients: formattedRecipients,
+      requiresAadhaarVSign: currentRecipientRequiresAadhaar,
     };
 
     // Step 5: Return single envelope
@@ -1342,10 +1355,15 @@ const addSignature = async (req, res) => {
     const isPublicSign = String(req.originalUrl || req.baseUrl || '').includes('/api/e-sign/public/');
     if (isPublicSign && mode === 'Recipient') {
       const { qualifiesEnvelopeForVSign } = require('../utils/vsignConfigPolicy');
+      const { permissionRequiresAadhaar } = require('../utils/vsignAuthRequirement');
       const envelopeMeta = await Envelope.findById(envelopeId)
         .select('signatureType envelopetype')
         .lean();
-      if (qualifiesEnvelopeForVSign(envelopeMeta)) {
+      const permission = await RecipientPermission.findOne({ envelopeId, recipientId }).select('authLevel');
+      const authRequiresAadhaar = permission
+        ? await permissionRequiresAadhaar(permission.authLevel)
+        : false;
+      if (qualifiesEnvelopeForVSign(envelopeMeta) || authRequiresAadhaar) {
         signatureMethod = 'aadhaarSignature';
         signatureProvider = 'vSign';
       }
@@ -1581,9 +1599,26 @@ const completeSignature = async(req, res)=>{
       const resPendingFields = await signatureOperationServices.fetchPendingFieldsByRecipient(envelopeId,recipientId);
       console.log(resPendingFields);
       if(resPendingFields.length === 0 ){
-        const { mergeSigningEvidence, sanitizeSigningEvidence } = require('../utils/signingEvidenceHelper');
+        const { mergeSigningEvidence, sanitizeSigningEvidence, isAadhaarSigningVerified } = require('../utils/signingEvidenceHelper');
+        const { qualifiesEnvelopeForVSign } = require('../utils/vsignConfigPolicy');
+        const { permissionRequiresAadhaar } = require('../utils/vsignAuthRequirement');
         const RecipientPermission = require('../models/RecipientPermission');
         const permission = await RecipientPermission.findOne({ envelopeId, recipientId });
+        const authRequiresAadhaar = permission
+          ? await permissionRequiresAadhaar(permission.authLevel)
+          : false;
+        const requiresAadhaarVSign =
+          qualifiesEnvelopeForVSign(envelope) || authRequiresAadhaar;
+        if (
+          requiresAadhaarVSign &&
+          !isAadhaarSigningVerified(permission?.signingEvidence || {})
+        ) {
+          return res.status(400).json({
+            message:
+              'Aadhaar eSign verification is required. Tap Sign on the document and complete Aadhaar OTP before Finish.',
+            code: 'AADHAAR_VERIFICATION_REQUIRED',
+          });
+        }
         const reqMeta = {
           ip: (req.headers['x-forwarded-for'] || '').toString().split(',')[0].trim() || req.socket?.remoteAddress || '',
           userAgent: req.headers['user-agent'] || '',

@@ -3627,9 +3627,26 @@ if (response.status == 200) {
     // Keep modal open to show loading state
     let refreshedRecipients: EnvelopeRecipient[] = [];
     try {
+      // If sender chose Aadhaar auth for any recipient, envelope must be qualified (VSign)
+      let signatureTypeToPersist = envelopeData.signatureType;
+      for (const r of recipients) {
+        const authIds = parseAuthentication(r.authentication);
+        if (await selectionIncludesAadhaarVSign(authIds)) {
+          signatureTypeToPersist = 'qualified';
+          break;
+        }
+      }
+      if (signatureTypeToPersist === 'qualified' && envelopeData.signatureType !== 'qualified') {
+        setEnvelopeData((prev) => ({
+          ...prev,
+          signatureType: 'qualified',
+          complianceLevel: 'qualified',
+        }));
+      }
+
       // Persist sender-chosen signature type (Aadhaar/VSign only if explicitly selected)
       try {
-        await persistSignatureType(envelopeData.signatureType);
+        await persistSignatureType(signatureTypeToPersist);
       } catch (sigErr) {
         console.error('Failed to persist signature type before send:', sigErr);
         toast.error('Failed to save signature type. Please try again.');

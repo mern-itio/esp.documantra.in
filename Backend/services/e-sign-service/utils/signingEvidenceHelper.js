@@ -318,6 +318,14 @@ async function enrichEvidenceWithIpGeo(evidence = {}) {
   return merged;
 }
 
+function isAadhaarSigningVerified(evidence) {
+  if (!evidence || typeof evidence !== 'object') return false;
+  if (evidence.aadhaarVerifiedAt || evidence.vsignVerifiedAt) return true;
+  return (evidence.authMethods || []).some(
+    (m) => m?.type === 'aadhaar' && m?.status === 'completed',
+  );
+}
+
 module.exports = {
   FAILED_AUDIT_ACTIONS,
   maskAadhaar,
@@ -335,4 +343,5 @@ module.exports = {
   sanitizeSigningEvidence,
   buildVerifiedAuthMethodsFromEvidence,
   enrichEvidenceWithIpGeo,
+  isAadhaarSigningVerified,
 };
