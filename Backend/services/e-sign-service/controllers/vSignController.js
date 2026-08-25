@@ -229,11 +229,10 @@ async function completeVSignSigning(transactionRecord, responseXML, res) {
     responseXML: xmlForUtility || '',
     pdfDestinationPath,
     signatureFontSize,
-    // Live: utility stamps appearance inside the signed byte-range (must stay valid).
-    // UAT: skip utility stamp — we paint dual appearance after sign (breaks crypto; OK for UAT).
-    tickImgPath: preserveLiveCrypto ? tickImgPath : null,
-    aspLogo: preserveLiveCrypto ? (aspLogo || null) : null,
-    skipAppearanceAssets: !preserveLiveCrypto,
+    // Never stamp utility tick/logo on top of our dual design (live pre-paint or UAT post-paint).
+    tickImgPath: null,
+    aspLogo: null,
+    skipAppearanceAssets: true,
     txn: transactionRecord.txn,
     txnRef: transactionRecord.txnRef,
   });
@@ -350,7 +349,7 @@ async function completeVSignSigning(transactionRecord, responseXML, res) {
       ...(entry.coordinates?.[0] || {}),
     })).filter((b) => b.w && b.h);
     if (preserveLiveCrypto) {
-      console.log('[VSign callback] live: skip post-sign appearance paint (keep PKCS7 valid)', {
+      console.log('[VSign callback] live: skip post-sign appearance paint (design already pre-signed)', {
         path: signedPdfForPaint || pdfDestinationPath,
       });
       if (signedPdfForPaint) {

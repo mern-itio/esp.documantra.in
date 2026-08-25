@@ -18,6 +18,7 @@ const {
 } = require('./vsignHandwrittenEmbed');
 const {
   paintAadhaarAppearanceBackground,
+  paintAadhaarAppearanceOnPdf,
   boxesFromSignatureDetails,
 } = require('./vsignAppearanceEmbed');
 const {
@@ -105,7 +106,11 @@ module.exports = {
       signatureImageBase64
       || allFields.some((f) => f.type === 'signature' && f.signature),
     );
-    if (hasHandwritten && pdfPath) {
+    const preserveLiveCrypto =
+      resolveVSignUsesLiveCert(serviceRoot) || resolveVSignEnv(serviceRoot) === 'production';
+
+    // UAT only: embed raw handwritten before gettxnref. Live uses full dual paint below.
+    if (!preserveLiveCrypto && hasHandwritten && pdfPath) {
       const imageForEmbed = signatureImageBase64
         || allFields.find((f) => f.type === 'signature' && f.signature)?.signature;
       if (imageForEmbed) {
@@ -131,9 +136,33 @@ module.exports = {
     const tempInfoPath = path.join(baseDir, 'vSignTemp');
     const appearance = stageAppearance(serviceRoot, tempInfoPath, txn);
 
-    // Dual (handwritten) flow: skip pre-sign blue box — post-sign paint on Final.pdf
-    // is the single source of truth (avoids coord-scale duplicates).
-    if (!hasHandwritten && appearanceBoxes.length && pdfPath) {
+    const handwrittenBase64 =
+      signatureImageBase64
+      || allFields.find((f) => f.type === 'signature' && f.signature)?.signature
+      || null;
+    const aadhaarLast4 =
+      String(recipient?.aadhaarNumber || '').replace(/\D/g, '').slice(-4) || undefined;
+
+    if (preserveLiveCrypto && appearanceBoxes.length && pdfPath) {
+      // Live: paint dual design BEFORE hash so PKCS7 stays valid (no post-sign edit).
+      try {
+        await paintAadhaarAppearanceOnPdf(pdfPath, {
+          boxes: appearanceBoxes,
+          signatureFields: allFields,
+          handwrittenBase64,
+          recipient: {
+            ...(recipient?.toObject?.() || recipient || {}),
+            aadhaarLast4,
+          },
+          verifiedAt: new Date(),
+          serviceRoot,
+        });
+        await signatureOperationServices.updateDocument(documentId, { preparedDoc: pdfPath });
+        console.log('[VSign] live: dual appearance painted before gettxnref (crypto-safe)');
+      } catch (paintErr) {
+        console.warn('[VSign] live pre-sign appearance paint skipped:', paintErr.message);
+      }
+    } else if (!hasHandwritten && appearanceBoxes.length && pdfPath) {
       try {
         await paintAadhaarAppearanceBackground(pdfPath, {
           boxes: appearanceBoxes,
@@ -155,20 +184,15 @@ module.exports = {
     console.log('[VSign] tickImgPath:', appearance.tickImgPath);
     console.log('[VSign] signaturedetailsString:', signaturedetailsString);
 
-    // Live: keep real coords so utility appearance is inside the signed PKCS7.
-    // UAT + handwritten: push VSign strip off-page; we paint dual appearance after sign.
-    const preserveLiveCrypto =
-      resolveVSignUsesLiveCert(serviceRoot) || resolveVSignEnv(serviceRoot) === 'production';
+    // Live (and UAT handwritten): hide utility strip off-page — custom paint is the visible design.
     const utilitySignaturedetailsString =
-      !preserveLiveCrypto && hasHandwritten
+      preserveLiveCrypto || hasHandwritten
         ? (signaturedetails || [])
           .map((entry) => `${entry.page}-5000,5000,1,1`)
           .join(';')
         : signaturedetailsString;
-    if (!preserveLiveCrypto && hasHandwritten) {
+    if (preserveLiveCrypto || hasHandwritten) {
       console.log('[VSign] utility signaturedetailsString (hidden):', utilitySignaturedetailsString);
-    } else if (preserveLiveCrypto) {
-      console.log('[VSign] live: utility appearance coords kept (crypto-valid)');
     }
 
     const { vsignEnv, authPage: vsignAuthPage, aspId } = getVSignRuntimeConfig();
@@ -254,8 +278,8 @@ module.exports = {
           signaturedetailsString: utilitySignaturedetailsString,
         },
       ],
-      // UAT handwritten: no utility tick — post-sign paint. Live: always stamp via utility.
-    }, !preserveLiveCrypto && hasHandwritten ? {} : appearance);
+      // Live / UAT-handwritten: no utility tick — custom dual paint is the visible design.
+    }, preserveLiveCrypto || hasHandwritten ? {} : appearance);
 
     const utilityUrl = resolveVSignUtilityUrl();
     console.log('[VSign] gettxnref request', {
