@@ -14,9 +14,16 @@ const {
   buildVSignSignatureDetailsString,
   stageVSignAppearanceAssets,
   resolveVSignSignatureFontSizeForBox,
+  resolveVSignEnv,
+  resolveVSignUsesLiveCert,
 } = require('../utils/vsignAssets');
 const { fetchRecipientById } = require('../services/recipientService');
 const { paintAadhaarAppearanceOnPdf } = require('../services/signing/vsignAppearanceEmbed');
+
+/** Live/production: never mutate PDF after signpdf — that invalidates the PKCS7. */
+function shouldPreserveLiveCryptoSignature() {
+  return resolveVSignUsesLiveCert(serviceRoot) || resolveVSignEnv(serviceRoot) === 'production';
+}
 
 const parseStringPromise = util.promisify(xml2js.parseString);
 const serviceRoot = path.join(__dirname, '..');
@@ -215,16 +222,18 @@ async function completeVSignSigning(transactionRecord, responseXML, res) {
     || VSIGN_REFERENCE_APPEARANCE.fontSize
     || resolveVSignSignatureFontSizeForBox(transactionRecord.appearanceHeight, serviceRoot);
 
+  const preserveLiveCrypto = shouldPreserveLiveCryptoSignature();
   const signPdf = (xmlForUtility) => signingServices.vSign.appendSignature({
     tempInfoPath,
     signedFileParentPath,
     responseXML: xmlForUtility || '',
     pdfDestinationPath,
     signatureFontSize,
-    // Never stamp utility tick/logo — we paint a single dual appearance after sign.
-    tickImgPath: null,
-    aspLogo: null,
-    skipAppearanceAssets: true,
+    // Live: utility stamps appearance inside the signed byte-range (must stay valid).
+    // UAT: skip utility stamp — we paint dual appearance after sign (breaks crypto; OK for UAT).
+    tickImgPath: preserveLiveCrypto ? tickImgPath : null,
+    aspLogo: preserveLiveCrypto ? (aspLogo || null) : null,
+    skipAppearanceAssets: !preserveLiveCrypto,
     txn: transactionRecord.txn,
     txnRef: transactionRecord.txnRef,
   });
@@ -340,7 +349,14 @@ async function completeVSignSigning(transactionRecord, responseXML, res) {
       pageNum: Number(entry.page),
       ...(entry.coordinates?.[0] || {}),
     })).filter((b) => b.w && b.h);
-    if (boxes.length && signedPdfForPaint) {
+    if (preserveLiveCrypto) {
+      console.log('[VSign callback] live: skip post-sign appearance paint (keep PKCS7 valid)', {
+        path: signedPdfForPaint || pdfDestinationPath,
+      });
+      if (signedPdfForPaint) {
+        transactionRecord.signedFilePath = signedPdfForPaint;
+      }
+    } else if (boxes.length && signedPdfForPaint) {
       const handwrittenBase64 =
         signedFieldPreview?.signature
         || allFields.find((f) => f.type === 'signature' && f.signature)?.signature

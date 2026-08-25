@@ -93,6 +93,8 @@ async function main() {
     pdfdetails: [{
       pdfbase64val: pdf.replace(/\\/g, '/'),
       docInfo: 'live-host-verify.pdf',
+      docUrl: '',
+      reason: '',
       signaturedetailsType: 'signaturedetailsString',
       signaturedetailsString: '1-100,100,280,88',
     }],

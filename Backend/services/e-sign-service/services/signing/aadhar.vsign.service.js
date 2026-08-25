@@ -155,15 +155,20 @@ module.exports = {
     console.log('[VSign] tickImgPath:', appearance.tickImgPath);
     console.log('[VSign] signaturedetailsString:', signaturedetailsString);
 
-    // Keep the PDF certificate visible but push VSign's own rendered strip off-page
-    // when we already have a handwritten+custom Aadhaar appearance to paint ourselves.
-    const utilitySignaturedetailsString = hasHandwritten
-      ? (signaturedetails || [])
-        .map((entry) => `${entry.page}-5000,5000,1,1`)
-        .join(';')
-      : signaturedetailsString;
-    if (hasHandwritten) {
+    // Live: keep real coords so utility appearance is inside the signed PKCS7.
+    // UAT + handwritten: push VSign strip off-page; we paint dual appearance after sign.
+    const preserveLiveCrypto =
+      resolveVSignUsesLiveCert(serviceRoot) || resolveVSignEnv(serviceRoot) === 'production';
+    const utilitySignaturedetailsString =
+      !preserveLiveCrypto && hasHandwritten
+        ? (signaturedetails || [])
+          .map((entry) => `${entry.page}-5000,5000,1,1`)
+          .join(';')
+        : signaturedetailsString;
+    if (!preserveLiveCrypto && hasHandwritten) {
       console.log('[VSign] utility signaturedetailsString (hidden):', utilitySignaturedetailsString);
+    } else if (preserveLiveCrypto) {
+      console.log('[VSign] live: utility appearance coords kept (crypto-valid)');
     }
 
     const { vsignEnv, authPage: vsignAuthPage, aspId } = getVSignRuntimeConfig();
@@ -249,8 +254,8 @@ module.exports = {
           signaturedetailsString: utilitySignaturedetailsString,
         },
       ],
-      // Handwritten dual: no utility tick/logo — we paint one custom appearance after sign.
-    }, hasHandwritten ? {} : appearance);
+      // UAT handwritten: no utility tick — post-sign paint. Live: always stamp via utility.
+    }, !preserveLiveCrypto && hasHandwritten ? {} : appearance);
 
     const utilityUrl = resolveVSignUtilityUrl();
     console.log('[VSign] gettxnref request', {
