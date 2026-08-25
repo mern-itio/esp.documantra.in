@@ -28,25 +28,24 @@ const utilityUrl = (process.env.UTILITY_URL || 'http://127.0.0.1:7078').replace(
 
 function pickPdf() {
   const prepared = path.join(HOST_ROOT, 'uploads/prepared');
-  if (fs.existsSync(prepared)) {
-    const first = fs.readdirSync(prepared).find((f) => f.toLowerCase().endsWith('.pdf'));
-    if (first) return path.join(prepared, first);
-  }
   const uploads = path.join(HOST_ROOT, 'uploads');
+  const candidates = [];
   const walk = (dir) => {
-    if (!fs.existsSync(dir)) return null;
+    if (!fs.existsSync(dir)) return;
     for (const name of fs.readdirSync(dir)) {
       const full = path.join(dir, name);
-      if (fs.statSync(full).isDirectory() && name !== 'vSign') {
-        const found = walk(full);
-        if (found) return found;
+      if (fs.statSync(full).isDirectory() && name !== 'vSign' && name !== 'signed' && name !== 'vSignTemp') {
+        walk(full);
       } else if (name.toLowerCase().endsWith('.pdf')) {
-        return full;
+        candidates.push(full);
       }
     }
-    return null;
   };
-  return walk(uploads);
+  if (fs.existsSync(prepared)) walk(prepared);
+  walk(uploads);
+  // Prefer paths without spaces (Verasys NPE risk on spaced file paths)
+  const noSpace = candidates.find((p) => !/\s/.test(p));
+  return noSpace || candidates[0] || null;
 }
 
 async function main() {
@@ -71,6 +70,7 @@ async function main() {
   fs.mkdirSync(signedDir, { recursive: true });
   fs.mkdirSync(path.join(HOST_ROOT, 'uploads/vSignTemp'), { recursive: true });
 
+  const tickPath = path.join(HOST_ROOT, 'utility/tick.png');
   const payload = {
     signedPdfPath: signedDir.replace(/\\/g, '/'),
     tempInfoPath: path.join(HOST_ROOT, 'uploads/vSignTemp').replace(/\\/g, '/'),
@@ -89,6 +89,7 @@ async function main() {
     fileType: 'path',
     isresponseXML: '1',
     isrequestXML: '1',
+    signatureFontSize: '10',
     pdfdetails: [{
       pdfbase64val: pdf.replace(/\\/g, '/'),
       docInfo: 'live-host-verify.pdf',
@@ -96,6 +97,9 @@ async function main() {
       signaturedetailsString: '1-100,100,280,88',
     }],
   };
+  if (fs.existsSync(tickPath)) {
+    payload.tickImgPath = tickPath.replace(/\\/g, '/');
+  }
 
   try {
     const res = await axios.post(`${utilityUrl}/gettxnrefv4_1`, payload, { timeout: 60000 });
