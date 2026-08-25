@@ -48,8 +48,15 @@ interface AuthMethod {
   id: string;
   name: string;
   description: string;
+  providerType?: string;
   uiSchema: UISchema;
 }
+
+const isAadhaarVSignAuthMethod = (method: AuthMethod | null | undefined): boolean => {
+  const type = String(method?.providerType || '').toLowerCase();
+  if (type === 'aadhaar_vsign') return true;
+  return /aadhaar\s*e?sign|vsign/i.test(String(method?.name || ''));
+};
 interface AuthList {
   _id: string;
   authMethodId: string;
@@ -594,7 +601,8 @@ const EnvelopeDetails: React.FC = () => {
       methodIds: pendingAuth.map((a: any) => a.authMethodId)
     });
     if (response.status === 200 && Array.isArray(response.data.methods)) {
-      return response.data.methods;
+      // VSign Aadhaar OTP runs at signature time — skip from pre-sign auth modal
+      return response.data.methods.filter((m: AuthMethod) => !isAadhaarVSignAuthMethod(m));
     }
     return [];
   };
@@ -722,6 +730,10 @@ const EnvelopeDetails: React.FC = () => {
           setCurrentAction('CAPTURE_LIVENESS');
           setAuthStatus('pending');
           setBiometricError('');
+        } else if (action === 'SKIP_TO_SIGNATURE') {
+          skipCurrentAuthMethod(
+            serverMessage || 'Aadhaar eSign will run when you complete the signature field.'
+          );
         } else {
           console.log(message || 'Verification initiated.');
         }

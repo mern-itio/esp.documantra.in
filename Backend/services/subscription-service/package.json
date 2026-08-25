@@ -6,7 +6,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "seed:selfie-auth": "node scripts/seed-selfie-auth-provider.js",
-    "seed:digilocker-auth": "node scripts/seed-digilocker-auth-provider.js"
+    "seed:digilocker-auth": "node scripts/seed-digilocker-auth-provider.js",
+    "seed:aadhaar-vsign-auth": "node scripts/seed-aadhaar-vsign-auth-provider.js"
   },
   "dependencies": {
     "stripe": "^16.5.0",

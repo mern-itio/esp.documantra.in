@@ -8,6 +8,7 @@ const formatAuthMethods = (providers, authCosts = []) => {
     id: p._id,
     name: p.name,
     description: p.description,
+    providerType: p.config?.providerType || '',
     securityLevel: p.uiSchema?.securityLevel?.toLowerCase() || 'medium',
     estimatedTime: p.uiSchema?.estimatedTime || 'N/A',
     icon: p.uiSchema?.icon || 'Shield',
@@ -256,6 +257,7 @@ const bulkFetchByIds = async (req, res) => {
       id: p._id,
       name: p.name,
       description: p.description,
+      providerType: p.config?.providerType || '',
       uiSchema: p.uiSchema,
       constraints: p.constraints,
       isRecommended: p.isRecommended || false

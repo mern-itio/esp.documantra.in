@@ -564,6 +564,24 @@ const isPublicFlow =
     return authMethods;
   };
 
+  const isAadhaarVSignAuthMethod = (method: any): boolean => {
+    const type = String(method?.providerType || method?.config?.providerType || '').toLowerCase();
+    if (type === 'aadhaar_vsign') return true;
+    return /aadhaar\s*e?sign|vsign/i.test(String(method?.name || ''));
+  };
+
+  const selectionIncludesAadhaarVSign = async (selectedMethodIds: string[]): Promise<boolean> => {
+    if (!selectedMethodIds?.length) return false;
+    const methodsPool = await loadAvailableAuthMethods();
+    return selectedMethodIds.some((id) => {
+      const method = methodsPool.find((m: any) => {
+        const methodId = String(m?.id ?? m?._id ?? m?.authMethodId ?? '').trim();
+        return methodId === String(id).trim();
+      });
+      return method ? isAadhaarVSignAuthMethod(method) : false;
+    });
+  };
+
   const selectionRequiresPhone = async (selectedMethodIds: string[]): Promise<boolean> => {
     if (!selectedMethodIds || selectedMethodIds.length === 0) return false;
     const hasSmsLikeText = (value: any): boolean => {
@@ -3171,6 +3189,21 @@ if (isPublicFlow) {
         } else {
           toast.success(normalizedMethods.length > 0 ? 'Authentication methods will be saved when recipient is added' : 'Authentication cleared (will save with recipient)');
         }
+      }
+
+      // Keep envelope signatureType in sync when sender picks/clears Aadhaar eSign (VSign) in auth
+      const targetIdForSync = options?.forceRecipientId || authModalForRecipientId;
+      const prevAuthRaw = authModalForBulk
+        ? recipients[0]?.authentication
+        : recipients.find((r) => r.id === targetIdForSync)?.authentication;
+      const hadAadhaar = await selectionIncludesAadhaarVSign(parseAuthentication(prevAuthRaw));
+      const wantsVSign = await selectionIncludesAadhaarVSign(normalizedMethods);
+      const currentlyQualified =
+        String(envelopeData?.signatureType || '').toLowerCase() === 'qualified';
+      if (wantsVSign && !currentlyQualified) {
+        await setVSignRequired(true);
+      } else if (!wantsVSign && hadAadhaar && currentlyQualified) {
+        await setVSignRequired(false);
       }
 
       // Close modal

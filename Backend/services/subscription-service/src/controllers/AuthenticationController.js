@@ -202,6 +202,15 @@ const initiateAuth = async (req, res) => {
           });
         }
 
+        case "aadhaar_vsign":
+          // Signature-time VSign OTP — not a pre-sign identity challenge.
+          return res.status(200).json({
+            status: 'completed',
+            message: 'Aadhaar eSign will run when the signer completes the signature field.',
+            action: 'SKIP_TO_SIGNATURE',
+            metadata: { signatureMethod: 'aadhaarSignature' },
+          });
+
         // Other Cases like sms, totp etc can be handled here in future
       default:
         return res.status(400).json({
