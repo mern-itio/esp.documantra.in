@@ -347,8 +347,8 @@ module.exports = {
     } else if (usesLiveCert && emptyUtilityResponse) {
       const hostPrefix = (process.env.VSIGN_HOST_PATH_PREFIX || '').trim();
       failureMessage = !hostPrefix
-        ? 'VSign utility could not read the signing PFX (Docker path mapping missing). Set VSIGN_HOST_PATH_PREFIX=/root/Draft-and-Sign/Backend/services/e-sign-service in e-sign .env, UTILITY_URL=http://172.17.0.1:7078, restart e-sign-service, then create a new envelope.'
-        : 'Live PFX password or alias is incorrect. Run: keytool -list -keystore uploads/vSign/signCertificate.pfx -storetype PKCS12 -storepass YOUR_PASSWORD — then set the alias in /e-sign/admin/vsign and restart e-sign-service.';
+        ? 'VSign utility could not read the signing PFX (Docker path mapping missing). On server run: cd Backend/services/e-sign-service && node scripts/fix-vsign-live-production.js — then docker compose restart e-sign-service.'
+        : 'Live PFX password or alias is incorrect, or VSign utility is down. On server run: node scripts/fix-vsign-live-production.js (auto-finds alias via keytool) then docker compose restart e-sign-service. Ensure vsign-utility is running on port 7078.';
     } else if (usesLiveCert) {
       failureMessage =
         'VSign utility rejected the live signing certificate. Verify PFX password, alias, and that ESP utility is running on port 7077.';

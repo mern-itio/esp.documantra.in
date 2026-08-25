@@ -21,12 +21,38 @@ function loadLiveSecrets() {
   }
 }
 
+function discoverPfxAlias(serviceRoot, password) {
+  const pfxPath = path.join(serviceRoot, 'uploads', 'vSign', 'signCertificate.pfx');
+  if (!password || !fs.existsSync(pfxPath)) return null;
+  try {
+    const { execFileSync } = require('child_process');
+    const out = execFileSync(
+      'keytool',
+      ['-list', '-keystore', pfxPath, '-storetype', 'PKCS12', '-storepass', password],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    const line = out.split('\n').find((l) => /, \d{4}-\d{2}-\d{2},/.test(l));
+    return line ? line.split(',')[0].trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
+  const serviceRoot = path.join(__dirname, '..');
   const liveSecrets = loadLiveSecrets();
   const pfxPassword = (liveSecrets.PFX_PASSWORD || process.env.PFX_PASSWORD || '').trim();
-  const pfxAlias = (liveSecrets.PFX_ALIAS || process.env.PFX_ALIAS || '')
+  let pfxAlias = (liveSecrets.PFX_ALIAS || process.env.PFX_ALIAS || '')
     .trim()
     .replace(/^"|"$/g, '');
+
+  const discovered = discoverPfxAlias(serviceRoot, pfxPassword);
+  if (discovered) {
+    if (pfxAlias && pfxAlias !== discovered) {
+      console.log(`PFX alias corrected via keytool: "${pfxAlias}" → "${discovered}"`);
+    }
+    pfxAlias = discovered;
+  }
 
   if (!pfxPassword || !pfxAlias) {
     console.error(
