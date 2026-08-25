@@ -245,6 +245,12 @@ const availableAuthMethods = async (req, res) => {
     });
   }
 }
+const isAadhaarVSignProvider = (p) => {
+  const type = String(p?.config?.providerType || '').toLowerCase();
+  if (type === 'aadhaar_vsign') return true;
+  return /aadhaar\s*e?sign|vsign/i.test(String(p?.name || ''));
+};
+
 const bulkFetchByIds = async (req, res) => {
   const { methodIds } = req.body || {};
   if (!Array.isArray(methodIds) || methodIds.length === 0) {
@@ -253,15 +259,18 @@ const bulkFetchByIds = async (req, res) => {
   try {
     console.log('bulkFetchByIds called with methodIds:', methodIds);
     const providers = await AuthProvider.find({ _id: { $in: methodIds } });
-    const data = providers.map(p => ({
-      id: p._id,
-      name: p.name,
-      description: p.description,
-      providerType: p.config?.providerType || '',
-      uiSchema: p.uiSchema,
-      constraints: p.constraints,
-      isRecommended: p.isRecommended || false
-    }));
+    // VSign Aadhaar OTP is signature-time — never expose as pre-sign identity challenge
+    const data = providers
+      .filter((p) => !isAadhaarVSignProvider(p))
+      .map(p => ({
+        id: p._id,
+        name: p.name,
+        description: p.description,
+        providerType: p.config?.providerType || '',
+        uiSchema: p.uiSchema,
+        constraints: p.constraints,
+        isRecommended: p.isRecommended || false
+      }));
     return res.status(200).json({ status: 200, message: 'Auth providers fetched successfully', methods: data });
   } catch (error) {
     console.error('Error in bulkFetchByIds:', error);

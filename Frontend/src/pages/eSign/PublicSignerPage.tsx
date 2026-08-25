@@ -527,9 +527,12 @@ const EnvelopeDetails: React.FC = () => {
       }
       const loadAuthMethods = async () => {
         const methods = await fetchPendingAuthMethodDetails(pendingAuth);
+        // Only Aadhaar VSign pending (filtered out) — do not block document access
         if (methods.length === 0) {
           setIsAuthenticated(true);
           setShowAuthModal(false);
+          setAuthMethods([]);
+          return;
         }
         setAuthMethods(methods || []);
       };
@@ -731,9 +734,17 @@ const EnvelopeDetails: React.FC = () => {
           setAuthStatus('pending');
           setBiometricError('');
         } else if (action === 'SKIP_TO_SIGNATURE') {
-          skipCurrentAuthMethod(
-            serverMessage || 'Aadhaar eSign will run when you complete the signature field.'
-          );
+          setIsVerifying(false);
+          setCurrentAction('');
+          // Last / only step: close immediately; otherwise advance after short notice
+          if (authMethods.length <= 1 || currentAuthIndex >= authMethods.length - 1) {
+            setIsAuthenticated(true);
+            setShowAuthModal(false);
+          } else {
+            skipCurrentAuthMethod(
+              serverMessage || 'Aadhaar eSign will run when you complete the signature field.'
+            );
+          }
         } else {
           console.log(message || 'Verification initiated.');
         }

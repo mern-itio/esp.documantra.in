@@ -3104,7 +3104,23 @@ if (isPublicFlow) {
         normalizedMethods = [methodIds];
       }
 
-      const authString = stringifyAuthentication(normalizedMethods);
+      // Aadhaar VSign → signatureType; store as completed so pre-sign modal never shows it
+      const methodsPool = await loadAvailableAuthMethods();
+      const resolveMethod = (id: string) =>
+        methodsPool.find((m: any) => {
+          const methodId = String(m?.id ?? m?._id ?? m?.authMethodId ?? '').trim();
+          return methodId === String(id).trim();
+        });
+      const aadhaarMethodIds = normalizedMethods.filter((id) => {
+        const method = resolveMethod(id);
+        return method ? isAadhaarVSignAuthMethod(method) : false;
+      });
+      const preSignMethodIds = normalizedMethods.filter((id) => !aadhaarMethodIds.includes(id));
+      const authItems = [
+        ...preSignMethodIds.map((id) => ({ authMethodId: id, status: 'pending' as const })),
+        ...aadhaarMethodIds.map((id) => ({ authMethodId: id, status: 'completed' as const })),
+      ];
+      const authString = authItems.length > 0 ? JSON.stringify(authItems) : null;
 
       if (authModalForBulk) {
         // Apply to all recipients in bulk list
@@ -3132,15 +3148,27 @@ if (isPublicFlow) {
 
           if (resp.status === 200) {
             await getEnvelopeDetail(envelopeId);
-            toast.success(normalizedMethods.length > 0 ? `${normalizedMethods.length} authentication method(s) applied to all recipients` : 'Cleared authentication for all recipients');
+            toast.success(
+              preSignMethodIds.length > 0
+                ? `${preSignMethodIds.length} authentication method(s) applied to all recipients`
+                : aadhaarMethodIds.length > 0
+                  ? 'Aadhaar eSign (VSign) will apply at signature time'
+                  : 'Cleared authentication for all recipients'
+            );
           }
         } else {
-          toast.success(normalizedMethods.length > 0 ? 'Authentication methods will be saved when recipients are added' : 'Authentication cleared (will save with recipients)');
+          toast.success(
+            preSignMethodIds.length > 0
+              ? 'Authentication methods will be saved when recipients are added'
+              : aadhaarMethodIds.length > 0
+                ? 'Aadhaar eSign (VSign) will apply when you send'
+                : 'Authentication cleared (will save with recipients)'
+          );
         }
       } else if (authModalForRecipientId || options?.forceRecipientId) {
         const targetRecipientId = options?.forceRecipientId || authModalForRecipientId;
         const targetRecipient = recipients.find(r => r.id === targetRecipientId);
-        const requiresPhone = await selectionRequiresPhone(normalizedMethods);
+        const requiresPhone = await selectionRequiresPhone(preSignMethodIds);
 
         if (
           targetRecipientId &&
@@ -3183,11 +3211,23 @@ if (isPublicFlow) {
 
             if (resp.status === 200) {
               await getEnvelopeDetail(envelopeId);
-              toast.success(normalizedMethods.length > 0 ? `${normalizedMethods.length} authentication method(s) applied to recipient` : 'Cleared authentication for recipient');
+              toast.success(
+                preSignMethodIds.length > 0
+                  ? `${preSignMethodIds.length} authentication method(s) applied to recipient`
+                  : aadhaarMethodIds.length > 0
+                    ? 'Aadhaar eSign (VSign) will apply at signature time'
+                    : 'Cleared authentication for recipient'
+              );
             }
           }
         } else {
-          toast.success(normalizedMethods.length > 0 ? 'Authentication methods will be saved when recipient is added' : 'Authentication cleared (will save with recipient)');
+          toast.success(
+            preSignMethodIds.length > 0
+              ? 'Authentication methods will be saved when recipient is added'
+              : aadhaarMethodIds.length > 0
+                ? 'Aadhaar eSign (VSign) will apply when you send'
+                : 'Authentication cleared (will save with recipient)'
+          );
         }
       }
 

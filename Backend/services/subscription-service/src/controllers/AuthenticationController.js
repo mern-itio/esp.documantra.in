@@ -202,14 +202,38 @@ const initiateAuth = async (req, res) => {
           });
         }
 
-        case "aadhaar_vsign":
+        case "aadhaar_vsign": {
           // Signature-time VSign OTP — not a pre-sign identity challenge.
+          // Mark this auth step completed so the signer gate does not reopen.
+          const recipientId =
+            recipientData?.id ||
+            recipientData?._id ||
+            recipientData?.recipientId;
+          if (recipientId && envelopeId) {
+            try {
+              await axios.post(
+                `${getEsignPublicBase()}/api/e-sign/public/recipients/update-verification-status`,
+                {
+                  recipientId,
+                  providerId,
+                  envelopeId,
+                  verificationStatus: 'completed',
+                }
+              );
+            } catch (markErr) {
+              console.warn(
+                'Failed to mark aadhaar_vsign auth completed (non-fatal):',
+                markErr?.response?.data || markErr.message
+              );
+            }
+          }
           return res.status(200).json({
             status: 'completed',
             message: 'Aadhaar eSign will run when the signer completes the signature field.',
             action: 'SKIP_TO_SIGNATURE',
             metadata: { signatureMethod: 'aadhaarSignature' },
           });
+        }
 
         // Other Cases like sms, totp etc can be handled here in future
       default:
