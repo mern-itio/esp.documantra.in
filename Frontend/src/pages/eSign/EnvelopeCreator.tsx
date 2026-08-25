@@ -35,6 +35,7 @@ import {
   Mail,
   Sparkles,
   Loader2,
+  Fingerprint,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { referralMilestoneSwalHtml } from '../../utils/referralMilestoneUi';
@@ -101,7 +102,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { toTitleCase } from '../../utils/formatName';
 import { APP_NAME } from '../../components/constants/appConfig';
 import { BRAND, formatEnvelopeSubject } from '../../config/brand';
-import { refreshVSignPublicStatus } from '../../config/vsign';
+import { refreshVSignPublicStatus, isVSignEnabled } from '../../config/vsign';
 
 /** Match saved recipient rows by name, email, company, title, or phone (digits normalized). */
 function recipientListRowMatchesQuery(
@@ -277,22 +278,90 @@ const isPublicFlow =
     [recipients]
   );
   const isInPersonOnlyFlow = hasInPersonSigner && !hasNonInPersonSigner;
+  const [vsignAvailable, setVsignAvailable] = useState(false);
+  const [vsignStatusLoaded, setVsignStatusLoaded] = useState(false);
+  const vsignSelected = envelopeData.signatureType === 'qualified';
+
   useEffect(() => {
     let cancelled = false;
     refreshVSignPublicStatus()
       .then((status) => {
-        if (cancelled || !isPublicFlow || !status.enabled) return;
-        setEnvelopeData((prev) =>
-          prev.signatureType === 'qualified'
-            ? prev
-            : { ...prev, signatureType: 'qualified', complianceLevel: 'qualified' },
-        );
+        if (cancelled) return;
+        setVsignAvailable(Boolean(status.enabled));
+        setVsignStatusLoaded(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (cancelled) return;
+        setVsignAvailable(false);
+        setVsignStatusLoaded(true);
+      });
     return () => {
       cancelled = true;
     };
-  }, [isPublicFlow]);
+  }, []);
+
+  useEffect(() => {
+    if (!vsignStatusLoaded || vsignAvailable) return;
+    if (envelopeData.signatureType !== 'qualified') return;
+    setEnvelopeData((prev) => ({
+      ...prev,
+      signatureType: 'standard',
+      complianceLevel: 'basic',
+    }));
+  }, [vsignStatusLoaded, vsignAvailable, envelopeData.signatureType]);
+
+  const persistSignatureType = async (
+    signatureType: 'standard' | 'advanced' | 'qualified',
+  ) => {
+    if (!envelopeId) return;
+    const path = isPublicFlow
+      ? '/api/e-sign/public/update-envelope'
+      : '/api/e-sign/update-envelope';
+    await eSignApi.post(path, {
+      envelopeId,
+      envelopeData: {
+        signatureType,
+        complianceLevel:
+          signatureType === 'qualified'
+            ? 'qualified'
+            : signatureType === 'advanced'
+              ? 'enhanced'
+              : 'basic',
+      },
+    });
+  };
+
+  const setVSignRequired = async (on: boolean) => {
+    if (on && !vsignAvailable && !isVSignEnabled()) {
+      toast.error('Aadhaar eSign is disabled by admin. Enable it under VSign settings first.');
+      return;
+    }
+    const signatureType = on ? 'qualified' : 'standard';
+    setEnvelopeData((prev) => ({
+      ...prev,
+      signatureType,
+      complianceLevel: on ? 'qualified' : 'basic',
+    }));
+    if (!envelopeId) {
+      toast.success(
+        on
+          ? 'Aadhaar eSign (VSign) selected — will apply when you send'
+          : 'Aadhaar eSign cleared — draw & finish only',
+      );
+      return;
+    }
+    try {
+      await persistSignatureType(signatureType);
+      toast.success(
+        on
+          ? 'Aadhaar eSign (VSign) enabled for this envelope'
+          : 'Aadhaar eSign removed — signers use draw & finish only',
+      );
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to update Aadhaar eSign setting');
+    }
+  };
+
   useEffect(() => {
     const loadDocument = async () => {
       const documentData = location.state?.documentData;
@@ -2437,6 +2506,18 @@ const response = await eSignApi.get(url);
           message: typeof env.message === 'string' ? env.message : (prev.message || ''),
           reminderEnabled: typeof env.isReminder === 'boolean' ? env.isReminder : prev.reminderEnabled,
           reminderInterval: typeof env.reminderInterval === 'number' ? env.reminderInterval : prev.reminderInterval,
+          signatureType:
+            env.signatureType === 'qualified' ||
+            env.signatureType === 'advanced' ||
+            env.signatureType === 'standard'
+              ? env.signatureType
+              : prev.signatureType,
+          complianceLevel:
+            env.signatureType === 'qualified'
+              ? 'qualified'
+              : env.signatureType === 'advanced'
+                ? 'enhanced'
+                : prev.complianceLevel,
         }));
         if (typeof env.envelopetype === 'string' && env.envelopetype) {
           setSelectedEnvelopeType(env.envelopetype);
@@ -3481,6 +3562,16 @@ if (response.status == 200) {
     // Keep modal open to show loading state
     let refreshedRecipients: EnvelopeRecipient[] = [];
     try {
+      // Persist sender-chosen signature type (Aadhaar/VSign only if explicitly selected)
+      try {
+        await persistSignatureType(envelopeData.signatureType);
+      } catch (sigErr) {
+        console.error('Failed to persist signature type before send:', sigErr);
+        toast.error('Failed to save signature type. Please try again.');
+        setSending(false);
+        return;
+      }
+
       // First, save the recipients with their updated order to the backend
       // Normalize orders to ensure they're sequential
       const normalizedRecipients = normalizeOrders(recipients);
@@ -5342,6 +5433,32 @@ if (isPublicFlow) {
                                                   </div>
                                                 </div>
                                               </button>
+                                              {vsignAvailable ? (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    setCsvCustomizeOpen(false);
+                                                    setVSignRequired(!vsignSelected);
+                                                  }}
+                                                  className="w-full text-left px-4 py-3 text-sm hover:bg-muted transition-colors"
+                                                >
+                                                  <div className="flex items-start gap-3">
+                                                    <Fingerprint className="w-5 h-5 text-muted-foreground mt-0.5" />
+                                                    <div>
+                                                      <div className="font-medium text-foreground">
+                                                        {vsignSelected
+                                                          ? 'Remove Aadhaar eSign (VSign)'
+                                                          : 'Add Aadhaar eSign (VSign)'}
+                                                      </div>
+                                                      <div className="text-xs text-muted-foreground mt-1">
+                                                        {vsignSelected
+                                                          ? 'Signers will use draw & finish only.'
+                                                          : 'Signer draws, then verifies with Aadhaar OTP.'}
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </button>
+                                              ) : null}
                                             </div>
                                           </div>
                                         )}
@@ -5932,6 +6049,32 @@ if (isPublicFlow) {
                                                       </div>
                                                     </div>
                                                   </button>
+                                                  {vsignAvailable ? (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        setOpenCustomizeDropdownId(null);
+                                                        setVSignRequired(!vsignSelected);
+                                                      }}
+                                                      className="w-full text-left px-4 py-3 text-sm hover:bg-muted text-foreground transition-colors"
+                                                    >
+                                                      <div className="flex items-start gap-3">
+                                                        <Fingerprint className="w-5 h-5 text-muted-foreground mt-0.5" />
+                                                        <div>
+                                                          <div className="font-medium text-foreground">
+                                                            {vsignSelected
+                                                              ? 'Remove Aadhaar eSign (VSign)'
+                                                              : 'Add Aadhaar eSign (VSign)'}
+                                                          </div>
+                                                          <div className="text-xs text-muted-foreground mt-1">
+                                                            {vsignSelected
+                                                              ? 'Signers will use draw & finish only.'
+                                                              : 'Signer draws, then verifies with Aadhaar OTP.'}
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    </button>
+                                                  ) : null}
                                                 </div>
                                               </div>
                                             )}
@@ -6355,11 +6498,19 @@ if (isPublicFlow) {
             {/* Signature Type Selection */}
             <SignatureTypeSelector
               selectedType={envelopeData.signatureType}
-              onTypeChange={(type) => setEnvelopeData(prev => ({
-                ...prev,
-                signatureType: type,
-                complianceLevel: type === 'qualified' ? 'qualified' : type === 'advanced' ? 'enhanced' : 'basic'
-              }))}
+              vsignAvailable={vsignAvailable}
+              onTypeChange={(type) => {
+                setEnvelopeData(prev => ({
+                  ...prev,
+                  signatureType: type,
+                  complianceLevel: type === 'qualified' ? 'qualified' : type === 'advanced' ? 'enhanced' : 'basic'
+                }));
+                if (envelopeId) {
+                  persistSignatureType(type).catch(() => {
+                    toast.error('Failed to save signature type');
+                  });
+                }
+              }}
               complianceRequirements={[]}
               documentType="contract"
             />
@@ -8027,6 +8178,11 @@ if (isPublicFlow) {
                 compact
                 riskLevel="medium"
                 complianceRequirements={[]}
+                vsignAvailable={vsignAvailable}
+                vsignSelected={vsignSelected}
+                onVSignChange={(on) => {
+                  setVSignRequired(on);
+                }}
               />
             </div>
 

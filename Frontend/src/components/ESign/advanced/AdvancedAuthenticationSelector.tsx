@@ -32,6 +32,10 @@ interface AdvancedAuthenticationSelectorProps {
   showSaveButton?: boolean;
   allowMultiple?: boolean; // New prop to enable multi-select
   compact?: boolean;
+  /** Admin-enabled Aadhaar eSign — shown like other auth options; applies to the envelope. */
+  vsignAvailable?: boolean;
+  vsignSelected?: boolean;
+  onVSignChange?: (enabled: boolean) => void;
 }
 
 const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorProps> = ({
@@ -45,6 +49,9 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   showSaveButton = false,
   allowMultiple = true, // Default to multi-select
   compact = false,
+  vsignAvailable = false,
+  vsignSelected = false,
+  onVSignChange,
 }) => {
   const [activeTab, setActiveTab] = useState('recommended');
   const [authMethods, setAuthMethods] = useState<AuthMethod[]>([]);
@@ -298,6 +305,61 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
           </span>
         </div>
       </div>
+
+      {/* Aadhaar eSign (VSign) — admin must enable; sender opts in like other auth */}
+      {vsignAvailable && (
+        <div
+          className={`relative cursor-pointer rounded-xl border-2 transition-all duration-200 ${compact ? 'p-3' : 'p-6'} ${
+            vsignSelected
+              ? 'border-[#155E4B] bg-[#155E4B]/10 shadow-sm'
+              : 'border-border bg-card hover:border-[#155E4B]/40'
+          }`}
+          onClick={() => onVSignChange?.(!vsignSelected)}
+          role="button"
+          tabIndex={0}
+          aria-pressed={vsignSelected}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onVSignChange?.(!vsignSelected);
+            }
+          }}
+        >
+          <div
+            className={`absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
+              vsignSelected
+                ? 'border-[#155E4B] bg-[#155E4B] text-white'
+                : 'border-border bg-muted text-muted-foreground'
+            }`}
+            aria-hidden
+          >
+            {vsignSelected ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+          </div>
+          <div className={`flex items-start ${compact ? 'gap-2.5' : 'space-x-4'}`}>
+            <div
+              className={`flex ${compact ? 'h-9 w-9' : 'h-12 w-12'} flex-shrink-0 items-center justify-center rounded-lg ${
+                vsignSelected ? 'bg-[#155E4B] text-white' : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              <LucideIcons.Fingerprint className={compact ? 'h-4 w-4' : 'h-6 w-6'} />
+            </div>
+            <div className="min-w-0 flex-1 pr-5">
+              <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-lg'}`}>
+                Aadhaar eSign (VSign)
+              </h3>
+              <p className={`text-muted-foreground ${compact ? 'text-xs mb-2' : 'mb-4'}`}>
+                Signer draws a signature, then verifies with Aadhaar OTP. Only applies if you select it for this send.
+              </p>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Security:</span>
+                <span className="rounded-full border border-[#155E4B]/30 bg-[#155E4B]/10 px-2 py-0.5 text-[10px] font-medium text-[#155E4B]">
+                  Maximum
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-border">

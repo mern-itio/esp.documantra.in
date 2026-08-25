@@ -500,7 +500,9 @@ const updateEnvelope = async (req, res) => {
     envelope.reminderInterval = envelopeData.reminderInterval || envelope.reminderInterval;
     envelope.isAll = envelopeData.requireAllSignatures || envelope.isAll;
     envelope.canDecline = envelopeData.allowDecline || envelope.canDecline;
-    envelope.signatureType = envelopeData.signatureType || envelope.signatureType;
+    if (envelopeData.signatureType !== undefined && envelopeData.signatureType !== null) {
+      envelope.signatureType = envelopeData.signatureType;
+    }
     envelope.status = envelopeData.status || envelope.status;
     // Step 3: Save updated envelope
     await envelope.save();

@@ -28,13 +28,16 @@ interface SignatureTypeSelectorProps {
   onTypeChange: (type: 'standard' | 'advanced' | 'qualified') => void;
   complianceRequirements?: string[];
   documentType?: string;
+  /** When false, hide Aadhaar/VSign (qualified) — admin has not enabled VSign. */
+  vsignAvailable?: boolean;
 }
 
 const SignatureTypeSelector: React.FC<SignatureTypeSelectorProps> = ({
   selectedType,
   onTypeChange,
   complianceRequirements = [],
-  documentType
+  documentType,
+  vsignAvailable = false,
 }) => {
   const signatureTypes: SignatureType[] = [
     {
@@ -79,30 +82,32 @@ const SignatureTypeSelector: React.FC<SignatureTypeSelectorProps> = ({
       cost: 'premium',
       processingTime: '2-5 minutes'
     },
-    {
-      id: 'qualified',
-      name: 'Qualified Electronic Signature',
-      description: 'Highest security level, equivalent to handwritten signature',
-      icon: Award,
-      legalWeight: 'Equivalent to handwritten signature',
-      compliance: ['ESIGN Act', 'UETA', 'eIDAS QES', 'ISO 14533'],
-      features: [
-        'Digital certificates (PKI)',
-        'Qualified trust service provider',
-        'Forensic audit trail',
-        'Long-term validation',
-        'Cross-border recognition',
-        'Timestamping service'
-      ],
-      requirements: [
-        'Digital certificate',
-        'Qualified signature creation device',
-        'Identity verification',
-        'Secure key management'
-      ],
-      cost: 'enterprise',
-      processingTime: '5-10 minutes'
-    }
+    ...(vsignAvailable
+      ? [
+          {
+            id: 'qualified' as const,
+            name: 'Aadhaar eSign (VSign)',
+            description:
+              'Draw signature then verify with Aadhaar OTP via VSign. Only used when you select this for the envelope.',
+            icon: Award,
+            legalWeight: 'Aadhaar-authenticated eSign',
+            compliance: ['IT Act', 'Aadhaar eSign', 'VSign'],
+            features: [
+              'Handwritten appearance + Aadhaar OTP',
+              'VSign digital certificate',
+              'Qualified audit trail',
+              'Admin must enable VSign first',
+            ],
+            requirements: [
+              'VSign enabled by admin',
+              'Signer Aadhaar OTP',
+              'Valid mobile linked to Aadhaar',
+            ],
+            cost: 'enterprise' as const,
+            processingTime: '2-5 minutes',
+          },
+        ]
+      : []),
   ];
 
   const getCostColor = (cost: string) => {
@@ -115,7 +120,10 @@ const SignatureTypeSelector: React.FC<SignatureTypeSelectorProps> = ({
   };
 
   const getRecommendedType = () => {
-    if (complianceRequirements.includes('eidas_qes') || complianceRequirements.includes('iso_14533')) {
+    if (
+      vsignAvailable &&
+      (complianceRequirements.includes('eidas_qes') || complianceRequirements.includes('iso_14533'))
+    ) {
       return 'qualified';
     }
     if (complianceRequirements.includes('eidas_aes') || documentType === 'contract') {

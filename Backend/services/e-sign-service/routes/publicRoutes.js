@@ -27,6 +27,7 @@ const {
 const {
   Upload,
   insertRecipient,
+  updateEnvelope,
   saveSignatureFields
 } = require('../controllers/eSignController');
 
@@ -103,6 +104,7 @@ router.post(
   sendEnvelope
 );
 
+router.post('/update-envelope', publicDraftWriteRequired, updateEnvelope);
 router.post('/save-signature-fields', publicDraftWriteRequired, saveSignatureFields);
 
 router.post('/save-signature', saveupdateSignature);

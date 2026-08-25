@@ -200,15 +200,17 @@ const VSignAdminSettings: React.FC = () => {
             VSign / Aadhaar eSign
           </h1>
           <p className="text-sm text-gray-600 mt-1">
-            Turn <strong>Aadhaar eSign</strong> off for live draw-and-finish signing. UAT/Live profile
-            switch keeps certificates; it does not force Aadhaar back on.
+            Turn <strong>Aadhaar eSign</strong> on to make VSign available for senders (like email/SMS
+            auth). Signers only get Aadhaar OTP when the sender also selects it on that envelope.
           </p>
         </div>
         <label className="flex items-center gap-3 cursor-pointer bg-white border rounded-lg px-4 py-2 shadow-sm">
           <div className="text-right">
             <span className="block text-sm font-medium">Aadhaar eSign (VSign)</span>
             <span className="block text-[11px] text-gray-500">
-              {form.enabled ? 'On — OTP after draw' : 'Off — draw & finish only'}
+              {form.enabled
+                ? 'On — senders can choose Aadhaar for an envelope'
+                : 'Off — draw & finish only (senders cannot pick VSign)'}
             </span>
           </div>
           <input
