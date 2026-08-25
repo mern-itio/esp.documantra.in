@@ -3,6 +3,10 @@ const path = require('path');
 const os = require('os');
 const dotenv = require('dotenv');
 const { getCachedEffectiveConfig, resolveEspResponseUrl } = require('./vsignConfigPolicy');
+const {
+  getBrandLogoUrl,
+  refreshBrandingCache,
+} = require('@draftnsign/validators/brandConfig');
 
 const OFFICIAL_TICK_FILENAME = 'tick.png';
 const FALLBACK_TICK_FILENAME = 'aadhaar-green-check.png';
@@ -161,14 +165,26 @@ function resolveVSignAuthPage(serviceRoot) {
     : 'https://esignuat.vsign.in/esp';
 }
 
-/** Public HTTPS logo URL for VSign authpagev4 — production (live) only. */
+/**
+ * Public HTTPS logo for VSign authpagev4 — production (live) only.
+ * Same Supabase branding bucket as website / BrandLogo / transactional emails.
+ */
 function resolveVSignAuthLogoUrl(serviceRoot) {
   if (resolveVSignEnv(serviceRoot) !== 'production') return '';
-  const cfg = getEffectiveVSign();
-  const fromDb = (cfg.vsignAuthLogoUrl || '').trim();
-  if (fromDb) return fromDb;
-  const fromFile = readEnvFile(serviceRoot).VSIGN_AUTH_LOGO_URL;
-  return (fromFile || process.env.VSIGN_AUTH_LOGO_URL || '').trim();
+  // Optional site-wide override (same as emails); otherwise live branding logo.
+  const fromBrandEnv = String(process.env.BRAND_LOGO_URL || '').trim();
+  if (fromBrandEnv) return fromBrandEnv;
+  return getBrandLogoUrl();
+}
+
+async function resolveVSignAuthLogoUrlFresh(serviceRoot) {
+  if (resolveVSignEnv(serviceRoot) !== 'production') return '';
+  try {
+    await refreshBrandingCache();
+  } catch (_) {
+    /* use cached / default */
+  }
+  return resolveVSignAuthLogoUrl(serviceRoot);
 }
 
 /**
@@ -197,10 +213,10 @@ function resolveVSignEspBaseUrl(authPageBase) {
  * UAT & production: {espBase}/{base64(logo|-|-|aadhaar)}/authpagev4
  * @see https://esign.verasys.in/esp/<logobase64>/authpagev4
  */
-function buildVSignAuthUrl(serviceRoot, aadhaarNumber) {
+async function buildVSignAuthUrl(serviceRoot, aadhaarNumber) {
   const authPage = resolveVSignAuthPage(serviceRoot);
   const base = authPage.replace(/\/+$/, '');
-  const logoUrl = resolveVSignAuthLogoUrl(serviceRoot);
+  const logoUrl = await resolveVSignAuthLogoUrlFresh(serviceRoot);
   const authData = buildVSignAuthDataString({
     logoUrl: logoUrl || undefined,
     aadhaarNumber,
@@ -553,6 +569,7 @@ module.exports = {
   resolveVSignPfxCredentials,
   resolveVSignAuthPage,
   resolveVSignAuthLogoUrl,
+  resolveVSignAuthLogoUrlFresh,
   buildVSignAuthDataString,
   encodeVSignAuthDataSegment,
   buildVSignAuthUrl,

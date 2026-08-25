@@ -9,7 +9,7 @@ export const BRAND = {
   salesEmail: 'sales@documantra.in',
   privacyEmail: 'privacy@documantra.in',
   logo: DEFAULT_BRAND_LOGO_URL,
-  /** App UI logos (header, signer, admin). Live VSign auth page logo is separate (backend). */
+  /** App UI logos (header, signer, admin). VSign OTP auth page uses the same branding logo. */
   showLogo: false,
   website: 'https://esp.documantra.in',
   themeStorageKey: 'documantra-theme',

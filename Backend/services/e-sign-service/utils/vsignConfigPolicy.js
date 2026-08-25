@@ -228,6 +228,16 @@ async function getAdminVSignConfigPayload() {
   } catch (_) {
     /* optional */
   }
+  let brandingLogoUrl = '';
+  try {
+    const { getBrandLogoUrl, refreshBrandingCache } = require('@draftnsign/validators/brandConfig');
+    await refreshBrandingCache().catch(() => {});
+    brandingLogoUrl = getBrandLogoUrl();
+  } catch (_) {
+    brandingLogoUrl = '';
+  }
+  const isLive =
+    cfg.vsignEnv === 'production' || cfg.certMode === 'live' || activeProfile === 'live';
   return {
     enabled: cfg.enabled,
     activeProfile,
@@ -236,7 +246,8 @@ async function getAdminVSignConfigPayload() {
     certMode: cfg.certMode,
     aspId: cfg.aspId,
     vsignAuthPage: cfg.vsignAuthPage,
-    vsignAuthLogoUrl: cfg.vsignAuthLogoUrl,
+    vsignAuthLogoUrl: isLive ? brandingLogoUrl : '',
+    vsignAuthLogoSource: 'website-branding',
     vsignCallbackUrl: cfg.vsignCallbackUrl,
     vsignEspResponseUrl: resolveEspResponseUrl(cfg),
     utilityUrl: cfg.utilityUrl,

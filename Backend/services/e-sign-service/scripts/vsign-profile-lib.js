@@ -174,7 +174,7 @@ function buildMongoPatch(profile, secrets, callbackUrl) {
     certMode: profile.certMode,
     aspId: profile.aspId,
     vsignAuthPage: profile.vsignAuthPage,
-    vsignAuthLogoUrl: profile.vsignAuthLogoUrl || '',
+    vsignAuthLogoUrl: '',
     vsignEspResponseUrl: profile.vsignEspResponseUrl,
     vsignCallbackUrl: callbackUrl,
     utilityUrl: profile.utilityUrl,

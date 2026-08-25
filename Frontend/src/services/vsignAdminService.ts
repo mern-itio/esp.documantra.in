@@ -10,6 +10,8 @@ export type VSignAdminConfig = {
   aspId: string;
   vsignAuthPage: string;
   vsignAuthLogoUrl?: string;
+  /** Always website branding when live — not a separate VSign field. */
+  vsignAuthLogoSource?: string;
   vsignCallbackUrl: string;
   vsignEspResponseUrl: string;
   utilityUrl: string;

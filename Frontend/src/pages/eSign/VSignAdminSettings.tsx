@@ -24,8 +24,8 @@ import {
   type VSignTestResult,
 } from '../../services/vsignAdminService';
 import { getAdminAccessToken } from '../../utils/adminSession';
-
-const DOCUMANTRA_LOGO_URL = 'https://tgkqdagmnbgmrtjpymbz.supabase.co/storage/v1/object/public/branding/logo.png?v=2026-08-07T04%3A55%3A35.520Z';
+import { DEFAULT_BRAND_LOGO_URL } from '../../services/documantraBranding';
+import { useDocumantraBranding } from '../../hooks/useDocumantraBranding';
 
 const profileLabel = (p: string | null | undefined) => {
   if (p === 'live') return 'Live / Production (IIPL001)';
@@ -35,6 +35,7 @@ const profileLabel = (p: string | null | undefined) => {
 
 const VSignAdminSettings: React.FC = () => {
   const navigate = useNavigate();
+  const { data: branding } = useDocumantraBranding();
   const [config, setConfig] = useState<VSignAdminConfig | null>(null);
   const [profileStatus, setProfileStatus] = useState<VSignProfileStatus | null>(null);
   const [form, setForm] = useState<Partial<VSignAdminConfig>>({});
@@ -57,7 +58,6 @@ const VSignAdminSettings: React.FC = () => {
       certMode: data.certMode,
       aspId: data.aspId,
       vsignAuthPage: data.vsignAuthPage,
-      vsignAuthLogoUrl: data.vsignAuthLogoUrl,
       vsignCallbackUrl: data.vsignCallbackUrl,
       vsignEspResponseUrl: data.vsignEspResponseUrl,
       utilityUrl: data.utilityUrl,
@@ -393,21 +393,33 @@ const VSignAdminSettings: React.FC = () => {
           </label>
           {isUatActive ? (
             <p className="text-xs text-gray-500 md:col-span-2">
-              Auth page logo is disabled on UAT. Switch to Live to configure the production VSign auth page logo.
+              Auth page logo is not sent on UAT. Live OTP uses the same website branding logo as
+              esp.documantra.in (managed from DocuMantra admin branding upload).
             </p>
           ) : (
-            <label className="block text-sm md:col-span-2">
-              <span className="text-gray-700">Auth page logo URL (live production only)</span>
-              <input
-                className="mt-1 w-full border rounded-lg px-3 py-2"
-                value={form.vsignAuthLogoUrl || ''}
-                placeholder={DOCUMANTRA_LOGO_URL}
-                onChange={(e) => setForm((f) => ({ ...f, vsignAuthLogoUrl: e.target.value }))}
-              />
-              <span className="text-xs text-gray-500 mt-1 block">
-                Encoded into esign.verasys.in/esp/&lt;base64&gt;/authpagev4
-              </span>
-            </label>
+            <div className="md:col-span-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-sm font-medium text-gray-800">Aadhaar OTP page logo</p>
+              <p className="mt-1 text-xs text-gray-600">
+                Same logo as the website and ESP UI — upload once in DocuMantra website branding
+                admin. Changes apply on the next Sign / OTP (new auth URL).
+              </p>
+              <div className="mt-3 flex items-center gap-4">
+                <div className="flex h-14 items-center rounded-md border bg-white px-3 py-2">
+                  <img
+                    src={
+                      config?.vsignAuthLogoUrl ||
+                      branding.logoUrl ||
+                      DEFAULT_BRAND_LOGO_URL
+                    }
+                    alt="Website branding logo"
+                    className="h-10 w-auto max-w-[180px] object-contain"
+                  />
+                </div>
+                <p className="break-all font-mono text-[10px] text-gray-500">
+                  {config?.vsignAuthLogoUrl || branding.logoUrl || DEFAULT_BRAND_LOGO_URL}
+                </p>
+              </div>
+            </div>
           )}
           <label className="block text-sm md:col-span-2">
             <span className="text-gray-700">Callback URL (after OTP)</span>

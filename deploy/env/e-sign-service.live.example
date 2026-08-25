@@ -7,7 +7,9 @@ VSIGN_CERT_MODE=live
 ASP_ID=IIPL001
 
 VSIGN_AUTHPAGE=https://esign.verasys.in/esp
-VSIGN_AUTH_LOGO_URL=https://tgkqdagmnbgmrtjpymbz.supabase.co/storage/v1/object/public/branding/logo.png?v=2026-08-07T04%3A55%3A35.520Z
+# OTP page logo = website branding (Supabase branding/logo) — same as esp.documantra.in.
+# Optional override only: BRAND_LOGO_URL=https://...
+# VSIGN_AUTH_LOGO_URL is ignored; do not set a separate auth logo.
 VSIGN_ESP_RESPONSE_URL=https://esign.verasys.in/esign/2.1/signature
 VSIGN_CALLBACK_URL=https://esp.documantra.in/esign/api/e-sign/public/v-sign/response
 

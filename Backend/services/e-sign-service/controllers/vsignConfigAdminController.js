@@ -84,8 +84,9 @@ async function updateVSignConfig(req, res) {
     if (body.vsignAuthPage !== undefined) {
       doc.vsignAuthPage = String(body.vsignAuthPage || '').trim().replace(/\/+$/, '');
     }
+    // Auth page logo always comes from website branding (Supabase) — ignore separate URL.
     if (body.vsignAuthLogoUrl !== undefined) {
-      doc.vsignAuthLogoUrl = String(body.vsignAuthLogoUrl || '').trim();
+      doc.vsignAuthLogoUrl = '';
     }
     if (body.vsignCallbackUrl !== undefined) {
       doc.vsignCallbackUrl = String(body.vsignCallbackUrl || '').trim();
@@ -128,8 +129,9 @@ async function updateVSignConfig(req, res) {
     }
     if (body.vsignEnv === 'uat') {
       doc.vsignAuthLogoUrl = '';
-    } else if (body.vsignEnv === 'production' && !doc.vsignAuthLogoUrl) {
-      doc.vsignAuthLogoUrl = 'https://tgkqdagmnbgmrtjpymbz.supabase.co/storage/v1/object/public/branding/logo.png?v=2026-08-07T04%3A55%3A35.520Z';
+    } else if (body.vsignEnv === 'production') {
+      // Logo is resolved at OTP time from Supabase branding — do not store a stale URL.
+      doc.vsignAuthLogoUrl = '';
     }
 
     const adminId = getAdminId(req);

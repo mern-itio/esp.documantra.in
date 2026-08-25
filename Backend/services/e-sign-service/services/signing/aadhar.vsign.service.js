@@ -168,11 +168,12 @@ module.exports = {
 
     const { vsignEnv, authPage: vsignAuthPage, aspId } = getVSignRuntimeConfig();
     console.log('[VSign] runtime:', { vsignEnv, aspId, authPage: vsignAuthPage });
+    const authUrlPattern = await buildVSignAuthUrl(serviceRoot, '000000000000');
     console.log('[VSign] payload flags:', {
       isresponseXML: '1',
       responseUrl: aspCallbackUrl,
       redirectUrl: aspCallbackUrl,
-      authUrlPattern: buildVSignAuthUrl(serviceRoot, '000000000000'),
+      authUrlPattern,
       authLogoUrl: resolveVSignAuthLogoUrl(serviceRoot) || '(none)',
     });
 
@@ -332,7 +333,7 @@ module.exports = {
           success: true,
           signMethod: 'V_Sign',
           message: 'V-Sign process initiated',
-          authUrl: buildVSignAuthUrl(serviceRoot, aadhaarNumber),
+          authUrl: await buildVSignAuthUrl(serviceRoot, aadhaarNumber),
           txnRef: resData.txnref,
           aadhaarLast4: String(aadhaarNumber).replace(/\D/g, '').slice(-4) || null,
         },
