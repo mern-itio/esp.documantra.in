@@ -7,6 +7,16 @@ export interface SignerData {
   signatureFields?: ActiveField[];
   initials?: string;
   nonSignatureFields?: NonSignatureFields[];
+  /** Aadhaar / VSign verification evidence (self-signer). */
+  signingEvidence?: {
+    aadhaarLast4?: string;
+    aadhaarVerifiedAt?: string;
+    vsignVerifiedAt?: string;
+    signCompletedAt?: string;
+    authMethods?: Array<{ type?: string; status?: string }>;
+    dualSignature?: boolean;
+    [key: string]: unknown;
+  };
 }
 export interface NonSignatureFields {
   fieldId: string;
