@@ -156,6 +156,7 @@ module.exports = {
           },
           verifiedAt: new Date(),
           serviceRoot,
+          preSign: true,
         });
         await signatureOperationServices.updateDocument(documentId, { preparedDoc: pdfPath });
         console.log('[VSign] live: dual appearance painted before gettxnref (crypto-safe)');

@@ -441,25 +441,27 @@ async function paintAadhaarAppearanceOnPdf(pdfPath, options = {}) {
   const lines = estimateVSignAppearanceLines(recipient);
   lines[3] = `Date : ${formatVSignIstDate(verifiedAt)}`;
 
-  // Wipe VSign utility appearance plates first (280pt box + handwritten strip above).
-  // Transparent handwritten XObjects from the utility show as white until covered.
-  for (const b of boxes) {
-    const pageIndex = Math.max(0, Number(b.pageNum || b.page || 1) - 1);
-    const page = pdfDoc.getPages()[pageIndex];
-    if (!page) continue;
-    const bx = Number(b.x || 0);
-    const byTop = Number(b.y || 0);
-    const bw = Math.max(1, Number(b.w || 280));
-    const bh = Math.max(1, Number(b.h || 88));
-    const handExtra = hasHandwritten ? 100 : 20;
-    page.drawRectangle({
-      x: Math.max(0, bx - 40),
-      y: Math.max(0, page.getHeight() - (byTop - handExtra) - (bh + handExtra + 60)),
-      width: bw + 120,
-      height: bh + handExtra + 60,
-      color: VSIGN_COVER_BG,
-      borderWidth: 0,
-    });
+  // Post-sign only: wipe old VSign utility plates. Pre-sign must NOT paint a tall
+  // white band — that covers document text above the signature field.
+  if (!options.preSign) {
+    for (const b of boxes) {
+      const pageIndex = Math.max(0, Number(b.pageNum || b.page || 1) - 1);
+      const page = pdfDoc.getPages()[pageIndex];
+      if (!page) continue;
+      const bx = Number(b.x || 0);
+      const byTop = Number(b.y || 0);
+      const bw = Math.max(1, Number(b.w || 280));
+      const bh = Math.max(1, Number(b.h || 88));
+      const handExtra = hasHandwritten ? 40 : 6;
+      page.drawRectangle({
+        x: Math.max(0, bx - 8),
+        y: Math.max(0, page.getHeight() - (byTop - handExtra) - (bh + handExtra + 8)),
+        width: bw + 16,
+        height: bh + handExtra + 8,
+        color: VSIGN_COVER_BG,
+        borderWidth: 0,
+      });
+    }
   }
 
   const targets = signatureFields.length
@@ -495,19 +497,21 @@ async function paintAadhaarAppearanceOnPdf(pdfPath, options = {}) {
       boxW,
       fieldW: Math.round(fieldW),
       fontSize,
+      preSign: Boolean(options.preSign),
       longest: lines.reduce((a, l) => (l.length > a.length ? l : a), ''),
     });
 
-    // Wipe wider than final box so previous wide (280pt) paints / bleed disappear.
-    const wipeH = totalH + 160;
-    const wipeW = Math.max(boxW, fieldW, 280) + 160;
-    const wipeYTop = Math.max(0, yTop - 80);
+    // Tight wipe only over the dual stamp — oversized white wipe was covering page text.
+    const wipePad = options.preSign ? 2 : 8;
+    const wipeH = totalH + wipePad * 2;
+    const wipeW = boxW + wipePad * 2;
+    const wipeYTop = Math.max(0, yTop - wipePad);
     page.drawRectangle({
-      x: Math.max(0, x - 70),
+      x: Math.max(0, x - wipePad),
       y: Math.max(0, page.getHeight() - wipeYTop - wipeH),
       width: wipeW,
       height: wipeH,
-      color: VSIGN_COVER_BG,
+      color: options.preSign ? VSIGN_BOX_BG : VSIGN_COVER_BG,
       borderWidth: 0,
     });
 
