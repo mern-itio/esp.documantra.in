@@ -348,7 +348,7 @@ module.exports = {
       const hostPrefix = (process.env.VSIGN_HOST_PATH_PREFIX || '').trim();
       failureMessage = !hostPrefix
         ? 'VSign utility could not read the signing PFX (Docker path mapping missing). On server run: cd Backend/services/e-sign-service && node scripts/fix-vsign-live-production.js — then docker compose restart e-sign-service.'
-        : 'Live PFX password or alias is incorrect, or VSign utility is down. On server run: node scripts/fix-vsign-live-production.js (auto-finds alias via keytool) then docker compose restart e-sign-service. Ensure vsign-utility is running on port 7078.';
+        : 'Live VSign utility returned empty response. Check utility/esignutility.log (often NPE while hashing PDF / loading live cert). Restart Verasays JAR on Java 8, confirm alias "arun dixit", then create a NEW envelope.';
     } else if (usesLiveCert) {
       failureMessage =
         'VSign utility rejected the live signing certificate. Verify PFX password, alias, and that ESP utility is running on port 7077.';

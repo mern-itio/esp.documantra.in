@@ -190,7 +190,7 @@ async function main() {
   if (report.utilityProbe?.empty) {
     issues.push(
       hostPrefix
-        ? 'Utility returned empty response — wrong PFX password/alias or wrong PFX file (not live dmsignaturekey.pfx).'
+        ? 'Utility returned empty response (HTTP 200). Check utility/esignutility.log for NullPointerException during PDF hash — often Java keystore/cert chain issue with live PFX, not wrong password. Restart Verasays JAR on Java 8 and retest from host: node scripts/verify-vsign-live-host.js'
         : 'Utility returned empty response — most often missing VSIGN_HOST_PATH_PREFIX (utility cannot read /app/... paths on host).',
     );
   }
