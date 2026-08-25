@@ -5,6 +5,9 @@ dist/
 build/
 uploads/
 
+# VSign signing secrets (never commit)
+Backend/services/e-sign-service/config/vsign/secrets/*.env
+
 # Admin UI lives in a separate repo (Draft-and-Sign-Admin-Frontend), not this monorepo.
 Admin/
 .tmp-admin-frontend/

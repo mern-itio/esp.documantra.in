@@ -115,35 +115,49 @@ function resolveVSignAspId(serviceRoot) {
 
 const VSIGN_UAT_PFX_PASSWORD = 'abc1234';
 const VSIGN_UAT_PFX_ALIAS = '{05ae2e10-4f6d-41a6-9f83-4d0025ca28a0}';
+const VSIGN_PRODUCTION_CALLBACK_URL =
+  'https://esp.documantra.in/esign/api/e-sign/public/v-sign/response';
 
-function loadVSignUatSecrets(serviceRoot) {
-  const secretsPath = path.join(serviceRoot, 'config', 'vsign', 'secrets', 'uat.env');
+function loadVSignSecretsFile(serviceRoot, name) {
+  const secretsPath = path.join(serviceRoot, 'config', 'vsign', 'secrets', `${name}.env`);
   if (!fs.existsSync(secretsPath)) return {};
   try {
     return dotenv.parse(fs.readFileSync(secretsPath));
   } catch (err) {
-    console.warn('[VSign] Failed to read UAT secrets file:', err.message);
+    console.warn(`[VSign] Failed to read ${name} secrets file:`, err.message);
     return {};
   }
+}
+
+function loadVSignUatSecrets(serviceRoot) {
+  return loadVSignSecretsFile(serviceRoot, 'uat');
+}
+
+function loadVSignLiveSecrets(serviceRoot) {
+  return loadVSignSecretsFile(serviceRoot, 'live');
 }
 
 function resolveVSignPfxCredentials(serviceRoot) {
   const cfg = getEffectiveVSign();
   const fromFile = readEnvFile(serviceRoot);
-  const password = (
-    cfg.pfxPassword
-    || fromFile.PFX_PASSWORD
-    || process.env.PFX_PASSWORD
-    || ''
-  ).trim();
-  let alias = (
-    cfg.pfxAlias
-    || fromFile.PFX_ALIAS
-    || process.env.PFX_ALIAS
-    || ''
-  ).trim().replace(/^"|"$/g, '');
   const usesLiveCert = resolveVSignUsesLiveCert(serviceRoot);
   if (usesLiveCert) {
+    // Prefer live.env / process env over stale Mongo UAT leftovers.
+    const liveSecrets = loadVSignLiveSecrets(serviceRoot);
+    const password = (
+      liveSecrets.PFX_PASSWORD
+      || fromFile.PFX_PASSWORD
+      || process.env.PFX_PASSWORD
+      || cfg.pfxPassword
+      || ''
+    ).trim();
+    const alias = (
+      liveSecrets.PFX_ALIAS
+      || fromFile.PFX_ALIAS
+      || process.env.PFX_ALIAS
+      || cfg.pfxAlias
+      || ''
+    ).trim().replace(/^"|"$/g, '');
     return { password, alias, usesLiveCert };
   }
   const uatSecrets = loadVSignUatSecrets(serviceRoot);
@@ -228,14 +242,44 @@ async function buildVSignAuthUrl(serviceRoot, aadhaarNumber) {
   return `${espBase}/${segment}/authpagev4`;
 }
 
+function isProductionCallbackUrl(url) {
+  const u = String(url || '').trim().toLowerCase();
+  return u.includes('esp.documantra.in') && u.includes('/v-sign/response');
+}
+
+function isUnusableCallbackUrl(url) {
+  const u = String(url || '').trim().toLowerCase();
+  if (!u) return true;
+  if (u.includes('localhost') || u.includes('127.0.0.1')) return true;
+  if (u.includes('trycloudflare.com') || u.includes('ngrok')) return true;
+  return false;
+}
+
 /** ASP browser redirect after utility/VSign processes OTP */
 function resolveVSignCallbackUrl(serviceRoot) {
   const cfg = getEffectiveVSign();
-  if (cfg.vsignCallbackUrl) return cfg.vsignCallbackUrl.trim();
   const fromFile = readEnvFile(serviceRoot).VSIGN_CALLBACK_URL;
-  if (fromFile && String(fromFile).trim()) return String(fromFile).trim();
-  return process.env.VSIGN_CALLBACK_URL
-    || 'http://localhost:2103/api/e-sign/public/v-sign/response';
+  const candidates = [
+    cfg.vsignCallbackUrl,
+    fromFile,
+    process.env.VSIGN_CALLBACK_URL,
+  ]
+    .map((v) => String(v || '').trim())
+    .filter(Boolean);
+
+  if (resolveVSignEnv(serviceRoot) === 'production') {
+    const productionCandidate = candidates.find(isProductionCallbackUrl);
+    if (productionCandidate) return productionCandidate;
+    // Ignore tunnel/localhost leftovers when live — VSign must POST back to esp.documantra.in
+    return VSIGN_PRODUCTION_CALLBACK_URL;
+  }
+
+  for (const candidate of candidates) {
+    if (!isUnusableCallbackUrl(candidate) || resolveVSignEnv(serviceRoot) !== 'production') {
+      return candidate;
+    }
+  }
+  return candidates[0] || 'http://localhost:2103/api/e-sign/public/v-sign/response';
 }
 
 /** VSign ESP receives OTP result here */
