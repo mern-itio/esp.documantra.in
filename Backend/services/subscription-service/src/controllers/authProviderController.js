@@ -245,12 +245,6 @@ const availableAuthMethods = async (req, res) => {
     });
   }
 }
-const isAadhaarVSignProvider = (p) => {
-  const type = String(p?.config?.providerType || '').toLowerCase();
-  if (type === 'aadhaar_vsign') return true;
-  return /aadhaar\s*e?sign|vsign/i.test(String(p?.name || ''));
-};
-
 const bulkFetchByIds = async (req, res) => {
   const { methodIds } = req.body || {};
   if (!Array.isArray(methodIds) || methodIds.length === 0) {
