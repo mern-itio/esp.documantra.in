@@ -3096,7 +3096,7 @@ if (isPublicFlow) {
         normalizedMethods = [methodIds];
       }
 
-      // Aadhaar VSign → signatureType; store as completed so pre-sign modal never shows it
+      // All selected methods show in signer auth wizard; Aadhaar OTP still runs at Sign time.
       const methodsPool = await loadAvailableAuthMethods();
       const resolveMethod = (id: string) =>
         methodsPool.find((m: any) => {
@@ -3108,10 +3108,10 @@ if (isPublicFlow) {
         return method ? isAadhaarVSignAuthMethod(method) : false;
       });
       const preSignMethodIds = normalizedMethods.filter((id) => !aadhaarMethodIds.includes(id));
-      const authItems = [
-        ...preSignMethodIds.map((id) => ({ authMethodId: id, status: 'pending' as const })),
-        ...aadhaarMethodIds.map((id) => ({ authMethodId: id, status: 'completed' as const })),
-      ];
+      const authItems = normalizedMethods.map((id) => ({
+        authMethodId: id,
+        status: 'pending' as const,
+      }));
       const authString = authItems.length > 0 ? JSON.stringify(authItems) : null;
 
       if (authModalForBulk) {

@@ -604,8 +604,7 @@ const EnvelopeDetails: React.FC = () => {
       methodIds: pendingAuth.map((a: any) => a.authMethodId)
     });
     if (response.status === 200 && Array.isArray(response.data.methods)) {
-      // VSign Aadhaar OTP runs at signature time — skip from pre-sign auth modal
-      return response.data.methods.filter((m: AuthMethod) => !isAadhaarVSignAuthMethod(m));
+      return response.data.methods;
     }
     return [];
   };
@@ -2274,25 +2273,37 @@ const EnvelopeDetails: React.FC = () => {
               {/* Pending / method-specific */}
               {authStatus === "pending" && (
                 <div className="mt-4 space-y-4">
+                  {isAadhaarVSignAuthMethod(currentAuthMethod) && !currentAction && (
+                    <div className="rounded-2xl border border-[#155E4B]/25 bg-[#155E4B]/5 px-4 py-3 text-sm text-[#155E4B]">
+                      Aadhaar OTP verification runs when you tap <strong>Sign</strong> on the
+                      document — not on this screen. Tap Continue after email verification (if any).
+                    </div>
+                  )}
                   {!currentAction && (
                     <div className="flex items-center justify-end gap-3">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          requestSkipAuthMethod("Authentication skipped.")
-                        }
-                        disabled={isVerifying}
-                        className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-[#F7F3EE] px-4 py-2 text-sm font-medium text-gray-700 hover:bg-[#F5F2EE] disabled:opacity-50"
-                      >
-                        Skip
-                      </button>
+                      {!isAadhaarVSignAuthMethod(currentAuthMethod) && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            requestSkipAuthMethod("Authentication skipped.")
+                          }
+                          disabled={isVerifying}
+                          className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-[#F7F3EE] px-4 py-2 text-sm font-medium text-gray-700 hover:bg-[#F5F2EE] disabled:opacity-50"
+                        >
+                          Skip
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => verificationStart(currentAuthMethod)}
                         disabled={isVerifying}
                         className="inline-flex items-center justify-center rounded-xl bg-[#260559] px-4 py-2 text-sm font-semibold text-white hover:bg-[#260559]/90 disabled:opacity-50"
                       >
-                        {isVerifying ? "Sending…" : "Start verification"}
+                        {isVerifying
+                          ? "Please wait…"
+                          : isAadhaarVSignAuthMethod(currentAuthMethod)
+                            ? "Continue"
+                            : "Start verification"}
                       </button>
                     </div>
                   )}

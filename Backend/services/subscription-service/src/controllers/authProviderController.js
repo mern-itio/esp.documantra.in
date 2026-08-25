@@ -259,10 +259,7 @@ const bulkFetchByIds = async (req, res) => {
   try {
     console.log('bulkFetchByIds called with methodIds:', methodIds);
     const providers = await AuthProvider.find({ _id: { $in: methodIds } });
-    // VSign Aadhaar OTP is signature-time — never expose as pre-sign identity challenge
-    const data = providers
-      .filter((p) => !isAadhaarVSignProvider(p))
-      .map(p => ({
+    const data = providers.map(p => ({
         id: p._id,
         name: p.name,
         description: p.description,
