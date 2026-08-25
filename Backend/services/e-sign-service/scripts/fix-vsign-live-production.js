@@ -144,25 +144,50 @@ async function probeUtility(password, alias) {
   }
 }
 
+function parsePasswordArg() {
+  const fromArg = process.argv.find((a) => a.startsWith('--password='))?.slice(11);
+  if (fromArg) return fromArg.trim();
+  return '';
+}
+
+function describePfxFile() {
+  const st = fs.statSync(pfxPath);
+  return {
+    path: pfxPath,
+    sizeBytes: st.size,
+    modified: st.mtime.toISOString(),
+  };
+}
+
 async function main() {
   console.log('=== VSign live production fix ===\n');
 
   if (!fs.existsSync(pfxPath)) {
     console.error('Missing live PFX:', pfxPath);
-    console.error('Copy dmsignaturekey.pfx → uploads/vSign/signCertificate.pfx');
+    console.error('Copy Desktop dmsignaturekey/dmsignaturekey.pfx → uploads/vSign/signCertificate.pfx');
+    console.error('  scp "dmsignaturekey.pfx" root@143.110.247.90:/root/Draft-and-Sign/Backend/services/e-sign-service/uploads/vSign/signCertificate.pfx');
     process.exit(1);
   }
 
+  console.log('PFX file:', JSON.stringify(describePfxFile(), null, 2));
+  console.log('(Live dmsignaturekey.pfx is usually different size from VSign UAT test cert.)\n');
+
   fs.mkdirSync(secretsDir, { recursive: true });
   const liveSecrets = loadLiveSecrets();
-  let password = (liveSecrets.PFX_PASSWORD || process.env.PFX_PASSWORD || '').trim();
+  const cliPassword = parsePasswordArg();
+  let password = (cliPassword || liveSecrets.PFX_PASSWORD || process.env.PFX_PASSWORD || '').trim();
   let alias = (liveSecrets.PFX_ALIAS || process.env.PFX_ALIAS || '')
     .trim()
     .replace(/^"|"$/g, '');
 
   if (!password) {
-    console.error('Set PFX_PASSWORD in config/vsign/secrets/live.env first, e.g.:');
-    console.error('  PFX_PASSWORD=your_live_pfx_password');
+    console.error('Set password via live.env or pass --password=YOUR_LIVE_PFX_PASSWORD');
+    console.error('');
+    console.error('This is the password you chose when exporting dmsignaturekey.pfx (Class II DSC).');
+    console.error('It is NOT the VSign UAT test password (abc1234).');
+    console.error('');
+    console.error('Manual check:');
+    console.error('  keytool -list -keystore uploads/vSign/signCertificate.pfx -storetype PKCS12 -storepass YOUR_PASSWORD');
     process.exit(1);
   }
 
@@ -178,7 +203,17 @@ async function main() {
       console.log(`PFX alias OK: "${alias}"`);
     }
   } catch (err) {
-    console.error('Could not unlock PFX — wrong PFX_PASSWORD in live.env');
+    console.error('Could not unlock PFX with the password provided.');
+    console.error('');
+    console.error('Most likely causes:');
+    console.error('  1. Wrong password — use the password from when dmsignaturekey.pfx was exported.');
+    console.error('  2. Wrong file on server — UAT test cert is still at signCertificate.pfx (copy live key from Desktop).');
+    console.error('');
+    console.error('Retry with correct password:');
+    console.error('  node scripts/fix-vsign-live-production.js --password=YOUR_LIVE_PFX_PASSWORD');
+    console.error('');
+    console.error('Or verify manually:');
+    console.error('  keytool -list -keystore uploads/vSign/signCertificate.pfx -storetype PKCS12 -storepass YOUR_PASSWORD');
     if (err.stderr) console.error(String(err.stderr).trim());
     process.exit(1);
   }
