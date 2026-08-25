@@ -59,13 +59,25 @@ function loadLiveSecrets() {
 }
 
 function discoverAlias(password) {
-  const out = execFileSync(
-    'keytool',
-    ['-list', '-keystore', pfxPath, '-storetype', 'PKCS12', '-storepass', password],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-  );
-  const line = out.split('\n').find((l) => /, \d{4}-\d{2}-\d{2},/.test(l));
-  if (!line) throw new Error('keytool did not return an alias line');
+  let out;
+  try {
+    out = execFileSync(
+      'keytool',
+      ['-list', '-keystore', pfxPath, '-storetype', 'PKCS12', '-storepass', password],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch (err) {
+    const stderr = String(err.stderr || err.message || '');
+    const badPass = /password was incorrect|keystore password was incorrect|Failed to decrypt/i.test(stderr);
+    const e = new Error(badPass ? 'WRONG_PASSWORD' : `keytool failed: ${stderr.trim() || err.message}`);
+    e.code = badPass ? 'WRONG_PASSWORD' : 'KEYTOOL_FAILED';
+    throw e;
+  }
+  // Formats vary: "alias, 2026-08-13, PrivateKeyEntry," OR "alias, Aug 13, 2026, PrivateKeyEntry,"
+  const line =
+    out.split(/\r?\n/).find((l) => /PrivateKeyEntry/i.test(l))
+    || out.split(/\r?\n/).find((l) => /, \d{4}-\d{2}-\d{2},/.test(l));
+  if (!line) throw new Error('keytool did not return a PrivateKeyEntry alias line');
   return line.split(',')[0].trim();
 }
 
@@ -203,17 +215,14 @@ async function main() {
       console.log(`PFX alias OK: "${alias}"`);
     }
   } catch (err) {
-    console.error('Could not unlock PFX with the password provided.');
-    console.error('');
-    console.error('Most likely causes:');
-    console.error('  1. Wrong password — use the password from when dmsignaturekey.pfx was exported.');
-    console.error('  2. Wrong file on server — UAT test cert is still at signCertificate.pfx (copy live key from Desktop).');
-    console.error('');
-    console.error('Retry with correct password:');
-    console.error('  node scripts/fix-vsign-live-production.js --password=YOUR_LIVE_PFX_PASSWORD');
-    console.error('');
-    console.error('Or verify manually:');
-    console.error('  keytool -list -keystore uploads/vSign/signCertificate.pfx -storetype PKCS12 -storepass YOUR_PASSWORD');
+    if (err.code === 'WRONG_PASSWORD') {
+      console.error('Could not unlock PFX — wrong password.');
+      console.error('Retry: node scripts/fix-vsign-live-production.js --password=YOUR_LIVE_PFX_PASSWORD');
+    } else {
+      console.error('keytool alias discovery failed:', err.message);
+      console.error('If password is known, continue with explicit alias:');
+      console.error("  PFX_ALIAS='arun dixit' node scripts/fix-vsign-live-production.js --password=...");
+    }
     if (err.stderr) console.error(String(err.stderr).trim());
     process.exit(1);
   }
