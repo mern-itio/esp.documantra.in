@@ -11,13 +11,9 @@ const {
 
 const VSIGN_BOX_BG = rgb(232 / 255, 242 / 255, 255 / 255);
 const VSIGN_COVER_BG = rgb(1, 1, 1);
-const VSIGN_CHECK_GREEN = rgb(74 / 255, 222 / 255, 128 / 255);
+const VSIGN_CHECK_GREEN = rgb(22 / 255, 163 / 255, 74 / 255);
 const MIN_AADHAAR_HEIGHT = 85;
 const BASE_PAGE_WIDTH = 800;
-/** Equal inset on all sides of the dual appearance box. */
-const BOX_PADDING = 6;
-/** Aadhaar caption text size in the dual stamp. */
-const AADHAAR_FONT_SIZE = 9;
 
 /**
  * Flatten ink onto dual-box blue and drop the alpha channel entirely.
@@ -228,13 +224,12 @@ function boxesFromSignatureDetails(signaturedetails = []) {
 }
 
 function drawVectorCheckmark(page, rect) {
-  // Compact watermark tick on the right half — leaves text readable on the left.
   const viewW = 100;
   const viewH = 100;
-  const drawW = rect.w * 0.42;
-  const drawH = rect.h * 0.78;
-  const originX = rect.x + rect.w * 0.52;
-  const originY = rect.y + rect.h * 0.1;
+  const drawW = rect.w * 0.5;
+  const drawH = rect.h * 0.92;
+  const originX = rect.x + rect.w * 0.04;
+  const originY = rect.y + rect.h * 0.02;
   const scaleX = drawW / viewW;
   const scaleY = drawH / viewH;
   const map = (vx, vy) => ({
@@ -245,7 +240,8 @@ function drawVectorCheckmark(page, rect) {
   const p0 = map(6, 58);
   const p1 = map(28, 80);
   const p2 = map(92, 14);
-  const thickness = Math.max(2.2, Math.min(rect.h * 0.09, rect.w * 0.028));
+  // Wider stroke so the watermark tick reads clearly behind the text.
+  const thickness = Math.max(4, Math.min(rect.h * 0.17, rect.w * 0.055));
 
   page.drawLine({
     start: p0,
@@ -357,17 +353,29 @@ async function embedHandwrittenInRect(pdfDoc, page, rect, handwrittenBase64, max
 
   const stripH = Math.max(24, maxH);
   const imgAspect = prepared.width / Math.max(1, prepared.height);
-  let drawH = Math.min(stripH * 0.88, stripH);
+  // Ink only on the left ~40% — right side stays solid dual blue (covers any legacy white).
+  let drawH = Math.min(stripH, stripH * 0.92);
   let drawW = drawH * imgAspect;
-  const maxDrawW = Math.max(20, rect.w * 0.88);
+  const maxDrawW = Math.max(20, (rect.w - 8) * 0.4);
   if (drawW > maxDrawW) {
     drawW = maxDrawW;
     drawH = drawW / imgAspect;
   }
-  const drawX = rect.x + (rect.w - drawW) / 2;
-  const drawY = rect.y + (rect.h - drawH) / 2;
+  const drawX = rect.x + 4;
+  const drawY = rect.y + rect.h - stripH + (stripH - drawH) / 2;
   page.drawImage(img, { x: drawX, y: drawY, width: drawW, height: drawH });
-  return drawW;
+
+  // Force-cover the top-right of the strip (legacy transparent PNG / VSign logo slot).
+  const coverX = rect.x + rect.w * 0.42;
+  page.drawRectangle({
+    x: coverX,
+    y: rect.y,
+    width: rect.x + rect.w - coverX,
+    height: rect.h,
+    color: VSIGN_BOX_BG,
+    borderWidth: 0,
+  });
+  return drawW + 8;
 }
 
 function measureAppearanceContentWidth(font, lines, fontSize, handwrittenWidth = 0) {
@@ -379,7 +387,8 @@ function measureAppearanceContentWidth(font, lines, fontSize, handwrittenWidth =
       maxText = Math.max(maxText, String(line).length * fontSize * 0.55);
     }
   }
-  const textBlock = Math.ceil(maxText + BOX_PADDING * 2);
+  // Text + left/right padding; checkmark sits behind text so no extra width needed.
+  const textBlock = Math.ceil(maxText + 10);
   return Math.max(120, textBlock, Math.ceil(handwrittenWidth || 0));
 }
 
@@ -480,9 +489,10 @@ async function paintAadhaarAppearanceOnPdf(pdfPath, options = {}) {
       ? Math.max(computeHandwrittenStripHeight(fieldH), 28)
       : 0;
     const aadhaarH = MIN_AADHAAR_HEIGHT;
-    const fontSize = AADHAAR_FONT_SIZE;
+    const totalH = handH + aadhaarH;
+    const fontSize = Math.max(8, Math.min(11, Math.round(aadhaarH / 8)));
+    // Width = text only (never fieldW / 280 — those left empty blue on the right).
     const boxW = measureAppearanceContentWidth(font, lines, fontSize, 0);
-    const totalH = BOX_PADDING * 2 + handH + aadhaarH;
     console.log('[VSign appearance] dual boxW', {
       boxW,
       fieldW: Math.round(fieldW),
@@ -517,36 +527,28 @@ async function paintAadhaarAppearanceOnPdf(pdfPath, options = {}) {
       borderWidth: 0,
     });
 
-    const inner = {
-      x: dualRect.x + BOX_PADDING,
-      y: dualRect.y + BOX_PADDING,
-      w: dualRect.w - BOX_PADDING * 2,
-      h: dualRect.h - BOX_PADDING * 2,
-    };
-
-    const aadhaarRect = {
-      x: inner.x,
-      y: inner.y,
-      w: inner.w,
-      h: aadhaarH,
-    };
-
     if (hasHandwritten) {
       const handRect = {
-        x: inner.x,
-        y: inner.y + aadhaarH,
-        w: inner.w,
+        x: dualRect.x,
+        y: dualRect.y + aadhaarH,
+        w: dualRect.w,
         h: handH,
       };
-      await embedHandwrittenInRect(pdfDoc, page, handRect, handwrittenBase64, handH);
+      // Draw inside content-fit width only (do not expand box for canvas aspect).
+      await embedHandwrittenInRect(pdfDoc, page, handRect, handwrittenBase64, handH - 4);
     }
 
+    const aadhaarRect = {
+      x: dualRect.x,
+      y: dualRect.y,
+      w: dualRect.w,
+      h: aadhaarH,
+    };
     drawVectorCheckmark(page, aadhaarRect);
 
-    const lineHeight = fontSize * 1.35;
-    const textX = aadhaarRect.x;
-    const textBlockH = lines.length * lineHeight;
-    let textY = aadhaarRect.y + (aadhaarRect.h - textBlockH) / 2 + fontSize * 0.2;
+    const lineHeight = fontSize * 1.32;
+    const textX = aadhaarRect.x + 5;
+    let textY = aadhaarRect.y + aadhaarH - fontSize - 4;
     for (const line of lines) {
       page.drawText(line, {
         x: textX,
@@ -556,6 +558,18 @@ async function paintAadhaarAppearanceOnPdf(pdfPath, options = {}) {
         color: rgb(0, 0, 0),
       });
       textY -= lineHeight;
+    }
+
+    // Final pass: kill any remaining top-right white (transparent PNG / logo slot).
+    if (hasHandwritten && handH > 0) {
+      page.drawRectangle({
+        x: dualRect.x + dualRect.w * 0.45,
+        y: dualRect.y + aadhaarH,
+        width: dualRect.w * 0.55,
+        height: handH,
+        color: VSIGN_BOX_BG,
+        borderWidth: 0,
+      });
     }
   }
 
