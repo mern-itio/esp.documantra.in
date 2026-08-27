@@ -24,6 +24,7 @@ import AIAuditInsights from '../../components/ESign/AIAuditInsights';
 import { BRAND } from '../../config/brand';
 import { toTitleCase } from '../../utils/formatName';
 import { PageShell, SectionLabel } from '../../components/common/PageShell';
+import { ENABLE_DEVELOPER_UI } from '../../config/environment';
 
 type StatItem = {
   label: string;
@@ -208,14 +209,14 @@ const DashboardPage: React.FC = () => {
         { label: 'PDF tools', desc: '66+ utilities', icon: Layers, path: '/pdf-tools', accent: 'from-emerald-600 to-teal-500' },
         { label: 'Documents', desc: 'Store & share', icon: Share2, path: '/all-documents', accent: 'from-[#260559] to-[#155E4B]' },
         { label: 'Setup guide', desc: '2 min walkthrough', icon: BookOpen, path: '/e-sign/guide', accent: 'from-violet-600 to-[#260559]' },
-        apiKeysShortcut,
+        ...(ENABLE_DEVELOPER_UI ? [apiKeysShortcut] : []),
       ]
     : [
         { label: 'Manage envelopes', desc: 'Track & remind', icon: FolderOpen, path: '/e-sign/aggrement', accent: 'from-[#260559] to-[#155E4B]' },
         { label: 'PDF tools', desc: '66+ utilities', icon: Layers, path: '/pdf-tools', accent: 'from-emerald-600 to-teal-500' },
         { label: 'Documents', desc: 'Store & share', icon: Share2, path: '/all-documents', accent: 'from-teal-600 to-emerald-500' },
         { label: 'Billing', desc: 'Usage & top-up', icon: CreditCard, path: '/credits-usage', accent: 'from-[#155E4B] to-emerald-400' },
-        apiKeysShortcut,
+        ...(ENABLE_DEVELOPER_UI ? [apiKeysShortcut] : []),
       ];
 
   const tutorialFeatures = [

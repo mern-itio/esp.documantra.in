@@ -17,6 +17,10 @@ export const ENV_CONFIG = {
   NODE_ENV: import.meta.env.NODE_ENV || 'development',
 };
 
+/** Developer / API Keys UI — hidden on live production builds unless explicitly enabled. */
+export const ENABLE_DEVELOPER_UI =
+  import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEVELOPER === 'true';
+
 // API Configuration
 export const API_CONFIG = {
   BASE_URL: ENV_CONFIG.API_BASE_URL,

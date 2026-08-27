@@ -4,6 +4,7 @@ import { FileText, ChevronLeft, ChevronDown, ChevronRight, FileSignature, Scisso
 import { useAuth } from '../AuthService/AuthContext';
 import { APP_NAME } from '../constants/appConfig';
 import BrandLogo from '../BrandLogo';
+import { ENABLE_DEVELOPER_UI } from '../../config/environment';
 
 interface SidebarProps {
   activeView?: string;
@@ -265,17 +266,19 @@ const Sidebar: React.FC<SidebarProps> = ({
     //     { id: 'templateAdminDashboard', label: 'Admin Dashboard', path: '/template/admin-dashboard', icon: Settings },
     //   ]
     // },
-    {
-      id: 'developer',
-      label: 'Developer',
-      icon: Key,
-      children: [
-        { id: 'api-keys', label: 'API Keys', path: '/api-service/keys', icon: Key },
-        { id: 'api-demo', label: 'Integration Demo', path: '/api-service/demo', icon: Play },
-        { id: 'api-explorer', label: 'API Explorer', path: '/api-service/explorer', icon: Code },
-        { id: 'api-docs', label: 'API Docs', path: '/api-documentation', icon: FileText },
-      ],
-    },
+    ...(ENABLE_DEVELOPER_UI
+      ? [{
+          id: 'developer',
+          label: 'Developer',
+          icon: Key,
+          children: [
+            { id: 'api-keys', label: 'API Keys', path: '/api-service/keys', icon: Key },
+            { id: 'api-demo', label: 'Integration Demo', path: '/api-service/demo', icon: Play },
+            { id: 'api-explorer', label: 'API Explorer', path: '/api-service/explorer', icon: Code },
+            { id: 'api-docs', label: 'API Docs', path: '/api-documentation', icon: FileText },
+          ],
+        }]
+      : []),
     {
       id: 'pdf-tools',
       label: 'PDF Tools',

@@ -10,6 +10,7 @@ import { subscriptionApi, organizationApi, apiGateway } from '../../services/api
 import Swal from 'sweetalert2';
 import type { Organization } from '../../types/organization';
 import { getInitials } from '../../utils/formatName';
+import { ENABLE_DEVELOPER_UI } from '../../config/environment';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -346,8 +347,12 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
       { id: 'credits-usage', label: 'Credits & Billing', action: () => navigate('/credits-usage') },
       { id: 'documents', label: 'Documents', action: () => navigate('/all-documents') },
       { id: 'pdf-tools', label: 'PDF Tools', action: () => navigate('/pdf-tools') },
-      { id: 'api-keys', label: 'API Keys', action: () => navigate('/api-service/keys') },
-      { id: 'api-explorer', label: 'API Explorer', action: () => navigate('/api-service/explorer') },
+      ...(ENABLE_DEVELOPER_UI
+        ? [
+            { id: 'api-keys', label: 'API Keys', action: () => navigate('/api-service/keys') },
+            { id: 'api-explorer', label: 'API Explorer', action: () => navigate('/api-service/explorer') },
+          ]
+        : []),
     ];
     if (!paletteQuery.trim()) return items;
     const q = paletteQuery.toLowerCase();
@@ -587,7 +592,9 @@ const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
                 <div className="space-y-2">
                   {[
                     { label: 'Manage Account', icon: User, action: () => navigate('/account/profile') },
-                    { label: 'API Keys', icon: Key, action: () => navigate('/api-service/keys') },
+                    ...(ENABLE_DEVELOPER_UI
+                      ? [{ label: 'API Keys', icon: Key, action: () => navigate('/api-service/keys') }]
+                      : []),
                     { label: 'Organizations', icon: Building2, action: () => navigate('/organizations/') },
                     { label: 'Email Configuration', icon: Mail, action: () => navigate('/account/email-configuration/') },
                     { label: 'Email Templates', icon: FileText, action: () => navigate('/account/email-templates/') },

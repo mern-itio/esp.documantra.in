@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createBrowserRouter, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthService/AuthContext';
 import { isPublicSignOnlyApp } from '../config/appMode';
+import { ENABLE_DEVELOPER_UI } from '../config/environment';
 import RedirectToEsignPublic from '../components/PublicFlow/RedirectToEsignPublic';
 import {
   PublicPDFTools,
@@ -531,6 +532,12 @@ const GuestRoute = ({ children }: { children: React.ReactElement }) => {
   if (loading) return null;
   return !isAuthenticated ? children : <Navigate to="/dashboard" />;
 };
+
+/** Hide developer / API-service UI on live production builds. */
+const DeveloperRoute = ({ children }: { children: React.ReactElement }) => {
+  if (!ENABLE_DEVELOPER_UI) return <Navigate to="/dashboard" replace />;
+  return children;
+};
 function DocumentView() {
   const { viewMode } = useDocumentStore();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -673,7 +680,7 @@ const guestRoutes = [
   { path: '/pricing', element: <Pricing /> },
   { path: '/all-in-one', element: <AllInOnePlatformPage /> },
   { path: '/ai-powered-features', element: <AIPoweredFeaturesPage /> },
-  { path: '/api-documentation', element: <APIDocumentationPage /> },
+  { path: '/api-documentation', element: <DeveloperRoute><APIDocumentationPage /></DeveloperRoute> },
   { path: '/bug-bounty', element: <BugBountyPage /> },
   { path: '/data-residency', element:<DataResidencyPage /> },
   { path: '/accessibility', element:<AccessibilityPage /> },
@@ -866,20 +873,20 @@ const authRoutes = [
   { path: '/notifications', element: <NotificationsPage /> },
   { path: '/account/email-configuration', element: <EmailPage/>},
   { path: '/account/email-templates', element: <EmailTemplatesBuilder/>},
-  // API-service routes
-  { path: '/api-service/dashboard', element: <ApiServiceDashboard /> },
-  { path: '/api-service/analytics', element: <ApiServiceAnalytics /> },
-  { path: '/api-service/projects', element: <ApiServiceProjects /> },
-  { path: '/api-service/keys', element: <ApiServiceKey /> },
-  { path: '/api-service/demo', element: <ApiServiceIntegrationDemo /> },
-  { path: '/api-service/explorer', element: <ApiServiceExplorer /> },
-  { path: '/api-service/documentation', element: <ApiServiceDocumentation /> },
-  { path: '/api-service/Webhooks', element: <ApiServiceWebhooks /> },
-  { path: '/api-service/sdk', element: <ApiServiceSDK /> },
-  { path: '/api-service/testing', element: <ApiServiceTesting /> },
-  { path: '/api-service/marketplace', element: <ApiServiceMarketPlace /> },
-  { path: '/api-service/community', element: <ApiServiceCommunity /> },
-  { path: '/api-service/support', element: <ApiServiceSupport /> },
+  // API-service routes (hidden on live production)
+  { path: '/api-service/dashboard', element: <DeveloperRoute><ApiServiceDashboard /></DeveloperRoute> },
+  { path: '/api-service/analytics', element: <DeveloperRoute><ApiServiceAnalytics /></DeveloperRoute> },
+  { path: '/api-service/projects', element: <DeveloperRoute><ApiServiceProjects /></DeveloperRoute> },
+  { path: '/api-service/keys', element: <DeveloperRoute><ApiServiceKey /></DeveloperRoute> },
+  { path: '/api-service/demo', element: <DeveloperRoute><ApiServiceIntegrationDemo /></DeveloperRoute> },
+  { path: '/api-service/explorer', element: <DeveloperRoute><ApiServiceExplorer /></DeveloperRoute> },
+  { path: '/api-service/documentation', element: <DeveloperRoute><ApiServiceDocumentation /></DeveloperRoute> },
+  { path: '/api-service/Webhooks', element: <DeveloperRoute><ApiServiceWebhooks /></DeveloperRoute> },
+  { path: '/api-service/sdk', element: <DeveloperRoute><ApiServiceSDK /></DeveloperRoute> },
+  { path: '/api-service/testing', element: <DeveloperRoute><ApiServiceTesting /></DeveloperRoute> },
+  { path: '/api-service/marketplace', element: <DeveloperRoute><ApiServiceMarketPlace /></DeveloperRoute> },
+  { path: '/api-service/community', element: <DeveloperRoute><ApiServiceCommunity /></DeveloperRoute> },
+  { path: '/api-service/support', element: <DeveloperRoute><ApiServiceSupport /></DeveloperRoute> },
   //PDF Tools Routes
   {
     path: '/pdf-tools',
