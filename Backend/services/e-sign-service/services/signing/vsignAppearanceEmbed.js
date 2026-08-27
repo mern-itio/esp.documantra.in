@@ -11,13 +11,13 @@ const {
 
 const VSIGN_BOX_BG = rgb(232 / 255, 242 / 255, 255 / 255);
 const VSIGN_COVER_BG = rgb(1, 1, 1);
-const VSIGN_CHECK_GREEN = rgb(22 / 255, 163 / 255, 74 / 255);
+const VSIGN_CHECK_GREEN = rgb(74 / 255, 222 / 255, 128 / 255);
 const MIN_AADHAAR_HEIGHT = 85;
 const BASE_PAGE_WIDTH = 800;
 /** Equal inset on all sides of the dual appearance box. */
 const BOX_PADDING = 6;
-/** Smaller Aadhaar caption text in the live dual stamp. */
-const AADHAAR_FONT_SIZE = 7;
+/** Aadhaar caption text size in the dual stamp. */
+const AADHAAR_FONT_SIZE = 9;
 
 /**
  * Flatten ink onto dual-box blue and drop the alpha channel entirely.
@@ -228,12 +228,13 @@ function boxesFromSignatureDetails(signaturedetails = []) {
 }
 
 function drawVectorCheckmark(page, rect) {
+  // Compact watermark tick on the right half — leaves text readable on the left.
   const viewW = 100;
   const viewH = 100;
-  const drawW = rect.w * 0.5;
-  const drawH = rect.h * 0.92;
-  const originX = rect.x + rect.w * 0.04;
-  const originY = rect.y + rect.h * 0.02;
+  const drawW = rect.w * 0.42;
+  const drawH = rect.h * 0.78;
+  const originX = rect.x + rect.w * 0.52;
+  const originY = rect.y + rect.h * 0.1;
   const scaleX = drawW / viewW;
   const scaleY = drawH / viewH;
   const map = (vx, vy) => ({
@@ -244,8 +245,7 @@ function drawVectorCheckmark(page, rect) {
   const p0 = map(6, 58);
   const p1 = map(28, 80);
   const p2 = map(92, 14);
-  // Wider stroke so the watermark tick reads clearly behind the text.
-  const thickness = Math.max(4, Math.min(rect.h * 0.17, rect.w * 0.055));
+  const thickness = Math.max(2.2, Math.min(rect.h * 0.09, rect.w * 0.028));
 
   page.drawLine({
     start: p0,
@@ -543,10 +543,10 @@ async function paintAadhaarAppearanceOnPdf(pdfPath, options = {}) {
 
     drawVectorCheckmark(page, aadhaarRect);
 
-    const lineHeight = fontSize * 1.28;
+    const lineHeight = fontSize * 1.35;
     const textX = aadhaarRect.x;
     const textBlockH = lines.length * lineHeight;
-    let textY = aadhaarRect.y + (aadhaarRect.h - textBlockH) / 2 + fontSize * 0.15;
+    let textY = aadhaarRect.y + (aadhaarRect.h - textBlockH) / 2 + fontSize * 0.2;
     for (const line of lines) {
       page.drawText(line, {
         x: textX,
