@@ -133,6 +133,106 @@ function recipientListRowMatchesQuery(
   return phoneDigits.length > 0 && phoneDigits.includes(queryDigits);
 }
 
+/** Normalize text for envelope-type matching (filename / headline / type title). */
+function normalizeEnvelopeTypeText(value: string): string {
+  return String(value || '')
+    .replace(/\.[a-z0-9]{2,5}$/i, '') // strip extension
+    .toLowerCase()
+    .replace(/[_.-]+/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const ENVELOPE_TYPE_ALIASES: Record<string, string[]> = {
+  agreement: ['agreement', 'contract', 'mou', 'msa', 'sla'],
+  contract: ['contract', 'agreement', 'mou'],
+  nda: ['nda', 'non disclosure', 'confidentiality'],
+  invoice: ['invoice', 'bill', 'receipt', 'tax invoice'],
+  offer: ['offer letter', 'offer', 'appointment letter', 'joining letter'],
+  letter: ['letter', 'cover letter'],
+  proposal: ['proposal', 'quotation', 'quote', 'estimate'],
+  form: ['form', 'application', 'registration'],
+  policy: ['policy', 'handbook', 'sop'],
+  report: ['report', 'log', 'audit', 'statement'],
+  resume: ['resume', 'cv', 'biodata'],
+  purchase: ['po', 'purchase order', 'work order'],
+  lease: ['lease', 'rental', 'rent agreement'],
+  certificate: ['certificate', 'certification'],
+};
+
+/**
+ * Pick best envelope type title from document filename / headline.
+ * Returns null when confidence is too low.
+ */
+function guessEnvelopeTypeFromDocuments(
+  sources: Array<string | undefined | null>,
+  types: Array<{ title?: string }>,
+): string | null {
+  const haystack = normalizeEnvelopeTypeText(sources.filter(Boolean).join(' '));
+  if (!haystack || !types?.length) return null;
+
+  let bestTitle: string | null = null;
+  let bestScore = 0;
+
+  for (const type of types) {
+    const title = String(type?.title || '').trim();
+    if (!title) continue;
+    const normTitle = normalizeEnvelopeTypeText(title);
+    if (!normTitle) continue;
+
+    let score = 0;
+
+    if (haystack === normTitle) score = 100;
+    else if (haystack.includes(normTitle)) score = 80 + Math.min(normTitle.length, 20);
+    else if (normTitle.includes(haystack) && haystack.length >= 4) score = 70;
+
+    const titleWords = normTitle.split(' ').filter((w) => w.length > 2);
+    if (titleWords.length > 0) {
+      const matched = titleWords.filter((w) => haystack.includes(w)).length;
+      score = Math.max(score, Math.round((matched / titleWords.length) * 65));
+    }
+
+    // Alias boost: e.g. file "NDA_v2.pdf" → type "Non Disclosure Agreement"
+    for (const [key, aliases] of Object.entries(ENVELOPE_TYPE_ALIASES)) {
+      const titleHits = aliases.some((a) => normTitle.includes(a)) || normTitle.includes(key);
+      const fileHits = aliases.some((a) => haystack.includes(a)) || haystack.includes(key);
+      if (titleHits && fileHits) score = Math.max(score, 72);
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestTitle = title;
+    }
+  }
+
+  return bestScore >= 45 ? bestTitle : null;
+}
+
+/** Build a custom "Other" envelope type label from the first document name/headline. */
+function deriveOtherEnvelopeTypeLabel(sources: Array<string | undefined | null>): string {
+  const raw = String(sources.find((s) => String(s || '').trim()) || '').trim();
+  if (!raw) return 'Other Document';
+
+  const withoutExt = raw.replace(/\.[a-z0-9]{2,5}$/i, '');
+  // Prefer the part before common separators if the name is very long
+  const cleaned = withoutExt
+    .replace(/[_.-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const titled = cleaned
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => {
+      if (/^[A-Z0-9]{2,}$/.test(word)) return word; // keep ASP, NDA, etc.
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+
+  return titled.slice(0, 80) || 'Other Document';
+}
+
 const UPLOAD_BATCH_MAX_FILES = 4;
 const UPLOAD_BATCH_MAX_BYTES = 28 * 1024 * 1024;
 
@@ -1565,6 +1665,7 @@ const isPublicFlow =
 
   const [envelopeTypes, setEnvelopeTypes] = useState<any[]>([]);
   const [selectedEnvelopeType, setSelectedEnvelopeType] = useState<string>('');
+  const [envelopeTypeAutoPicked, setEnvelopeTypeAutoPicked] = useState(false);
   const [typeDropdownOpen, setTypeDropdownOpen] = useState<boolean>(false);
   const [typeSearch, setTypeSearch] = useState<string>('');
   const [showOtherInputInDropdown, setShowOtherInputInDropdown] = useState<boolean>(false);
@@ -2531,6 +2632,7 @@ const response = await eSignApi.get(url);
         }));
         if (typeof env.envelopetype === 'string' && env.envelopetype) {
           setSelectedEnvelopeType(env.envelopetype);
+          setEnvelopeTypeAutoPicked(false);
         }
 
         // Load advanced options from envelope
@@ -3886,6 +3988,35 @@ const sendResp = await eSignApi.post(sendUrl);
     fetchEnvelopeTypes();
   }, []);
 
+  // Auto-pick Envelope Type from document filename / headline; fallback to Other (custom from file name)
+  useEffect(() => {
+    if (!documents.length) return;
+    if (selectedEnvelopeType && !envelopeTypeAutoPicked) return;
+
+    const sources = [
+      documents[0]?.name,
+      ...documents.slice(1, 3).map((d) => d.name),
+      documentTitle,
+      envelopeData.subject,
+    ];
+
+    const guessed =
+      envelopeTypes.length > 0
+        ? guessEnvelopeTypeFromDocuments(sources, envelopeTypes)
+        : null;
+    const nextType = guessed || deriveOtherEnvelopeTypeLabel(sources);
+
+    if (nextType && nextType !== selectedEnvelopeType) {
+      setSelectedEnvelopeType(nextType);
+      setEnvelopeTypeAutoPicked(true);
+      // If no catalog match, mirror the "Other" flow so user can confirm/edit
+      if (!guessed) {
+        setShowOtherInputInDropdown(false);
+        setNewEnvelopeTypeValue('');
+      }
+    }
+  }, [documents, envelopeTypes, documentTitle, envelopeData.subject, selectedEnvelopeType, envelopeTypeAutoPicked]);
+
   // Auto-set active recipient when recipients exceed 3 and none is active
   useEffect(() => {
     if (recipients.length > 3 && !activeRecipientId && recipients.length > 0) {
@@ -3916,6 +4047,7 @@ const sendResp = await eSignApi.post(sendUrl);
       return;
     }
     setSelectedEnvelopeType(value);
+    setEnvelopeTypeAutoPicked(false);
     setShowOtherInputInDropdown(false);
     setTypeDropdownOpen(false);
     setTypeSearch('');
@@ -3927,6 +4059,7 @@ const sendResp = await eSignApi.post(sendUrl);
     }
 
     setSelectedEnvelopeType(newEnvelopeTypeValue.trim());
+    setEnvelopeTypeAutoPicked(false);
     setShowOtherInputInDropdown(false);
     setNewEnvelopeTypeValue('');
     setTypeDropdownOpen(false);
@@ -6413,6 +6546,15 @@ if (isPublicFlow) {
                     >
                       {selectedEnvelopeType || 'Select Envelope Type'}
                     </button>
+                    {envelopeTypeAutoPicked && selectedEnvelopeType && (
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        {envelopeTypes.some(
+                          (t) => String(t.title || '').toLowerCase() === selectedEnvelopeType.toLowerCase(),
+                        )
+                          ? 'Auto-selected from document name — change anytime'
+                          : 'No matching type — set from document name (Other). Change anytime'}
+                      </p>
+                    )}
 
                     {typeDropdownOpen && (
                       <div className="absolute left-0 bottom-full mb-1 w-full bg-card border border-border rounded-md shadow-lg z-50">
