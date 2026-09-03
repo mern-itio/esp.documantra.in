@@ -4644,7 +4644,7 @@ if (isPublicFlow) {
                   <ChevronDown className="w-5 h-5 text-muted-foreground" />
                 )}
               </h3>
-              {!showRecipients && !isOnlySigner && (
+              {!showRecipients && (
                 <div className="mb-4">
                   {recipients.filter(isRecipientConfigured).length > 0 ? (
                     <div className="flex flex-wrap gap-2">
@@ -4730,8 +4730,9 @@ if (isPublicFlow) {
                         onChange={(e) => {
                           setIsOnlySigner(e.target.checked);
                           if (e.target.checked) {
+                            const selfId = `self-${Date.now()}`;
                             setRecipients([{
-                              id: `self-${Date.now()}`,
+                              id: selfId,
                               name: user?.fullname || 'Me',
                               email: user?.email || '',
                               role: 'signer',
@@ -4739,8 +4740,12 @@ if (isPublicFlow) {
                               status: 'waiting',
                               authentication: DEFAULT_AUTH_JSON
                             }]);
+                            setActiveRecipientId(selfId);
+                            setShowRecipients(true);
+                            clearBulkList();
                           } else {
                             setRecipients([]);
+                            setActiveRecipientId(null);
                           }
                         }}
                         className="w-4 h-4 text-blue-600 bg-background border-border rounded focus:ring-blue-500"
@@ -4785,12 +4790,12 @@ if (isPublicFlow) {
                           View
                         </button>
 
-                        {!bulkList ? (
+                        {!isOnlySigner && !bulkList ? (
                           <button className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-2" onClick={() => { setShowBulkModal(true); setBulkStep(1); }} data-tour="ec-bulk-send">
                             Bulk send
                             <span className="bg-yellow-400 text-yellow-900 text-xs px-2 py-0.5 rounded font-semibold">NEW</span>
                           </button>
-                        ) : (
+                        ) : !isOnlySigner && bulkList ? (
                           <div className="flex items-center">
                             <div
                               className="flex items-center gap-2 px-3 py-2 text-sm bg-muted cursor-pointer"
@@ -4820,14 +4825,13 @@ if (isPublicFlow) {
                             </div>
                             <button onClick={clearBulkList} className="ml-3 text-muted-foreground hover:text-red-600" title="Remove"><Trash2 className="w-4 h-4" /></button>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     </div>
 
                   </div>
-                  {!isOnlySigner && (
-                    <>
-                      {showBulkModal && (
+                  <>
+                      {!isOnlySigner && showBulkModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center">
                           <div
                             className="absolute inset-0 bg-black/50 backdrop-blur-xs"
@@ -6295,8 +6299,7 @@ if (isPublicFlow) {
                         );
                       })()}
 
-                    </>
-                  )}
+                  </>
 
                   {/* Add Recipient Button - only show when not only signer */}
                   {!isOnlySigner && (() => {

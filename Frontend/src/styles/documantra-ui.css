@@ -136,6 +136,15 @@
     @apply border-b border-border/60 px-5 py-4 transition-colors last:border-b-0 hover:bg-muted/25;
   }
 
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   .dm-badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
