@@ -103,6 +103,10 @@ import { toTitleCase } from '../../utils/formatName';
 import { APP_NAME } from '../../components/constants/appConfig';
 import { BRAND, formatEnvelopeSubject } from '../../config/brand';
 import { refreshVSignPublicStatus, isVSignEnabled } from '../../config/vsign';
+import {
+  extractDocumentContentSnippet,
+  resolveEnvelopeTypeFromContent,
+} from '../../utils/envelopeTypeFromContent';
 
 /** Match saved recipient rows by name, email, company, title, or phone (digits normalized). */
 function recipientListRowMatchesQuery(
@@ -131,106 +135,6 @@ function recipientListRowMatchesQuery(
 
   const phoneDigits = (r.phone || '').replace(/\D/g, '');
   return phoneDigits.length > 0 && phoneDigits.includes(queryDigits);
-}
-
-/** Normalize text for envelope-type matching (filename / headline / type title). */
-function normalizeEnvelopeTypeText(value: string): string {
-  return String(value || '')
-    .replace(/\.[a-z0-9]{2,5}$/i, '') // strip extension
-    .toLowerCase()
-    .replace(/[_.-]+/g, ' ')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-const ENVELOPE_TYPE_ALIASES: Record<string, string[]> = {
-  agreement: ['agreement', 'contract', 'mou', 'msa', 'sla'],
-  contract: ['contract', 'agreement', 'mou'],
-  nda: ['nda', 'non disclosure', 'confidentiality'],
-  invoice: ['invoice', 'bill', 'receipt', 'tax invoice'],
-  offer: ['offer letter', 'offer', 'appointment letter', 'joining letter'],
-  letter: ['letter', 'cover letter'],
-  proposal: ['proposal', 'quotation', 'quote', 'estimate'],
-  form: ['form', 'application', 'registration'],
-  policy: ['policy', 'handbook', 'sop'],
-  report: ['report', 'log', 'audit', 'statement'],
-  resume: ['resume', 'cv', 'biodata'],
-  purchase: ['po', 'purchase order', 'work order'],
-  lease: ['lease', 'rental', 'rent agreement'],
-  certificate: ['certificate', 'certification'],
-};
-
-/**
- * Pick best envelope type title from document filename / headline.
- * Returns null when confidence is too low.
- */
-function guessEnvelopeTypeFromDocuments(
-  sources: Array<string | undefined | null>,
-  types: Array<{ title?: string }>,
-): string | null {
-  const haystack = normalizeEnvelopeTypeText(sources.filter(Boolean).join(' '));
-  if (!haystack || !types?.length) return null;
-
-  let bestTitle: string | null = null;
-  let bestScore = 0;
-
-  for (const type of types) {
-    const title = String(type?.title || '').trim();
-    if (!title) continue;
-    const normTitle = normalizeEnvelopeTypeText(title);
-    if (!normTitle) continue;
-
-    let score = 0;
-
-    if (haystack === normTitle) score = 100;
-    else if (haystack.includes(normTitle)) score = 80 + Math.min(normTitle.length, 20);
-    else if (normTitle.includes(haystack) && haystack.length >= 4) score = 70;
-
-    const titleWords = normTitle.split(' ').filter((w) => w.length > 2);
-    if (titleWords.length > 0) {
-      const matched = titleWords.filter((w) => haystack.includes(w)).length;
-      score = Math.max(score, Math.round((matched / titleWords.length) * 65));
-    }
-
-    // Alias boost: e.g. file "NDA_v2.pdf" → type "Non Disclosure Agreement"
-    for (const [key, aliases] of Object.entries(ENVELOPE_TYPE_ALIASES)) {
-      const titleHits = aliases.some((a) => normTitle.includes(a)) || normTitle.includes(key);
-      const fileHits = aliases.some((a) => haystack.includes(a)) || haystack.includes(key);
-      if (titleHits && fileHits) score = Math.max(score, 72);
-    }
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestTitle = title;
-    }
-  }
-
-  return bestScore >= 45 ? bestTitle : null;
-}
-
-/** Build a custom "Other" envelope type label from the first document name/headline. */
-function deriveOtherEnvelopeTypeLabel(sources: Array<string | undefined | null>): string {
-  const raw = String(sources.find((s) => String(s || '').trim()) || '').trim();
-  if (!raw) return 'Other Document';
-
-  const withoutExt = raw.replace(/\.[a-z0-9]{2,5}$/i, '');
-  // Prefer the part before common separators if the name is very long
-  const cleaned = withoutExt
-    .replace(/[_.-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  const titled = cleaned
-    .split(' ')
-    .filter(Boolean)
-    .map((word) => {
-      if (/^[A-Z0-9]{2,}$/.test(word)) return word; // keep ASP, NDA, etc.
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .join(' ');
-
-  return titled.slice(0, 80) || 'Other Document';
 }
 
 const UPLOAD_BATCH_MAX_FILES = 4;
@@ -1666,6 +1570,8 @@ const isPublicFlow =
   const [envelopeTypes, setEnvelopeTypes] = useState<any[]>([]);
   const [selectedEnvelopeType, setSelectedEnvelopeType] = useState<string>('');
   const [envelopeTypeAutoPicked, setEnvelopeTypeAutoPicked] = useState(false);
+  const [envelopeTypeFromCatalog, setEnvelopeTypeFromCatalog] = useState(false);
+  const [documentContentSnippet, setDocumentContentSnippet] = useState('');
   const [typeDropdownOpen, setTypeDropdownOpen] = useState<boolean>(false);
   const [typeSearch, setTypeSearch] = useState<string>('');
   const [showOtherInputInDropdown, setShowOtherInputInDropdown] = useState<boolean>(false);
@@ -2152,6 +2058,8 @@ const isPublicFlow =
       if (!envelopeData.subject || envelopeData.subject.trim() === '' || subjectWasAuto) {
         setEnvelopeData(prev => ({ ...prev, subject: formatEnvelopeSubject(allDocNames.join(', ')) }));
       }
+      // Extract text content (PDF/TXT) so Envelope Type can follow the document headline
+      void refreshEnvelopeTypeFromFiles(validDocs.map((d) => d.file).filter(Boolean) as File[]);
     }
   };
 
@@ -3988,34 +3896,49 @@ const sendResp = await eSignApi.post(sendUrl);
     fetchEnvelopeTypes();
   }, []);
 
-  // Auto-pick Envelope Type from document filename / headline; fallback to Other (custom from file name)
+  // Auto-pick Envelope Type from document *content* (headline) first, then filename; Other fallback
   useEffect(() => {
     if (!documents.length) return;
     if (selectedEnvelopeType && !envelopeTypeAutoPicked) return;
 
-    const sources = [
-      documents[0]?.name,
-      ...documents.slice(1, 3).map((d) => d.name),
+    const resolved = resolveEnvelopeTypeFromContent({
+      contentSnippet: documentContentSnippet,
+      fileName: documents[0]?.name,
       documentTitle,
-      envelopeData.subject,
-    ];
+      subject: envelopeData.subject,
+      types: envelopeTypes,
+    });
 
-    const guessed =
-      envelopeTypes.length > 0
-        ? guessEnvelopeTypeFromDocuments(sources, envelopeTypes)
-        : null;
-    const nextType = guessed || deriveOtherEnvelopeTypeLabel(sources);
-
-    if (nextType && nextType !== selectedEnvelopeType) {
-      setSelectedEnvelopeType(nextType);
+    if (resolved.type && resolved.type !== selectedEnvelopeType) {
+      setSelectedEnvelopeType(resolved.type);
       setEnvelopeTypeAutoPicked(true);
-      // If no catalog match, mirror the "Other" flow so user can confirm/edit
-      if (!guessed) {
-        setShowOtherInputInDropdown(false);
-        setNewEnvelopeTypeValue('');
-      }
+      setEnvelopeTypeFromCatalog(resolved.fromCatalog);
+    } else if (resolved.type === selectedEnvelopeType) {
+      setEnvelopeTypeFromCatalog(resolved.fromCatalog);
     }
-  }, [documents, envelopeTypes, documentTitle, envelopeData.subject, selectedEnvelopeType, envelopeTypeAutoPicked]);
+  }, [
+    documents,
+    envelopeTypes,
+    documentTitle,
+    envelopeData.subject,
+    documentContentSnippet,
+    selectedEnvelopeType,
+    envelopeTypeAutoPicked,
+  ]);
+
+  const refreshEnvelopeTypeFromFiles = async (files: File[]) => {
+    if (!files.length) return;
+    // Prefer first PDF/text file for content; otherwise first file
+    const preferred =
+      files.find((f) => {
+        const n = (f.name || '').toLowerCase();
+        const t = (f.type || '').toLowerCase();
+        return t === 'application/pdf' || n.endsWith('.pdf') || t === 'text/plain' || n.endsWith('.txt');
+      }) || files[0];
+
+    const snippet = await extractDocumentContentSnippet(preferred);
+    setDocumentContentSnippet(snippet);
+  };
 
   // Auto-set active recipient when recipients exceed 3 and none is active
   useEffect(() => {
@@ -4048,6 +3971,7 @@ const sendResp = await eSignApi.post(sendUrl);
     }
     setSelectedEnvelopeType(value);
     setEnvelopeTypeAutoPicked(false);
+    setEnvelopeTypeFromCatalog(true);
     setShowOtherInputInDropdown(false);
     setTypeDropdownOpen(false);
     setTypeSearch('');
@@ -4060,6 +3984,7 @@ const sendResp = await eSignApi.post(sendUrl);
 
     setSelectedEnvelopeType(newEnvelopeTypeValue.trim());
     setEnvelopeTypeAutoPicked(false);
+    setEnvelopeTypeFromCatalog(false);
     setShowOtherInputInDropdown(false);
     setNewEnvelopeTypeValue('');
     setTypeDropdownOpen(false);
@@ -6548,11 +6473,13 @@ if (isPublicFlow) {
                     </button>
                     {envelopeTypeAutoPicked && selectedEnvelopeType && (
                       <p className="mt-1.5 text-xs text-muted-foreground">
-                        {envelopeTypes.some(
-                          (t) => String(t.title || '').toLowerCase() === selectedEnvelopeType.toLowerCase(),
-                        )
-                          ? 'Auto-selected from document name — change anytime'
-                          : 'No matching type — set from document name (Other). Change anytime'}
+                        {envelopeTypeFromCatalog
+                          ? documentContentSnippet
+                            ? 'Auto-selected from document content — change anytime'
+                            : 'Auto-selected from document name — change anytime'
+                          : documentContentSnippet
+                            ? 'No catalog match — set from document headline (Other). Change anytime'
+                            : 'No matching type — Other Document (camera/image names ignored). Change anytime'}
                       </p>
                     )}
 
