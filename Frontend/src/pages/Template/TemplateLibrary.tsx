@@ -220,6 +220,150 @@ const buildInitialValues = (fields: TemplateField[]) =>
     return acc;
   }, {});
 
+function extractJsonObject(raw: string): Record<string, unknown> | null {
+  const text = String(raw || '').trim();
+  if (!text) return null;
+
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = (fenced?.[1] || text).trim();
+
+  try {
+    const parsed = JSON.parse(candidate);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // fall through — try first {...} block
+  }
+
+  const start = candidate.indexOf('{');
+  const end = candidate.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    try {
+      const parsed = JSON.parse(candidate.slice(start, end + 1));
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Realistic sample values when user wants zero typing. */
+function buildSampleFieldValues(fields: TemplateField[]): Record<string, string> {
+  const samples: Record<string, string> = {};
+  for (const f of fields) {
+    const id = f.id.toLowerCase();
+    const label = f.label.toLowerCase();
+    if (f.type === 'date' || id.includes('date') || label.includes('date')) {
+      samples[f.id] = todayIsoDate();
+    } else if (id.includes('email') || label.includes('email')) {
+      samples[f.id] = 'ops@example.com';
+    } else if (id.includes('phone') || label.includes('phone')) {
+      samples[f.id] = '+91 98765 43210';
+    } else if (
+      id.includes('address') ||
+      label.includes('address') ||
+      f.type === 'textarea'
+    ) {
+      samples[f.id] = '12 MG Road, Bengaluru, Karnataka 560001, India';
+    } else if (id.includes('jurisdiction') || label.includes('jurisdiction')) {
+      samples[f.id] = 'India';
+    } else if (id.includes('entity') || label.includes('entity')) {
+      samples[f.id] = 'Private Limited Company';
+    } else if (id.includes('short') || label.includes('short')) {
+      samples[f.id] = id.includes('receiv') || label.includes('receiv') ? 'Beta' : 'Acme';
+    } else if (id.includes('receiv') || label.includes('receiv') || id.includes('partyb') || id.includes('partyb')) {
+      samples[f.id] = 'Beta Solutions Pvt Ltd';
+    } else if (
+      id.includes('disclos') ||
+      label.includes('disclos') ||
+      id.includes('partya') ||
+      id.includes('partya') ||
+      id.includes('company') ||
+      id.includes('employer')
+    ) {
+      samples[f.id] = 'Acme Technologies Pvt Ltd';
+    } else if (id.includes('name') || label.includes('name')) {
+      samples[f.id] = 'Alex Sharma';
+    } else if (id.includes('title') || label.includes('title') || id.includes('role')) {
+      samples[f.id] = 'Authorized Signatory';
+    } else {
+      samples[f.id] = f.placeholder?.replace(/^e\.g\.\s*,?\s*/i, '') || `Sample ${f.label}`;
+    }
+  }
+  return samples;
+}
+
+async function aiSuggestFieldValues(options: {
+  fields: TemplateField[];
+  brief: string;
+  templateTitle: string;
+  templateText: string;
+}): Promise<Record<string, string>> {
+  const fieldSpec = options.fields.map((f) => ({
+    id: f.id,
+    label: f.label,
+    type: f.type,
+    required: !!f.required,
+  }));
+
+  const requirements = `
+You are filling a document template form for the user.
+
+Template title: ${options.templateTitle}
+
+User brief (use these facts; invent only reasonable missing business details if needed):
+${options.brief.trim()}
+
+Fields to fill (use these exact ids as JSON keys):
+${JSON.stringify(fieldSpec, null, 2)}
+
+Template excerpt (for context only):
+"""
+${options.templateText.slice(0, 2500)}
+"""
+
+Rules:
+- Return ONLY a single JSON object mapping field id → string value.
+- No markdown, no commentary, no code fences.
+- Dates must be YYYY-MM-DD when type is date.
+- Keep values concise and professional.
+- Prefer facts from the user brief over invented data.
+`.trim();
+
+  const response = await aiContentService.generateContent({
+    templateType: 'form_fill',
+    requirements,
+    formData: { fields: fieldSpec },
+  });
+
+  const content = response?.data?.content || '';
+  const parsed = extractJsonObject(content);
+  if (!parsed) {
+    throw new Error('AI did not return usable field values. Try a clearer brief.');
+  }
+
+  const next: Record<string, string> = {};
+  for (const f of options.fields) {
+    const raw = parsed[f.id];
+    if (raw == null) continue;
+    const value = String(raw).trim();
+    if (value) next[f.id] = value;
+  }
+
+  if (Object.keys(next).length === 0) {
+    throw new Error('AI returned empty values. Please add more details in the brief.');
+  }
+  return next;
+}
+
 export const TemplateLibrary: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -238,6 +382,10 @@ export const TemplateLibrary: React.FC = () => {
   const [aiFillValues, setAiFillValues] = useState<Record<string, string>>({});
   const [aiEditMode, setAiEditMode] = useState(false);
   const [aiTemplateDraft, setAiTemplateDraft] = useState<string>('');
+  const [aiFillBrief, setAiFillBrief] = useState('');
+  const [isAiFilling, setIsAiFilling] = useState(false);
+  const [libraryFillBrief, setLibraryFillBrief] = useState('');
+  const [isLibraryAiFilling, setIsLibraryAiFilling] = useState(false);
 
   const templates: TemplateItem[] = useMemo(() => TEMPLATE_LIBRARY_TEMPLATES, []);
 
@@ -379,11 +527,12 @@ export const TemplateLibrary: React.FC = () => {
     setAiFillFields(fields);
     setAiFillValues(initialValues);
     setAiEditMode(false);
+    setAiFillBrief('');
     setAiFillOpen(true);
   };
 
   const closeAiFillModal = () => {
-    if (isGenerating) return;
+    if (isGenerating || isAiFilling) return;
     setAiFillOpen(false);
     setAiFillTemplate(null);
     setAiFillTemplateText('');
@@ -391,6 +540,70 @@ export const TemplateLibrary: React.FC = () => {
     setAiFillFields([]);
     setAiFillValues({});
     setAiEditMode(false);
+    setAiFillBrief('');
+  };
+
+  const applyAiFillToFields = async () => {
+    if (!aiFillTemplate || isAiFilling || isGenerating) return;
+    if (!aiFillBrief.trim()) {
+      toast.error('Describe the parties, dates, or key facts — then tap AI Fill.');
+      return;
+    }
+    try {
+      setIsAiFilling(true);
+      const suggested = await aiSuggestFieldValues({
+        fields: aiFillFields,
+        brief: aiFillBrief,
+        templateTitle: aiFillTemplate.title || 'Template',
+        templateText: aiTemplateDraft || aiFillTemplateText,
+      });
+      setAiFillValues((prev) => ({ ...prev, ...suggested }));
+      toast.success('Fields filled by AI — review before generating.');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'AI fill failed');
+    } finally {
+      setIsAiFilling(false);
+    }
+  };
+
+  const applySampleFillToAiFields = () => {
+    setAiFillValues(buildSampleFieldValues(aiFillFields));
+    toast.success('Sample data applied — edit anything that looks wrong.');
+  };
+
+  const applyAiFillToLibraryFields = async () => {
+    if (!activeTemplate || isLibraryAiFilling || isGenerating) return;
+    if (!libraryFillBrief.trim()) {
+      toast.error('Describe the parties, dates, or key facts — then tap AI Fill.');
+      return;
+    }
+    try {
+      setIsLibraryAiFilling(true);
+      const suggested = await aiSuggestFieldValues({
+        fields: activeTemplate.fields,
+        brief: libraryFillBrief,
+        templateTitle: activeTemplate.name,
+        templateText: [
+          activeTemplate.preview?.title,
+          ...(activeTemplate.preview?.body || []),
+          ...(activeTemplate.preview?.sections || []).flatMap((s) => [s.heading, ...s.lines]),
+        ]
+          .filter(Boolean)
+          .join('\n'),
+      });
+      setFieldValues((prev) => ({ ...prev, ...suggested }));
+      toast.success('Fields filled by AI — review before generating.');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'AI fill failed');
+    } finally {
+      setIsLibraryAiFilling(false);
+    }
+  };
+
+  const applySampleFillToLibraryFields = () => {
+    if (!activeTemplate) return;
+    setFieldValues(buildSampleFieldValues(activeTemplate.fields));
+    toast.success('Sample data applied — edit anything that looks wrong.');
   };
 
   const handleGenerateFromAiTemplate = async () => {
@@ -436,11 +649,14 @@ export const TemplateLibrary: React.FC = () => {
   const openGenerator = (template: TemplateItem) => {
     setActiveTemplate(template);
     setFieldValues(buildInitialValues(template.fields));
+    setLibraryFillBrief('');
   };
 
   const closeGenerator = () => {
+    if (isLibraryAiFilling || isGenerating) return;
     setActiveTemplate(null);
     setFieldValues({});
+    setLibraryFillBrief('');
   };
 
   const previewValues = useMemo(() => {
@@ -728,6 +944,42 @@ export const TemplateLibrary: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 min-h-0">
                 {/* Left: required fields */}
                 <div className="lg:col-span-1 p-5 border-b lg:border-b-0 lg:border-r border-border bg-muted/40 overflow-auto min-h-0">
+                  <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      AI Fill
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Paste a short brief (parties, dates, address). AI fills the fields — you can edit anytime.
+                    </p>
+                    <textarea
+                      value={libraryFillBrief}
+                      onChange={(e) => setLibraryFillBrief(e.target.value)}
+                      disabled={isGenerating || isLibraryAiFilling}
+                      placeholder="e.g. Acme Pvt Ltd (Mumbai) sharing data with Beta Solutions (Bengaluru). Effective today. Indian law."
+                      className="w-full min-h-[84px] resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-60"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={applyAiFillToLibraryFields}
+                        disabled={isGenerating || isLibraryAiFilling}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {isLibraryAiFilling ? 'Filling…' : 'AI Fill fields'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={applySampleFillToLibraryFields}
+                        disabled={isGenerating || isLibraryAiFilling}
+                        className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-60"
+                      >
+                        Use sample data
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="text-sm font-semibold text-foreground mb-3">Enter {activeTemplate.categoryLabel} Details</div>
                   <div className="space-y-3">
                     {activeTemplate.fields.map((f) => {
@@ -835,6 +1087,42 @@ export const TemplateLibrary: React.FC = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 min-h-0">
                 <div className="lg:col-span-1 p-5 border-b lg:border-b-0 lg:border-r border-border bg-muted/40 overflow-auto min-h-0">
+                  <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      AI Fill
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Describe the deal in plain language. AI maps it to required fields — review before Generate.
+                    </p>
+                    <textarea
+                      value={aiFillBrief}
+                      onChange={(e) => setAiFillBrief(e.target.value)}
+                      disabled={isGenerating || isAiFilling}
+                      placeholder="e.g. Disclosing: Acme Tech Pvt Ltd, Bengaluru. Receiving: Nova Labs LLP, Delhi. Effective 2026-09-04. Mutual NDA under Indian law."
+                      className="w-full min-h-[84px] resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-60"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={applyAiFillToFields}
+                        disabled={isGenerating || isAiFilling}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {isAiFilling ? 'Filling…' : 'AI Fill fields'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={applySampleFillToAiFields}
+                        disabled={isGenerating || isAiFilling}
+                        className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-60"
+                      >
+                        Use sample data
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="text-sm font-semibold text-foreground mb-3">Required fields</div>
                   <div className="space-y-3">
                     {aiFillFields.map((f) => {
