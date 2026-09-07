@@ -3951,7 +3951,9 @@ const sendResp = await eSignApi.post(sendUrl);
         let file = primary.file as File | undefined;
         if (!file && (primary.url || primary.id)) {
           try {
-            const data = await fetchEsignDocumentData(primary, { envelopeId });
+            const data = await fetchEsignDocumentData(primary, {
+              envelopeId: envelopeId ?? undefined,
+            });
             file = new File([data], primary.name || 'document.pdf', {
               type: primary.type || 'application/pdf',
             });
