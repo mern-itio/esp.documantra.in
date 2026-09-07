@@ -1572,6 +1572,8 @@ const isPublicFlow =
   const [envelopeTypeAutoPicked, setEnvelopeTypeAutoPicked] = useState(false);
   const [envelopeTypeFromCatalog, setEnvelopeTypeFromCatalog] = useState(false);
   const [documentContentSnippet, setDocumentContentSnippet] = useState('');
+  /** Tracks which primary document the current auto envelope-type / snippet came from. */
+  const envelopeTypeSourceDocKeyRef = useRef('');
   const [typeDropdownOpen, setTypeDropdownOpen] = useState<boolean>(false);
   const [typeSearch, setTypeSearch] = useState<string>('');
   const [showOtherInputInDropdown, setShowOtherInputInDropdown] = useState<boolean>(false);
@@ -1599,6 +1601,8 @@ const isPublicFlow =
     }
 
     processFiles(Array.from(files));
+    // Allow re-selecting the same file after cancel/remove
+    event.target.value = '';
   };
 
   const getPDFPageCount = async (file: File): Promise<number> => {
@@ -2058,8 +2062,7 @@ const isPublicFlow =
       if (!envelopeData.subject || envelopeData.subject.trim() === '' || subjectWasAuto) {
         setEnvelopeData(prev => ({ ...prev, subject: formatEnvelopeSubject(allDocNames.join(', ')) }));
       }
-      // Extract text content (PDF/TXT) so Envelope Type can follow the document headline
-      void refreshEnvelopeTypeFromFiles(validDocs.map((d) => d.file).filter(Boolean) as File[]);
+      // Envelope Type re-detects via the primary-document effect below (avoids stale snippet from a cancelled file).
     }
   };
 
@@ -2963,7 +2966,18 @@ if (isPublicFlow) {
         console.error('Failed to delete document from DB:', error);
       }
     }
-    setDocuments(prev => prev.filter(doc => doc.id !== docId));
+    setDocuments((prev) => {
+      const next = prev.filter((doc) => doc.id !== docId);
+      // If the primary doc is gone, drop stale auto envelope-type immediately (don't wait for effect).
+      const primaryRemoved = !next.length || next[0]?.id !== prev[0]?.id;
+      if (primaryRemoved && envelopeTypeAutoPicked) {
+        envelopeTypeSourceDocKeyRef.current = '';
+        setDocumentContentSnippet('');
+        setSelectedEnvelopeType('');
+        setEnvelopeTypeFromCatalog(false);
+      }
+      return next;
+    });
   };
 
   const addRecipient = () => {
@@ -3896,16 +3910,84 @@ const sendResp = await eSignApi.post(sendUrl);
     fetchEnvelopeTypes();
   }, []);
 
+  const getEnvelopeTypeDocKey = (doc?: (typeof documents)[number] | null) => {
+    if (!doc) return '';
+    return `${doc.id}|${doc.name}|${doc.size || 0}`;
+  };
+
+  // When the primary document changes (remove / cancel / replace), drop stale type + re-extract content
+  useEffect(() => {
+    const primary = documents[0];
+    const key = getEnvelopeTypeDocKey(primary);
+
+    if (!primary) {
+      envelopeTypeSourceDocKeyRef.current = '';
+      setDocumentContentSnippet('');
+      if (envelopeTypeAutoPicked) {
+        setSelectedEnvelopeType('');
+        setEnvelopeTypeAutoPicked(false);
+        setEnvelopeTypeFromCatalog(false);
+      }
+      return;
+    }
+
+    if (key === envelopeTypeSourceDocKeyRef.current) return;
+
+    const previousKey = envelopeTypeSourceDocKeyRef.current;
+    envelopeTypeSourceDocKeyRef.current = key;
+
+    // New primary file — clear previous auto pick so UI doesn't keep the old type
+    if (previousKey && envelopeTypeAutoPicked) {
+      setSelectedEnvelopeType('');
+      setDocumentContentSnippet('');
+    } else if (!previousKey) {
+      // First document in this session — start with a clean snippet for this file
+      setDocumentContentSnippet('');
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        let file = primary.file as File | undefined;
+        if (!file && (primary.url || primary.id)) {
+          try {
+            const data = await fetchEsignDocumentData(primary, { envelopeId });
+            file = new File([data], primary.name || 'document.pdf', {
+              type: primary.type || 'application/pdf',
+            });
+          } catch {
+            file = undefined;
+          }
+        }
+        if (!file || cancelled) return;
+        const snippet = await extractDocumentContentSnippet(file);
+        if (cancelled || envelopeTypeSourceDocKeyRef.current !== key) return;
+        setDocumentContentSnippet(snippet);
+      } catch (err) {
+        console.warn('Failed to refresh envelope type content:', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // intentionally depend on documents identity / primary key only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documents]);
+
   // Auto-pick Envelope Type from document *content* (headline) first, then filename; Other fallback
   useEffect(() => {
     if (!documents.length) return;
+    // Respect a manual selection — only auto-fill when empty or previously auto-picked
     if (selectedEnvelopeType && !envelopeTypeAutoPicked) return;
 
+    const primaryName = documents[0]?.name || '';
     const resolved = resolveEnvelopeTypeFromContent({
       contentSnippet: documentContentSnippet,
-      fileName: documents[0]?.name,
-      documentTitle,
-      subject: envelopeData.subject,
+      fileName: primaryName,
+      // Use the active file name only — avoid a stale subject from a cancelled upload
+      documentTitle: primaryName || documentTitle,
+      subject: primaryName,
       types: envelopeTypes,
     });
 
@@ -3920,25 +4002,10 @@ const sendResp = await eSignApi.post(sendUrl);
     documents,
     envelopeTypes,
     documentTitle,
-    envelopeData.subject,
     documentContentSnippet,
     selectedEnvelopeType,
     envelopeTypeAutoPicked,
   ]);
-
-  const refreshEnvelopeTypeFromFiles = async (files: File[]) => {
-    if (!files.length) return;
-    // Prefer first PDF/text file for content; otherwise first file
-    const preferred =
-      files.find((f) => {
-        const n = (f.name || '').toLowerCase();
-        const t = (f.type || '').toLowerCase();
-        return t === 'application/pdf' || n.endsWith('.pdf') || t === 'text/plain' || n.endsWith('.txt');
-      }) || files[0];
-
-    const snippet = await extractDocumentContentSnippet(preferred);
-    setDocumentContentSnippet(snippet);
-  };
 
   // Auto-set active recipient when recipients exceed 3 and none is active
   useEffect(() => {
