@@ -181,38 +181,63 @@ async function drawAuthPhotos(doc, evidence, x, y) {
 
 const META_ROW_H = 12;
 const LOC_ROW_H = 12;
+const LABEL_VALUE_FONT = 6.5;
+const LABEL_W = 40;
 
-/** Approx Helvetica advance at fontSize — used to clip values to one line. */
+/** Approx Helvetica advance at fontSize — used for timeline single-line clips. */
 function maxCharsForWidth(px, fontSize = 6.5) {
   return Math.max(6, Math.floor(Math.max(0, px) / (fontSize * 0.52)));
 }
 
+function estimateWrappedValueH(doc, value, valueW, fontSize = LABEL_VALUE_FONT) {
+  const lineH = fontSize + 2.5;
+  if (value == null || String(value).trim() === '') return lineH;
+  doc.font('Helvetica').fontSize(fontSize);
+  const h = doc.heightOfString(String(value), { width: Math.max(20, valueW), lineGap: 1 });
+  return Math.max(lineH, h);
+}
+
+function estimateLabelValueBlockH(doc, rows, colW, labelW = LABEL_W, fontSize = LABEL_VALUE_FONT) {
+  const valueW = Math.max(20, colW - labelW - 3);
+  let h = 14; // section title + gap
+  rows.forEach(([, value]) => {
+    if (value == null || String(value).trim() === '') return;
+    h += estimateWrappedValueH(doc, value, valueW, fontSize) + 3;
+  });
+  return Math.max(h, 14 + META_ROW_H);
+}
+
 /**
- * Single-line label/value rows. Never wraps — long values are clipped so
- * Session / IP Location / Timeline columns cannot overlap.
+ * Label/value rows. Long values wrap within the column and push following rows down
+ * (no ellipsis cut-off, no horizontal bleed into the next column).
  */
-function drawLabelValueRows(doc, x, y, w, rows, { labelW = 42, rowH = META_ROW_H, fontSize = 6.5 } = {}) {
+function drawLabelValueRows(doc, x, y, w, rows, { labelW = LABEL_W, fontSize = LABEL_VALUE_FONT } = {}) {
   const valueX = x + labelW + 3;
   const valueW = Math.max(20, w - labelW - 3);
-  const maxChars = maxCharsForWidth(valueW, fontSize);
   let rowY = y;
 
   rows.forEach(([label, value]) => {
     if (value == null || String(value).trim() === '') return;
+    const valueStr = String(value);
+    const valueH = estimateWrappedValueH(doc, valueStr, valueW, fontSize);
+    const rowH = valueH + 3;
+
     doc.fillColor(C.label).font('Helvetica-Bold').fontSize(fontSize);
     textAt(doc, String(label), x, rowY, {
       width: labelW,
-      height: rowH - 1,
-      ellipsis: true,
       lineBreak: false,
     });
+
     doc.fillColor(C.value).font('Helvetica').fontSize(fontSize);
-    textAt(doc, clip(value, maxChars), valueX, rowY, {
+    doc.save();
+    doc.text(valueStr, valueX, rowY, {
       width: valueW,
-      height: rowH - 1,
-      ellipsis: true,
-      lineBreak: false,
+      lineGap: 1,
+      align: 'left',
     });
+    doc.y = rowY;
+    doc.restore();
+
     rowY += rowH;
   });
   return rowY;
@@ -264,17 +289,15 @@ function buildLocationRows(evidence) {
 
 function drawMetaRows(doc, x, y, w, evidence) {
   return drawLabelValueRows(doc, x, y, w, buildMetaRows(evidence), {
-    labelW: 40,
-    rowH: META_ROW_H,
-    fontSize: 6.5,
+    labelW: LABEL_W,
+    fontSize: LABEL_VALUE_FONT,
   });
 }
 
 function drawLocationRows(doc, x, y, w, evidence) {
   return drawLabelValueRows(doc, x, y, w, buildLocationRows(evidence), {
-    labelW: 40,
-    rowH: LOC_ROW_H,
-    fontSize: 6.5,
+    labelW: LABEL_W,
+    fontSize: LABEL_VALUE_FONT,
   });
 }
 
@@ -434,8 +457,36 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
     const timelineBlockH = 14 + timelineRows * 20;
     const metaRowList = buildMetaRows(evidence);
     const locRowList = showLocation ? buildLocationRows(evidence) : [];
-    const metaBlockH = 14 + Math.max(metaRowList.length, 1) * META_ROW_H;
-    const locBlockH = showLocation ? 14 + Math.max(locRowList.length, 1) * LOC_ROW_H : 0;
+
+    // Column widths first so wrap-height estimates match what we draw.
+    const gap = 8;
+    const MIN_META = 118;
+    const MIN_LOC = 108;
+    const MIN_TIME = 120;
+    let authW = hasAuth ? Math.min(108, width * 0.18) : 0;
+    let locW = showLocation ? Math.max(MIN_LOC, Math.min(128, width * 0.22)) : 0;
+    let metaW = Math.max(MIN_META, Math.min(148, width * 0.26));
+    let timeW = width - authW - metaW - locW - gap * (1 + (hasAuth ? 1 : 0) + (showLocation ? 1 : 0)) - 16;
+    if (timeW < MIN_TIME) {
+      if (authW > 72) {
+        const take = Math.min(authW - 72, MIN_TIME - timeW);
+        authW -= take;
+        timeW += take;
+      }
+      if (timeW < MIN_TIME && metaW > MIN_META) {
+        const take = Math.min(metaW - MIN_META, MIN_TIME - timeW);
+        metaW -= take;
+        timeW += take;
+      }
+      if (timeW < MIN_TIME && locW > MIN_LOC) {
+        const take = Math.min(locW - MIN_LOC, MIN_TIME - timeW);
+        locW -= take;
+        timeW += take;
+      }
+    }
+
+    const metaBlockH = estimateLabelValueBlockH(doc, metaRowList, metaW);
+    const locBlockH = showLocation ? estimateLabelValueBlockH(doc, locRowList, locW) : 0;
     const contentH = Math.max(hasAuth ? 70 : 40, metaBlockH, locBlockH, timelineBlockH);
     const signatureReserve = 48;
     const panelH = Math.max(120, 28 + contentH + signatureReserve);
@@ -462,35 +513,6 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
     textAt(doc, 'VERIFIED', left + width - 50, y + 7.5, { width: 42, align: 'center' });
 
     const bodyY = y + 28;
-    const gap = 8;
-    // Keep Session / IP Location readable — do not crush them for the timeline.
-    const MIN_META = 118;
-    const MIN_LOC = 108;
-    const MIN_TIME = 120;
-    let authW = hasAuth ? Math.min(108, width * 0.18) : 0;
-    let locW = showLocation ? Math.max(MIN_LOC, Math.min(128, width * 0.22)) : 0;
-    let metaW = Math.max(MIN_META, Math.min(148, width * 0.26));
-    let timeW = width - authW - metaW - locW - gap * (1 + (hasAuth ? 1 : 0) + (showLocation ? 1 : 0)) - 16;
-    if (timeW < MIN_TIME) {
-      const need = MIN_TIME - timeW;
-      // Steal from auth first, then a little from meta/loc, never below floors.
-      if (authW > 72) {
-        const take = Math.min(authW - 72, need);
-        authW -= take;
-        timeW += take;
-      }
-      if (timeW < MIN_TIME && metaW > MIN_META) {
-        const take = Math.min(metaW - MIN_META, MIN_TIME - timeW);
-        metaW -= take;
-        timeW += take;
-      }
-      if (timeW < MIN_TIME && locW > MIN_LOC) {
-        const take = Math.min(locW - MIN_LOC, MIN_TIME - timeW);
-        locW -= take;
-        timeW += take;
-      }
-    }
-
     const metaX = left + 10 + (hasAuth ? authW + gap : 0);
     const locX = metaX + metaW + (showLocation ? gap : 0);
     const timeX = showLocation ? locX + locW + gap : metaX + metaW + gap;
