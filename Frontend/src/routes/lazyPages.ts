@@ -62,6 +62,9 @@ export const ResetPasswordPage = lazyPage(() => import('../pages/LandingPage/Res
 export const PrivacyPolicyPage = lazyPage(() => import('../pages/LandingPage/PrivacyPolicyPage'));
 export const CookiePolicyPage = lazyPage(() => import('../pages/LandingPage/CookiePolicyPage'));
 export const TermsOfServicePage = lazyPage(() => import('../pages/LandingPage/TermsOfServicePage'));
+export const ElectronicRecordDisclosurePage = lazyPage(
+  () => import('../pages/LandingPage/ElectronicRecordDisclosurePage'),
+);
 export const UseCasesPage = lazyPage(() => import('../pages/LandingPage/UseCasesPage'));
 export const WorkspacePage = lazyPage(() => import('../pages/LandingPage/WorkspacePage'));
 export const FeatureComparisonPage = lazyPage(() => import('../pages/LandingPage/FeatureComparisonPage'));

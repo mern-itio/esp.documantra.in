@@ -106,9 +106,9 @@ export const fallbackFooter: FooterContent = {
     'VAPT',
   ],
   bottomQuickLinks: [
-    { label: 'Privacy', href: '/privacy' },
-    { label: 'Terms', href: '/terms' },
-    { label: 'Cookies', href: '/cookies' },
+    { label: 'Privacy', href: '/privacy-policy' },
+    { label: 'Terms', href: '/terms-of-use' },
+    { label: 'Cookies', href: '/cookie-policy' },
     { label: 'Sitemap', href: '/sitemap' },
   ],
   linkGroups: [
@@ -140,9 +140,9 @@ export const fallbackFooter: FooterContent = {
     {
       category: 'Legal',
       links: [
-        { label: 'Privacy Policy', href: '/privacy' },
-        { label: 'Terms of Service', href: '/terms' },
-        { label: 'Cookie Policy', href: '/cookies' },
+        { label: 'Privacy Policy', href: '/privacy-policy' },
+        { label: 'Terms of Use', href: '/terms-of-use' },
+        { label: 'Cookie Policy', href: '/cookie-policy' },
       ],
     },
   ],

@@ -298,7 +298,7 @@ const ContactSales: React.FC = () => {
                   </button>
 
                   <div className="text-xs text-gray-500 mt-3 text-center">
-                    By submitting, you agree to our <Link to="/terms-of-service" className="text-[#260559] hover:underline">Terms</Link> and <Link to="/privacy-policy" className="text-[#260559] hover:underline">Privacy Policy</Link>.
+                    By submitting, you agree to our <Link to="/terms-of-use" className="text-[#260559] hover:underline">Terms</Link> and <Link to="/privacy-policy" className="text-[#260559] hover:underline">Privacy Policy</Link>.
                   </div>
                 </form>
               )}

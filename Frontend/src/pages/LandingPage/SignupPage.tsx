@@ -889,7 +889,7 @@ const SignupPage = () => {
                           />
                           <span className="text-xs leading-snug text-slate-600">
                             I agree to the{' '}
-                            <Link to="/terms-of-service" className="font-semibold text-[#155E4B] hover:underline">
+                            <Link to="/terms-of-use" className="font-semibold text-[#155E4B] hover:underline">
                               Terms
                             </Link>{' '}
                             and{' '}

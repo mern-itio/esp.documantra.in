@@ -132,7 +132,7 @@ export function CommentHighlight({
       type="button"
       onClick={onClick}
       title={comment.message}
-      className={`absolute z-20 rounded border text-left ${
+      className={`pointer-events-auto absolute z-50 rounded border text-left ${
         isResolved
           ? 'border-gray-300 bg-gray-100/70'
           : active

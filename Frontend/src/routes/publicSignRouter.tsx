@@ -9,6 +9,11 @@ import PublicSendSuccessPage from '../pages/PublicFlow/PublicSendSuccessPage';
 import ThankYouPage from '../pages/eSign/ThankYou';
 import SignerStatusPage from '../pages/eSign/SignerStatusPage';
 import FinishLaterPage from '../pages/eSign/FinishLaterPage';
+import PrivacyPolicyPage from '../pages/LandingPage/PrivacyPolicyPage';
+import TermsOfServicePage from '../pages/LandingPage/TermsOfServicePage';
+import ElectronicRecordDisclosurePage from '../pages/LandingPage/ElectronicRecordDisclosurePage';
+import CookiePolicyPage from '../pages/LandingPage/CookiePolicyPage';
+import { LEGAL_PATHS } from '../constants/legalPaths';
 
 const LegacyPublicSignRedirect = () => {
   const location = useLocation();
@@ -40,6 +45,15 @@ const publicSignRouter = createBrowserRouter([
   { path: '/public-sign/editor', element: <LegacyEditorRedirect /> },
   { path: '/public-sign/editor/*', element: <LegacyEditorRedirect /> },
   { path: '/e-sign/recipient-portal', element: <RecipientPortalPage /> },
+  // Legal pages (canonical URLs only; aliases redirect)
+  { path: LEGAL_PATHS.privacyPolicy, element: <PrivacyPolicyPage /> },
+  { path: LEGAL_PATHS.termsOfUse, element: <TermsOfServicePage /> },
+  { path: LEGAL_PATHS.electronicRecordDisclosure, element: <ElectronicRecordDisclosurePage /> },
+  { path: LEGAL_PATHS.cookiePolicy, element: <CookiePolicyPage /> },
+  { path: '/privacy', element: <Navigate to={LEGAL_PATHS.privacyPolicy} replace /> },
+  { path: '/terms', element: <Navigate to={LEGAL_PATHS.termsOfUse} replace /> },
+  { path: '/terms-of-service', element: <Navigate to={LEGAL_PATHS.termsOfUse} replace /> },
+  { path: '/cookies', element: <Navigate to={LEGAL_PATHS.cookiePolicy} replace /> },
   // Must be registered before e-sign/signer/:id — otherwise "status" is parsed as :id.
   { path: '/e-sign/signer/status/:envelopeId/:recipientId', element: <SignerStatusPage /> },
   { path: '/e-sign/signer/finish-later/:envelopeId/:recipientId', element: <FinishLaterPage /> },

@@ -16,6 +16,7 @@ import { markDocumentOpened, persistBiometricEvidence } from "../../utils/signin
 import { resolvePublicSignatureMethod, refreshVSignPublicStatus } from "../../config/vsign";
 import { recipientAuthenticationRequiresAadhaar } from "../../utils/vsignAuthRequirement";
 import { formatDocuMantraEnvelopeId } from "../../utils/envelopeIdFormat";
+import { LEGAL_PATHS } from "../../constants/legalPaths";
 import * as Icons from "lucide-react";
 import {
   FileText,
@@ -1847,7 +1848,7 @@ const EnvelopeDetails: React.FC = () => {
               <p className="mt-8 text-sm text-gray-700">
                 Please read the{" "}
                 <a
-                  href="/terms-of-service"
+                  href={LEGAL_PATHS.electronicRecordDisclosure}
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#248567] underline hover:text-[#1f7158]"
@@ -1868,11 +1869,21 @@ const EnvelopeDetails: React.FC = () => {
                   I agree to use electronic records and signatures.{" "}
                   <span className="text-red-600">*</span>
                   <div className="mt-1 text-xs text-gray-500">
-                    <a href="/terms-of-service" target="_blank" rel="noreferrer" className="underline hover:text-gray-700">
-                      Terms and Conditions
+                    <a
+                      href={LEGAL_PATHS.termsOfUse}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline hover:text-gray-700"
+                    >
+                      Terms of Use
                     </a>
                     {" | "}
-                    <a href="/privacy-policy" target="_blank" rel="noreferrer" className="underline hover:text-gray-700">
+                    <a
+                      href={LEGAL_PATHS.privacyPolicy}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline hover:text-gray-700"
+                    >
                       Privacy Policy
                     </a>
                   </div>

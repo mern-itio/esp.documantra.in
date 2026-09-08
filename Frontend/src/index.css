@@ -4,6 +4,18 @@
 @import 'react-pdf/dist/Page/TextLayer.css';
 @import 'react-pdf/dist/Page/AnnotationLayer.css';
 
+/* PDF text selection for document comments / suggestions */
+.react-pdf__Page__textContent,
+.react-pdf__Page__textLayer {
+  user-select: text !important;
+  pointer-events: auto !important;
+  z-index: 3 !important;
+}
+.react-pdf__Page__textContent span,
+.react-pdf__Page__textLayer span {
+  cursor: text;
+}
+
 /* AI Generate Button Animations */
 @keyframes splashWave {
   0% {

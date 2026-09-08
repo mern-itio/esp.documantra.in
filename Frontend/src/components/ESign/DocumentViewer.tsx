@@ -19,6 +19,7 @@ import {
 } from "./EnvelopeCommentLayer";
 import type { EnvelopeComment } from "../../services/envelopeCommentService";
 import { PDFJS_WORKER_SRC } from "../../config/pdfjsWorker";
+import { LEGAL_PATHS } from "../../constants/legalPaths";
 import { getStoredVSignAadhaar, getStoredVSignAadhaarLast4, storeVSignAadhaar, storeVSignAadhaarLast4 } from "../../utils/vsignAadhaarStorage";
 import {
   isAadhaarSigningVerified,
@@ -2326,9 +2327,10 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                       />
                     ))}
 
-                  {/* per-page overlay */}
+                  {/* per-page overlay: pass-through so PDF text stays selectable for comments;
+                      individual fields re-enable pointer events below. */}
                   <div
-                    className="absolute inset-0 z-40"
+                    className="absolute inset-0 z-40 pointer-events-none"
                     style={{
                       width: pageWidth,
                     }}
@@ -2595,6 +2597,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                             <div
                               key={field._id?.$oid || field._id}
                               data-field-id={keyId}
+                              className="pointer-events-auto"
                               style={{
                                 position: "absolute",
                                 top: rawY * pageScale,
@@ -3235,6 +3238,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                           <div
                             key={fieldId}
                             data-field-id={keyId}
+                            className="pointer-events-auto"
                             onClick={() => {
                               if (isViewOnly) openAuditTrailModal();
                             }}
@@ -3874,7 +3878,7 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
                 <h3 className="text-base font-semibold text-gray-900">Document suggestions</h3>
                 <p className="text-xs text-gray-500">
                   {commentsWriteEnabled
-                    ? 'Select text on the document to add a comment.'
+                    ? 'Drag to highlight text on the PDF — a comment box opens when you release.'
                     : 'View suggestions left on this document.'}
                 </p>
               </div>
@@ -4274,8 +4278,8 @@ const submitSingleField = async (recipientId: string, fieldId: string, value: an
       <div className="fixed bottom-0 left-0 right-0 border-t bg-[#F7F3EE] text-xs text-gray-600 flex items-center justify-between px-4 py-3 z-50">
         <div>Powered by {BRAND.name}</div>
         <div className="flex items-center gap-4">
-          <Link to="/terms-of-service"><span>Terms of Use</span></Link>
-          <Link to="/privacy-policy"><span>Privacy</span></Link>
+          <Link to={LEGAL_PATHS.termsOfUse}><span>Terms of Use</span></Link>
+          <Link to={LEGAL_PATHS.privacyPolicy}><span>Privacy</span></Link>
         </div>
       </div>
       </div>

@@ -367,7 +367,7 @@ const Footer = () => {
           </div>
            <div className='text-gray-400 text-xs gap-4 flex flex-wrap'>
               <a href="/privacy-policy" className="hover:underline">Privacy Policy</a>
-              <a href="/terms-of-service" className="hover:underline">Terms of Service</a>
+              <a href="/terms-of-use" className="hover:underline">Terms of Use</a>
               <a href="/cookie-policy" className="hover:underline">Cookie Policy</a>
               <a href="/cookie-policy" className="hover:underline">Accessibility Statement</a>
               <a href="/cookie-policy" className="hover:underline">Do Not Sell My Personal Information</a>

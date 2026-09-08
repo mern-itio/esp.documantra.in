@@ -1033,7 +1033,7 @@ const PrivacyPolicyPage = () => {
           <div className="mt-8 p-6 border border-gray-200 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Related Policies</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              <Link to="/terms-of-service" className="flex items-center gap-3 p-4 bg-[#F5F2EE] rounded-lg hover:bg-gray-100 transition-colors">
+              <Link to="/terms-of-use" className="flex items-center gap-3 p-4 bg-[#F5F2EE] rounded-lg hover:bg-gray-100 transition-colors">
                 <FileText className="h-5 w-5 text-primary-600" />
                 <div>
                   <h4 className="font-medium text-gray-900">Terms of Service</h4>
