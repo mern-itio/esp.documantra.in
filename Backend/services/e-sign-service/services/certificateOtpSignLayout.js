@@ -179,8 +179,47 @@ async function drawAuthPhotos(doc, evidence, x, y) {
   });
 }
 
-function drawMetaRows(doc, x, y, w, evidence) {
-  const rows = [
+const META_ROW_H = 12;
+const LOC_ROW_H = 12;
+
+/** Approx Helvetica advance at fontSize — used to clip values to one line. */
+function maxCharsForWidth(px, fontSize = 6.5) {
+  return Math.max(6, Math.floor(Math.max(0, px) / (fontSize * 0.52)));
+}
+
+/**
+ * Single-line label/value rows. Never wraps — long values are clipped so
+ * Session / IP Location / Timeline columns cannot overlap.
+ */
+function drawLabelValueRows(doc, x, y, w, rows, { labelW = 42, rowH = META_ROW_H, fontSize = 6.5 } = {}) {
+  const valueX = x + labelW + 3;
+  const valueW = Math.max(20, w - labelW - 3);
+  const maxChars = maxCharsForWidth(valueW, fontSize);
+  let rowY = y;
+
+  rows.forEach(([label, value]) => {
+    if (value == null || String(value).trim() === '') return;
+    doc.fillColor(C.label).font('Helvetica-Bold').fontSize(fontSize);
+    textAt(doc, String(label), x, rowY, {
+      width: labelW,
+      height: rowH - 1,
+      ellipsis: true,
+      lineBreak: false,
+    });
+    doc.fillColor(C.value).font('Helvetica').fontSize(fontSize);
+    textAt(doc, clip(value, maxChars), valueX, rowY, {
+      width: valueW,
+      height: rowH - 1,
+      ellipsis: true,
+      lineBreak: false,
+    });
+    rowY += rowH;
+  });
+  return rowY;
+}
+
+function buildMetaRows(evidence) {
+  return [
     ['Device', evidence.device],
     ['OS', evidence.os],
     ['Browser', evidence.browser],
@@ -188,53 +227,61 @@ function drawMetaRows(doc, x, y, w, evidence) {
     ['ISP', evidence.isp],
     ['Org', evidence.org],
     ['ASN', evidence.asn],
-  ];
-  const labelW = 52;
-  let rowY = y;
-  rows.forEach(([label, value]) => {
-    if (!value) return;
-    doc.fillColor(C.label).font('Helvetica-Bold').fontSize(7);
-    textAt(doc, label, x, rowY, { width: labelW });
-    doc.fillColor(C.value).font('Helvetica').fontSize(7);
-    textAt(doc, clip(value, 32), x + labelW + 4, rowY, { width: w - labelW - 4 });
-    rowY += 11;
+  ].filter(([, v]) => v != null && String(v).trim() !== '');
+}
+
+function buildLocationRows(evidence) {
+  const lat = evidence.latitude ?? evidence.lat;
+  const lon = evidence.longitude ?? evidence.lon;
+  const rows = [];
+
+  // Prefer City over free-form Location to avoid duplicate place text.
+  if (evidence.city) rows.push(['City', evidence.city]);
+  else if (evidence.location) rows.push(['Location', evidence.location]);
+
+  if (evidence.region) rows.push(['Region', evidence.region]);
+  if (evidence.country || evidence.countryCode) {
+    rows.push([
+      'Country',
+      evidence.country
+        ? `${evidence.country}${evidence.countryCode ? ` (${evidence.countryCode})` : ''}`
+        : evidence.countryCode,
+    ]);
+  }
+  if (evidence.zip) rows.push(['ZIP', evidence.zip]);
+
+  // Lat/Lon OR Coordinates — never both (was causing crowded overlap).
+  if (lat != null && lon != null) {
+    rows.push(['Lat', String(lat)]);
+    rows.push(['Lon', String(lon)]);
+  } else if (evidence.geoCoords) {
+    rows.push(['Coords', evidence.geoCoords]);
+  }
+
+  if (evidence.timezone) rows.push(['TZ', evidence.timezone]);
+  return rows;
+}
+
+function drawMetaRows(doc, x, y, w, evidence) {
+  return drawLabelValueRows(doc, x, y, w, buildMetaRows(evidence), {
+    labelW: 40,
+    rowH: META_ROW_H,
+    fontSize: 6.5,
   });
-  return rowY;
 }
 
 function drawLocationRows(doc, x, y, w, evidence) {
-  const lat = evidence.latitude ?? evidence.lat;
-  const lon = evidence.longitude ?? evidence.lon;
-  const coords =
-    evidence.geoCoords ||
-    (lat != null && lon != null ? `${lat}, ${lon}` : '');
-  const rows = [
-    ['Location', evidence.location],
-    ['City', evidence.city],
-    ['Region', evidence.region],
-    ['Country', evidence.country ? `${evidence.country}${evidence.countryCode ? ` (${evidence.countryCode})` : ''}` : evidence.countryCode],
-    ['ZIP', evidence.zip],
-    ['Latitude', lat != null ? String(lat) : ''],
-    ['Longitude', lon != null ? String(lon) : ''],
-    ['Coordinates', coords],
-    ['Timezone', evidence.timezone],
-  ];
-  const labelW = 58;
-  let rowY = y;
-  rows.forEach(([label, value]) => {
-    if (!value) return;
-    doc.fillColor(C.label).font('Helvetica-Bold').fontSize(7);
-    textAt(doc, label, x, rowY, { width: labelW });
-    doc.fillColor(C.value).font('Helvetica').fontSize(7);
-    textAt(doc, clip(value, 30), x + labelW + 4, rowY, { width: w - labelW - 4 });
-    rowY += 11;
+  return drawLabelValueRows(doc, x, y, w, buildLocationRows(evidence), {
+    labelW: 40,
+    rowH: LOC_ROW_H,
+    fontSize: 6.5,
   });
-  return rowY;
 }
 
 function drawTimeline(doc, x, y, w, timeline) {
   let rowY = y;
   const items = (timeline || []).slice(0, 6);
+  const textW = Math.max(40, w - 14);
   items.forEach((item, idx) => {
     const event = String(item.event || '—');
     const ts = formatGmtTs(item.at);
@@ -245,11 +292,20 @@ function drawTimeline(doc, x, y, w, timeline) {
       line(doc, x + 2.5, rowY + 7, x + 2.5, rowY + rowH - 2);
     }
 
-    // Stack label + timestamp so narrow columns never mid-word wrap sideways.
     doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(6.6);
-    textAt(doc, event, x + 10, rowY, { width: Math.max(40, w - 14) });
+    textAt(doc, clip(event, maxCharsForWidth(textW, 6.6)), x + 10, rowY, {
+      width: textW,
+      height: 8,
+      ellipsis: true,
+      lineBreak: false,
+    });
     doc.fillColor(C.label).font('Helvetica').fontSize(5.7);
-    textAt(doc, ts, x + 10, rowY + 9, { width: Math.max(40, w - 14) });
+    textAt(doc, clip(ts, maxCharsForWidth(textW, 5.7)), x + 10, rowY + 9, {
+      width: textW,
+      height: 8,
+      ellipsis: true,
+      lineBreak: false,
+    });
     rowY += rowH;
   });
   return rowY;
@@ -376,11 +432,11 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
     const showLocation = hasLocationEvidence(evidence);
     const timelineRows = Math.min((timeline || []).length || 1, 6);
     const timelineBlockH = 14 + timelineRows * 20;
-    const metaRows = ['device', 'os', 'browser', 'ip', 'isp', 'org', 'asn'].filter(
-      (k) => evidence[k],
-    ).length;
-    const metaBlockH = 14 + Math.max(metaRows, 1) * 11;
-    const contentH = Math.max(hasAuth ? 70 : 40, metaBlockH, showLocation ? 70 : 0, timelineBlockH);
+    const metaRowList = buildMetaRows(evidence);
+    const locRowList = showLocation ? buildLocationRows(evidence) : [];
+    const metaBlockH = 14 + Math.max(metaRowList.length, 1) * META_ROW_H;
+    const locBlockH = showLocation ? 14 + Math.max(locRowList.length, 1) * LOC_ROW_H : 0;
+    const contentH = Math.max(hasAuth ? 70 : 40, metaBlockH, locBlockH, timelineBlockH);
     const signatureReserve = 48;
     const panelH = Math.max(120, 28 + contentH + signatureReserve);
     const extraH = (evidence.evidenceHash ? 16 : 0) + (evidence.userAgent ? 9 : 0) + 8;
@@ -407,21 +463,31 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
 
     const bodyY = y + 28;
     const gap = 8;
-    // Prefer a wide timeline column; collapse empty IP LOCATION.
+    // Keep Session / IP Location readable — do not crush them for the timeline.
+    const MIN_META = 118;
+    const MIN_LOC = 108;
+    const MIN_TIME = 120;
     let authW = hasAuth ? Math.min(108, width * 0.18) : 0;
-    let locW = showLocation ? Math.min(130, width * 0.22) : 0;
-    let metaW = Math.min(150, width * 0.26);
+    let locW = showLocation ? Math.max(MIN_LOC, Math.min(128, width * 0.22)) : 0;
+    let metaW = Math.max(MIN_META, Math.min(148, width * 0.26));
     let timeW = width - authW - metaW - locW - gap * (1 + (hasAuth ? 1 : 0) + (showLocation ? 1 : 0)) - 16;
-    if (timeW < 150) {
-      // Steal width from location/meta first so timeline stays readable.
-      const need = 150 - timeW;
-      const fromLoc = Math.min(locW * 0.35, need);
-      locW -= fromLoc;
-      timeW += fromLoc;
-      if (timeW < 150) {
-        const fromMeta = Math.min(metaW * 0.25, 150 - timeW);
-        metaW -= fromMeta;
-        timeW += fromMeta;
+    if (timeW < MIN_TIME) {
+      const need = MIN_TIME - timeW;
+      // Steal from auth first, then a little from meta/loc, never below floors.
+      if (authW > 72) {
+        const take = Math.min(authW - 72, need);
+        authW -= take;
+        timeW += take;
+      }
+      if (timeW < MIN_TIME && metaW > MIN_META) {
+        const take = Math.min(metaW - MIN_META, MIN_TIME - timeW);
+        metaW -= take;
+        timeW += take;
+      }
+      if (timeW < MIN_TIME && locW > MIN_LOC) {
+        const take = Math.min(locW - MIN_LOC, MIN_TIME - timeW);
+        locW -= take;
+        timeW += take;
       }
     }
 
@@ -438,13 +504,17 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
     }
 
     doc.fillColor(C.green).font('Helvetica-Bold').fontSize(6);
-    textAt(doc, 'SESSION DETAILS', metaX, bodyY);
+    textAt(doc, 'SESSION DETAILS', metaX, bodyY, { width: metaW });
     drawMetaRows(doc, metaX, bodyY + 8, metaW, evidence);
-    line(doc, timeX - gap / 2 - (showLocation ? locW + gap : 0), bodyY - 2, timeX - gap / 2 - (showLocation ? locW + gap : 0), dividerBottom);
+    if (showLocation) {
+      line(doc, locX - gap / 2, bodyY - 2, locX - gap / 2, dividerBottom);
+    } else {
+      line(doc, timeX - gap / 2, bodyY - 2, timeX - gap / 2, dividerBottom);
+    }
 
     if (showLocation) {
       doc.fillColor(C.green).font('Helvetica-Bold').fontSize(6);
-      textAt(doc, 'IP LOCATION', locX, bodyY);
+      textAt(doc, 'IP LOCATION', locX, bodyY, { width: locW });
       drawLocationRows(doc, locX, bodyY + 8, locW, evidence);
       line(doc, timeX - gap / 2, bodyY - 2, timeX - gap / 2, dividerBottom);
     }
