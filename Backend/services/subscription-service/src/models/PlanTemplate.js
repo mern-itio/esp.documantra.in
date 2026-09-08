@@ -28,6 +28,12 @@ const PlanTemplateSchema = new mongoose.Schema({
   },
   monthlyCredits: Number,   // or other currency (topup amount)
   pricePerPeriod: Number,
+  currency: {
+    type: String,
+    enum: ['INR', 'USD', 'EUR', 'GBP'],
+    default: 'INR',
+    uppercase: true,
+  },
   period: { type: String, enum: ['monthly','yearly'] },
   version: { type: Number, default: 1 },
 }, { timestamps: true });

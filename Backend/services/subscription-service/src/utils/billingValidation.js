@@ -68,6 +68,7 @@ const sanitizePlanPayload = (payload = {}) => {
     'pdfShareCosts',
     'monthlyCredits',
     'pricePerPeriod',
+    'currency',
     'period',
   ];
 
@@ -78,6 +79,8 @@ const sanitizePlanPayload = (payload = {}) => {
     return acc;
   }, {});
 };
+
+const PLAN_CURRENCIES = ['INR', 'USD', 'EUR', 'GBP'];
 
 const validatePlanPayload = (payload = {}, { isUpdate = false, existingPlan = null } = {}) => {
   const planType = payload.type ?? existingPlan?.type ?? 'paid';
@@ -113,6 +116,15 @@ const validatePlanPayload = (payload = {}, { isUpdate = false, existingPlan = nu
     }
   }
 
+  let currency;
+  if (payload.currency !== undefined && payload.currency !== null && payload.currency !== '') {
+    const normalized = String(payload.currency).trim().toUpperCase();
+    if (!PLAN_CURRENCIES.includes(normalized)) {
+      return { ok: false, message: 'currency must be one of INR, USD, EUR, GBP' };
+    }
+    currency = normalized;
+  }
+
   for (const result of [
     validateCostList(payload.toolCosts, 'toolCosts'),
     validateCostList(payload.authCosts, 'authCosts'),
@@ -133,9 +145,13 @@ const validatePlanPayload = (payload = {}, { isUpdate = false, existingPlan = nu
     return { ok: false, message: 'type must be free or paid' };
   }
 
+  const sanitized = sanitizePlanPayload(payload);
+  if (currency) sanitized.currency = currency;
+  else if (!isUpdate) sanitized.currency = 'INR';
+
   return {
     ok: true,
-    sanitized: sanitizePlanPayload(payload),
+    sanitized,
   };
 };
 

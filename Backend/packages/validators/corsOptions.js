@@ -1,12 +1,18 @@
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://esp.documantra.in',
   'https://esign.documantra.in',
+  'https://documantra.in',
+  'https://www.documantra.in',
+  'https://documantra.com',
+  'https://www.documantra.com',
   'https://esign.verasys.in',
   'https://esignuat.vsign.in',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:5174',
   'http://127.0.0.1:5174',
+  'http://localhost:8080',
+  'http://127.0.0.1:8080',
 ];
 
 const getAllowedOrigins = () => {
