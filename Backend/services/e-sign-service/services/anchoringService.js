@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const ethers = require('ethers');
 
 const DigitalSignature = require('../models/DigitalSignature');
-const AuditTrail = require('../models/AuditTrail'); // optional
+const { AuditTrail } = require('../models/AuditTrail'); // optional
 
 // env
 const RPC_URL = process.env.ANCHOR_RPC_URL;
@@ -67,18 +67,28 @@ async function runAnchoringBatch(batchSize = BATCH_SIZE) {
   }
 
   // find pending signatures (no anchoring.txHash)
-  const pending = await DigitalSignature.find({ 'anchoring.txHash': { $exists: false } }).limit(batchSize).lean();
-  if (!pending || pending.length === 0) {
+  const candidates = await DigitalSignature.find({ 'anchoring.txHash': { $exists: false } }).limit(batchSize).lean();
+  if (!candidates || candidates.length === 0) {
     console.log('Anchoring: nothing to anchor');
     return null;
   }
 
-  // normalize pdfHash and validate format
-  const pdfHashes = pending.map(p => {
+  // normalize pdfHash and skip invalid hashes (do not abort the whole batch)
+  const pending = [];
+  const pdfHashes = [];
+  for (const p of candidates) {
     const h = (p.pdfHash || '').replace(/^0x/, '');
-    if (!/^[0-9a-fA-F]{64}$/.test(h)) throw new Error('invalid pdfHash for id ' + p._id);
-    return h.toLowerCase();
-  });
+    if (!/^[0-9a-fA-F]{64}$/.test(h)) {
+      console.warn('Anchoring: skipping invalid pdfHash for id', p._id);
+      continue;
+    }
+    pending.push(p);
+    pdfHashes.push(h.toLowerCase());
+  }
+  if (pending.length === 0) {
+    console.log('Anchoring: no valid pending hashes to anchor');
+    return null;
+  }
 
   // build Merkle tree
   const { tree, leaves, rootHex } = buildMerkleFromHex(pdfHashes);

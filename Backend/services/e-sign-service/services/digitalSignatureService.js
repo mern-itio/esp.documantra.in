@@ -544,6 +544,18 @@ async function finalizeSigning(envelopeId, documentId,cycleId=null, isSelfSign =
         pdfHash: signedHash
       });
 
+      // Fire-and-forget blockchain anchoring (non-blocking; requires ANCHOR_* env)
+      try {
+        const { runAnchoringBatch } = require('./anchoringService');
+        setImmediate(() => {
+          runAnchoringBatch().catch((err) => {
+            console.warn('Anchoring: post-sign batch failed:', err && err.message ? err.message : err);
+          });
+        });
+      } catch (anchorErr) {
+        console.warn('Anchoring: could not schedule batch:', anchorErr && anchorErr.message ? anchorErr.message : anchorErr);
+      }
+
       // Optional: request TSA token and attach
       try {
         const tsaRes = await requestTimestamp({ digitalSignatureId: sigRecord._id });

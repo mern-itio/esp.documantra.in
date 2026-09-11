@@ -1017,13 +1017,21 @@ async function generateAndStoreCompletionCertificate(envelopeId) {
         (vsignTx?.txn && /^\d+$/.test(String(vsignTx.txn)) ? new Date(Number(vsignTx.txn)) : null),
     });
 
-    const cert = certByPermissionId[permissionId];
-    const sig = sigByPermissionId[permissionId];
+    // Maps are keyed by DigitalSignature/Certificate.recipientId (usually Recipient id);
+    // fall back to RecipientPermission._id for older records.
+    const cert = certByPermissionId[rid] || certByPermissionId[permissionId];
+    const sig = sigByPermissionId[rid] || sigByPermissionId[permissionId];
     if (cert?.issuedAt && !timeline.find((t) => t.event === 'Digital Certificate Issued')) {
       timeline.push({ event: 'Digital Certificate Issued', at: cert.issuedAt });
     }
     if (sig?.signedAt && !timeline.find((t) => t.event === 'Document Cryptographically Signed')) {
       timeline.push({ event: 'Document Cryptographically Signed', at: sig.signedAt });
+    }
+    if (sig?.anchoring?.txHash && !timeline.find((t) => t.event === 'Blockchain Anchored')) {
+      timeline.push({
+        event: 'Blockchain Anchored',
+        at: sig.anchoring.anchoredAt || sig.updatedAt || sig.signedAt,
+      });
     }
     timeline.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 

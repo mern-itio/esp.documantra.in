@@ -490,7 +490,21 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
     const contentH = Math.max(hasAuth ? 70 : 40, metaBlockH, locBlockH, timelineBlockH);
     const signatureReserve = 48;
     const panelH = Math.max(120, 28 + contentH + signatureReserve);
-    const extraH = (evidence.evidenceHash ? 16 : 0) + (evidence.userAgent ? 9 : 0) + 8;
+    const anchoring = signer.sig?.anchoring || {};
+    const hasBlockchain = Boolean(anchoring.txHash);
+    const blockchainRows = hasBlockchain
+      ? [
+          ['Chain', anchoring.chain],
+          ['Tx Hash', anchoring.txHash],
+          ['Block', anchoring.blockNumber != null ? String(anchoring.blockNumber) : null],
+          ['Merkle Root', anchoring.merkleRoot],
+          ['Leaf', anchoring.leaf],
+          ['Leaf Index', anchoring.leafIndex != null ? String(anchoring.leafIndex) : null],
+          ['PDF Hash', signer.sig?.pdfHash],
+        ].filter(([, v]) => v != null && String(v).trim() !== '')
+      : [];
+    const blockchainH = hasBlockchain ? Math.max(28, 14 + blockchainRows.length * 11) : 0;
+    const extraH = (evidence.evidenceHash ? 16 : 0) + (evidence.userAgent ? 9 : 0) + blockchainH + (hasBlockchain ? 6 : 0) + 8;
     y = ensureSpace(doc, y, panelH + extraH + 6);
     doc.roundedRect(left, y, width, panelH, 6).lineWidth(0.9).strokeColor(C.line).fillAndStroke(C.panel, C.line);
     doc.rect(left, y, width, 22).fill('#eef2f6');
@@ -562,6 +576,22 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
     }
 
     y += panelH + 6;
+
+    if (hasBlockchain) {
+      y = ensureSpace(doc, y, blockchainH + 4);
+      doc.roundedRect(left, y, width, blockchainH, 4).fillAndStroke('#ecfdf5', '#bbf7d0');
+      doc.fillColor(C.ok).font('Helvetica-Bold').fontSize(6.5);
+      textAt(doc, 'BLOCKCHAIN PROOF', left + 6, y + 4, { width: width - 12 });
+      let rowY = y + 14;
+      blockchainRows.forEach(([label, value]) => {
+        doc.fillColor(C.label).font('Helvetica-Bold').fontSize(5.8);
+        textAt(doc, `${label}:`, left + 6, rowY, { width: 58 });
+        doc.fillColor(C.ink).font('Courier').fontSize(5.8);
+        textAt(doc, clip(String(value), 100), left + 66, rowY, { width: width - 78 });
+        rowY += 11;
+      });
+      y += blockchainH + 6;
+    }
 
     if (evidence.evidenceHash) {
       doc.roundedRect(left, y, width, 13, 3).fill('#f1f5f9');

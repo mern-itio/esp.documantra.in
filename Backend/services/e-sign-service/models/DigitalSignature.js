@@ -16,7 +16,11 @@ const DigitalSignatureSchema = new mongoose.Schema({
   anchoring: {
     chain: { type: String },
     txHash: { type: String },
-    merkleProof: { type: mongoose.Schema.Types.Mixed }
+    blockNumber: { type: Number },
+    merkleRoot: { type: String },
+    merkleProof: { type: mongoose.Schema.Types.Mixed },
+    leaf: { type: String },
+    leafIndex: { type: Number }
   }
 }, { timestamps: true });
 

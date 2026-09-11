@@ -127,6 +127,40 @@ app.use(createErrorHandler('E-Sign'));
 const PORT = process.env.PORT || 2103;
 app.listen(PORT, () => {
   console.log(`E-Sign Service running on ${PORT}/`);
+
+  // Periodic blockchain anchoring when ANCHOR_* env is configured
+  if (process.env.ANCHOR_RPC_URL && process.env.ANCHOR_WALLET_PRIVATE_KEY) {
+    const ANCHOR_INTERVAL_MS = Number(process.env.ANCHOR_INTERVAL_MS || 5 * 60 * 1000);
+    let anchoringInFlight = false;
+    const runPeriodicAnchoring = () => {
+      if (anchoringInFlight) return;
+      anchoringInFlight = true;
+      try {
+        const { runAnchoringBatch } = require('./services/anchoringService');
+        runAnchoringBatch()
+          .then((result) => {
+            if (result && result.count) {
+              console.log(`[Anchoring] Batch anchored ${result.count} signature(s), tx=${result.txHash}`);
+            }
+          })
+          .catch((err) => {
+            console.warn('[Anchoring] Periodic batch failed:', err && err.message ? err.message : err);
+          })
+          .finally(() => {
+            anchoringInFlight = false;
+          });
+      } catch (err) {
+        anchoringInFlight = false;
+        console.warn('[Anchoring] Could not start periodic batch:', err && err.message ? err.message : err);
+      }
+    };
+    setTimeout(runPeriodicAnchoring, 15000);
+    setInterval(runPeriodicAnchoring, ANCHOR_INTERVAL_MS);
+    console.log(`[Anchoring] Periodic worker enabled (every ${Math.round(ANCHOR_INTERVAL_MS / 1000)}s)`);
+  } else {
+    console.log('[Anchoring] Periodic worker disabled (ANCHOR_RPC_URL / ANCHOR_WALLET_PRIVATE_KEY not set)');
+  }
+
   let workerInterval = null;
   let isWorkerRunning = false;
   
