@@ -1,8 +1,11 @@
 const express = require('express');
 const path = require('path');
+const dotenv = require('dotenv');
+// Load env BEFORE any service modules that read process.env at import time
+dotenv.config({ path: path.join(__dirname, '.env') });
+
 const verifyJWT  = require('@draftnsign/auth-lib');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const { getCorsOptions, applySecurityHeaders, createErrorHandler, createMulterErrorHandler } = require('@draftnsign/validators');
 const eSignRoutes = require('./routes/eSignRoutes');
@@ -27,7 +30,6 @@ function isVSignCallback(req) {
   return isVSignCallbackRequest(req);
 }
 
-dotenv.config({ path: path.join(__dirname, '.env') });
 if (process.env.VSIGN_CALLBACK_URL) {
   console.log('[VSign] VSIGN_CALLBACK_URL loaded:', process.env.VSIGN_CALLBACK_URL);
 }

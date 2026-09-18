@@ -20,7 +20,8 @@ const DigitalSignatureSchema = new mongoose.Schema({
     merkleRoot: { type: String },
     merkleProof: { type: mongoose.Schema.Types.Mixed },
     leaf: { type: String },
-    leafIndex: { type: Number }
+    leafIndex: { type: Number },
+    anchoredAt: { type: Date }
   }
 }, { timestamps: true });
 

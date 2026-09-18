@@ -4,158 +4,187 @@ const crypto = require('crypto');
 const ethers = require('ethers');
 
 const DigitalSignature = require('../models/DigitalSignature');
-const { AuditTrail } = require('../models/AuditTrail'); // optional
+const { AuditTrail } = require('../models/AuditTrail');
 
-// env
-const RPC_URL = process.env.ANCHOR_RPC_URL;
-const PRIVATE_KEY = process.env.ANCHOR_WALLET_PRIVATE_KEY || '';
-const CHAIN_NAME = process.env.ANCHOR_CHAIN_NAME || 'sepolia';
-const BATCH_SIZE = Number(process.env.ANCHOR_BATCH_SIZE || 200);
+const BATCH_SIZE_DEFAULT = 200;
+const PDF_HASH_HEX_RE = /^[0-9a-fA-F]{64}$/;
 
-if (!RPC_URL) {
-  console.warn('Anchoring: ANCHOR_RPC_URL not set — anchoring disabled');
-}
-if (!PRIVATE_KEY) {
-  console.warn('Anchoring: ANCHOR_WALLET_PRIVATE_KEY not set — anchoring disabled');
+function getAnchorConfig() {
+  const RPC_URL = process.env.ANCHOR_RPC_URL || '';
+  const PRIVATE_KEY = process.env.ANCHOR_WALLET_PRIVATE_KEY || '';
+  const CHAIN_NAME = process.env.ANCHOR_CHAIN_NAME || 'sepolia';
+  const BATCH_SIZE = Number(process.env.ANCHOR_BATCH_SIZE || BATCH_SIZE_DEFAULT);
+  return { RPC_URL, PRIVATE_KEY, CHAIN_NAME, BATCH_SIZE };
 }
 
-const provider = RPC_URL ? new ethers.providers.JsonRpcProvider(RPC_URL) : null;
-const wallet = PRIVATE_KEY && provider ? new ethers.Wallet(PRIVATE_KEY, provider) : null;
+function getWallet() {
+  const { RPC_URL, PRIVATE_KEY } = getAnchorConfig();
+  if (!RPC_URL || !PRIVATE_KEY) return null;
+  const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+  return new ethers.Wallet(PRIVATE_KEY, provider);
+}
 
-// helper: sha256 -> Buffer
 function sha256(buf) {
   return crypto.createHash('sha256').update(buf).digest();
 }
 
-// Build merkle using sha256 (consistent with pdfHash which is SHA-256 hex)
 function buildMerkleFromHex(hexList) {
   if (!Array.isArray(hexList) || hexList.length === 0) {
     return { tree: null, leaves: [], rootHex: null };
   }
 
-  // leaves as Buffers
-  const leaves = hexList.map(h => Buffer.from(h.replace(/^0x/, ''), 'hex'));
+  const leaves = hexList.map((h) => Buffer.from(h.replace(/^0x/, ''), 'hex'));
   const tree = new MerkleTree(leaves, sha256, { sortPairs: true });
   const rootBuf = tree.getRoot();
-  const rootHex = (rootBuf && rootBuf.length) ? '0x' + rootBuf.toString('hex') : null;
+  const rootHex = rootBuf && rootBuf.length ? `0x${rootBuf.toString('hex')}` : null;
   return { tree, leaves, rootHex };
 }
 
-// publish root on-chain: simple zero-value tx with data=root (dev/simple approach)
 async function publishRootOnChain(hexRoot) {
+  const wallet = getWallet();
   if (!wallet) throw new Error('No wallet configured for anchoring');
   if (!hexRoot) throw new Error('empty root');
 
-  // ensure 0x prefix
-  const data = hexRoot.startsWith('0x') ? hexRoot : '0x' + hexRoot;
+  const data = hexRoot.startsWith('0x') ? hexRoot : `0x${hexRoot}`;
 
   const tx = await wallet.sendTransaction({
-    to: wallet.address,   // self-send
+    to: wallet.address,
     value: 0,
-    data
+    data,
   });
 
-  const receipt = await tx.wait(1); // wait for 1 confirmation
+  const receipt = await tx.wait(1);
   return { txHash: receipt.transactionHash, blockNumber: receipt.blockNumber };
 }
 
-// main batch function
-async function runAnchoringBatch(batchSize = BATCH_SIZE) {
-  if (!wallet) {
-    console.warn('Anchoring disabled: wallet not configured');
+async function runAnchoringBatch(batchSize) {
+  const { CHAIN_NAME, BATCH_SIZE } = getAnchorConfig();
+  const limit = Number(batchSize) > 0 ? Number(batchSize) : BATCH_SIZE;
+
+  if (!getWallet()) {
+    console.warn('Anchoring disabled: ANCHOR_RPC_URL / ANCHOR_WALLET_PRIVATE_KEY not configured');
     return null;
   }
 
-  // find pending signatures (no anchoring.txHash)
-  const candidates = await DigitalSignature.find({ 'anchoring.txHash': { $exists: false } }).limit(batchSize).lean();
+  // Only pick signatures with a valid SHA-256 pdfHash and no tx yet
+  // (avoids invalid rows forever filling the batch window).
+  const candidates = await DigitalSignature.find({
+    $and: [
+      {
+        $or: [
+          { 'anchoring.txHash': { $exists: false } },
+          { 'anchoring.txHash': null },
+          { 'anchoring.txHash': '' },
+        ],
+      },
+      { pdfHash: { $regex: /^([0-9a-fA-F]{64}|0x[0-9a-fA-F]{64})$/ } },
+    ],
+  })
+    .limit(limit)
+    .lean();
+
   if (!candidates || candidates.length === 0) {
     console.log('Anchoring: nothing to anchor');
     return null;
   }
 
-  // normalize pdfHash and skip invalid hashes (do not abort the whole batch)
   const pending = [];
   const pdfHashes = [];
   for (const p of candidates) {
-    const h = (p.pdfHash || '').replace(/^0x/, '');
-    if (!/^[0-9a-fA-F]{64}$/.test(h)) {
+    const h = String(p.pdfHash || '').replace(/^0x/, '').toLowerCase();
+    if (!PDF_HASH_HEX_RE.test(h)) {
       console.warn('Anchoring: skipping invalid pdfHash for id', p._id);
       continue;
     }
     pending.push(p);
-    pdfHashes.push(h.toLowerCase());
+    pdfHashes.push(h);
   }
   if (pending.length === 0) {
     console.log('Anchoring: no valid pending hashes to anchor');
     return null;
   }
 
-  // build Merkle tree
   const { tree, leaves, rootHex } = buildMerkleFromHex(pdfHashes);
   if (!rootHex) throw new Error('empty merkle root');
 
   console.log('Anchoring: merkle root =', rootHex, 'count =', pending.length);
 
-  // publish to chain
   const chainResult = await publishRootOnChain(rootHex);
   const txHash = chainResult.txHash;
   const blockNumber = chainResult.blockNumber;
   console.log('Anchoring txHash:', txHash, 'block:', blockNumber);
 
-  // store per-doc anchoring: proof array (0x..), root, index, txHash, chain
+  const anchoredAt = new Date();
+
   for (let i = 0; i < pending.length; i++) {
     const sig = pending[i];
     const leaf = Buffer.from(pdfHashes[i], 'hex');
 
-    // get proof objects and convert to hex array
     const proofObjs = tree.getProof(leaf);
-    const proofHex = proofObjs.map(p => '0x' + p.data.toString('hex'));
+    const proofHex = proofObjs.map((p) => `0x${p.data.toString('hex')}`);
 
-    // get leaf index: prefer tree.getLeafIndex if available, otherwise fallback
     let index = null;
     if (typeof tree.getLeafIndex === 'function') {
-      try { index = tree.getLeafIndex(leaf); } catch (e) { index = null; }
+      try {
+        index = tree.getLeafIndex(leaf);
+      } catch (e) {
+        index = null;
+      }
     }
     if (index === null) {
-      index = leaves.findIndex(l => l.equals(leaf));
+      index = leaves.findIndex((l) => l.equals(leaf));
     }
 
-    await DigitalSignature.updateOne({ _id: sig._id }, {
-      $set: {
-        'anchoring.chain': CHAIN_NAME,
-        'anchoring.txHash': txHash,
-        'anchoring.blockNumber': blockNumber,
-        'anchoring.merkleRoot': rootHex,
-        'anchoring.merkleProof': proofHex,
-        'anchoring.leafIndex': index,
-        'anchoring.leaf': '0x' + pdfHashes[i]
+    await DigitalSignature.updateOne(
+      { _id: sig._id },
+      {
+        $set: {
+          'anchoring.chain': CHAIN_NAME,
+          'anchoring.txHash': txHash,
+          'anchoring.blockNumber': blockNumber,
+          'anchoring.merkleRoot': rootHex,
+          'anchoring.merkleProof': proofHex,
+          'anchoring.leafIndex': index,
+          'anchoring.leaf': `0x${pdfHashes[i]}`,
+          'anchoring.anchoredAt': anchoredAt,
+        },
       }
-    });
+    );
 
-    // optional audit record
     try {
       await AuditTrail.create({
         envelopeId: sig.envelopeId,
         recipientId: sig.recipientId,
         action: 'BLOCKCHAIN_ANCHORED',
-        details: { signatureId: sig._id.toString(), txHash, merkleRoot: rootHex, index }
+        details: {
+          signatureId: sig._id.toString(),
+          txHash,
+          merkleRoot: rootHex,
+          index,
+          chain: CHAIN_NAME,
+          blockNumber,
+        },
       });
     } catch (e) {
-      // non-fatal - continue
       console.warn('Anchoring: failed to write audit for', sig._id, e.message || e);
     }
   }
 
-  return { txHash, merkleRoot: rootHex, count: pending.length, blockNumber };
+  return { txHash, merkleRoot: rootHex, count: pending.length, blockNumber, chain: CHAIN_NAME };
 }
 
-// Verify a proof locally (returns true/false)
 function verifyProof(leafHex, proofHexArray, rootHex) {
   if (!leafHex || !rootHex || !Array.isArray(proofHexArray)) return false;
-  const leaf = Buffer.from(leafHex.replace(/^0x/, ''), 'hex');
-  const proof = proofHexArray.map(h => Buffer.from(h.replace(/^0x/, ''), 'hex'));
-  const root = Buffer.from(rootHex.replace(/^0x/, ''), 'hex');
+  const leaf = Buffer.from(String(leafHex).replace(/^0x/, ''), 'hex');
+  const proof = proofHexArray.map((h) => Buffer.from(String(h).replace(/^0x/, ''), 'hex'));
+  const root = Buffer.from(String(rootHex).replace(/^0x/, ''), 'hex');
   return MerkleTree.verify(proof, leaf, root, sha256, { sortPairs: true });
 }
 
-module.exports = { runAnchoringBatch, buildMerkleFromHex, publishRootOnChain, verifyProof };
+module.exports = {
+  runAnchoringBatch,
+  buildMerkleFromHex,
+  publishRootOnChain,
+  verifyProof,
+  getAnchorConfig,
+};
