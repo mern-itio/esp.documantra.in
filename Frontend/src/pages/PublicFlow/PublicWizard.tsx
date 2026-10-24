@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { FileText, Info, Plus, ShieldCheck, Star } from 'lucide-react';
+import { FileText, Info, Plus, ShieldCheck, Star, X } from 'lucide-react';
 import { eSignApi } from '../../services/apiHelper';
 import { BRAND } from '../../config/brand';
 import { useBrandSettings } from '../../hooks/useBrandSettings';
@@ -109,15 +109,27 @@ export default function PublicWizard() {
     if (!selected) return;
     if (!isEsignUploadFile(selected)) {
       alert(`Please upload a supported file (${ESIGN_UPLOAD_FORMAT_LABEL})`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
     if (isFileTooLargeForEsign(selected)) {
       alert(
         `"${selected.name}" is too large (${(selected.size / 1024 / 1024).toFixed(2)} MB). Maximum size is ${getEsignMaxUploadLabel()}.`
       );
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
     setFile(selected);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const clearSelectedFile = () => {
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -375,13 +387,28 @@ export default function PublicWizard() {
                 </p>
 
                 {file && (
-                  <div className="mt-4 rounded-lg border border-[#4CAF7A]/30 bg-white/80 px-4 py-3 text-sm text-[#1B7A4B]">
-                    <p className="font-medium truncate" title={file.name}>
-                      {file.name}
-                    </p>
-                    <p className="mt-1 text-gray-600">
-                      {formatUploadFileSize(file.size)} · Max {getEsignMaxUploadLabel()} allowed
-                    </p>
+                  <div className="mx-auto mt-4 flex max-w-md items-start gap-3 rounded-lg border border-[#4CAF7A]/30 bg-white/80 px-4 py-3 text-left text-sm text-[#1B7A4B]">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate" title={file.name}>
+                        {file.name}
+                      </p>
+                      <p className="mt-1 text-gray-600">
+                        {formatUploadFileSize(file.size)} · Max {getEsignMaxUploadLabel()} allowed
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        clearSelectedFile();
+                      }}
+                      className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 transition hover:bg-red-50 hover:text-red-600"
+                      aria-label={`Remove ${file.name}`}
+                      title="Remove file"
+                    >
+                      <X className="h-4 w-4" strokeWidth={2.25} />
+                    </button>
                   </div>
                 )}
               </div>

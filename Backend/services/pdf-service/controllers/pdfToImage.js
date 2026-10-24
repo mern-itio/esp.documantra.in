@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const sharp = require('sharp');
 const PDFDocument = require('pdfkit');
 const { PDFDocument: PDFLibDoc } = require('pdf-lib');
 const { PNG } = require('pngjs');
@@ -354,15 +355,26 @@ exports.convertImagesToPDF = async (req, res) => {
     console.log('Current directory:', __dirname);
     console.log('Outputs directory:', path.join(__dirname, '..', 'outputs'));
 
+    if (!fs.existsSync(path.join(__dirname, '..', 'outputs'))) {
+      fs.mkdirSync(path.join(__dirname, '..', 'outputs'), { recursive: true });
+    }
+
     const doc = new PDFDocument({ autoFirstPage: false });
     const stream = fs.createWriteStream(outputPdfPath);
     doc.pipe(stream);
 
-    req.files.forEach(file => {
-      const image = doc.openImage(file.path);
+    for (const file of req.files) {
+      let imageSource = file.path;
+      try {
+        const pngBuffer = await sharp(file.path).rotate().png().toBuffer();
+        imageSource = pngBuffer;
+      } catch (rasterErr) {
+        console.warn('sharp rasterize failed, trying original image:', rasterErr.message);
+      }
+      const image = doc.openImage(imageSource);
       doc.addPage({ size: [image.width, image.height] });
-      doc.image(file.path, 0, 0);
-    });
+      doc.image(imageSource, 0, 0);
+    }
 
     doc.end();
 

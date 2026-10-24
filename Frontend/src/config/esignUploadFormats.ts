@@ -27,10 +27,27 @@ export const ESIGN_UPLOAD_ACCEPT = [
   'text/plain',
   'application/rtf',
   'text/rtf',
+  'application/x-rtf',
+  'text/richtext',
+  'image/jpg',
+  'image/pjpeg',
+  'image/x-png',
+  'image/x-bmp',
+  'image/x-ms-bmp',
+  'image/tif',
 ].join(',');
 
 export const ESIGN_UPLOAD_FORMAT_LABEL =
   'PDF, PNG, JPG, GIF, Word (DOC/DOCX), TXT, RTF';
+
+function isRtfMime(mime: string): boolean {
+  return (
+    mime === 'application/rtf' ||
+    mime === 'text/rtf' ||
+    mime === 'application/x-rtf' ||
+    mime === 'text/richtext'
+  );
+}
 
 export function isEsignUploadFile(file: File): boolean {
   const name = file.name || '';
@@ -46,8 +63,7 @@ export function isEsignUploadFile(file: File): boolean {
     mime === 'application/msword' ||
     mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     mime === 'text/plain' ||
-    mime === 'application/rtf' ||
-    mime === 'text/rtf'
+    isRtfMime(mime)
   );
 }
 
@@ -89,8 +105,7 @@ export function isOfficeOrTextUploadFile(file: EsignUploadLike): boolean {
     mime === 'application/msword' ||
     mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     mime === 'text/plain' ||
-    mime === 'application/rtf' ||
-    mime === 'text/rtf'
+    isRtfMime(mime)
   );
 }
 

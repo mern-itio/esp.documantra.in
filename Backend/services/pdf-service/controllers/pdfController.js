@@ -74,6 +74,25 @@ async function getLibreOfficeFormats() {
  * Fallback DOCX→PDF when LibreOffice is unavailable (local Windows dev).
  * Uses mammoth text extraction + PDFKit — layout/images are not preserved.
  */
+function rtfToPlainText(raw) {
+  let text = String(raw || '');
+  if (!/\\rtf/i.test(text)) {
+    return text;
+  }
+  text = text.replace(/\\par[d]?/gi, '\n');
+  text = text.replace(/\\tab/gi, '\t');
+  text = text.replace(/\\'([0-9a-fA-F]{2})/g, (_, hex) =>
+    String.fromCharCode(parseInt(hex, 16))
+  );
+  text = text.replace(/\\u(-?\d+)\??/g, (_, n) => {
+    const code = Number(n);
+    return String.fromCharCode(code < 0 ? 65536 + code : code);
+  });
+  text = text.replace(/\\[a-z]+\-?\d* ?/gi, '');
+  text = text.replace(/[{}]/g, '');
+  return text.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 async function convertDocxToPdfViaMammoth(inputPath, outputPath) {
   const ext = path.extname(inputPath).toLowerCase();
   if (ext === '.doc') {
@@ -83,8 +102,14 @@ async function convertDocxToPdfViaMammoth(inputPath, outputPath) {
   }
 
   const inputStats = await fs.stat(inputPath);
-  const { value: textContent } = await mammoth.extractRawText({ path: inputPath });
-  const trimmed = String(textContent || '').trim();
+  let trimmed = '';
+  if (ext === '.rtf') {
+    const raw = await fs.readFile(inputPath, 'utf8');
+    trimmed = rtfToPlainText(raw);
+  } else {
+    const { value: textContent } = await mammoth.extractRawText({ path: inputPath });
+    trimmed = String(textContent || '').trim();
+  }
   if (!trimmed) {
     throw new Error('Could not extract text from the document');
   }

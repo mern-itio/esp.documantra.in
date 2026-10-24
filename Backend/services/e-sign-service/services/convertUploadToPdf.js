@@ -45,6 +45,40 @@ function imageToPdfLocal(inputPath, outputPath) {
   });
 }
 
+function rtfToPlainText(raw) {
+  let text = String(raw || '');
+  if (!/\\rtf/i.test(text)) {
+    return text;
+  }
+  text = text.replace(/\\par[d]?/gi, '\n');
+  text = text.replace(/\\tab/gi, '\t');
+  text = text.replace(/\\'([0-9a-fA-F]{2})/g, (_, hex) =>
+    String.fromCharCode(parseInt(hex, 16))
+  );
+  text = text.replace(/\\u(-?\d+)\??/g, (_, n) => {
+    const code = Number(n);
+    return String.fromCharCode(code < 0 ? 65536 + code : code);
+  });
+  text = text.replace(/\\[a-z]+\-?\d* ?/gi, '');
+  text = text.replace(/[{}]/g, '');
+  return text.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function textToPdfLocal(text, outputPath) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const stream = fs.createWriteStream(outputPath);
+    doc.pipe(stream);
+    doc.font('Times-Roman').fontSize(12).text(text || ' ', {
+      width: 500,
+      align: 'left',
+    });
+    doc.end();
+    stream.on('finish', () => resolve(outputPath));
+    stream.on('error', reject);
+  });
+}
+
 async function fetchConvertedPdfBuffer(downloadPath) {
   const baseUrl = getPdfServiceBaseUrl();
   const url = downloadPath.startsWith('http')
@@ -144,6 +178,19 @@ async function normalizeUploadToPdf(file) {
         console.warn('Local image-to-PDF failed, trying pdf-service:', localErr.message);
         const buffer = await convertViaPdfService(file.path, file.originalname, file.mimetype);
         fs.writeFileSync(outputPath, buffer);
+      }
+    } else if (TEXT_EXTENSIONS.has(ext) || ext === 'rtf') {
+      try {
+        const buffer = await convertViaPdfService(file.path, file.originalname, file.mimetype);
+        fs.writeFileSync(outputPath, buffer);
+      } catch (convertErr) {
+        console.warn(
+          `${ext.toUpperCase()} conversion via pdf-service failed, using local text PDF:`,
+          convertErr.message
+        );
+        const raw = fs.readFileSync(file.path);
+        const text = ext === 'rtf' ? rtfToPlainText(raw.toString('utf8')) : raw.toString('utf8');
+        await textToPdfLocal(text, outputPath);
       }
     } else {
       const buffer = await convertViaPdfService(file.path, file.originalname, file.mimetype);

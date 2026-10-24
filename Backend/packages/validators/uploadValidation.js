@@ -16,11 +16,19 @@ const UPLOAD_PRESETS = {
       'text/plain',
       'application/rtf',
       'text/rtf',
+      'application/x-rtf',
+      'text/richtext',
       'image/jpeg',
+      'image/jpg',
+      'image/pjpeg',
       'image/png',
+      'image/x-png',
       'image/gif',
       'image/bmp',
+      'image/x-bmp',
+      'image/x-ms-bmp',
       'image/tiff',
+      'image/tif',
       'image/webp',
     ],
     allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'rtf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp'],
@@ -142,10 +150,13 @@ const createMulterFileFilter = (options = {}) => {
     if (normalizedExtensions.length > 0 && ext && !normalizedExtensions.includes(ext)) {
       return cb(new Error('File extension not allowed'));
     }
+    // Windows often reports RTF/Office/images with a non-standard MIME type.
+    if (normalizedExtensions.length > 0 && ext && normalizedExtensions.includes(ext)) {
+      return cb(null, true);
+    }
 
     if (allowedMimeTypes.length > 0) {
       const mime = String(file.mimetype || '').toLowerCase();
-      const ext = getFileExtension(original).replace(/^\./, '');
       const genericMime =
         !mime ||
         mime === 'application/octet-stream' ||
@@ -188,6 +199,9 @@ const validateUploadedFile = (file, preset) => {
   const ext = getFileExtension(file.originalname).replace(/^\./, '');
   if (preset.allowedExtensions?.length && ext && !preset.allowedExtensions.includes(ext)) {
     return { valid: false, message: 'File extension not allowed' };
+  }
+  if (preset.allowedExtensions?.length && ext && preset.allowedExtensions.includes(ext)) {
+    return { valid: true };
   }
   if (preset.allowedMimeTypes?.length && file.mimetype) {
     const mime = String(file.mimetype).toLowerCase();

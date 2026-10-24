@@ -20,16 +20,16 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fileSize: 100 * 1024 * 1024, // 100MB, matches eSign upload limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['.doc', '.docx', '.pdf', '.xlsx', '.pptx', '.txt', '.html'];
+    const allowedTypes = ['.doc', '.docx', '.rtf', '.pdf', '.xlsx', '.pptx', '.txt', '.html'];
     const fileExtension = path.extname(file.originalname).toLowerCase();
     
     if (allowedTypes.includes(fileExtension)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only .doc, .docx, .pdf, .xlsx, .pptx, .txt, and .html files are allowed.'), false);
+      cb(new Error('Invalid file type. Only .doc, .docx, .rtf, .pdf, .xlsx, .pptx, .txt, and .html files are allowed.'), false);
     }
   }
 });
