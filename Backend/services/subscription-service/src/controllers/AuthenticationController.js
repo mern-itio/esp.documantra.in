@@ -91,11 +91,22 @@ const initiateAuth = async (req, res) => {
             }
           });
 
-        case "didit":
+        case "didit": {
          const extraFields = provider?.config?.extraFields;
-         const workFLowId = extraFields?.get("DIDIT_WORKFLOW_ID");
+         const workFLowId = getConfigExtra(extraFields, "DIDIT_WORKFLOW_ID");
          const webhookUrl = provider?.config?.callbackUrl;
-         const verificationUrl = extraFields?.get("Verification_URL");
+         const verificationUrl = getConfigExtra(extraFields, "Verification_URL");
+         if (!workFLowId) {
+           return res.status(400).json({
+             message:
+               "DIDIT_WORKFLOW_ID is not configured on this Auth Provider. Create/link a workflow in Admin → Workflows.",
+           });
+         }
+         if (!provider.config?.apiKeyRef && !process.env.DIDIT_API_KEY) {
+           return res.status(400).json({
+             message: "Didit API key is missing on this Auth Provider (apiKeyRef).",
+           });
+         }
          const diditResponse = await axios.post(process.env.IDENTITY_SERVICE_URL + '/api/identity/start', {
           userId: recipientData.id,
           authProviderId: providerId,
@@ -110,13 +121,16 @@ const initiateAuth = async (req, res) => {
               status: "pending",
               message: "Identity verification initiated. Please complete the verification process using the provided URL.",
               action: "COMPLETE_IDENTITY_VERIFICATION",
-              verificationUrl: diditResponse.data.url
+              verificationUrl: diditResponse.data.url,
+              sessionId: diditResponse.data.sessionId,
+              workflowId: diditResponse.data.workflowId || workFLowId,
             });
           }else{
             return res.status(500).json({
-              message: "Failed to initiate identity verification"
+              message: diditResponse.data?.error || "Failed to initiate identity verification"
             });
           }
+        }
 
         case "digilocker_link": {
           const digiExtra = provider?.config?.extraFields;

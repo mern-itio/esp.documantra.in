@@ -24,6 +24,16 @@ const {getUserPdfOperations, getUserServiceStats, getUserOperationHistory} = req
 const {getUserPdfOperations: getPdfOps, getUserPdfStats, getAllUsersPdfStats, getPdfOperationById, deletePdfOperation} = require('../controllers/pdfController');
 
 const {addAuthProvider, listAuthProviders, updateAuthProvider, toggleAuthProvider, deleteAuthProvider} = require('../controllers/authProviderController');
+const {
+  listWorkflows: listDiditWorkflows,
+  getWorkflow: getDiditWorkflow,
+  createWorkflow: createDiditWorkflow,
+  updateWorkflow: updateDiditWorkflow,
+  listLocalSessions: listDiditLocalSessions,
+  listDiditSessions,
+  getSessionDecision: getDiditSessionDecision,
+  createTestSession: createDiditTestSession,
+} = require('../controllers/diditWorkflowController');
 const {listOrganizations,updateOrganizationVerificationStatus} = require('../controllers/organizationController');
 const {listCreditPackages, createCreditPackage, updateCreditPackage, deleteCreditPackage,getFlexibleCreditPackage} = require('../controllers/creditPackageController');
 const {createEmailTemplate,getEmailTemplates,updateEmailTemplates,deleteEmailTemplate} = require('../controllers/emailTemplateController');
@@ -115,6 +125,16 @@ router.get('/auth-providers', listAuthProviders);
 router.put('/auth-providers/:id', updateAuthProvider);
 router.post('/auth-providers/toggle', toggleAuthProvider);
 router.delete('/auth-providers/:id', deleteAuthProvider);
+
+// Didit Workflows + verification sessions (proxied via identity-service)
+router.get('/didit/workflows', listDiditWorkflows);
+router.post('/didit/workflows', createDiditWorkflow);
+router.get('/didit/workflows/:id', getDiditWorkflow);
+router.patch('/didit/workflows/:id', updateDiditWorkflow);
+router.get('/didit/sessions', listDiditLocalSessions);
+router.get('/didit/sessions/remote', listDiditSessions);
+router.post('/didit/sessions', createDiditTestSession);
+router.get('/didit/sessions/:sessionId/decision', getDiditSessionDecision);
 
 //Credit Packages routes
 router.get('/credit-packages', listCreditPackages);

@@ -45,6 +45,8 @@ function getServiceBaseURL(serviceName) {
       return process.env.ORGANIZATION_SERVICE_URL || 'https://esp.documantra.in/organization';
     case 'email':
       return process.env.EMAIL_SERVICE_URL || 'https://esp.documantra.in/email';
+    case 'identity':
+      return process.env.IDENTITY_SERVICE_URL || 'https://esp.documantra.in/identity';
     default:
       return process.env.DEFAULT_SERVICE_URL || '';
   }
