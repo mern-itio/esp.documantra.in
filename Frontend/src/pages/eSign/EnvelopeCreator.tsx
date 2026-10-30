@@ -3836,7 +3836,7 @@ const sendResp = await eSignApi.post(sendUrl);
                 action: 'esign:blockchainAnchor',
                 credits: BLOCKCHAIN_ANCHORING_CREDITS,
                 toolId: 'esign',
-                reason: `Blockchain anchoring for envelope ${envelopeId}`,
+                reason: `Blockchain timestamp for envelope ${envelopeId}`,
               }));
             }
             await Promise.all(consumeJobs.filter(Boolean));
@@ -8460,7 +8460,7 @@ if (isPublicFlow) {
                 blockchainAnchoring={Boolean(envelopeData.blockchainAnchoring)}
                 onBlockchainAnchoringChange={(on) => {
                   persistBlockchainAnchoring(on).catch(() => {
-                    toast.error('Failed to update blockchain anchoring');
+                    toast.error('Failed to update blockchain timestamp');
                   });
                 }}
                 onVSignChange={(on) => {

@@ -89,7 +89,7 @@ const AUDIT_TITLES = {
   PLACEHOLDER_ADD_FAILED: 'Signature placeholder could not be added',
   TSA_TOKEN_ATTACHED: 'TSA token attached to the signature',
   TSA_TOKEN_ISSUED: 'TSA token issued',
-  BLOCKCHAIN_ANCHORED: 'Blockchain anchoring completed',
+  BLOCKCHAIN_ANCHORED: 'Blockchain timestamp recorded',
 };
 
 function getAuditTitle(action) {
@@ -1027,9 +1027,9 @@ async function generateAndStoreCompletionCertificate(envelopeId) {
     if (sig?.signedAt && !timeline.find((t) => t.event === 'Document Cryptographically Signed')) {
       timeline.push({ event: 'Document Cryptographically Signed', at: sig.signedAt });
     }
-    if (sig?.anchoring?.txHash && !timeline.find((t) => t.event === 'Blockchain Anchored')) {
+    if (sig?.anchoring?.txHash && !timeline.find((t) => t.event === 'Blockchain Timestamp' || t.event === 'Blockchain Anchored')) {
       timeline.push({
-        event: 'Blockchain Anchored',
+        event: 'Blockchain Timestamp',
         at: sig.anchoring.anchoredAt || sig.updatedAt || sig.signedAt,
       });
     }

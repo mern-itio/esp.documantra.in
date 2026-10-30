@@ -581,7 +581,7 @@ async function renderSinglePageCertificate(doc, { envelope, signers }) {
       y = ensureSpace(doc, y, blockchainH + 4);
       doc.roundedRect(left, y, width, blockchainH, 4).fillAndStroke('#ecfdf5', '#bbf7d0');
       doc.fillColor(C.ok).font('Helvetica-Bold').fontSize(6.5);
-      textAt(doc, 'BLOCKCHAIN PROOF', left + 6, y + 4, { width: width - 12 });
+      textAt(doc, 'BLOCKCHAIN TIMESTAMP', left + 6, y + 4, { width: width - 12 });
       let rowY = y + 14;
       blockchainRows.forEach(([label, value]) => {
         doc.fillColor(C.label).font('Helvetica-Bold').fontSize(5.8);

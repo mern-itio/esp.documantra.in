@@ -568,10 +568,10 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
         </div>
         <div className="min-w-0 flex-1">
           <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-lg'}`}>
-            Blockchain Anchoring
+            Blockchain Timestamp
           </h3>
           <p className={`text-muted-foreground ${compact ? 'text-xs' : 'text-sm'}`}>
-            Anchor the document hash on the blockchain for an immutable public record.
+            Public immutable timestamp of the signed hash.
           </p>
           <p className={`mt-1 font-medium text-primary ${compact ? 'text-xs' : 'text-sm'}`}>
             Cost: +{BLOCKCHAIN_ANCHORING_CREDITS} Credits
