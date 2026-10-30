@@ -44,8 +44,8 @@ const SignatureTypeSelector: React.FC<SignatureTypeSelectorProps> = ({
   const signatureTypes: SignatureType[] = [
     {
       id: 'standard',
-      name: 'Standard signature',
-      description: 'Draw or type a signature. This is the default if you do not add extra verification.',
+      name: 'DocuMantra Secure Signing',
+      description: 'Document is cryptographically hashed and digitally signed using our built-in signing system.',
       icon: PenTool,
       legalWeight: 'Legally binding for most documents',
       compliance: ['ESIGN Act', 'UETA'],

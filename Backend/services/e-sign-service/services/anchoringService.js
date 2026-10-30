@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const ethers = require('ethers');
 
 const DigitalSignature = require('../models/DigitalSignature');
+const Envelope = require('../models/Envelope');
 const { AuditTrail } = require('../models/AuditTrail');
 
 const BATCH_SIZE_DEFAULT = 200;
@@ -66,9 +67,17 @@ async function runAnchoringBatch(batchSize) {
     return null;
   }
 
+  const optedInEnvelopes = await Envelope.find({ blockchainAnchoring: true }).select('_id').lean();
+  const optedInIds = optedInEnvelopes.map((row) => row._id);
+  if (!optedInIds.length) {
+    console.log('Anchoring: no envelopes opted in to blockchain anchoring');
+    return null;
+  }
+
   // Only pick signatures with a valid SHA-256 pdfHash and no tx yet
   // (avoids invalid rows forever filling the batch window).
   const candidates = await DigitalSignature.find({
+    envelopeId: { $in: optedInIds },
     $and: [
       {
         $or: [

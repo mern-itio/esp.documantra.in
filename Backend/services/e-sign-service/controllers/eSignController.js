@@ -523,6 +523,9 @@ const updateEnvelope = async (req, res) => {
     if (envelopeData.signatureType !== undefined && envelopeData.signatureType !== null) {
       envelope.signatureType = envelopeData.signatureType;
     }
+    if (typeof envelopeData.blockchainAnchoring === 'boolean') {
+      envelope.blockchainAnchoring = envelopeData.blockchainAnchoring;
+    }
     envelope.status = envelopeData.status || envelope.status;
     // Step 3: Save updated envelope
     await envelope.save();

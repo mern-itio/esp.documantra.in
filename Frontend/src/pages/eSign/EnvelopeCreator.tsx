@@ -103,7 +103,7 @@ import { toTitleCase } from '../../utils/formatName';
 import { APP_NAME } from '../../components/constants/appConfig';
 import { BRAND, formatEnvelopeSubject } from '../../config/brand';
 import { refreshVSignPublicStatus, isVSignEnabled } from '../../config/vsign';
-import { findEmailOtpAuthMethod, getAadhaarAuthMethodName, stripSyntheticAuthMethodIds } from '../../utils/vsignAuthRequirement';
+import { BLOCKCHAIN_ANCHORING_CREDITS, findEmailOtpAuthMethod, getAadhaarAuthMethodName, stripSyntheticAuthMethodIds } from '../../utils/vsignAuthRequirement';
 import {
   extractDocumentContentSnippet,
   resolveEnvelopeTypeFromContent,
@@ -247,7 +247,8 @@ const isPublicFlow =
     allowDecline: true,
     signingOrder: 'sequential' as const,
     signatureType: 'standard' as 'standard' | 'advanced' | 'qualified',
-    complianceLevel: 'basic' as 'basic' | 'enhanced' | 'qualified'
+    complianceLevel: 'basic' as 'basic' | 'enhanced' | 'qualified',
+    blockchainAnchoring: false,
   });
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
@@ -336,6 +337,18 @@ const isPublicFlow =
     });
   };
 
+  const persistBlockchainAnchoring = async (on: boolean) => {
+    setEnvelopeData((prev) => ({ ...prev, blockchainAnchoring: on }));
+    if (!envelopeId) return;
+    const path = isPublicFlow
+      ? '/api/e-sign/public/update-envelope'
+      : '/api/e-sign/update-envelope';
+    await eSignApi.post(path, {
+      envelopeId,
+      envelopeData: { blockchainAnchoring: on },
+    });
+  };
+
   const setVSignRequired = async (on: boolean) => {
     if (on && !vsignAvailable && !isVSignEnabled()) {
       toast.error(`${getAadhaarAuthMethodName()} is disabled by admin. Enable it under VSign settings first.`);
@@ -351,7 +364,7 @@ const isPublicFlow =
       toast.success(
         on
           ? `${getAadhaarAuthMethodName()} selected — will apply when you send`
-          : 'Standard signature selected — draw & finish only',
+          : 'DocuMantra Secure Signing — draw & finish only',
       );
       return;
     }
@@ -360,7 +373,7 @@ const isPublicFlow =
       toast.success(
         on
           ? `${getAadhaarAuthMethodName()} enabled for this envelope`
-          : 'Standard signature — signers use draw & finish only',
+          : 'DocuMantra Secure Signing — signers use draw & finish only',
       );
     } catch (err: any) {
       toast.error(err?.response?.data?.message || `Failed to update ${getAadhaarAuthMethodName()} setting`);
@@ -2555,6 +2568,10 @@ const response = await eSignApi.get(url);
             env.signatureType === 'standard'
               ? env.signatureType
               : prev.signatureType,
+          blockchainAnchoring:
+            typeof env.blockchainAnchoring === 'boolean'
+              ? env.blockchainAnchoring
+              : prev.blockchainAnchoring,
           complianceLevel:
             env.signatureType === 'qualified'
               ? 'qualified'
@@ -3795,9 +3812,9 @@ const sendResp = await eSignApi.post(sendUrl);
         try {
           // Include all recipients with authentication, including email verification
           const recipientsWithAuth = recipients.filter(r => parseAuthentication(r.authentication).length > 0);
-          if (recipientsWithAuth.length > 0) {
+          if (recipientsWithAuth.length > 0 || envelopeData.blockchainAnchoring) {
             const planForConsume = subscriptionPlan || SubscriptionStorage.getPlan();
-            await Promise.all(recipientsWithAuth.flatMap(recipient => {
+            const consumeJobs: Array<Promise<any> | null> = recipientsWithAuth.flatMap(recipient => {
               const authArray = parseAuthentication(recipient.authentication);
               return authArray.map(authId => {
                 const authMethod = authMethods.find(m => m.id === authId);
@@ -3813,7 +3830,16 @@ const sendResp = await eSignApi.post(sendUrl);
                 }
                 return null;
               }).filter(Boolean);
-            }));
+            });
+            if (envelopeData.blockchainAnchoring) {
+              consumeJobs.push(subscriptionApi.post('/usage/consume', {
+                action: 'esign:blockchainAnchor',
+                credits: BLOCKCHAIN_ANCHORING_CREDITS,
+                toolId: 'esign',
+                reason: `Blockchain anchoring for envelope ${envelopeId}`,
+              }));
+            }
+            await Promise.all(consumeJobs.filter(Boolean));
 
             // Update credits in localStorage
             const newBalance = (subscriptionPlan.creditsBalance || 0) - totalCost;
@@ -3922,6 +3948,9 @@ const sendResp = await eSignApi.post(sendUrl);
       });
     });
 
+    if (envelopeData.blockchainAnchoring) {
+      total += BLOCKCHAIN_ANCHORING_CREDITS;
+    }
     return total;
   };
   useEffect(() => {
@@ -8428,6 +8457,12 @@ if (isPublicFlow) {
                 vsignAvailable={vsignAvailable}
                 vsignSelected={vsignSelected}
                 defaultEmailMethodId={DEFAULT_AUTH_METHOD_ID}
+                blockchainAnchoring={Boolean(envelopeData.blockchainAnchoring)}
+                onBlockchainAnchoringChange={(on) => {
+                  persistBlockchainAnchoring(on).catch(() => {
+                    toast.error('Failed to update blockchain anchoring');
+                  });
+                }}
                 onVSignChange={(on) => {
                   setVSignRequired(on);
                 }}

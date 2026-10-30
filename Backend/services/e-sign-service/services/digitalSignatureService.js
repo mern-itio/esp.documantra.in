@@ -34,6 +34,7 @@ const { hashBuffer } = require('../utils/hashUtil');
 const { Certificate } = require('../models/Certificate');
 const Document = require('../models/Document');
 const DigitalSignature = require('../models/DigitalSignature');
+const Envelope = require('../models/Envelope');
 const { AuditTrail } = require('../models/AuditTrail');
 const SignatureFields = require('../models/SignatureFields');
 const { requestTimestamp } = require('./tsaService');
@@ -544,14 +545,17 @@ async function finalizeSigning(envelopeId, documentId,cycleId=null, isSelfSign =
         pdfHash: signedHash
       });
 
-      // Fire-and-forget blockchain anchoring (non-blocking; requires ANCHOR_* env)
+      // Fire-and-forget blockchain anchoring only when the sender opted in (+2 credits)
       try {
-        const { runAnchoringBatch } = require('./anchoringService');
-        setImmediate(() => {
-          runAnchoringBatch().catch((err) => {
-            console.warn('Anchoring: post-sign batch failed:', err && err.message ? err.message : err);
+        const envelopeForAnchor = await Envelope.findById(envelopeId).select('blockchainAnchoring').lean();
+        if (envelopeForAnchor?.blockchainAnchoring) {
+          const { runAnchoringBatch } = require('./anchoringService');
+          setImmediate(() => {
+            runAnchoringBatch().catch((err) => {
+              console.warn('Anchoring: post-sign batch failed:', err && err.message ? err.message : err);
+            });
           });
-        });
+        }
       } catch (anchorErr) {
         console.warn('Anchoring: could not schedule batch:', anchorErr && anchorErr.message ? anchorErr.message : anchorErr);
       }

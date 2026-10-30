@@ -9,6 +9,7 @@ import {
 import { subscriptionApi } from '../../../services/apiHelper';
 import * as LucideIcons from 'lucide-react';
 import {
+  BLOCKCHAIN_ANCHORING_CREDITS,
   DEFAULT_AADHAAR_AUTH_NAME,
   STANDARD_SIGNATURE_METHOD_ID,
   findEmailOtpAuthMethod,
@@ -47,6 +48,8 @@ interface AdvancedAuthenticationSelectorProps {
   vsignSelected?: boolean;
   onVSignChange?: (enabled: boolean) => void;
   defaultEmailMethodId?: string;
+  blockchainAnchoring?: boolean;
+  onBlockchainAnchoringChange?: (enabled: boolean) => void;
 }
 
 const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorProps> = ({
@@ -64,6 +67,8 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   vsignSelected = false,
   onVSignChange,
   defaultEmailMethodId,
+  blockchainAnchoring = false,
+  onBlockchainAnchoringChange,
 }) => {
   const [activeTab, setActiveTab] = useState('recommended');
   const [authMethods, setAuthMethods] = useState<AuthMethod[]>([]);
@@ -162,10 +167,11 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   const aadhaarMethodName = getAadhaarAuthMethodName(visibleAuthMethods);
   const standardMethod: AuthMethod = {
     id: STANDARD_SIGNATURE_METHOD_ID,
-    name: 'Standard signature',
-    description: 'Signer draws or types their name. This is used by default if you do not add extra verification.',
+    name: 'DocuMantra Secure Signing',
+    description:
+      'Document is cryptographically hashed and digitally signed using our built-in signing system.',
     icon: 'PenTool',
-    securityLevel: 'low',
+    securityLevel: 'medium',
     estimatedTime: 'Instant',
     cost: 0,
     compliance: ['IT Act'],
@@ -369,6 +375,11 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
                   {Number(method.cost) === 0 ? 'Included' : `${Number(method.cost)} Credits`}
                 </span>
               </div>
+              {String(method.id) === STANDARD_SIGNATURE_METHOD_ID && (
+                <p className={`text-muted-foreground ${compact ? 'text-[10px] pt-1' : 'text-xs pt-1'}`}>
+                  Applied automatically when no additional verification is selected.
+                </p>
+              )}
 
               {!compact && (
                 <div className="flex items-center justify-between text-sm">
@@ -537,22 +548,36 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
         )}
       </div>
 
-      <div className={`rounded-xl border border-border bg-muted/40 ${compact ? 'p-3' : 'p-4'}`}>
-        <div className={`flex items-start ${compact ? 'gap-2.5' : 'gap-3'}`}>
-          <div className={`flex flex-shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ${compact ? 'h-9 w-9' : 'h-12 w-12'}`}>
-            <LucideIcons.Link className={compact ? 'h-4 w-4' : 'h-6 w-6'} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-lg'}`}>
-              Blockchain anchoring
-            </h3>
-            <p className={`text-muted-foreground ${compact ? 'text-xs' : 'text-sm'}`}>
-              After a document is signed, a hash can be recorded on-chain and shown on the signing certificate.
-              This is not a separate method to pick — it runs with the signature when anchoring is enabled.
-            </p>
-          </div>
+      <label
+        className={`flex cursor-pointer items-start rounded-xl border-2 transition-all ${compact ? 'gap-2.5 p-3' : 'gap-3 p-4'} ${
+          blockchainAnchoring
+            ? 'border-primary bg-primary/10'
+            : 'border-border bg-card hover:border-primary/40'
+        }`}
+      >
+        <input
+          type="checkbox"
+          className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+          checked={Boolean(blockchainAnchoring)}
+          onChange={(e) => onBlockchainAnchoringChange?.(e.target.checked)}
+        />
+        <div className={`flex flex-shrink-0 items-center justify-center rounded-lg ${compact ? 'h-9 w-9' : 'h-12 w-12'} ${
+          blockchainAnchoring ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+        }`}>
+          <LucideIcons.Link className={compact ? 'h-4 w-4' : 'h-6 w-6'} />
         </div>
-      </div>
+        <div className="min-w-0 flex-1">
+          <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-lg'}`}>
+            Blockchain Anchoring
+          </h3>
+          <p className={`text-muted-foreground ${compact ? 'text-xs' : 'text-sm'}`}>
+            Anchor the document hash on the blockchain for an immutable public record.
+          </p>
+          <p className={`mt-1 font-medium text-primary ${compact ? 'text-xs' : 'text-sm'}`}>
+            Cost: +{BLOCKCHAIN_ANCHORING_CREDITS} Credits
+          </p>
+        </div>
+      </label>
 
       {/* Compliance Notice */}
       {complianceRequirements.length > 0 && (

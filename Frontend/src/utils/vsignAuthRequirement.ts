@@ -18,6 +18,7 @@ export function parseRecipientAuthMethodIds(authentication: unknown): string[] {
 
 export const STANDARD_SIGNATURE_METHOD_ID = '__standard_signature__';
 export const DEFAULT_AADHAAR_AUTH_NAME = 'Aadhaar Based eSign';
+export const BLOCKCHAIN_ANCHORING_CREDITS = 2;
 
 export function getAadhaarAuthMethodName(methods?: any[] | null): string {
   const hit = (methods || []).find(isAadhaarVSignAuthMethodRecord);
