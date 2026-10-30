@@ -216,9 +216,60 @@ const validateCreditPackagePayload = (payload = {}, { isUpdate = false } = {}) =
   };
 };
 
+const validateFlexibleCreditPackagePayload = (payload = {}) => {
+  if (!payload?.name || !String(payload.name).trim()) {
+    return { ok: false, message: 'Package name is required' };
+  }
+
+  const name = String(payload.name).trim();
+  const description = payload.description !== undefined ? String(payload.description).trim() : '';
+
+  const allowedCurrencies = new Set(['INR', 'USD', 'EUR', 'GBP']);
+  let currency = 'INR';
+  if (payload.currency !== undefined && payload.currency !== null && payload.currency !== '') {
+    currency = String(payload.currency).trim().toUpperCase();
+    if (!allowedCurrencies.has(currency)) {
+      return { ok: false, message: 'currency must be one of INR, USD, EUR, GBP' };
+    }
+  }
+
+  if (!Array.isArray(payload.ranges) || payload.ranges.length === 0) {
+    return { ok: false, message: 'At least one range is required' };
+  }
+
+  const ranges = [];
+  for (let i = 0; i < payload.ranges.length; i += 1) {
+    const range = payload.ranges[i] || {};
+    const min = parseBoundedNumber(range.min, `ranges[${i}].min`, { required: true, allowZero: false });
+    if (!min.ok) return min;
+    const max = parseBoundedNumber(range.max, `ranges[${i}].max`, { required: true, allowZero: false });
+    if (!max.ok) return max;
+    const pricePerCredit = parseBoundedNumber(range.pricePerCredit, `ranges[${i}].pricePerCredit`, {
+      required: true,
+      allowZero: true,
+      max: MAX_PRICE,
+    });
+    if (!pricePerCredit.ok) return pricePerCredit;
+    if (max.value < min.value) {
+      return { ok: false, message: `ranges[${i}].max must be greater than or equal to min` };
+    }
+    ranges.push({
+      min: min.value,
+      max: max.value,
+      pricePerCredit: pricePerCredit.value,
+    });
+  }
+
+  return {
+    ok: true,
+    sanitized: { name, description, currency, ranges },
+  };
+};
+
 module.exports = {
   validatePlanPayload,
   validateCreditPackagePayload,
+  validateFlexibleCreditPackagePayload,
   sanitizePlanPayload,
   sanitizeCreditPackagePayload,
 };

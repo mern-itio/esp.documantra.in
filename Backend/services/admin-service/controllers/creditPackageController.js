@@ -147,10 +147,43 @@ const getFlexibleCreditPackage = async(req, res) =>{
     }
 }
 
+const upsertFlexibleCreditPackage = async (req, res) => {
+    try {
+        const payload = req.body || {};
+        if (!payload.name || !Array.isArray(payload.ranges) || payload.ranges.length === 0) {
+            return res.status(400).json({ message: 'Name and at least one range are required' });
+        }
+        const id = req.params.id;
+        const url = id
+            ? `/admin/credit-packages/flexible/${encodeURIComponent(id)}`
+            : '/admin/credit-packages/flexible';
+        const result = await servicePut(req, 'subscription', {
+            url,
+            data: payload
+        });
+        if (result.status === 200 || result.status === 201) {
+            return res.status(200).json({
+                status: 200,
+                message: 'Flexible package saved successfully',
+                data: result.data
+            });
+        }
+        return res.status(result.status).json({
+            status: result.status,
+            message: result.message || 'Failed to save flexible package',
+            data: result.data || null
+        });
+    } catch (error) {
+        console.error('Error saving flexible credit package:', error);
+        return res.status(500).json({ message: 'Failed to save flexible credit package' });
+    }
+};
+
 module.exports = {
     listCreditPackages,
     createCreditPackage,
     updateCreditPackage,
     deleteCreditPackage,
-    getFlexibleCreditPackage
+    getFlexibleCreditPackage,
+    upsertFlexibleCreditPackage
 };

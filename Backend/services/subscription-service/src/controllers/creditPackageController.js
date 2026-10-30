@@ -4,7 +4,8 @@ const flexibleCreditPackage = require('../models/flexibleCreditPackage');
 const Stripe = require('stripe');
 const {createInvoiceForCreditPurchase,createInvoiceForFlexiCreditPurchase} = require('../controllers/invoiceController');
 const Subscription = require('../models/Subscription');
-const { validateCreditPackagePayload } = require('../utils/billingValidation');
+const mongoose = require('mongoose');
+const { validateCreditPackagePayload, validateFlexibleCreditPackagePayload } = require('../utils/billingValidation');
 
 let stripe = null;
 if (process.env.STRIPE_SECRET_KEY) {
@@ -360,6 +361,42 @@ const applyCreditsToUser = async (creditPackageId, userId) => {
   }
   return { creditPurchased: creditResponse, invoice };
 }
+const upsertFlexiblePackage = async (req, res) => {
+  try {
+    const validation = validateFlexibleCreditPackagePayload(req.body || {});
+    if (!validation.ok) {
+      return res.status(400).json({ status: 400, message: validation.message, data: null });
+    }
+
+    const id = req.params.id;
+    let doc = null;
+    if (id && mongoose.Types.ObjectId.isValid(id)) {
+      doc = await flexibleCreditPackage.findByIdAndUpdate(id, validation.sanitized, {
+        new: true,
+        runValidators: true,
+      });
+    }
+    if (!doc) {
+      doc = await flexibleCreditPackage.findOneAndUpdate({}, validation.sanitized, {
+        new: true,
+        runValidators: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: 'Flexible package saved successfully',
+      data: doc,
+    });
+  } catch (error) {
+    console.error('Error saving flexible credit package:', error);
+    return res.status(400).json({ status: 400, message: 'Invalid request', data: null });
+  }
+};
+
 const getFlexiblePackage = async (req, res) => {
   try {
     const flexiblePackage = await flexibleCreditPackage.findOne();
@@ -398,6 +435,7 @@ module.exports = {
   updateCreditPackage,
   deleteCreditPackage,
   getFlexiblePackage,
+  upsertFlexiblePackage,
   createFlexCheckoutSession,
   flexiConfirmCheckoutSession
 };

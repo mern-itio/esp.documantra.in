@@ -35,7 +35,7 @@ const {
   createTestSession: createDiditTestSession,
 } = require('../controllers/diditWorkflowController');
 const {listOrganizations,updateOrganizationVerificationStatus} = require('../controllers/organizationController');
-const {listCreditPackages, createCreditPackage, updateCreditPackage, deleteCreditPackage,getFlexibleCreditPackage} = require('../controllers/creditPackageController');
+const {listCreditPackages, createCreditPackage, updateCreditPackage, deleteCreditPackage,getFlexibleCreditPackage,upsertFlexibleCreditPackage} = require('../controllers/creditPackageController');
 const {createEmailTemplate,getEmailTemplates,updateEmailTemplates,deleteEmailTemplate} = require('../controllers/emailTemplateController');
 const {
   getPlatformEmailConfig,
@@ -142,7 +142,12 @@ router.post('/credit-packages', creditPackageMutationLimiter, createCreditPackag
 router.put('/credit-packages/:id', creditPackageMutationLimiter, updateCreditPackage);
 router.delete('/credit-packages/:id', deleteCreditPackage);
 // Flexible credit package
-router.get('/flexible-credit-package',getFlexibleCreditPackage);
+router.get('/flexible-credit-package', getFlexibleCreditPackage);
+router.get('/flexible-credit-packages', getFlexibleCreditPackage);
+router.put('/flexible-credit-package', creditPackageMutationLimiter, upsertFlexibleCreditPackage);
+router.put('/flexible-credit-package/:id', creditPackageMutationLimiter, upsertFlexibleCreditPackage);
+router.post('/flexible-credit-package', creditPackageMutationLimiter, upsertFlexibleCreditPackage);
+router.post('/flexible-credit-packages', creditPackageMutationLimiter, upsertFlexibleCreditPackage);
 
 // Email Template routes
 router.post('/create-email-template',createEmailTemplate);
