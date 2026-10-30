@@ -16,6 +16,21 @@ export function parseRecipientAuthMethodIds(authentication: unknown): string[] {
   }
 }
 
+export const STANDARD_SIGNATURE_METHOD_ID = '__standard_signature__';
+export const DEFAULT_AADHAAR_AUTH_NAME = 'Aadhaar Based eSign';
+
+export function getAadhaarAuthMethodName(methods?: any[] | null): string {
+  const hit = (methods || []).find(isAadhaarVSignAuthMethodRecord);
+  const name = String(hit?.name || '').trim();
+  return name || DEFAULT_AADHAAR_AUTH_NAME;
+}
+
+export function stripSyntheticAuthMethodIds(ids: string[]): string[] {
+  return (ids || [])
+    .map((id) => String(id || '').trim())
+    .filter((id) => id && id !== STANDARD_SIGNATURE_METHOD_ID);
+}
+
 export function isAadhaarVSignAuthMethodRecord(method: any): boolean {
   const type = String(method?.providerType || method?.config?.providerType || '').toLowerCase();
   if (type.includes('aadhaar') || type.includes('vsign')) return true;

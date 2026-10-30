@@ -8,7 +8,12 @@ import {
 } from 'lucide-react';
 import { subscriptionApi } from '../../../services/apiHelper';
 import * as LucideIcons from 'lucide-react';
-import { isAadhaarVSignAuthMethodRecord } from '../../../utils/vsignAuthRequirement';
+import {
+  DEFAULT_AADHAAR_AUTH_NAME,
+  STANDARD_SIGNATURE_METHOD_ID,
+  getAadhaarAuthMethodName,
+  isAadhaarVSignAuthMethodRecord,
+} from '../../../utils/vsignAuthRequirement';
 
 interface AuthMethod {
   id: string;
@@ -61,6 +66,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   const [localSelectedMethods, setLocalSelectedMethods] = useState<string[]>(
     selectedMethods || []
   );
+  const [preferStandardSignature, setPreferStandardSignature] = useState(false);
 
   useEffect(() => {
     fetchAvailableAuthMethods();
@@ -72,6 +78,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
       setLocalSelectedMethods(
         Array.from(new Set(selectedMethods.map((id) => String(id)).filter(Boolean)))
       );
+      setPreferStandardSignature(false);
     } else {
       setLocalSelectedMethods([]);
     }
@@ -100,18 +107,52 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
   const isMethodSelected = (methodId: string) => {
     const id = String(methodId);
+    if (preferStandardSignature) return false;
     return localSelectedMethods.some((item) => String(item) === id) ||
       (vsignSelected && aadhaarMethodIds.includes(id));
   };
 
-  const selectedMethodRecords = visibleAuthMethods.filter((method) =>
+  const extraSelectedRecords = visibleAuthMethods.filter((method) =>
     isMethodSelected(String(method.id))
   );
+  const aadhaarMethodName = getAadhaarAuthMethodName(visibleAuthMethods);
+  const standardMethod: AuthMethod = {
+    id: STANDARD_SIGNATURE_METHOD_ID,
+    name: 'Standard signature',
+    description: 'Signer draws or types their name. This is used by default if you do not add extra verification.',
+    icon: 'PenTool',
+    securityLevel: 'low',
+    estimatedTime: 'Instant',
+    cost: 0,
+    compliance: ['IT Act'],
+    available: true,
+  };
+  const standardSelected = extraSelectedRecords.length === 0;
+  const selectedMethodRecords = standardSelected
+    ? [standardMethod]
+    : extraSelectedRecords;
+  const methodsForActiveTab = [
+    standardMethod,
+    ...(activeTab === 'recommended'
+      ? visibleAuthMethods.filter((method) => (method as any).isRecommended)
+      : visibleAuthMethods),
+  ];
 
   // multi-select toggle: add or remove method from selection
   const toggleMethod = (methodId: string) => {
     let newSelected: string[];
     const id = String(methodId);
+    if (id === STANDARD_SIGNATURE_METHOD_ID) {
+      setPreferStandardSignature(true);
+      setLocalSelectedMethods([]);
+      onVSignChange?.(false);
+      onMethodsChange?.([]);
+      onSelectionChange?.([]);
+      if (!showSaveButton && !onSelectionChange) {
+        onMethodSelect?.(null);
+      }
+      return;
+    }
     const isCurrentlySelected = isMethodSelected(id);
     
     if (allowMultiple) {
@@ -126,6 +167,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
       newSelected = isCurrentlySelected ? [] : [id];
     }
     
+    setPreferStandardSignature(false);
     setLocalSelectedMethods(newSelected);
     if (aadhaarMethodIds.includes(id)) {
       onVSignChange?.(!isCurrentlySelected);
@@ -198,7 +240,10 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   };
 
   const renderMethodCard = (method: AuthMethod, isRecommended = false) => {
-    const isSelected = isMethodSelected(method.id);
+    const isSelected =
+      String(method.id) === STANDARD_SIGNATURE_METHOD_ID
+        ? standardSelected
+        : isMethodSelected(method.id);
     const IconName = method.icon || 'Shield';
     const Icon = (LucideIcons as any)[IconName];
     const cardPadding = compact ? 'p-3' : 'p-6';
@@ -275,7 +320,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Cost:</span>
                 <span className={`font-medium ${getCostColor(Number(method.cost))}`}>
-                  {Number(method.cost)} Credits
+                  {Number(method.cost) === 0 ? 'Included' : `${Number(method.cost)} Credits`}
                 </span>
               </div>
 
@@ -373,7 +418,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
             </div>
             <div className="min-w-0 flex-1 pr-5">
               <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-lg'}`}>
-                Aadhaar eSign (VSign)
+                {aadhaarMethodName || DEFAULT_AADHAAR_AUTH_NAME}
               </h3>
               <p className={`text-muted-foreground ${compact ? 'text-xs mb-2' : 'mb-4'}`}>
                 Signer draws a signature, then verifies with Aadhaar OTP. Only applies if you select it for this send.
@@ -400,7 +445,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
                 : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
           >
-            Recommended ({getRecommendedMethods().length})
+            Recommended ({getRecommendedMethods().length + 1})
 
 
           </button>
@@ -412,7 +457,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
                 : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
           >
-            All Methods ({visibleAuthMethods.length})
+            All Methods ({visibleAuthMethods.length + 1})
           </button>
         </nav>
       </div>
@@ -438,9 +483,29 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
       {/* Methods Grid */}
       <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 gap-6'}`}>
-        {(activeTab === 'recommended' ? getRecommendedMethods() : visibleAuthMethods).map(method =>
-          renderMethodCard(method, activeTab === 'recommended')
+        {methodsForActiveTab.map((method) =>
+          renderMethodCard(
+            method,
+            String(method.id) === STANDARD_SIGNATURE_METHOD_ID || activeTab === 'recommended'
+          )
         )}
+      </div>
+
+      <div className={`rounded-xl border border-border bg-muted/40 ${compact ? 'p-3' : 'p-4'}`}>
+        <div className={`flex items-start ${compact ? 'gap-2.5' : 'gap-3'}`}>
+          <div className={`flex flex-shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ${compact ? 'h-9 w-9' : 'h-12 w-12'}`}>
+            <LucideIcons.Link className={compact ? 'h-4 w-4' : 'h-6 w-6'} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className={`font-semibold text-foreground ${compact ? 'text-sm' : 'text-lg'}`}>
+              Blockchain anchoring
+            </h3>
+            <p className={`text-muted-foreground ${compact ? 'text-xs' : 'text-sm'}`}>
+              After a document is signed, a hash can be recorded on-chain and shown on the signing certificate.
+              This is not a separate method to pick — it runs with the signature when anchoring is enabled.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Compliance Notice */}

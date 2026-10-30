@@ -30,6 +30,7 @@ interface SignatureTypeSelectorProps {
   documentType?: string;
   /** When false, hide Aadhaar/VSign (qualified) — admin has not enabled VSign. */
   vsignAvailable?: boolean;
+  aadhaarMethodName?: string;
 }
 
 const SignatureTypeSelector: React.FC<SignatureTypeSelectorProps> = ({
@@ -38,12 +39,13 @@ const SignatureTypeSelector: React.FC<SignatureTypeSelectorProps> = ({
   complianceRequirements = [],
   documentType,
   vsignAvailable = false,
+  aadhaarMethodName = 'Aadhaar Based eSign',
 }) => {
   const signatureTypes: SignatureType[] = [
     {
       id: 'standard',
-      name: 'Standard Electronic Signature',
-      description: 'Basic electronic signature for everyday documents',
+      name: 'Standard signature',
+      description: 'Draw or type a signature. This is the default if you do not add extra verification.',
       icon: PenTool,
       legalWeight: 'Legally binding for most documents',
       compliance: ['ESIGN Act', 'UETA'],
@@ -86,9 +88,9 @@ const SignatureTypeSelector: React.FC<SignatureTypeSelectorProps> = ({
       ? [
           {
             id: 'qualified' as const,
-            name: 'Aadhaar eSign (VSign)',
+            name: aadhaarMethodName,
             description:
-              'Draw signature then verify with Aadhaar OTP via VSign. Only used when you select this for the envelope.',
+              'Draw a signature, then verify with Aadhaar OTP. Only used when you select this for the envelope.',
             icon: Award,
             legalWeight: 'Aadhaar-authenticated eSign',
             compliance: ['IT Act', 'Aadhaar eSign', 'VSign'],

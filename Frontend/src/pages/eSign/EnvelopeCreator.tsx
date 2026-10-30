@@ -103,6 +103,7 @@ import { toTitleCase } from '../../utils/formatName';
 import { APP_NAME } from '../../components/constants/appConfig';
 import { BRAND, formatEnvelopeSubject } from '../../config/brand';
 import { refreshVSignPublicStatus, isVSignEnabled } from '../../config/vsign';
+import { getAadhaarAuthMethodName, stripSyntheticAuthMethodIds } from '../../utils/vsignAuthRequirement';
 import {
   extractDocumentContentSnippet,
   resolveEnvelopeTypeFromContent,
@@ -337,7 +338,7 @@ const isPublicFlow =
 
   const setVSignRequired = async (on: boolean) => {
     if (on && !vsignAvailable && !isVSignEnabled()) {
-      toast.error('Aadhaar eSign is disabled by admin. Enable it under VSign settings first.');
+      toast.error(`${getAadhaarAuthMethodName()} is disabled by admin. Enable it under VSign settings first.`);
       return;
     }
     const signatureType = on ? 'qualified' : 'standard';
@@ -349,8 +350,8 @@ const isPublicFlow =
     if (!envelopeId) {
       toast.success(
         on
-          ? 'Aadhaar eSign (VSign) selected — will apply when you send'
-          : 'Aadhaar eSign cleared — draw & finish only',
+          ? `${getAadhaarAuthMethodName()} selected — will apply when you send`
+          : 'Standard signature selected — draw & finish only',
       );
       return;
     }
@@ -358,11 +359,11 @@ const isPublicFlow =
       await persistSignatureType(signatureType);
       toast.success(
         on
-          ? 'Aadhaar eSign (VSign) enabled for this envelope'
-          : 'Aadhaar eSign removed — signers use draw & finish only',
+          ? `${getAadhaarAuthMethodName()} enabled for this envelope`
+          : 'Standard signature — signers use draw & finish only',
       );
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to update Aadhaar eSign setting');
+      toast.error(err?.response?.data?.message || `Failed to update ${getAadhaarAuthMethodName()} setting`);
     }
   };
 
@@ -742,6 +743,9 @@ const isPublicFlow =
   const [dragOverSignerId, setDragOverSignerId] = useState<string | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<any>(null);
   const [authMethods, setAuthMethods] = useState<any[]>([]);
+  useEffect(() => {
+    loadAvailableAuthMethods();
+  }, []);
   const [helpMenuOpen, setHelpMenuOpen] = useState<boolean>(false);
   const [helpSidebarOpen, setHelpSidebarOpen] = useState<boolean>(false);
   const helpMenuRef = useRef<HTMLDivElement | null>(null);
@@ -3129,9 +3133,11 @@ if (isPublicFlow) {
       } else if (methodIds && typeof methodIds === 'string' && methodIds.trim().length > 0) {
         normalizedMethods = [methodIds];
       }
+      normalizedMethods = stripSyntheticAuthMethodIds(normalizedMethods);
 
       // All selected methods show in signer auth wizard; Aadhaar OTP still runs at Sign time.
       const methodsPool = await loadAvailableAuthMethods();
+      const aadhaarLabel = getAadhaarAuthMethodName(methodsPool);
       const resolveMethod = (id: string) =>
         methodsPool.find((m: any) => {
           const methodId = String(m?.id ?? m?._id ?? m?.authMethodId ?? '').trim();
@@ -3178,7 +3184,7 @@ if (isPublicFlow) {
               preSignMethodIds.length > 0
                 ? `${preSignMethodIds.length} authentication method(s) applied to all recipients`
                 : aadhaarMethodIds.length > 0
-                  ? 'Aadhaar eSign (VSign) will apply at signature time'
+                  ? `${aadhaarLabel} will apply at signature time`
                   : 'Cleared authentication for all recipients'
             );
           }
@@ -3187,7 +3193,7 @@ if (isPublicFlow) {
             preSignMethodIds.length > 0
               ? 'Authentication methods will be saved when recipients are added'
               : aadhaarMethodIds.length > 0
-                ? 'Aadhaar eSign (VSign) will apply when you send'
+                ? `${aadhaarLabel} will apply when you send`
                 : 'Authentication cleared (will save with recipients)'
           );
         }
@@ -3241,7 +3247,7 @@ if (isPublicFlow) {
                 preSignMethodIds.length > 0
                   ? `${preSignMethodIds.length} authentication method(s) applied to recipient`
                   : aadhaarMethodIds.length > 0
-                    ? 'Aadhaar eSign (VSign) will apply at signature time'
+                    ? `${aadhaarLabel} will apply at signature time`
                     : 'Cleared authentication for recipient'
               );
             }
@@ -3251,7 +3257,7 @@ if (isPublicFlow) {
             preSignMethodIds.length > 0
               ? 'Authentication methods will be saved when recipient is added'
               : aadhaarMethodIds.length > 0
-                ? 'Aadhaar eSign (VSign) will apply when you send'
+                ? `${aadhaarLabel} will apply when you send`
                 : 'Authentication cleared (will save with recipient)'
           );
         }
@@ -5670,8 +5676,8 @@ if (isPublicFlow) {
                                                     <div>
                                                       <div className="font-medium text-foreground">
                                                         {vsignSelected
-                                                          ? 'Remove Aadhaar eSign (VSign)'
-                                                          : 'Add Aadhaar eSign (VSign)'}
+                                                          ? `Remove ${getAadhaarAuthMethodName(authMethods)}`
+                                                          : `Add ${getAadhaarAuthMethodName(authMethods)}`}
                                                       </div>
                                                       <div className="text-xs text-muted-foreground mt-1">
                                                         {vsignSelected
@@ -6286,8 +6292,8 @@ if (isPublicFlow) {
                                                         <div>
                                                           <div className="font-medium text-foreground">
                                                             {vsignSelected
-                                                              ? 'Remove Aadhaar eSign (VSign)'
-                                                              : 'Add Aadhaar eSign (VSign)'}
+                                                              ? `Remove ${getAadhaarAuthMethodName(authMethods)}`
+                                                              : `Add ${getAadhaarAuthMethodName(authMethods)}`}
                                                           </div>
                                                           <div className="text-xs text-muted-foreground mt-1">
                                                             {vsignSelected
@@ -6732,6 +6738,7 @@ if (isPublicFlow) {
             <SignatureTypeSelector
               selectedType={envelopeData.signatureType}
               vsignAvailable={vsignAvailable}
+              aadhaarMethodName={getAadhaarAuthMethodName(authMethods)}
               onTypeChange={(type) => {
                 setEnvelopeData(prev => ({
                   ...prev,
