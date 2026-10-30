@@ -322,7 +322,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
         }}
       >
         <div
-          className={`absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
+          className={`absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
             isSelected
               ? 'border-primary bg-primary text-primary-foreground'
               : 'border-border bg-muted text-muted-foreground'
@@ -332,12 +332,6 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
           {isSelected ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
         </div>
 
-        {isRecommended && (
-          <div className={`absolute rounded-full bg-success font-medium text-success-foreground ${compact ? '-right-1 -top-1 px-1.5 py-0.5 text-[10px]' : '-right-2 -top-2 px-2 py-1 text-xs'}`}>
-            Recommended
-          </div>
-        )}
-
         <div className={`flex items-start ${compact ? 'gap-2.5' : 'space-x-4'}`}>
           <div
             className={`flex ${iconSize} flex-shrink-0 items-center justify-center rounded-lg ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
@@ -346,9 +340,14 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
             <Icon className={iconInner} />
           </div>
 
-          <div className="min-w-0 flex-1 pr-5">
-            <div className={`mb-1 flex items-center justify-between ${compact ? '' : 'mb-2'}`}>
-              <h3 className={`font-semibold text-foreground ${titleSize}`}>{method.name}</h3>
+          <div className="min-w-0 flex-1 pr-8">
+            <div className={`mb-1 flex flex-wrap items-center gap-1.5 ${compact ? '' : 'mb-2'}`}>
+              <h3 className={`min-w-0 font-semibold leading-snug text-foreground ${titleSize}`}>{method.name}</h3>
+              {isRecommended && (
+                <span className="shrink-0 rounded-full bg-success/15 px-1.5 py-0.5 text-[10px] font-medium leading-none text-success">
+                  Recommended
+                </span>
+              )}
             </div>
 
             <p className={`text-muted-foreground ${descSize}`}>{method.description}</p>
@@ -543,7 +542,8 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
         {methodsForActiveTab.map((method) =>
           renderMethodCard(
             method,
-            String(method.id) === STANDARD_SIGNATURE_METHOD_ID || activeTab === 'recommended'
+            String(method.id) !== STANDARD_SIGNATURE_METHOD_ID &&
+              (Boolean((method as any).isRecommended) || isEmailOtpAuthMethodRecord(method))
           )
         )}
       </div>
