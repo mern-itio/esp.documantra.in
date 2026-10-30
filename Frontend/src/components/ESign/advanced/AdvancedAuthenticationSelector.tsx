@@ -69,7 +69,9 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   // Update localSelectedMethods when selectedMethods prop changes
   useEffect(() => {
     if (selectedMethods && Array.isArray(selectedMethods)) {
-      setLocalSelectedMethods(selectedMethods);
+      setLocalSelectedMethods(
+        Array.from(new Set(selectedMethods.map((id) => String(id)).filter(Boolean)))
+      );
     } else {
       setLocalSelectedMethods([]);
     }
@@ -102,25 +104,30 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
       (vsignSelected && aadhaarMethodIds.includes(id));
   };
 
+  const selectedMethodRecords = visibleAuthMethods.filter((method) =>
+    isMethodSelected(String(method.id))
+  );
+
   // multi-select toggle: add or remove method from selection
   const toggleMethod = (methodId: string) => {
     let newSelected: string[];
-    const isCurrentlySelected = isMethodSelected(methodId);
+    const id = String(methodId);
+    const isCurrentlySelected = isMethodSelected(id);
     
     if (allowMultiple) {
       // Multi-select mode: toggle the method in the array
       if (isCurrentlySelected) {
-        newSelected = localSelectedMethods.filter(id => id !== methodId);
+        newSelected = localSelectedMethods.filter((item) => String(item) !== id);
       } else {
-        newSelected = [...localSelectedMethods, methodId];
+        newSelected = Array.from(new Set([...localSelectedMethods.map(String), id]));
       }
     } else {
       // Single-select mode (for backward compatibility)
-      newSelected = isCurrentlySelected ? [] : [methodId];
+      newSelected = isCurrentlySelected ? [] : [id];
     }
     
     setLocalSelectedMethods(newSelected);
-    if (aadhaarMethodIds.includes(methodId)) {
+    if (aadhaarMethodIds.includes(id)) {
       onVSignChange?.(!isCurrentlySelected);
     }
     // Notify parent of selection change
@@ -411,32 +418,20 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
       </div>
 
       {/* Selected Methods Summary (multi-select) */}
-      {(localSelectedMethods.length > 0 || (vsignSelected && aadhaarMethodIds.length > 0)) && (
+      {selectedMethodRecords.length > 0 && (
         <div className="rounded-lg border border-primary/25 bg-primary/10 p-4">
           <div className="mb-2 flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-primary" />
             <span className="font-medium text-primary">
-              {Array.from(new Set([
-                ...localSelectedMethods,
-                ...(vsignSelected ? aadhaarMethodIds : []),
-              ])).length} Method{Array.from(new Set([
-                ...localSelectedMethods,
-                ...(vsignSelected ? aadhaarMethodIds : []),
-              ])).length !== 1 ? 's' : ''} Selected
+              {selectedMethodRecords.length} Method{selectedMethodRecords.length !== 1 ? 's' : ''} Selected
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {Array.from(new Set([
-              ...localSelectedMethods,
-              ...(vsignSelected ? aadhaarMethodIds : []),
-            ])).map(methodId => {
-              const method = visibleAuthMethods.find(m => m.id === methodId);
-              return method ? (
-                <span key={methodId} className="rounded-full bg-primary/15 px-3 py-1 text-sm text-primary">
-                  {method.name}
-                </span>
-              ) : null;
-            })}
+            {selectedMethodRecords.map((method) => (
+              <span key={String(method.id)} className="rounded-full bg-primary/15 px-3 py-1 text-sm text-primary">
+                {method.name}
+              </span>
+            ))}
           </div>
         </div>
       )}
