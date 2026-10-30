@@ -562,8 +562,10 @@ const isPublicFlow =
 
   const isAadhaarVSignAuthMethod = (method: any): boolean => {
     const type = String(method?.providerType || method?.config?.providerType || '').toLowerCase();
-    if (type === 'aadhaar_vsign') return true;
-    return /aadhaar\s*e?sign|vsign/i.test(String(method?.name || ''));
+    if (type.includes('aadhaar') || type.includes('vsign')) return true;
+    const name = String(method?.name || '').toLowerCase();
+    if (/vsign/.test(name)) return true;
+    return /aadhaar/.test(name) && /sign/.test(name);
   };
 
   const selectionIncludesAadhaarVSign = async (selectedMethodIds: string[]): Promise<boolean> => {
@@ -672,29 +674,37 @@ const isPublicFlow =
   };
 
   const saveAuthModalSelection = () => {
-    const methodsToSave = tempAuthSelection || [];
-    handleAuthMethodSelect(methodsToSave);
+    handleAuthMethodSelect(getAuthModalSelectedMethods());
   };
 
   const getAuthModalSelectedMethods = (): string[] => {
+    let ids: string[] = [];
     if (hasUserChangedSelection) {
-      return tempAuthSelection || [];
-    }
-    if (authModalForBulk) {
+      ids = tempAuthSelection || [];
+    } else if (authModalForBulk) {
       const firstAuth = recipients.length > 0 ? recipients[0]?.authentication : null;
-      if (!firstAuth) return [];
-      const firstAuthArray = parseAuthentication(firstAuth);
-      const allSame = recipients.every(r => {
-        const rAuth = parseAuthentication(r.authentication);
-        return JSON.stringify(rAuth.sort()) === JSON.stringify(firstAuthArray.sort());
-      });
-      return allSame ? firstAuthArray : [];
-    }
-    if (authModalForRecipientId) {
+      if (firstAuth) {
+        const firstAuthArray = parseAuthentication(firstAuth);
+        const allSame = recipients.every(r => {
+          const rAuth = parseAuthentication(r.authentication);
+          return JSON.stringify(rAuth.sort()) === JSON.stringify(firstAuthArray.sort());
+        });
+        ids = allSame ? firstAuthArray : [];
+      }
+    } else if (authModalForRecipientId) {
       const recipient = recipients.find(r => r.id === authModalForRecipientId);
-      return parseAuthentication(recipient?.authentication);
+      ids = parseAuthentication(recipient?.authentication);
     }
-    return [];
+    if (vsignSelected && !hasUserChangedSelection) {
+      const aadhaarIds = (authMethods || [])
+        .filter((m: any) => isAadhaarVSignAuthMethod(m))
+        .map((m: any) => String(m?.id ?? m?._id ?? '').trim())
+        .filter(Boolean);
+      aadhaarIds.forEach((id) => {
+        if (!ids.includes(id)) ids = [...ids, id];
+      });
+    }
+    return ids;
   };
   const getTomorrowDate = () => {
     const d = new Date();

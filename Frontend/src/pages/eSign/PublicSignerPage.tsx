@@ -56,8 +56,10 @@ interface AuthMethod {
 
 const isAadhaarVSignAuthMethod = (method: AuthMethod | null | undefined): boolean => {
   const type = String(method?.providerType || '').toLowerCase();
-  if (type === 'aadhaar_vsign') return true;
-  return /aadhaar\s*e?sign|vsign/i.test(String(method?.name || ''));
+  if (type.includes('aadhaar') || type.includes('vsign')) return true;
+  const name = String(method?.name || '').toLowerCase();
+  if (/vsign/.test(name)) return true;
+  return /aadhaar/.test(name) && /sign/.test(name);
 };
 interface AuthList {
   _id: string;

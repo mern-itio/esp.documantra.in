@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { subscriptionApi } from '../../../services/apiHelper';
 import * as LucideIcons from 'lucide-react';
+import { isAadhaarVSignAuthMethodRecord } from '../../../utils/vsignAuthRequirement';
 
 interface AuthMethod {
   id: string;
@@ -19,6 +20,7 @@ interface AuthMethod {
   cost: number;
   compliance: string[];
   available: boolean;
+  providerType?: string;
 }
 
 interface AdvancedAuthenticationSelectorProps {
@@ -84,10 +86,26 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
     }
   };
 
+  const visibleAuthMethods = authMethods.filter((method) => {
+    if (!isAadhaarVSignAuthMethodRecord(method)) return true;
+    return vsignAvailable;
+  });
+  const aadhaarMethodIds = visibleAuthMethods
+    .filter((method) => isAadhaarVSignAuthMethodRecord(method))
+    .map((method) => String(method.id));
+  const hasAadhaarFromAdmin = aadhaarMethodIds.length > 0;
+  const showFallbackVsignCard = vsignAvailable && !hasAadhaarFromAdmin;
+
+  const isMethodSelected = (methodId: string) => {
+    const id = String(methodId);
+    return localSelectedMethods.some((item) => String(item) === id) ||
+      (vsignSelected && aadhaarMethodIds.includes(id));
+  };
+
   // multi-select toggle: add or remove method from selection
   const toggleMethod = (methodId: string) => {
     let newSelected: string[];
-    const isCurrentlySelected = localSelectedMethods.includes(methodId);
+    const isCurrentlySelected = isMethodSelected(methodId);
     
     if (allowMultiple) {
       // Multi-select mode: toggle the method in the array
@@ -102,6 +120,9 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
     }
     
     setLocalSelectedMethods(newSelected);
+    if (aadhaarMethodIds.includes(methodId)) {
+      onVSignChange?.(!isCurrentlySelected);
+    }
     // Notify parent of selection change
     onMethodsChange?.(newSelected);
     // Notify parent of selection change (for temporary state when using external save button)
@@ -163,14 +184,14 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   const getRecommendedMethods = () => {
 
 
-    return authMethods.filter(method =>
+    return visibleAuthMethods.filter(method =>
       // is recommended based on backend flag
       (method as any).isRecommended
     );
   };
 
   const renderMethodCard = (method: AuthMethod, isRecommended = false) => {
-    const isSelected = localSelectedMethods.includes(method.id);
+    const isSelected = isMethodSelected(method.id);
     const IconName = method.icon || 'Shield';
     const Icon = (LucideIcons as any)[IconName];
     const cardPadding = compact ? 'p-3' : 'p-6';
@@ -306,8 +327,8 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
         </div>
       </div>
 
-      {/* Aadhaar eSign (VSign) — admin must enable; sender opts in like other auth */}
-      {vsignAvailable && (
+      {/* Fallback only if admin has not published an Aadhaar auth provider */}
+      {showFallbackVsignCard && (
         <div
           className={`relative cursor-pointer rounded-xl border-2 transition-all duration-200 ${compact ? 'p-3' : 'p-6'} ${
             vsignSelected
@@ -384,23 +405,32 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
                 : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
           >
-            All Methods ({authMethods.length})
+            All Methods ({visibleAuthMethods.length})
           </button>
         </nav>
       </div>
 
       {/* Selected Methods Summary (multi-select) */}
-      {localSelectedMethods.length > 0 && (
+      {(localSelectedMethods.length > 0 || (vsignSelected && aadhaarMethodIds.length > 0)) && (
         <div className="rounded-lg border border-primary/25 bg-primary/10 p-4">
           <div className="mb-2 flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-primary" />
             <span className="font-medium text-primary">
-              {localSelectedMethods.length} Method{localSelectedMethods.length !== 1 ? 's' : ''} Selected
+              {Array.from(new Set([
+                ...localSelectedMethods,
+                ...(vsignSelected ? aadhaarMethodIds : []),
+              ])).length} Method{Array.from(new Set([
+                ...localSelectedMethods,
+                ...(vsignSelected ? aadhaarMethodIds : []),
+              ])).length !== 1 ? 's' : ''} Selected
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {localSelectedMethods.map(methodId => {
-              const method = authMethods.find(m => m.id === methodId);
+            {Array.from(new Set([
+              ...localSelectedMethods,
+              ...(vsignSelected ? aadhaarMethodIds : []),
+            ])).map(methodId => {
+              const method = visibleAuthMethods.find(m => m.id === methodId);
               return method ? (
                 <span key={methodId} className="rounded-full bg-primary/15 px-3 py-1 text-sm text-primary">
                   {method.name}
@@ -413,7 +443,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
 
       {/* Methods Grid */}
       <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 gap-6'}`}>
-        {(activeTab === 'recommended' ? getRecommendedMethods() : authMethods).map(method =>
+        {(activeTab === 'recommended' ? getRecommendedMethods() : visibleAuthMethods).map(method =>
           renderMethodCard(method, activeTab === 'recommended')
         )}
       </div>

@@ -23,9 +23,11 @@ function parseAuthMethodIds(authentication) {
 }
 
 function isAadhaarVSignMethodRecord(method) {
-  const type = String(method?.providerType || '').toLowerCase();
-  if (type === 'aadhaar_vsign') return true;
-  return /aadhaar\s*e?sign|vsign/i.test(String(method?.name || ''));
+  const type = String(method?.providerType || method?.config?.providerType || '').toLowerCase();
+  if (type.includes('aadhaar') || type.includes('vsign')) return true;
+  const name = String(method?.name || '').toLowerCase();
+  if (/vsign/.test(name)) return true;
+  return /aadhaar/.test(name) && /sign/.test(name);
 }
 
 async function authMethodIdsIncludeAadhaar(methodIds) {

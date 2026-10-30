@@ -18,8 +18,10 @@ export function parseRecipientAuthMethodIds(authentication: unknown): string[] {
 
 export function isAadhaarVSignAuthMethodRecord(method: any): boolean {
   const type = String(method?.providerType || method?.config?.providerType || '').toLowerCase();
-  if (type === 'aadhaar_vsign') return true;
-  return /aadhaar\s*e?sign|vsign/i.test(String(method?.name || ''));
+  if (type.includes('aadhaar') || type.includes('vsign')) return true;
+  const name = String(method?.name || '').toLowerCase();
+  if (/vsign/.test(name)) return true;
+  return /aadhaar/.test(name) && /sign/.test(name);
 }
 
 export function authMethodListIncludesAadhaar(
