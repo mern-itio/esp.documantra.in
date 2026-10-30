@@ -25,6 +25,18 @@ export function getAadhaarAuthMethodName(methods?: any[] | null): string {
   return name || DEFAULT_AADHAAR_AUTH_NAME;
 }
 
+export function isEmailOtpAuthMethodRecord(method: any): boolean {
+  const type = String(method?.providerType || method?.config?.providerType || '').toLowerCase();
+  if (type === 'email_otp' || type === 'email' || type.includes('email_otp')) return true;
+  const name = String(method?.name || '').toLowerCase();
+  if (/aadhaar|vsign|selfie|liveness/.test(name)) return false;
+  return /email/.test(name);
+}
+
+export function findEmailOtpAuthMethod(methods?: any[] | null): any | null {
+  return (methods || []).find(isEmailOtpAuthMethodRecord) || null;
+}
+
 export function stripSyntheticAuthMethodIds(ids: string[]): string[] {
   return (ids || [])
     .map((id) => String(id || '').trim())

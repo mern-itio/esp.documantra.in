@@ -103,7 +103,7 @@ import { toTitleCase } from '../../utils/formatName';
 import { APP_NAME } from '../../components/constants/appConfig';
 import { BRAND, formatEnvelopeSubject } from '../../config/brand';
 import { refreshVSignPublicStatus, isVSignEnabled } from '../../config/vsign';
-import { getAadhaarAuthMethodName, stripSyntheticAuthMethodIds } from '../../utils/vsignAuthRequirement';
+import { findEmailOtpAuthMethod, getAadhaarAuthMethodName, stripSyntheticAuthMethodIds } from '../../utils/vsignAuthRequirement';
 import {
   extractDocumentContentSnippet,
   resolveEnvelopeTypeFromContent,
@@ -516,8 +516,7 @@ const isPublicFlow =
   const [pendingAuthSelectionAfterPhone, setPendingAuthSelectionAfterPhone] = useState<string[] | null>(null);
   const [savingMissingPhone, setSavingMissingPhone] = useState<boolean>(false);
 
-  const DEFAULT_AUTH_METHOD_ID = '68ee2a18ba0c0738eb275d34';
-  const DEFAULT_AUTH_JSON = JSON.stringify([{ authMethodId: DEFAULT_AUTH_METHOD_ID, status: 'pending' }]);
+  const FALLBACK_EMAIL_OTP_METHOD_ID = '68ee2a18ba0c0738eb275d34';
 
   const parseAuthentication = (auth: string | undefined | null): string[] => {
     if (!auth) return [];
@@ -705,6 +704,10 @@ const isPublicFlow =
         if (!ids.includes(id)) ids = [...ids, id];
       });
     }
+    if (!hasUserChangedSelection && ids.length === 0) {
+      const emailId = String(findEmailOtpAuthMethod(authMethods)?.id || DEFAULT_AUTH_METHOD_ID);
+      if (emailId) ids = [emailId];
+    }
     return ids;
   };
   const getTomorrowDate = () => {
@@ -746,6 +749,10 @@ const isPublicFlow =
   useEffect(() => {
     loadAvailableAuthMethods();
   }, []);
+  const DEFAULT_AUTH_METHOD_ID = String(
+    findEmailOtpAuthMethod(authMethods)?.id || FALLBACK_EMAIL_OTP_METHOD_ID
+  );
+  const DEFAULT_AUTH_JSON = JSON.stringify([{ authMethodId: DEFAULT_AUTH_METHOD_ID, status: 'pending' }]);
   const [helpMenuOpen, setHelpMenuOpen] = useState<boolean>(false);
   const [helpSidebarOpen, setHelpSidebarOpen] = useState<boolean>(false);
   const helpMenuRef = useRef<HTMLDivElement | null>(null);
@@ -8420,6 +8427,7 @@ if (isPublicFlow) {
                 complianceRequirements={[]}
                 vsignAvailable={vsignAvailable}
                 vsignSelected={vsignSelected}
+                defaultEmailMethodId={DEFAULT_AUTH_METHOD_ID}
                 onVSignChange={(on) => {
                   setVSignRequired(on);
                 }}

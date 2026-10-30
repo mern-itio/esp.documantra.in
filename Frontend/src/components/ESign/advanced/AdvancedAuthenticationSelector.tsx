@@ -11,8 +11,10 @@ import * as LucideIcons from 'lucide-react';
 import {
   DEFAULT_AADHAAR_AUTH_NAME,
   STANDARD_SIGNATURE_METHOD_ID,
+  findEmailOtpAuthMethod,
   getAadhaarAuthMethodName,
   isAadhaarVSignAuthMethodRecord,
+  isEmailOtpAuthMethodRecord,
 } from '../../../utils/vsignAuthRequirement';
 
 interface AuthMethod {
@@ -26,6 +28,7 @@ interface AuthMethod {
   compliance: string[];
   available: boolean;
   providerType?: string;
+  isRecommended?: boolean;
 }
 
 interface AdvancedAuthenticationSelectorProps {
@@ -43,6 +46,7 @@ interface AdvancedAuthenticationSelectorProps {
   vsignAvailable?: boolean;
   vsignSelected?: boolean;
   onVSignChange?: (enabled: boolean) => void;
+  defaultEmailMethodId?: string;
 }
 
 const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorProps> = ({
@@ -59,6 +63,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   vsignAvailable = false,
   vsignSelected = false,
   onVSignChange,
+  defaultEmailMethodId,
 }) => {
   const [activeTab, setActiveTab] = useState('recommended');
   const [authMethods, setAuthMethods] = useState<AuthMethod[]>([]);
@@ -67,6 +72,7 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
     selectedMethods || []
   );
   const [preferStandardSignature, setPreferStandardSignature] = useState(false);
+  const appliedEmailDefaultRef = React.useRef(false);
 
   useEffect(() => {
     fetchAvailableAuthMethods();
@@ -95,15 +101,53 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
     }
   };
 
-  const visibleAuthMethods = authMethods.filter((method) => {
-    if (!isAadhaarVSignAuthMethodRecord(method)) return true;
-    return vsignAvailable;
-  });
+  const visibleAuthMethods = (() => {
+    const filtered = authMethods.filter((method) => {
+      if (!isAadhaarVSignAuthMethodRecord(method)) return true;
+      return vsignAvailable;
+    });
+    if (findEmailOtpAuthMethod(filtered)) return filtered;
+    const fallbackId = String(defaultEmailMethodId || '').trim();
+    if (!fallbackId) return filtered;
+    return [
+      {
+        id: fallbackId,
+        name: 'Email OTP',
+        description: 'Signer enters a one-time code sent to their email. Selected by default; you can remove it.',
+        icon: 'Mail',
+        securityLevel: 'medium' as const,
+        estimatedTime: '1 min',
+        cost: 0,
+        compliance: ['IT Act'],
+        available: true,
+        providerType: 'email_otp',
+        isRecommended: true,
+      },
+      ...filtered,
+    ];
+  })();
   const aadhaarMethodIds = visibleAuthMethods
     .filter((method) => isAadhaarVSignAuthMethodRecord(method))
     .map((method) => String(method.id));
   const hasAadhaarFromAdmin = aadhaarMethodIds.length > 0;
   const showFallbackVsignCard = vsignAvailable && !hasAadhaarFromAdmin;
+
+  const emailOtpMethodIds = visibleAuthMethods
+    .filter((method) => isEmailOtpAuthMethodRecord(method))
+    .map((method) => String(method.id));
+
+  useEffect(() => {
+    if (appliedEmailDefaultRef.current) return;
+    if (!emailOtpMethodIds.length) return;
+    appliedEmailDefaultRef.current = true;
+    const incoming = Array.from(
+      new Set((selectedMethods || []).map((id) => String(id)).filter(Boolean))
+    );
+    if (incoming.length > 0) return;
+    if (preferStandardSignature) return;
+    setLocalSelectedMethods(emailOtpMethodIds);
+    onSelectionChange?.(emailOtpMethodIds);
+  }, [emailOtpMethodIds.join('|'), selectedMethods, preferStandardSignature, onSelectionChange]);
 
   const isMethodSelected = (methodId: string) => {
     const id = String(methodId);
@@ -134,7 +178,9 @@ const AdvancedAuthenticationSelector: React.FC<AdvancedAuthenticationSelectorPro
   const methodsForActiveTab = [
     standardMethod,
     ...(activeTab === 'recommended'
-      ? visibleAuthMethods.filter((method) => (method as any).isRecommended)
+      ? visibleAuthMethods.filter(
+          (method) => (method as any).isRecommended || isEmailOtpAuthMethodRecord(method)
+        )
       : visibleAuthMethods),
   ];
 

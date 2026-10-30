@@ -234,6 +234,26 @@ const availableAuthMethods = async (req, res) => {
       providers = await AuthProvider.find({ enabled: true });
     }
 
+    providers = Array.isArray(providers) ? providers : [];
+
+    const emailOtpProviders = await AuthProvider.find({
+      enabled: true,
+      $or: [
+        { 'config.providerType': { $in: ['email_otp', 'email'] } },
+        { name: { $regex: /email/i } },
+      ],
+    });
+    const seen = new Set((providers || []).map((p) => String(p._id)));
+    for (const provider of emailOtpProviders) {
+      const name = String(provider.name || '').toLowerCase();
+      if (/aadhaar|vsign|selfie|liveness/.test(name)) continue;
+      const id = String(provider._id);
+      if (!seen.has(id)) {
+        providers.push(provider);
+        seen.add(id);
+      }
+    }
+
     const methods = formatAuthMethods(providers, authCosts);
     return res.json({ status: 200, message: 'OK', data: { methods } });
   } catch (error) {
