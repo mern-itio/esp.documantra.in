@@ -11,7 +11,7 @@ const InvoiceSchema = new mongoose.Schema(
     periodStart: { type: Date },
     periodEnd: { type: Date },
     amount: { type: Number, required: true },
-    currency: { type: String, default: 'USD' },
+    currency: { type: String, default: 'INR' },
     invoiceNumber: { type: String, required: true, unique: true },
     receiptNumber: { type: String, required: true, unique: true },
   },

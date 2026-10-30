@@ -37,7 +37,9 @@ export const CreditPurchaseModal: React.FC<CreditPurchaseModalProps> = ({ open, 
           SubscriptionService.getFlexibleCreditPackage(),
         ]);
         if (!mounted) return;
-        const nextPackages = Array.isArray(creditPackages) ? creditPackages : [];
+        const nextPackages = (Array.isArray(creditPackages) ? creditPackages : []).filter(
+          (pkg) => String(pkg.currency || 'INR').toUpperCase() === 'INR'
+        );
         setPackages(nextPackages);
         if (flexiblePackage?.ranges?.length) {
           setDesiredCreditPriceTiers(flexiblePackage.ranges);

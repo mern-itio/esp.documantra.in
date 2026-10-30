@@ -36,7 +36,7 @@ const listCreditPackages = async (req, res) => {
 const createCreditPackage = async (req, res) => {
     try {
         const payload = req.body;
-        if (!payload.name || !payload.credits || !payload.price) {
+        if (!payload.name || payload.credits === undefined || payload.credits === null || payload.credits === '' || payload.price === undefined || payload.price === null || payload.price === '') {
             return res.status(400).json({ message: 'Name, credits, and price are required' });
         }
         const result = await servicePost(req, 'subscription', {

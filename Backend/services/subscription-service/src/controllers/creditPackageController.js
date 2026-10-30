@@ -29,6 +29,22 @@ const listCreditPackages = async (req, res) => {
   }
 };
 
+const listPublicCreditPackages = async (req, res) => {
+  try {
+    const creditPackages = await CreditPackage.find({
+      $or: [
+        { currency: { $in: ['INR', 'inr'] } },
+        { currency: { $exists: false } },
+        { currency: null },
+        { currency: '' },
+      ],
+    }).sort({ price: 1 });
+    return res.status(200).json(creditPackages);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const createCreditPackage = async (req, res) => {
   try {
     const validation = validateCreditPackagePayload(req.body || {});
@@ -376,6 +392,7 @@ module.exports = {
   createCheckoutSession,
   confirmCheckoutSession,
   listCreditPackages,
+  listPublicCreditPackages,
   createCreditPackage,
   getCreditPackage,
   updateCreditPackage,

@@ -188,8 +188,8 @@ const validateCreditPackagePayload = (payload = {}, { isUpdate = false } = {}) =
     return price;
   }
 
-  if (!isUpdate && price.value !== undefined && price.value <= 0) {
-    return { ok: false, message: 'price must be greater than zero' };
+  if (!isUpdate && price.value !== undefined && price.value < 0) {
+    return { ok: false, message: 'price cannot be negative' };
   }
 
   if (isUpdate && price.value !== undefined && price.value < 0) {

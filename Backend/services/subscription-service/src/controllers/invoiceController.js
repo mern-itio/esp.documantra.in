@@ -49,7 +49,7 @@ const createInvoiceForFlexiCreditPurchase = async (userId, flexiPackage,metadata
     creditPackageId: flexiPackage._id,
     planName: flexiPackage.name,
     amount:metadata?.creditPricing,
-    currency:flexiPackage?.currency || 'USD',
+    currency:flexiPackage?.currency || 'INR',
     invoiceNumber,
     receiptNumber
   });
@@ -75,7 +75,7 @@ const createInvoiceForUpgrade = async ({ userId, subscription, planTemplate }) =
     periodStart: subscription.periodStart,
     periodEnd: subscription.periodEnd,
     amount: planTemplate.pricePerPeriod || 0,
-    currency: planTemplate.currency || 'USD',
+    currency: planTemplate.currency || 'INR',
     invoiceNumber,
     receiptNumber,
   });
@@ -237,7 +237,7 @@ const generateInvoicePdfBuffer = (invoice, type = 'invoice') =>
 
       // Amount line
       const amount = Number(invoice.amount || 0);
-      const currency = invoice.currency || 'USD';
+      const currency = invoice.currency || 'INR';
       const amountStr = `${currency} ${amount.toFixed(2)}`;
 
       doc.moveDown().fontSize(12).font('Helvetica-Bold');
