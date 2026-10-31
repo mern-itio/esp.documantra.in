@@ -9,7 +9,8 @@ const userList = async (req, res) => {
     return res.status(200).json({
       status: 200,
       message: 'User list fetched successfully from auth-service',
-      data: result.data?.data ?? result.data
+      data: result.data?.data ?? result.data,
+      meta: result.data?.meta ?? undefined,
     });
   } catch (error) {
     console.error('Error fetching user list from auth-service:', error.message || error);

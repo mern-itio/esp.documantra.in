@@ -5,13 +5,47 @@ const { getPasswordReuseError, archiveCurrentPassword } = require('../utils/pass
 // Admin Controller
 const userList = async (req, res) => {
   try {
-    // Fetch all users from the DB
-    const users = await User.find().select('-password') // Exclude password for security
-                  .sort({ createdAt: -1 }); // -1 for descending order
+    // Safe projection for admin signup list (exclude secrets / OTP / session data)
+    const users = await User.find()
+      .select(
+        'fullname email phone company address plan status emailVerified phoneVerified ' +
+        'googleId facebookId linkedinId twitterId referredBy createdAt updatedAt isFirstLogin'
+      )
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const data = users.map((u) => {
+      const phone =
+        u.phone && String(u.phone).startsWith('__opt_') ? '' : (u.phone || '');
+      let signupMethod = 'email';
+      if (u.googleId) signupMethod = 'google';
+      else if (u.facebookId) signupMethod = 'facebook';
+      else if (u.linkedinId) signupMethod = 'linkedin';
+      else if (u.twitterId) signupMethod = 'twitter';
+      return {
+        _id: u._id,
+        fullname: u.fullname || '',
+        email: u.email || '',
+        phone,
+        company: u.company || '',
+        address: u.address || '',
+        plan: u.plan || 'free',
+        status: u.status !== false,
+        emailVerified: !!u.emailVerified,
+        phoneVerified: !!u.phoneVerified,
+        signupMethod,
+        referredBy: u.referredBy || null,
+        isFirstLogin: u.isFirstLogin !== false,
+        createdAt: u.createdAt,
+        updatedAt: u.updatedAt,
+      };
+    });
+
     return res.status(200).json({
       status: 200,
       message: 'User list fetched successfully',
-      data: users
+      data,
+      meta: { total: data.length },
     });
   } catch (error) {
     console.error('Error fetching users:', error);
