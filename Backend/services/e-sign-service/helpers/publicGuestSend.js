@@ -1,11 +1,19 @@
+const axios = require('axios');
 const Envelope = require('../models/Envelope');
 const GuestPublicSendUsage = require('../models/GuestPublicSendUsage');
 const { getUserId } = require('./envelopeAccess');
 
-const PUBLIC_FREE_MONTHLY_LIMIT = Number(process.env.PUBLIC_FREE_ENVELOPE_LIMIT || 10);
+const PUBLIC_FREE_MONTHLY_LIMIT = Math.max(
+  1,
+  Number(process.env.PUBLIC_FREE_ENVELOPE_LIMIT || process.env.FREE_ENVELOPE_MONTHLY_LIMIT || 10),
+);
 
 const isPublicSendLimitDisabled = () =>
   String(process.env.SKIP_PUBLIC_SEND_LIMIT || '').toLowerCase() === 'true';
+
+const SUBSCRIPTION_BASE = (
+  process.env.SUBSCRIPTION_SERVICE_URL || 'http://subscription-service:2110'
+).replace(/\/+$/, '');
 
 const getMonthKey = (date = new Date()) => {
   const year = date.getUTCFullYear();
@@ -73,28 +81,66 @@ const buildLimitResponse = (used, limit = PUBLIC_FREE_MONTHLY_LIMIT) => ({
   monthKey: getMonthKey(),
 });
 
+/** Fail closed: treat as free unless subscription clearly says paid. */
+const isUserOnFreePlan = async (req) => {
+  const auth = req.headers?.authorization || req.headers?.Authorization;
+  if (!auth) return true;
+  try {
+    const res = await axios.get(`${SUBSCRIPTION_BASE}/user-plan/me`, {
+      headers: { Authorization: auth },
+      timeout: 5000,
+    });
+    const plan = res.data?.data || res.data || {};
+    return plan.isFree !== false;
+  } catch (err) {
+    console.warn('[free-envelope-quota] plan lookup failed; enforcing free limit:', err.message);
+    return true;
+  }
+};
+
+const denyFreeLimit = (used) => ({
+  ok: false,
+  status: 429,
+  message: `Free plan limit reached. You can send up to ${PUBLIC_FREE_MONTHLY_LIMIT} envelopes per month. Upgrade to send more.`,
+  upgrade: true,
+  ...buildLimitResponse(used),
+});
+
+/**
+ * Hard monthly cap for free-plan authenticated users.
+ * Never respects SKIP_PUBLIC_SEND_LIMIT — product rule is absolute for free.
+ */
+const assertFreeUserSendQuota = async (req) => {
+  const userId = getUserId(req);
+  if (!userId) {
+    return { ok: true, ...buildLimitResponse(0) };
+  }
+
+  const free = await isUserOnFreePlan(req);
+  if (!free) {
+    return { ok: true, paid: true, ...buildLimitResponse(0, 999999) };
+  }
+
+  const used = await countUserSentThisMonth(userId);
+  if (used >= PUBLIC_FREE_MONTHLY_LIMIT) {
+    return denyFreeLimit(used);
+  }
+  return { ok: true, free: true, ...buildLimitResponse(used) };
+};
+
 const assertPublicSendQuota = async (req) => {
+  const userId = getUserId(req);
+
+  // Logged-in free users on the public path: always hard-capped (ignore SKIP).
+  if (userId) {
+    return assertFreeUserSendQuota(req);
+  }
+
   if (isPublicSendLimitDisabled()) {
     return { ok: true, ...buildLimitResponse(0, 999999) };
   }
 
-  const userId = getUserId(req);
   const guestId = getPublicGuestId(req);
-
-  if (userId) {
-    const used = await countUserSentThisMonth(userId);
-    if (used >= PUBLIC_FREE_MONTHLY_LIMIT) {
-      return {
-        ok: false,
-        status: 429,
-        message: `Free plan limit reached. You can send up to ${PUBLIC_FREE_MONTHLY_LIMIT} documents per month. Upgrade to send more.`,
-        upgrade: true,
-        ...buildLimitResponse(used),
-      };
-    }
-    return { ok: true, ...buildLimitResponse(used) };
-  }
-
   if (!guestId) {
     return { ok: true, ...buildLimitResponse(0) };
   }
@@ -104,7 +150,7 @@ const assertPublicSendQuota = async (req) => {
     return {
       ok: false,
       status: 429,
-      message: `Free plan limit reached. You can send up to ${PUBLIC_FREE_MONTHLY_LIMIT} documents per month. Create a free account or upgrade to continue.`,
+      message: `Free plan limit reached. You can send up to ${PUBLIC_FREE_MONTHLY_LIMIT} envelopes per month. Create a free account or upgrade to continue.`,
       upgrade: true,
       ...buildLimitResponse(used),
     };
@@ -158,6 +204,8 @@ module.exports = {
   countUserSentThisMonth,
   getGuestUsageCount,
   buildLimitResponse,
+  isUserOnFreePlan,
+  assertFreeUserSendQuota,
   assertPublicSendQuota,
   incrementPublicSendQuota,
   attachPublicGuestToEnvelope,

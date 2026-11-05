@@ -4,6 +4,7 @@ const RecipientPermission = require('../models/RecipientPermission');
 const { getUserId } = require('../helpers/envelopeAccess');
 const {
   assertPublicSendQuota,
+  assertFreeUserSendQuota,
   attachPublicGuestToEnvelope,
   getPublicGuestId,
   PUBLIC_FREE_MONTHLY_LIMIT,
@@ -181,8 +182,34 @@ const enforcePublicSendLimit = async (req, res, next) => {
   }
 };
 
+/** Authenticated dashboard: free-plan monthly envelope usage. */
+const getAuthenticatedSendUsage = async (req, res) => {
+  try {
+    const quota = await assertFreeUserSendQuota(req);
+    if (quota.paid) {
+      return res.status(200).json({
+        used: 0,
+        limit: null,
+        remaining: null,
+        limitReached: false,
+        isFree: false,
+      });
+    }
+    return res.status(200).json({
+      ...buildLimitResponse(quota.used || 0, quota.limit || PUBLIC_FREE_MONTHLY_LIMIT),
+      limitReached: !quota.ok || (quota.remaining ?? 0) <= 0,
+      isFree: true,
+      message: quota.ok ? undefined : quota.message,
+    });
+  } catch (error) {
+    console.error('getAuthenticatedSendUsage failed:', error);
+    return res.status(500).json({ message: 'Failed to load send usage' });
+  }
+};
+
 module.exports = {
   getSendUsage,
+  getAuthenticatedSendUsage,
   listSentEnvelopes,
   claimGuestEnvelopes,
   enforcePublicSendLimit,

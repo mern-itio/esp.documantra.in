@@ -38,7 +38,7 @@ const { listRecipients, createRecipient, updateRecipient, deleteRecipient } = re
 const { upload } = require('../utils/secureUpload');
 const { viewDocument } = require('../controllers/documentViewController');
 const requireTwoFaForSensitiveActions = require('../middleware/requireTwoFaForSensitiveActions');
-const { claimGuestEnvelopes } = require('../controllers/publicSentController');
+const { claimGuestEnvelopes, getAuthenticatedSendUsage } = require('../controllers/publicSentController');
 const {
   requireAuthenticatedEnvelopeAccess,
 } = require('../middleware/envelopeAccessMiddleware');
@@ -49,6 +49,7 @@ const senderAccess = requireAuthenticatedEnvelopeAccess({ requireSender: true })
 const optionalSenderUpload = requireAuthenticatedEnvelopeAccess({ fromBody: true, optional: true, requireSender: true });
 
 router.get('/health', (_, res) => res.send('E-Sign Private Service is running...'));
+router.get('/send-usage', getAuthenticatedSendUsage);
 router.post('/upload', optionalSenderUpload, upload.array('files'), Upload);
 router.post('/add-recipients', requireAuthenticatedEnvelopeAccess({ fromBody: true, requireSender: true }), insertRecipient);
 router.post('/save-signature-fields', requireAuthenticatedEnvelopeAccess({ fromBody: true, requireSender: true }), saveSignatureFields);

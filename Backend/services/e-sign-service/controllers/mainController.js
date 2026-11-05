@@ -831,6 +831,19 @@ const sendEnvelope = async (req, res) => {
         });
       }
       await attachPublicGuestToEnvelope(envelope, req);
+    } else if (userId) {
+      // Authenticated dashboard send: free plan hard-capped at 10 envelopes/month.
+      const { assertFreeUserSendQuota } = require('../helpers/publicGuestSend');
+      const freeQuota = await assertFreeUserSendQuota(req);
+      if (!freeQuota.ok) {
+        return res.status(freeQuota.status).json({
+          message: freeQuota.message,
+          upgrade: freeQuota.upgrade,
+          used: freeQuota.used,
+          limit: freeQuota.limit,
+          remaining: freeQuota.remaining,
+        });
+      }
     }
 
     // Check if envelope is already sent or completed
@@ -948,6 +961,7 @@ const scheduleEnvelope = async (req, res) => {
   try {
     const { envelopeId } = req.params;
     const { scheduledDate, scheduledTime } = req.body;
+    const scheduleUserId = req?.user?.data?.id || req?.user?.id;
 
     if (!scheduledDate) {
       return res.status(400).json({ message: "Scheduled date is required" });
@@ -958,6 +972,19 @@ const scheduleEnvelope = async (req, res) => {
     }
     if (envelope.status !== 'draft') {
       return res.status(400).json({ message: "Only draft envelopes can be scheduled" });
+    }
+    if (scheduleUserId) {
+      const { assertFreeUserSendQuota } = require('../helpers/publicGuestSend');
+      const freeQuota = await assertFreeUserSendQuota(req);
+      if (!freeQuota.ok) {
+        return res.status(freeQuota.status).json({
+          message: freeQuota.message,
+          upgrade: freeQuota.upgrade,
+          used: freeQuota.used,
+          limit: freeQuota.limit,
+          remaining: freeQuota.remaining,
+        });
+      }
     }
     let scheduledDateTime;
     const timezoneOffset = req.body.timezoneOffset !== undefined 

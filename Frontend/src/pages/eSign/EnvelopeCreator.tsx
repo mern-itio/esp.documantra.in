@@ -3661,29 +3661,47 @@ if (response.status == 200) {
       return;
     }
 
+    const blockFreeEnvelopeLimit = async (usage: any, fallbackMessage?: string) => {
+      if (!(usage?.limitReached || (typeof usage?.remaining === 'number' && usage.remaining <= 0))) {
+        return false;
+      }
+      const pricingUrl = `${BRAND.website.replace(/\/$/, '')}/#pricing`;
+      const result = await Swal.fire({
+        title: 'Free plan limit reached',
+        text:
+          usage?.message ||
+          fallbackMessage ||
+          `You can send up to ${usage?.limit || 10} envelopes per month on the free plan.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'View pricing',
+        cancelButtonText: 'OK',
+      });
+      if (result.isConfirmed) {
+        window.location.href = pricingUrl;
+      }
+      return true;
+    };
+
     if (isPublicFlow) {
       try {
         const usageResp = await eSignApi.get('/api/e-sign/public/send-usage');
+        if (await blockFreeEnvelopeLimit(usageResp.data)) return;
+      } catch (usageErr) {
+        console.warn('Could not verify public send quota:', usageErr);
+      }
+    } else {
+      // Logged-in free plan: hard cap 10 envelopes/month (server also enforces).
+      try {
+        const usageResp = await eSignApi.get('/api/e-sign/send-usage');
         const usage = usageResp.data;
-        if (usage?.limitReached || (typeof usage?.remaining === 'number' && usage.remaining <= 0)) {
-          const pricingUrl = `${BRAND.website.replace(/\/$/, '')}/#pricing`;
-          const result = await Swal.fire({
-            title: 'Free plan limit reached',
-            text:
-              usageResp.data?.message ||
-              `You can send up to ${usage?.limit || 10} documents per month on the free plan.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'View pricing',
-            cancelButtonText: 'OK',
-          });
-          if (result.isConfirmed) {
-            window.location.href = pricingUrl;
-          }
+        if (usage?.isFree !== false && (await blockFreeEnvelopeLimit(usage))) {
+          setShowSendConfirmationModal(false);
+          setSending(false);
           return;
         }
       } catch (usageErr) {
-        console.warn('Could not verify public send quota:', usageErr);
+        console.warn('Could not verify free envelope quota:', usageErr);
       }
     }
 
@@ -3890,13 +3908,16 @@ const sendResp = await eSignApi.post(sendUrl);
       const responseData = (err as { response?: { data?: { message?: string; upgrade?: boolean } } })
         ?.response?.data;
 
-      if (responseStatus === 429 && isPublicFlow) {
+      if (
+        responseStatus === 429 &&
+        (isPublicFlow || responseData?.upgrade || /free plan limit/i.test(responseData?.message || ''))
+      ) {
         const pricingUrl = `${BRAND.website.replace(/\/$/, '')}/#pricing`;
         const result = await Swal.fire({
           title: 'Free plan limit reached',
           text:
             responseData?.message ||
-            'You have reached the free monthly document limit. Upgrade to send more.',
+            'You have reached the free monthly envelope limit (10). Upgrade to send more.',
           icon: 'warning',
           showCancelButton: true,
           confirmButtonText: 'View pricing',
