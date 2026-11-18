@@ -5,7 +5,16 @@ const User  = require('../models/User');
 const SignupEmailVerification = require('../models/SignupEmailVerification');
 const { attachReferralOnSignup } = require('./referralController');
 const { isEmailValid, getPasswordPolicyError, getPlainTextFieldError } = require('@draftnsign/validators');
-const { sendPasswordResetEmail, sendVerificationOtpEmail, sendNewLoginAlertEmail } = require('../utils/email');
+const {
+  sendPasswordResetEmail,
+  sendVerificationOtpEmail,
+  sendNewLoginAlertEmail,
+  sendSignupMarketingEmail,
+} = require('../utils/email');
+const {
+  buildSignupAttribution,
+  attributionFieldsForCreate,
+} = require('../utils/signupAttribution');
 const { sendVerificationOtpSms } = require('../utils/sms');
 // const { verifyJWT } = require('@draftnsign/auth-lib');
 const bcrypt = require('bcrypt');
@@ -1125,7 +1134,22 @@ const register = async (req, res) => {
     privacyVersion,
     marketingVersion,
     emailVerificationToken,
+    httpReferrer,
+    landingPage,
+    signupPageUrl,
+    utmSource,
+    utmMedium,
+    utmCampaign,
   } = req.body;
+
+  const signupTrackingBody = {
+    httpReferrer,
+    landingPage,
+    signupPageUrl,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+  };
 
   if (!agreeToTerms) {
     return res.status(400).json({ message: 'You must accept the Terms of Service and Privacy Policy.' });
@@ -1192,6 +1216,8 @@ const register = async (req, res) => {
   }
 
   try {
+    const signupAttribution = await buildSignupAttribution(req, signupTrackingBody).catch(() => null);
+
     if (emailPreVerified) {
       const existingUser = await User.findOne({ email: normalizedEmail });
       if (existingUser) {
@@ -1244,6 +1270,7 @@ const register = async (req, res) => {
         emailOtpExpires: null,
         phoneOtpHash: null,
         phoneOtpExpires: null,
+        ...attributionFieldsForCreate(signupAttribution),
       };
 
       let user;
@@ -1262,6 +1289,14 @@ const register = async (req, res) => {
       }
 
       await provisionFreeSubscription(user._id);
+
+      if (signupAttribution) {
+        sendSignupMarketingEmail({
+          user,
+          attribution: signupAttribution,
+          signupMethod: 'email',
+        }).catch((err) => console.warn('Signup marketing notify failed:', err?.message || err));
+      }
 
       try {
         await recordConsentEntries(req, [
@@ -1337,7 +1372,6 @@ const register = async (req, res) => {
     // Sequential verification: send email OTP first; phone OTP is sent only after email verification.
     const emailOtp = generateOtp();
     const emailOtpExpires = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-
     const legacyPayload = {
       fullname: normalizedFullname,
       email: normalizedEmail,
@@ -1352,6 +1386,7 @@ const register = async (req, res) => {
       emailOtpExpires,
       phoneOtpHash: null,
       phoneOtpExpires: null,
+      ...attributionFieldsForCreate(signupAttribution),
     };
 
     let user;
@@ -1370,6 +1405,14 @@ const register = async (req, res) => {
     }
 
     await provisionFreeSubscription(user._id);
+
+    if (signupAttribution) {
+      sendSignupMarketingEmail({
+        user,
+        attribution: signupAttribution,
+        signupMethod: 'email',
+      }).catch((err) => console.warn('Signup marketing notify failed:', err?.message || err));
+    }
 
     await recordConsentEntries(req, [
       {

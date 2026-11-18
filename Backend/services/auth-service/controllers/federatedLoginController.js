@@ -12,6 +12,7 @@ const {
   exchangeTwitterCode,
 } = require('../utils/federatedOAuthService');
 const { makeOptionalPhonePlaceholder, publicPhoneValue } = require('../utils/ensurePhoneIndex');
+const { applySignupAttributionAndNotify } = require('../utils/signupAttribution');
 
 async function linkEsignRecipient(user) {
   try {
@@ -123,8 +124,19 @@ async function issueOAuthLoginResponse(req, res, user, providerLabel) {
     });
 }
 
+function oauthTrackingFromBody(body = {}) {
+  return {
+    httpReferrer: body.httpReferrer,
+    landingPage: body.landingPage,
+    signupPageUrl: body.signupPageUrl,
+    utmSource: body.utmSource || body.utm_source,
+    utmMedium: body.utmMedium || body.utm_medium,
+    utmCampaign: body.utmCampaign || body.utm_campaign,
+  };
+}
+
 async function handleOAuthLogin(req, res, identity, providerLabel, referral) {
-  const { ref, referrerUserId } = referral || {};
+  const { ref, referrerUserId, tracking } = referral || {};
   const { user, isNew } = await findOrCreateOAuthUser(identity);
   if (isNew) {
     try {
@@ -132,12 +144,16 @@ async function handleOAuthLogin(req, res, identity, providerLabel, referral) {
     } catch (refErr) {
       console.warn('Referral attach failed:', refErr?.message);
     }
+    applySignupAttributionAndNotify(user, req, tracking || {}, providerLabel.toLowerCase()).catch(
+      (err) => console.warn('OAuth signup attribution failed:', err?.message || err)
+    );
   }
   return issueOAuthLoginResponse(req, res, user, providerLabel);
 }
 
 async function googleLoginFederated(req, res) {
-  const { token, code, redirectUri, ref, referrerUserId } = req.body || {};
+  const body = req.body || {};
+  const { token, code, redirectUri, ref, referrerUserId } = body;
   try {
     let identity;
     if (code && redirectUri) {
@@ -147,7 +163,11 @@ async function googleLoginFederated(req, res) {
     } else {
       return res.status(400).json({ message: 'Google token or authorization code required' });
     }
-    return await handleOAuthLogin(req, res, identity, 'Google', { ref, referrerUserId });
+    return await handleOAuthLogin(req, res, identity, 'Google', {
+      ref,
+      referrerUserId,
+      tracking: oauthTrackingFromBody(body),
+    });
   } catch (error) {
     console.error('Google login error:', error);
     if (!res.headersSent) {
@@ -159,7 +179,8 @@ async function googleLoginFederated(req, res) {
 }
 
 async function facebookLoginFederated(req, res) {
-  const { accessToken, code, redirectUri, ref, referrerUserId } = req.body || {};
+  const body = req.body || {};
+  const { accessToken, code, redirectUri, ref, referrerUserId } = body;
   try {
     let identity;
     if (code && redirectUri) {
@@ -169,7 +190,11 @@ async function facebookLoginFederated(req, res) {
     } else {
       return res.status(400).json({ message: 'Facebook access token or authorization code required' });
     }
-    return await handleOAuthLogin(req, res, identity, 'Facebook', { ref, referrerUserId });
+    return await handleOAuthLogin(req, res, identity, 'Facebook', {
+      ref,
+      referrerUserId,
+      tracking: oauthTrackingFromBody(body),
+    });
   } catch (error) {
     console.error('Facebook login error:', error);
     if (!res.headersSent) {
@@ -181,13 +206,18 @@ async function facebookLoginFederated(req, res) {
 }
 
 async function linkedinLoginFederated(req, res) {
-  const { code, redirectUri, ref, referrerUserId } = req.body || {};
+  const body = req.body || {};
+  const { code, redirectUri, ref, referrerUserId } = body;
   if (!code || !redirectUri) {
     return res.status(400).json({ message: 'LinkedIn authorization code and redirect URI required' });
   }
   try {
     const identity = await exchangeLinkedInCode(code, redirectUri);
-    return await handleOAuthLogin(req, res, identity, 'LinkedIn', { ref, referrerUserId });
+    return await handleOAuthLogin(req, res, identity, 'LinkedIn', {
+      ref,
+      referrerUserId,
+      tracking: oauthTrackingFromBody(body),
+    });
   } catch (error) {
     console.error('LinkedIn login error:', error);
     if (!res.headersSent) {
@@ -199,13 +229,18 @@ async function linkedinLoginFederated(req, res) {
 }
 
 async function twitterLoginFederated(req, res) {
-  const { code, redirectUri, codeVerifier, ref, referrerUserId } = req.body || {};
+  const body = req.body || {};
+  const { code, redirectUri, codeVerifier, ref, referrerUserId } = body;
   if (!code || !redirectUri) {
     return res.status(400).json({ message: 'X authorization code and redirect URI required' });
   }
   try {
     const identity = await exchangeTwitterCode(code, redirectUri, codeVerifier);
-    return await handleOAuthLogin(req, res, identity, 'X', { ref, referrerUserId });
+    return await handleOAuthLogin(req, res, identity, 'X', {
+      ref,
+      referrerUserId,
+      tracking: oauthTrackingFromBody(body),
+    });
   } catch (error) {
     console.error('X login error:', error);
     if (!res.headersSent) {

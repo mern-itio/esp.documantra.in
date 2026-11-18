@@ -141,15 +141,9 @@ async function sendPasswordResetEmail(toEmail, resetLink, recipientName = null) 
   }
 }
 
-/**
- * Resolve IANA timezone string from an IP address using ip-api.com (free, no key needed).
- * Falls back to 'Asia/Kolkata' for private/loopback IPs, and 'UTC' on any error.
- */
-async function resolveTimezoneFromIp(ip) {
-  if (!ip || ip === 'Unknown IP') return 'Asia/Kolkata';
-
-  const normalised = ip.replace(/^::ffff:/i, '').trim();
-
+function isPrivateOrLocalIp(ip) {
+  if (!ip || ip === 'Unknown IP') return true;
+  const normalised = String(ip).replace(/^::ffff:/i, '').trim();
   const privateRanges = [
     /^127\./,
     /^10\./,
@@ -158,20 +152,145 @@ async function resolveTimezoneFromIp(ip) {
     /^::1$/,
     /^localhost$/i,
   ];
-  if (privateRanges.some((re) => re.test(normalised))) {
-    return 'Asia/Kolkata';
+  return privateRanges.some((re) => re.test(normalised));
+}
+
+/**
+ * Resolve geo + ISP fields from an IP via ip-api.com (free, no key).
+ */
+async function resolveGeoFromIp(ip) {
+  const empty = {
+    query: '',
+    city: '',
+    region: '',
+    country: '',
+    countryCode: '',
+    timezone: 'Asia/Kolkata',
+    isp: '',
+    org: '',
+    lat: null,
+    lon: null,
+  };
+  if (!ip || ip === 'Unknown IP') return { ...empty, timezone: 'Asia/Kolkata' };
+
+  const normalised = String(ip).replace(/^::ffff:/i, '').trim();
+  if (isPrivateOrLocalIp(normalised)) {
+    return { ...empty, query: normalised, timezone: 'Asia/Kolkata', city: 'Private/Local', country: 'Local network' };
   }
 
   try {
     const { data } = await axios.get(
-      `http://ip-api.com/json/${normalised}?fields=status,timezone`,
-      { timeout: 3000 }
+      `http://ip-api.com/json/${encodeURIComponent(normalised)}?fields=status,message,query,country,countryCode,regionName,city,lat,lon,timezone,isp,org`,
+      { timeout: 4000 }
     );
-    if (data && data.status === 'success' && data.timezone) return data.timezone;
+    if (data && data.status === 'success') {
+      return {
+        query: data.query || normalised,
+        city: data.city || '',
+        region: data.regionName || '',
+        country: data.country || '',
+        countryCode: data.countryCode || '',
+        timezone: data.timezone || 'UTC',
+        isp: data.isp || '',
+        org: data.org || '',
+        lat: typeof data.lat === 'number' ? data.lat : null,
+        lon: typeof data.lon === 'number' ? data.lon : null,
+      };
+    }
   } catch (err) {
-    console.warn('IP timezone lookup failed, falling back to UTC:', err.message);
+    console.warn('IP geo lookup failed:', err.message);
   }
-  return 'UTC';
+  return { ...empty, query: normalised, timezone: 'UTC' };
+}
+
+/**
+ * Resolve IANA timezone string from an IP address using ip-api.com (free, no key needed).
+ * Falls back to 'Asia/Kolkata' for private/loopback IPs, and 'UTC' on any error.
+ */
+async function resolveTimezoneFromIp(ip) {
+  const geo = await resolveGeoFromIp(ip);
+  return geo.timezone || 'UTC';
+}
+
+function getMarketingSignupNotifyTo() {
+  return String(process.env.MARKETING_SIGNUP_NOTIFY_EMAIL || 'marketing@documantra.in').trim();
+}
+
+function formatLocationLabel(geo = {}) {
+  const parts = [geo.city, geo.region, geo.country].filter(Boolean);
+  return parts.length ? parts.join(', ') : 'Unknown';
+}
+
+function getSignupMarketingHtml({ user, attribution, signupMethod }) {
+  const geo = attribution?.signupGeo || {};
+  const location = formatLocationLabel(geo);
+  const rows = [
+    ['Name', user?.fullname || '—'],
+    ['Email', user?.email || '—'],
+    ['Phone', user?.phone && !String(user.phone).startsWith('__opt_') ? user.phone : '—'],
+    ['Company', user?.company || '—'],
+    ['User ID', user?._id ? String(user._id) : '—'],
+    ['Signup method', signupMethod || 'email'],
+    ['Signed up at', user?.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString()],
+    ['IP address', attribution?.signupIp || '—'],
+    ['Location', location],
+    ['Country code', geo.countryCode || '—'],
+    ['Timezone', geo.timezone || '—'],
+    ['ISP / Org', [geo.isp, geo.org].filter(Boolean).join(' / ') || '—'],
+    ['Coordinates', geo.lat != null && geo.lon != null ? `${geo.lat}, ${geo.lon}` : '—'],
+    ['HTTP referrer (came from)', attribution?.signupHttpReferrer || '— (direct / none)'],
+    ['First landing page', attribution?.signupLandingPage || '—'],
+    ['Signup page URL', attribution?.signupPageUrl || '—'],
+    ['UTM source', attribution?.signupUtmSource || '—'],
+    ['UTM medium', attribution?.signupUtmMedium || '—'],
+    ['UTM campaign', attribution?.signupUtmCampaign || '—'],
+    ['User-Agent', attribution?.signupUserAgent || '—'],
+  ];
+
+  const tableRows = rows
+    .map(
+      ([label, value]) => `
+      <tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;font-weight:600;width:38%;vertical-align:top;">${escapeHtml(label)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#6b7280;word-break:break-all;">${escapeHtml(value)}</td>
+      </tr>`
+    )
+    .join('');
+
+  return simpleEmailHtml('New ESP signup', `
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#6b7280;">A new customer registered on ${escapeHtml(APP_NAME)} (ESP). Tracking details below.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;background:#ffffff;">
+      ${tableRows}
+    </table>
+  `);
+}
+
+/**
+ * Notify marketing@ of a new signup with IP / geo / referrer attribution.
+ */
+async function sendSignupMarketingEmail({ user, attribution, signupMethod }) {
+  const to = getMarketingSignupNotifyTo();
+  if (!isValidEmailAddress(to)) {
+    console.warn('Marketing signup email skipped: invalid MARKETING_SIGNUP_NOTIFY_EMAIL');
+    return false;
+  }
+  if (!isEmailConfigured()) {
+    console.warn('Marketing signup email skipped: EMAIL_SERVICE_URL not configured');
+    return false;
+  }
+
+  const name = user?.fullname || user?.email || 'Customer';
+  const html = getSignupMarketingHtml({ user, attribution, signupMethod });
+  try {
+    return await sendEmail({
+      to,
+      subject: `New signup: ${name} — ${APP_NAME}`,
+      html,
+    });
+  } catch (err) {
+    console.error('Send marketing signup email error:', err);
+    return false;
+  }
 }
 
 /**
@@ -247,4 +366,8 @@ module.exports = {
   sendPasswordResetEmail,
   sendVerificationOtpEmail,
   sendNewLoginAlertEmail,
+  resolveGeoFromIp,
+  resolveTimezoneFromIp,
+  sendSignupMarketingEmail,
+  getMarketingSignupNotifyTo,
 };

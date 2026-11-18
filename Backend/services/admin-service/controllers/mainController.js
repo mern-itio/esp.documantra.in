@@ -1,5 +1,5 @@
 
-const { serviceGet, servicePatch } = require('../utils/apiHelper');
+const { serviceGet, servicePatch, serviceDel } = require('../utils/apiHelper');
 const userList = async (req, res) => {
   try {
     const result = await serviceGet(req, 'auth', { url: '/api-admin/user-list' });
@@ -117,7 +117,37 @@ try{
   return res.status(500).json({ status:500, message: 'Internal Server Error', data:null});
 }
 }
-module.exports = { userList,userStatusToggle,getUserDetail,updateUserDetail,updateUserPassword,
+const deleteUser = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ status: 400, message: 'User ID is required', data: null });
+  }
+  try {
+    const result = await serviceDel(req, 'auth', { url: `/api-admin/user/${id}` });
+    if (!result.ok) {
+      return res.status(result.status || 500).json({
+        status: result.status || 500,
+        message: result.message || 'Failed to delete user',
+        data: null,
+      });
+    }
+    return res.status(200).json({
+      status: 200,
+      message: result.data?.message || 'User deleted successfully',
+      data: result.data?.data ?? result.data,
+    });
+  } catch (err) {
+    console.error('Error deleting user from auth-service:', err?.message || err);
+    return res.status(500).json({ status: 500, message: 'Internal Server Error', data: null });
+  }
+};
 
+module.exports = {
+  userList,
+  userStatusToggle,
+  getUserDetail,
+  updateUserDetail,
+  updateUserPassword,
+  deleteUser,
 };
 

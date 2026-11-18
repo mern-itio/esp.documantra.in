@@ -85,6 +85,27 @@ const userSchema = new mongoose.Schema({
   }],
   /** Set when this user registered via a referral link (referrer's User id). */
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+  /** First-touch / signup attribution for marketing + admin. */
+  signupIp: { type: String, default: '' },
+  signupUserAgent: { type: String, default: '' },
+  signupHttpReferrer: { type: String, default: '' },
+  signupLandingPage: { type: String, default: '' },
+  signupPageUrl: { type: String, default: '' },
+  signupUtmSource: { type: String, default: '' },
+  signupUtmMedium: { type: String, default: '' },
+  signupUtmCampaign: { type: String, default: '' },
+  signupGeo: {
+    city: { type: String, default: '' },
+    region: { type: String, default: '' },
+    country: { type: String, default: '' },
+    countryCode: { type: String, default: '' },
+    timezone: { type: String, default: '' },
+    isp: { type: String, default: '' },
+    org: { type: String, default: '' },
+    lat: { type: Number, default: null },
+    lon: { type: Number, default: null },
+    rawQuery: { type: String, default: '' },
+  },
 }, { timestamps: true });
 
 function hideOptionalPhonePlaceholder(_doc, ret) {

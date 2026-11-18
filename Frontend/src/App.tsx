@@ -16,6 +16,7 @@ import CreditPurchaseModal from './components/common/CreditPurchaseModal';
 import BrandingHead from './components/BrandingHead';
 import PublicSignHead from './components/PublicFlow/PublicSignHead';
 import { useSubscription } from './context/SubscriptionContext';
+import { captureSignupAttribution } from './utils/signupAttribution';
 
 const CustomerChatWidget = lazy(() => import('./components/SupportChat/CustomerChatWidget'));
 const AIAssistantButton = lazy(() => import('./components/AIAssistant/AIAssistantButton'));
@@ -81,6 +82,10 @@ const ConditionalWidgets: React.FC = () => {
 const App: React.FC = () => {
   const publicSignOnly = isPublicSignOnlyApp();
   const activeRouter = publicSignOnly ? publicSignRouter : router;
+
+  useEffect(() => {
+    captureSignupAttribution();
+  }, []);
 
   return (
     <APIProvider>

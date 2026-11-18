@@ -9,7 +9,9 @@ const userList = async (req, res) => {
     const users = await User.find()
       .select(
         'fullname email phone company address plan status emailVerified phoneVerified ' +
-        'googleId facebookId linkedinId twitterId referredBy createdAt updatedAt isFirstLogin'
+        'googleId facebookId linkedinId twitterId referredBy createdAt updatedAt isFirstLogin ' +
+        'signupIp signupGeo signupHttpReferrer signupLandingPage signupPageUrl ' +
+        'signupUtmSource signupUtmMedium signupUtmCampaign'
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -22,6 +24,8 @@ const userList = async (req, res) => {
       else if (u.facebookId) signupMethod = 'facebook';
       else if (u.linkedinId) signupMethod = 'linkedin';
       else if (u.twitterId) signupMethod = 'twitter';
+      const geo = u.signupGeo || {};
+      const locationParts = [geo.city, geo.region, geo.country].filter(Boolean);
       return {
         _id: u._id,
         fullname: u.fullname || '',
@@ -36,6 +40,15 @@ const userList = async (req, res) => {
         signupMethod,
         referredBy: u.referredBy || null,
         isFirstLogin: u.isFirstLogin !== false,
+        signupIp: u.signupIp || '',
+        signupLocation: locationParts.length ? locationParts.join(', ') : '',
+        signupGeo: geo,
+        signupHttpReferrer: u.signupHttpReferrer || '',
+        signupLandingPage: u.signupLandingPage || '',
+        signupPageUrl: u.signupPageUrl || '',
+        signupUtmSource: u.signupUtmSource || '',
+        signupUtmMedium: u.signupUtmMedium || '',
+        signupUtmCampaign: u.signupUtmCampaign || '',
         createdAt: u.createdAt,
         updatedAt: u.updatedAt,
       };
@@ -60,11 +73,24 @@ const userList = async (req, res) => {
 const userDetail = async(req, res) => {
   const {id} = req.params
   try{
-    const user = await User.findById({_id: id});
+    const user = await User.findById(id).select('-password -passwordHistory -emailOtpHash -phoneOtpHash -twoFaOtpHash -twoFaAuthenticatorSecret -twoFaAuthenticatorTempSecret -twoFaBackupCodeHashes -resetPasswordToken');
+    if (!user) {
+      return res.status(404).json({
+        status: 404,
+        message: 'User not found',
+        data: null,
+      });
+    }
+    const plain = user.toObject ? user.toObject() : user;
+    const geo = plain.signupGeo || {};
+    const locationParts = [geo.city, geo.region, geo.country].filter(Boolean);
     return res.status(200).json({
       status:200,
       message:'User details fetched successfully',
-      data:user
+      data: {
+        ...plain,
+        signupLocation: locationParts.length ? locationParts.join(', ') : '',
+      }
     })
   }catch (err){
     console.error('Error fetching users:', err);
@@ -75,6 +101,43 @@ const userDetail = async(req, res) => {
     });
   }
 }
+
+const deleteUser = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ status: 400, message: 'User ID is required', data: null });
+  }
+
+  try {
+    const user = await User.findById(id).select('fullname email');
+    if (!user) {
+      return res.status(404).json({
+        status: 404,
+        message: 'User not found',
+        data: null,
+      });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      status: 200,
+      message: 'User deleted successfully',
+      data: {
+        _id: id,
+        fullname: user.fullname || '',
+        email: user.email || '',
+      },
+    });
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    return res.status(500).json({
+      status: 500,
+      message: 'Internal Server Error',
+      data: null,
+    });
+  }
+};
 
 const userStatusToggle = async (req, res) => {
   const { id } = req.params;
@@ -189,5 +252,6 @@ module.exports = {
   userStatusToggle,
   userDetail,
   updateUserDetail,
-  updateUserPassword
+  updateUserPassword,
+  deleteUser,
 };

@@ -1,7 +1,7 @@
 const express = require('express');
 const verifyJWT  = require('@draftnsign/auth-lib');
 const router = express.Router();
-const {userList, userStatusToggle,userDetail,updateUserDetail,updateUserPassword} = require('../controllers/adminController');
+const {userList, userStatusToggle,userDetail,updateUserDetail,updateUserPassword,deleteUser} = require('../controllers/adminController');
 const { getReferralProgram, updateReferralProgram } = require('../controllers/referralProgramAdminController');
 const {
   getSessionPolicy,
@@ -28,4 +28,5 @@ router.patch('/user-status/toggle/:id', userStatusToggle);
 router.get('/user-detail/:id',userDetail);
 router.patch('/user/update/:id',updateUserDetail);
 router.patch(`/user/password/:id`,updateUserPassword)
+router.delete('/user/:id', deleteUser);
 module.exports = router;

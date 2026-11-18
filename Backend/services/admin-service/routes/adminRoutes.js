@@ -6,7 +6,8 @@ const {
   getUserDetail,
   updateUserDetail,
   updateUserPassword,
-  userList
+  userList,
+  deleteUser,
 } = require('../controllers/mainController');
 const { getActivation, setActivation } = require('../controllers/activationController');
 const {getEnvelopes,getAllEnvelopeStats} = require('../controllers/eSignController');
@@ -67,7 +68,8 @@ router.get('/user-list', userList);
 router.patch('/user-status/toggle/:id',userStatusToggle);
 router.get('/user/:id', getUserDetail);
 router.patch('/user/update/:id', updateUserDetail);
-router.patch('/user/password/:id', updateUserPassword)
+router.patch('/user/password/:id', updateUserPassword);
+router.delete('/user/:id', deleteUser);
 const {
   listTools,
   getTool,

@@ -26,6 +26,11 @@ import BrandLogo from '../../components/BrandLogo'
 import { BRAND } from '../../config/brand'
 import { capturePublicGuestIdFromSearchParams } from '../../utils/publicGuestId'
 import { claimPublicGuestEnvelopes } from '../../services/claimPublicGuestEnvelopes'
+import {
+  clearSignupAttribution,
+  getSignupAttributionPayload,
+  markSignupPageVisit,
+} from '../../utils/signupAttribution'
 
 const OTP_EXPIRY_SECONDS = 10 * 60
 const SIGNUP_REFERRER_STORAGE_KEY = 'signupReferrerUserId'
@@ -179,6 +184,10 @@ const SignupPage = () => {
   useEffect(() => {
     capturePublicGuestIdFromSearchParams(searchParams)
   }, [searchParams])
+
+  useEffect(() => {
+    markSignupPageVisit()
+  }, [])
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -388,10 +397,12 @@ const SignupPage = () => {
         privacyVersion: 'v1',
         marketingVersion: 'v1',
         ...(referrerUserIdForSignup ? { referrerUserId: referrerUserIdForSignup } : {}),
+        ...getSignupAttributionPayload(),
       })
 
       try {
         sessionStorage.removeItem(SIGNUP_REFERRER_STORAGE_KEY)
+        clearSignupAttribution()
       } catch {
         /* ignore */
       }
@@ -434,9 +445,11 @@ const SignupPage = () => {
       }
       await googleLogin(credential, {
         ...(referrerUserIdForSignup ? { referrerUserId: referrerUserIdForSignup } : {}),
+        ...getSignupAttributionPayload(),
       })
       try {
         sessionStorage.removeItem(SIGNUP_REFERRER_STORAGE_KEY)
+        clearSignupAttribution()
       } catch {
         /* ignore */
       }
