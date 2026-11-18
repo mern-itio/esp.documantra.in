@@ -257,8 +257,8 @@ function getSignupMarketingHtml({ user, attribution, signupMethod }) {
     )
     .join('');
 
-  return simpleEmailHtml('New ESP signup', `
-    <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#6b7280;">A new customer registered on ${escapeHtml(APP_NAME)} (ESP). Tracking details below.</p>
+  return simpleEmailHtml('New User signup', `
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#6b7280;">A new customer registered on ${escapeHtml(APP_NAME)}. Tracking details below.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;background:#ffffff;">
       ${tableRows}
     </table>
