@@ -238,14 +238,28 @@ function getSignupMarketingHtml({ user, attribution, signupMethod }) {
     ['Timezone', geo.timezone || '—'],
     ['ISP / Org', [geo.isp, geo.org].filter(Boolean).join(' / ') || '—'],
     ['Coordinates', geo.lat != null && geo.lon != null ? `${geo.lat}, ${geo.lon}` : '—'],
-    ['HTTP referrer (came from)', attribution?.signupHttpReferrer || '— (direct / none)'],
+    ['Traffic source', attribution?.signupTrafficSource || '—'],
+    ['Search keyword', attribution?.signupSearchKeyword || attribution?.signupUtmTerm || '— (not provided by Google / not in URL)'],
+    ['External referrer (Google / site)', attribution?.signupExternalReferrer || attribution?.signupHttpReferrer || '— (direct / none)'],
     ['First landing page', attribution?.signupLandingPage || '—'],
     ['Signup page URL', attribution?.signupPageUrl || '—'],
     ['UTM source', attribution?.signupUtmSource || '—'],
     ['UTM medium', attribution?.signupUtmMedium || '—'],
     ['UTM campaign', attribution?.signupUtmCampaign || '—'],
+    ['UTM term', attribution?.signupUtmTerm || '—'],
+    ['GCLID / FBCLID', [attribution?.signupGclid, attribution?.signupFbclid].filter(Boolean).join(' / ') || '—'],
     ['User-Agent', attribution?.signupUserAgent || '—'],
   ];
+
+  const journey = Array.isArray(attribution?.signupJourney) ? attribution.signupJourney : [];
+  const journeyHtml = journey.length
+    ? `<ol style="margin:8px 0 0;padding-left:18px;font-size:13px;color:#6b7280;line-height:1.5;">${journey
+        .map(
+          (step, i) =>
+            `<li style="margin:0 0 6px;word-break:break-all;"><strong>${i + 1}.</strong> ${escapeHtml(step.title || 'Page')}<br/><a href="${escapeHtml(step.url)}" style="color:#4D0080;">${escapeHtml(step.url)}</a>${step.referrer ? `<br/><span style="color:#9ca3af;">via ${escapeHtml(step.referrer)}</span>` : ''}</li>`
+        )
+        .join('')}</ol>`
+    : '<span style="color:#6b7280;">—</span>';
 
   const tableRows = rows
     .map(
@@ -255,7 +269,11 @@ function getSignupMarketingHtml({ user, attribution, signupMethod }) {
         <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#6b7280;word-break:break-all;">${escapeHtml(value)}</td>
       </tr>`
     )
-    .join('');
+    .join('') + `
+      <tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;font-weight:600;width:38%;vertical-align:top;">Pages before signup</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#6b7280;">${journeyHtml}</td>
+      </tr>`;
 
   return simpleEmailHtml('New User signup', `
     <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#6b7280;">A new customer registered on ${escapeHtml(APP_NAME)}. Tracking details below.</p>

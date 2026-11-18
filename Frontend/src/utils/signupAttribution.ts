@@ -1,25 +1,49 @@
-const STORAGE_KEY = 'signupAttributionV1'
+const STORAGE_KEY = 'signupAttributionV2'
+const COOKIE_KEY = 'dm_attr_v1'
+const COOKIE_DOMAIN = '.documantra.in'
+const MAX_JOURNEY = 25
+
+export type JourneyStep = {
+  url: string
+  title: string
+  at: string
+  referrer?: string
+}
 
 export type SignupAttribution = {
   landingPage: string
+  /** First external referrer only (Google / other sites) — never overwritten by esp/documantra URLs */
   httpReferrer: string
+  externalReferrer: string
   signupPageUrl: string
+  searchKeyword: string
+  trafficSource: string
   utmSource: string
   utmMedium: string
   utmCampaign: string
+  utmTerm: string
+  utmContent: string
+  gclid: string
+  fbclid: string
+  journey: JourneyStep[]
   capturedAt: string
 }
 
-function readParams(): Pick<SignupAttribution, 'utmSource' | 'utmMedium' | 'utmCampaign'> {
+function isBrowser(): boolean {
+  return typeof window !== 'undefined' && typeof document !== 'undefined'
+}
+
+function isInternalHost(hostname: string): boolean {
+  const h = hostname.toLowerCase()
+  return h === 'documantra.in' || h.endsWith('.documantra.in') || h === 'localhost' || h === '127.0.0.1'
+}
+
+function isInternalUrl(url: string): boolean {
+  if (!url) return false
   try {
-    const params = new URLSearchParams(window.location.search)
-    return {
-      utmSource: params.get('utm_source')?.trim() || '',
-      utmMedium: params.get('utm_medium')?.trim() || '',
-      utmCampaign: params.get('utm_campaign')?.trim() || '',
-    }
+    return isInternalHost(new URL(url).hostname)
   } catch {
-    return { utmSource: '', utmMedium: '', utmCampaign: '' }
+    return /documantra\.in/i.test(url)
   }
 }
 
@@ -33,37 +57,273 @@ function safeParse(raw: string | null): Partial<SignupAttribution> | null {
   }
 }
 
-/** First-touch capture: landing URL + document.referrer (does not overwrite). */
-export function captureSignupAttribution(): SignupAttribution {
-  const utm = readParams()
-  let existing: Partial<SignupAttribution> | null = null
+function readCookie(name: string): string {
+  if (!isBrowser()) return ''
+  const parts = document.cookie.split(';')
+  for (const part of parts) {
+    const [k, ...rest] = part.trim().split('=')
+    if (k === name) return decodeURIComponent(rest.join('=') || '')
+  }
+  return ''
+}
+
+function writeCookie(name: string, value: string, days = 90) {
+  if (!isBrowser()) return
+  const maxAge = days * 24 * 60 * 60
+  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+  // Share across marketing + ESP subdomains when on documantra.in
+  const host = window.location.hostname
+  const domain =
+    host === 'localhost' || host === '127.0.0.1' ? '' : `; Domain=${COOKIE_DOMAIN}`
+  document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}${domain}`
+}
+
+function readParams() {
   try {
-    existing = safeParse(sessionStorage.getItem(STORAGE_KEY))
+    const params = new URLSearchParams(window.location.search)
+    return {
+      utmSource: params.get('utm_source')?.trim() || '',
+      utmMedium: params.get('utm_medium')?.trim() || '',
+      utmCampaign: params.get('utm_campaign')?.trim() || '',
+      utmTerm: params.get('utm_term')?.trim() || '',
+      utmContent: params.get('utm_content')?.trim() || '',
+      gclid: params.get('gclid')?.trim() || '',
+      fbclid: params.get('fbclid')?.trim() || '',
+      // Cross-domain handoff from marketing links
+      dmLanding: params.get('dm_landing')?.trim() || '',
+      dmRef: params.get('dm_ref')?.trim() || '',
+      dmKeyword: params.get('dm_keyword')?.trim() || '',
+    }
   } catch {
-    existing = null
+    return {
+      utmSource: '',
+      utmMedium: '',
+      utmCampaign: '',
+      utmTerm: '',
+      utmContent: '',
+      gclid: '',
+      fbclid: '',
+      dmLanding: '',
+      dmRef: '',
+      dmKeyword: '',
+    }
   }
+}
 
-  const next: SignupAttribution = {
-    landingPage: existing?.landingPage || window.location.href,
-    httpReferrer: existing?.httpReferrer || document.referrer || '',
-    signupPageUrl: existing?.signupPageUrl || '',
-    utmSource: existing?.utmSource || utm.utmSource,
-    utmMedium: existing?.utmMedium || utm.utmMedium,
-    utmCampaign: existing?.utmCampaign || utm.utmCampaign,
-    capturedAt: existing?.capturedAt || new Date().toISOString(),
-  }
-
-  // Prefer first non-empty UTM from current URL if missing
-  if (!next.utmSource && utm.utmSource) next.utmSource = utm.utmSource
-  if (!next.utmMedium && utm.utmMedium) next.utmMedium = utm.utmMedium
-  if (!next.utmCampaign && utm.utmCampaign) next.utmCampaign = utm.utmCampaign
-
+/** Pull search keyword from Google/Bing/Yahoo/DuckDuckGo referrer when present. */
+export function extractSearchKeyword(referrerUrl: string): string {
+  if (!referrerUrl) return ''
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    const u = new URL(referrerUrl)
+    const host = u.hostname.toLowerCase()
+    const params = u.searchParams
+    const candidates = ['q', 'query', 'text', 'keyword', 'p']
+    for (const key of candidates) {
+      const val = params.get(key)?.trim()
+      if (val) return val.slice(0, 200)
+    }
+    // Some engines put terms in path fragments rarely — skip
+    if (host.includes('google.') || host.includes('bing.') || host.includes('yahoo.') || host.includes('duckduckgo.')) {
+      return ''
+    }
   } catch {
     /* ignore */
   }
+  return ''
+}
+
+function classifyTrafficSource(input: {
+  externalReferrer: string
+  utmSource: string
+  utmMedium: string
+  gclid: string
+  fbclid: string
+}): string {
+  if (input.gclid) return 'google_ads'
+  if (input.fbclid) return 'facebook_ads'
+  if (input.utmSource || input.utmMedium) {
+    const m = (input.utmMedium || '').toLowerCase()
+    const s = (input.utmSource || '').toLowerCase()
+    if (m.includes('cpc') || m.includes('ppc') || m.includes('paid')) return `paid:${s || m}`
+    if (m.includes('email')) return `email:${s || 'email'}`
+    if (m.includes('social')) return `social:${s || 'social'}`
+    return `utm:${s || m}`
+  }
+  const ref = input.externalReferrer
+  if (!ref) return 'direct'
+  try {
+    const host = new URL(ref).hostname.toLowerCase()
+    if (host.includes('google.')) return 'google_organic'
+    if (host.includes('bing.')) return 'bing_organic'
+    if (host.includes('yahoo.')) return 'yahoo_organic'
+    if (host.includes('duckduckgo.')) return 'duckduckgo'
+    if (host.includes('facebook.') || host.includes('fb.')) return 'facebook_referral'
+    if (host.includes('linkedin.')) return 'linkedin_referral'
+    if (host.includes('twitter.') || host.includes('t.co') || host.includes('x.com')) return 'twitter_referral'
+    if (host.includes('instagram.')) return 'instagram_referral'
+    if (host.includes('youtube.')) return 'youtube_referral'
+    return `referral:${host}`
+  } catch {
+    return 'referral'
+  }
+}
+
+function loadStored(): Partial<SignupAttribution> {
+  if (!isBrowser()) return {}
+  const fromSession = safeParse(sessionStorage.getItem(STORAGE_KEY)) || {}
+  const fromCookie = safeParse(readCookie(COOKIE_KEY)) || {}
+  // Merge: prefer earlier first-touch from cookie (marketing site) then session
+  return {
+    ...fromSession,
+    ...fromCookie,
+    landingPage: fromCookie.landingPage || fromSession.landingPage || '',
+    httpReferrer: fromCookie.httpReferrer || fromSession.httpReferrer || '',
+    externalReferrer: fromCookie.externalReferrer || fromSession.externalReferrer || '',
+    searchKeyword: fromCookie.searchKeyword || fromSession.searchKeyword || '',
+    trafficSource: fromCookie.trafficSource || fromSession.trafficSource || '',
+    utmSource: fromCookie.utmSource || fromSession.utmSource || '',
+    utmMedium: fromCookie.utmMedium || fromSession.utmMedium || '',
+    utmCampaign: fromCookie.utmCampaign || fromSession.utmCampaign || '',
+    utmTerm: fromCookie.utmTerm || fromSession.utmTerm || '',
+    utmContent: fromCookie.utmContent || fromSession.utmContent || '',
+    gclid: fromCookie.gclid || fromSession.gclid || '',
+    fbclid: fromCookie.fbclid || fromSession.fbclid || '',
+    journey: Array.isArray(fromCookie.journey) && fromCookie.journey.length
+      ? fromCookie.journey
+      : Array.isArray(fromSession.journey)
+        ? fromSession.journey
+        : [],
+    capturedAt: fromCookie.capturedAt || fromSession.capturedAt || '',
+    signupPageUrl: fromSession.signupPageUrl || fromCookie.signupPageUrl || '',
+  }
+}
+
+function persist(data: SignupAttribution) {
+  if (!isBrowser()) return
+  const raw = JSON.stringify(data)
+  try {
+    sessionStorage.setItem(STORAGE_KEY, raw)
+  } catch {
+    /* ignore */
+  }
+  try {
+    writeCookie(COOKIE_KEY, raw)
+  } catch {
+    /* ignore */
+  }
+}
+
+function firstExternalReferrer(existing: string, candidate: string): string {
+  if (existing && !isInternalUrl(existing)) return existing
+  if (candidate && !isInternalUrl(candidate)) return candidate
+  return existing || ''
+}
+
+/** First-touch + journey capture. Safe to call on every page. */
+export function captureSignupAttribution(): SignupAttribution {
+  if (!isBrowser()) {
+    return emptyAttribution()
+  }
+
+  const existing = loadStored()
+  const params = readParams()
+  const docRef = document.referrer || ''
+  const nowUrl = window.location.href
+
+  const externalReferrer = firstExternalReferrer(
+    existing.externalReferrer || existing.httpReferrer || '',
+    params.dmRef || docRef
+  )
+
+  const landingPage =
+    existing.landingPage ||
+    params.dmLanding ||
+    nowUrl
+
+  const searchKeyword =
+    existing.searchKeyword ||
+    params.dmKeyword ||
+    params.utmTerm ||
+    extractSearchKeyword(externalReferrer) ||
+    extractSearchKeyword(docRef)
+
+  const utmSource = existing.utmSource || params.utmSource
+  const utmMedium = existing.utmMedium || params.utmMedium
+  const utmCampaign = existing.utmCampaign || params.utmCampaign
+  const utmTerm = existing.utmTerm || params.utmTerm
+  const utmContent = existing.utmContent || params.utmContent
+  const gclid = existing.gclid || params.gclid
+  const fbclid = existing.fbclid || params.fbclid
+
+  const trafficSource =
+    existing.trafficSource ||
+    classifyTrafficSource({
+      externalReferrer,
+      utmSource,
+      utmMedium,
+      gclid,
+      fbclid,
+    })
+
+  const journey = Array.isArray(existing.journey) ? [...existing.journey] : []
+  appendJourney(journey, nowUrl, document.title || '', docRef)
+
+  const next: SignupAttribution = {
+    landingPage,
+    httpReferrer: externalReferrer || existing.httpReferrer || docRef || '',
+    externalReferrer,
+    signupPageUrl: existing.signupPageUrl || '',
+    searchKeyword,
+    trafficSource,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    utmTerm,
+    utmContent,
+    gclid,
+    fbclid,
+    journey: journey.slice(-MAX_JOURNEY),
+    capturedAt: existing.capturedAt || new Date().toISOString(),
+  }
+
+  persist(next)
   return next
+}
+
+function appendJourney(journey: JourneyStep[], url: string, title: string, referrer: string) {
+  const last = journey[journey.length - 1]
+  if (last && last.url === url) return
+  journey.push({
+    url: url.slice(0, 1024),
+    title: (title || '').slice(0, 200),
+    at: new Date().toISOString(),
+    ...(referrer && !isInternalUrl(referrer) ? { referrer: referrer.slice(0, 1024) } : {}),
+  })
+}
+
+function emptyAttribution(): SignupAttribution {
+  return {
+    landingPage: '',
+    httpReferrer: '',
+    externalReferrer: '',
+    signupPageUrl: '',
+    searchKeyword: '',
+    trafficSource: '',
+    utmSource: '',
+    utmMedium: '',
+    utmCampaign: '',
+    utmTerm: '',
+    utmContent: '',
+    gclid: '',
+    fbclid: '',
+    journey: [],
+    capturedAt: '',
+  }
+}
+
+/** Call on each SPA navigation to extend the path. */
+export function trackJourneyPage(): SignupAttribution {
+  return captureSignupAttribution()
 }
 
 /** Call on /signup so we also store the signup page URL. */
@@ -72,34 +332,29 @@ export function markSignupPageVisit(): SignupAttribution {
   const next: SignupAttribution = {
     ...base,
     signupPageUrl: window.location.href,
-    // If they opened signup via an external link, refresh referrer when empty
-    httpReferrer: base.httpReferrer || document.referrer || '',
   }
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-  } catch {
-    /* ignore */
-  }
+  persist(next)
   return next
 }
 
-export function getSignupAttributionPayload(): {
-  httpReferrer?: string
-  landingPage?: string
-  signupPageUrl?: string
-  utmSource?: string
-  utmMedium?: string
-  utmCampaign?: string
-} {
+export function getSignupAttributionPayload(): Record<string, string | JourneyStep[]> {
   const data = markSignupPageVisit()
-  return {
-    ...(data.httpReferrer ? { httpReferrer: data.httpReferrer } : {}),
-    ...(data.landingPage ? { landingPage: data.landingPage } : {}),
-    ...(data.signupPageUrl ? { signupPageUrl: data.signupPageUrl } : {}),
-    ...(data.utmSource ? { utmSource: data.utmSource } : {}),
-    ...(data.utmMedium ? { utmMedium: data.utmMedium } : {}),
-    ...(data.utmCampaign ? { utmCampaign: data.utmCampaign } : {}),
-  }
+  const out: Record<string, string | JourneyStep[]> = {}
+  if (data.httpReferrer) out.httpReferrer = data.httpReferrer
+  if (data.externalReferrer) out.externalReferrer = data.externalReferrer
+  if (data.landingPage) out.landingPage = data.landingPage
+  if (data.signupPageUrl) out.signupPageUrl = data.signupPageUrl
+  if (data.searchKeyword) out.searchKeyword = data.searchKeyword
+  if (data.trafficSource) out.trafficSource = data.trafficSource
+  if (data.utmSource) out.utmSource = data.utmSource
+  if (data.utmMedium) out.utmMedium = data.utmMedium
+  if (data.utmCampaign) out.utmCampaign = data.utmCampaign
+  if (data.utmTerm) out.utmTerm = data.utmTerm
+  if (data.utmContent) out.utmContent = data.utmContent
+  if (data.gclid) out.gclid = data.gclid
+  if (data.fbclid) out.fbclid = data.fbclid
+  if (data.journey?.length) out.journey = data.journey
+  return out
 }
 
 export function clearSignupAttribution(): void {
@@ -107,5 +362,29 @@ export function clearSignupAttribution(): void {
     sessionStorage.removeItem(STORAGE_KEY)
   } catch {
     /* ignore */
+  }
+  try {
+    writeCookie(COOKIE_KEY, '', -1)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Build ESP signup URL carrying first-touch params (backup if cookie blocked). */
+export function buildEspSignupUrl(base = 'https://esp.documantra.in/signup'): string {
+  if (!isBrowser()) return base
+  const data = captureSignupAttribution()
+  try {
+    const u = new URL(base)
+    if (data.landingPage) u.searchParams.set('dm_landing', data.landingPage)
+    if (data.externalReferrer) u.searchParams.set('dm_ref', data.externalReferrer)
+    if (data.searchKeyword) u.searchParams.set('dm_keyword', data.searchKeyword)
+    if (data.utmSource) u.searchParams.set('utm_source', data.utmSource)
+    if (data.utmMedium) u.searchParams.set('utm_medium', data.utmMedium)
+    if (data.utmCampaign) u.searchParams.set('utm_campaign', data.utmCampaign)
+    if (data.utmTerm) u.searchParams.set('utm_term', data.utmTerm)
+    return u.toString()
+  } catch {
+    return base
   }
 }

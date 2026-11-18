@@ -127,11 +127,19 @@ async function issueOAuthLoginResponse(req, res, user, providerLabel) {
 function oauthTrackingFromBody(body = {}) {
   return {
     httpReferrer: body.httpReferrer,
+    externalReferrer: body.externalReferrer,
     landingPage: body.landingPage,
     signupPageUrl: body.signupPageUrl,
+    searchKeyword: body.searchKeyword,
+    trafficSource: body.trafficSource,
     utmSource: body.utmSource || body.utm_source,
     utmMedium: body.utmMedium || body.utm_medium,
     utmCampaign: body.utmCampaign || body.utm_campaign,
+    utmTerm: body.utmTerm || body.utm_term,
+    utmContent: body.utmContent || body.utm_content,
+    gclid: body.gclid,
+    fbclid: body.fbclid,
+    journey: body.journey,
   };
 }
 

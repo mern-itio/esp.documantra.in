@@ -16,7 +16,7 @@ import CreditPurchaseModal from './components/common/CreditPurchaseModal';
 import BrandingHead from './components/BrandingHead';
 import PublicSignHead from './components/PublicFlow/PublicSignHead';
 import { useSubscription } from './context/SubscriptionContext';
-import { captureSignupAttribution } from './utils/signupAttribution';
+import { captureSignupAttribution, trackJourneyPage } from './utils/signupAttribution';
 
 const CustomerChatWidget = lazy(() => import('./components/SupportChat/CustomerChatWidget'));
 const AIAssistantButton = lazy(() => import('./components/AIAssistant/AIAssistantButton'));
@@ -85,6 +85,29 @@ const App: React.FC = () => {
 
   useEffect(() => {
     captureSignupAttribution();
+    trackJourneyPage();
+
+    const onNav = () => trackJourneyPage();
+    window.addEventListener('popstate', onNav);
+
+    const origPush = history.pushState.bind(history);
+    const origReplace = history.replaceState.bind(history);
+    history.pushState = function (...args: Parameters<History['pushState']>) {
+      const result = origPush(...args);
+      setTimeout(onNav, 0);
+      return result;
+    };
+    history.replaceState = function (...args: Parameters<History['replaceState']>) {
+      const result = origReplace(...args);
+      setTimeout(onNav, 0);
+      return result;
+    };
+
+    return () => {
+      window.removeEventListener('popstate', onNav);
+      history.pushState = origPush;
+      history.replaceState = origReplace;
+    };
   }, []);
 
   return (

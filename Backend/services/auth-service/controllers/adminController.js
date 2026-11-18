@@ -10,8 +10,9 @@ const userList = async (req, res) => {
       .select(
         'fullname email phone company address plan status emailVerified phoneVerified ' +
         'googleId facebookId linkedinId twitterId referredBy createdAt updatedAt isFirstLogin ' +
-        'signupIp signupGeo signupHttpReferrer signupLandingPage signupPageUrl ' +
-        'signupUtmSource signupUtmMedium signupUtmCampaign'
+        'signupIp signupGeo signupHttpReferrer signupExternalReferrer signupLandingPage signupPageUrl ' +
+        'signupUtmSource signupUtmMedium signupUtmCampaign signupUtmTerm signupSearchKeyword ' +
+        'signupTrafficSource signupJourney signupGclid signupFbclid'
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -44,11 +45,18 @@ const userList = async (req, res) => {
         signupLocation: locationParts.length ? locationParts.join(', ') : '',
         signupGeo: geo,
         signupHttpReferrer: u.signupHttpReferrer || '',
+        signupExternalReferrer: u.signupExternalReferrer || u.signupHttpReferrer || '',
         signupLandingPage: u.signupLandingPage || '',
         signupPageUrl: u.signupPageUrl || '',
         signupUtmSource: u.signupUtmSource || '',
         signupUtmMedium: u.signupUtmMedium || '',
         signupUtmCampaign: u.signupUtmCampaign || '',
+        signupUtmTerm: u.signupUtmTerm || '',
+        signupSearchKeyword: u.signupSearchKeyword || '',
+        signupTrafficSource: u.signupTrafficSource || '',
+        signupJourney: Array.isArray(u.signupJourney) ? u.signupJourney : [],
+        signupGclid: u.signupGclid || '',
+        signupFbclid: u.signupFbclid || '',
         createdAt: u.createdAt,
         updatedAt: u.updatedAt,
       };

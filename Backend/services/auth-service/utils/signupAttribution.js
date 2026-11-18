@@ -6,22 +6,57 @@ function trimStr(value, max = 1024) {
   return String(value).trim().slice(0, max);
 }
 
+function normalizeJourney(raw) {
+  if (!Array.isArray(raw)) {
+    if (typeof raw === 'string' && raw.trim()) {
+      try {
+        const parsed = JSON.parse(raw);
+        return normalizeJourney(parsed);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }
+  return raw
+    .slice(0, 30)
+    .map((step) => ({
+      url: trimStr(step?.url, 1024),
+      title: trimStr(step?.title, 200),
+      at: trimStr(step?.at, 64),
+      referrer: trimStr(step?.referrer, 1024),
+    }))
+    .filter((step) => step.url);
+}
+
 /**
  * Build signup attribution from request IP/UA + optional body fields from the SPA.
  */
 async function buildSignupAttribution(req, body = {}) {
   const { ipAddress, userAgent } = getRequestMeta(req);
   const geo = await resolveGeoFromIp(ipAddress);
+  const externalReferrer = trimStr(
+    body.externalReferrer || body.httpReferrer || body.signupHttpReferrer || req?.headers?.referer,
+    1024
+  );
 
   return {
     signupIp: trimStr(ipAddress, 128) || 'Unknown IP',
     signupUserAgent: trimStr(userAgent || body.userAgent, 512),
-    signupHttpReferrer: trimStr(body.httpReferrer || body.signupHttpReferrer || req?.headers?.referer, 1024),
+    signupHttpReferrer: externalReferrer,
+    signupExternalReferrer: externalReferrer,
     signupLandingPage: trimStr(body.landingPage || body.signupLandingPage, 1024),
     signupPageUrl: trimStr(body.signupPageUrl || body.signupPage, 1024),
     signupUtmSource: trimStr(body.utmSource || body.utm_source, 128),
     signupUtmMedium: trimStr(body.utmMedium || body.utm_medium, 128),
     signupUtmCampaign: trimStr(body.utmCampaign || body.utm_campaign, 128),
+    signupUtmTerm: trimStr(body.utmTerm || body.utm_term, 200),
+    signupUtmContent: trimStr(body.utmContent || body.utm_content, 200),
+    signupSearchKeyword: trimStr(body.searchKeyword || body.signupSearchKeyword || body.utmTerm, 200),
+    signupTrafficSource: trimStr(body.trafficSource || body.signupTrafficSource, 128),
+    signupGclid: trimStr(body.gclid || body.signupGclid, 128),
+    signupFbclid: trimStr(body.fbclid || body.signupFbclid, 128),
+    signupJourney: normalizeJourney(body.journey || body.signupJourney),
     signupGeo: {
       city: geo.city || '',
       region: geo.region || '',
@@ -43,11 +78,19 @@ function attributionFieldsForCreate(attribution) {
     signupIp: attribution.signupIp,
     signupUserAgent: attribution.signupUserAgent,
     signupHttpReferrer: attribution.signupHttpReferrer,
+    signupExternalReferrer: attribution.signupExternalReferrer,
     signupLandingPage: attribution.signupLandingPage,
     signupPageUrl: attribution.signupPageUrl,
     signupUtmSource: attribution.signupUtmSource,
     signupUtmMedium: attribution.signupUtmMedium,
     signupUtmCampaign: attribution.signupUtmCampaign,
+    signupUtmTerm: attribution.signupUtmTerm,
+    signupUtmContent: attribution.signupUtmContent,
+    signupSearchKeyword: attribution.signupSearchKeyword,
+    signupTrafficSource: attribution.signupTrafficSource,
+    signupGclid: attribution.signupGclid,
+    signupFbclid: attribution.signupFbclid,
+    signupJourney: attribution.signupJourney,
     signupGeo: attribution.signupGeo,
   };
 }

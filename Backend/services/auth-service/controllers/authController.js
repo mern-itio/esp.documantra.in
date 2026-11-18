@@ -1135,20 +1135,36 @@ const register = async (req, res) => {
     marketingVersion,
     emailVerificationToken,
     httpReferrer,
+    externalReferrer,
     landingPage,
     signupPageUrl,
+    searchKeyword,
+    trafficSource,
     utmSource,
     utmMedium,
     utmCampaign,
+    utmTerm,
+    utmContent,
+    gclid,
+    fbclid,
+    journey,
   } = req.body;
 
   const signupTrackingBody = {
     httpReferrer,
+    externalReferrer,
     landingPage,
     signupPageUrl,
+    searchKeyword,
+    trafficSource,
     utmSource,
     utmMedium,
     utmCampaign,
+    utmTerm,
+    utmContent,
+    gclid,
+    fbclid,
+    journey,
   };
 
   if (!agreeToTerms) {

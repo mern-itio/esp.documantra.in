@@ -48,12 +48,7 @@ interface AuthContextType {
     credential: string,
     options?: {
       referrerUserId?: string;
-      httpReferrer?: string;
-      landingPage?: string;
-      signupPageUrl?: string;
-      utmSource?: string;
-      utmMedium?: string;
-      utmCampaign?: string;
+      [key: string]: unknown;
     }
   ) => Promise<void>;
   applyLoginFromOAuthPayload: (data: Record<string, unknown>) => Promise<void>;
@@ -71,12 +66,7 @@ interface AuthContextType {
     termsVersion?: string;
     privacyVersion?: string;
     marketingVersion?: string;
-    httpReferrer?: string;
-    landingPage?: string;
-    signupPageUrl?: string;
-    utmSource?: string;
-    utmMedium?: string;
-    utmCampaign?: string;
+    [key: string]: unknown;
   }) => Promise<{ signupToken?: string; loggedIn: boolean }>;
   requestSignupEmailVerification: (email: string) => Promise<{ exists: boolean; otpSent?: boolean; message: string }>;
   confirmSignupEmailVerification: (email: string, emailOtp: string) => Promise<{ emailVerificationToken: string; message: string }>;
@@ -431,17 +421,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     credential: string,
     options?: {
       referrerUserId?: string;
-      httpReferrer?: string;
-      landingPage?: string;
-      signupPageUrl?: string;
-      utmSource?: string;
-      utmMedium?: string;
-      utmCampaign?: string;
+      [key: string]: unknown;
     }
   ) => {
     try {
       const deviceId = getOrCreateDeviceId();
-      const ref = options?.referrerUserId?.trim();
+      const ref = typeof options?.referrerUserId === 'string' ? options.referrerUserId.trim() : '';
+      const { referrerUserId: _ignored, ...tracking } = options || {};
       const resp = await fetch(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, withAuthFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -450,12 +436,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           deviceId,
           deviceLabel: 'browser',
           ...(ref ? { ref } : {}),
-          ...(options?.httpReferrer ? { httpReferrer: options.httpReferrer } : {}),
-          ...(options?.landingPage ? { landingPage: options.landingPage } : {}),
-          ...(options?.signupPageUrl ? { signupPageUrl: options.signupPageUrl } : {}),
-          ...(options?.utmSource ? { utmSource: options.utmSource } : {}),
-          ...(options?.utmMedium ? { utmMedium: options.utmMedium } : {}),
-          ...(options?.utmCampaign ? { utmCampaign: options.utmCampaign } : {}),
+          ...tracking,
         }),
       }));
 
@@ -724,12 +705,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     termsVersion?: string;
     privacyVersion?: string;
     marketingVersion?: string;
-    httpReferrer?: string;
-    landingPage?: string;
-    signupPageUrl?: string;
-    utmSource?: string;
-    utmMedium?: string;
-    utmCampaign?: string;
+    [key: string]: unknown;
   }) => {
     const data = unwrapAuthJson(await apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
       method: 'POST',
