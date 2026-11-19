@@ -300,7 +300,14 @@ export function captureSignupAttribution(): SignupAttribution {
     nowUrl,
   )
 
-  const landingTitle = (existing.landingTitle || params.dmTitle || '').slice(0, 200)
+  let landingTitle = (existing.landingTitle || params.dmTitle || '').slice(0, 200)
+  if (!landingTitle && Array.isArray(existing.journey) && existing.journey[0]?.title) {
+    landingTitle = String(existing.journey[0].title).slice(0, 200)
+  }
+  if (!landingTitle && isMarketingUrl(landingPage) && document.title) {
+    // Last resort when arriving from marketing without dm_title.
+    landingTitle = String(document.title).slice(0, 200)
+  }
 
   const searchKeyword =
     existing.searchKeyword ||

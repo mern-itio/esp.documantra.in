@@ -90,7 +90,18 @@ async function buildSignupAttribution(req, body = {}) {
   const geo = await resolveGeoFromIp(ipAddress);
   const externalReferrer = pickExternalReferrer(body, req);
   const landingPage = pickLandingPage(body);
-  const landingTitle = trimStr(body.landingTitle || body.dm_title || body.signupLandingTitle, 200);
+  const journey = normalizeJourney(body.journey || body.signupJourney);
+  let landingTitle = trimStr(body.landingTitle || body.dm_title || body.signupLandingTitle, 200);
+  if (!landingTitle && journey.length) {
+    landingTitle = trimStr(journey[0].title, 200);
+  }
+
+  // Organic Google/Bing almost never send ?q= in HTTPS referrers.
+  // Only persist a keyword when the client/UTM actually provided one.
+  const searchKeyword = trimStr(
+    body.searchKeyword || body.signupSearchKeyword || body.utmTerm || body.utm_term,
+    200,
+  );
 
   return {
     signupIp: trimStr(ipAddress, 128) || 'Unknown IP',
@@ -105,11 +116,11 @@ async function buildSignupAttribution(req, body = {}) {
     signupUtmCampaign: trimStr(body.utmCampaign || body.utm_campaign, 128),
     signupUtmTerm: trimStr(body.utmTerm || body.utm_term, 200),
     signupUtmContent: trimStr(body.utmContent || body.utm_content, 200),
-    signupSearchKeyword: trimStr(body.searchKeyword || body.signupSearchKeyword || body.utmTerm, 200),
+    signupSearchKeyword: searchKeyword,
     signupTrafficSource: trimStr(body.trafficSource || body.signupTrafficSource, 128),
     signupGclid: trimStr(body.gclid || body.signupGclid, 128),
     signupFbclid: trimStr(body.fbclid || body.signupFbclid, 128),
-    signupJourney: normalizeJourney(body.journey || body.signupJourney),
+    signupJourney: journey,
     signupGeo: {
       city: geo.city || '',
       region: geo.region || '',
