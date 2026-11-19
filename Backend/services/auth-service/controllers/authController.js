@@ -15,6 +15,7 @@ const {
   buildSignupAttribution,
   attributionFieldsForCreate,
 } = require('../utils/signupAttribution');
+const { linkVisitorToCustomer } = require('../utils/linkVisitorTracking');
 const { sendVerificationOtpSms } = require('../utils/sms');
 // const { verifyJWT } = require('@draftnsign/auth-lib');
 const bcrypt = require('bcrypt');
@@ -1148,6 +1149,7 @@ const register = async (req, res) => {
     gclid,
     fbclid,
     journey,
+    visitorId,
   } = req.body;
 
   const signupTrackingBody = {
@@ -1165,6 +1167,7 @@ const register = async (req, res) => {
     gclid,
     fbclid,
     journey,
+    visitorId,
   };
 
   if (!agreeToTerms) {
@@ -1287,6 +1290,7 @@ const register = async (req, res) => {
         phoneOtpHash: null,
         phoneOtpExpires: null,
         ...attributionFieldsForCreate(signupAttribution),
+        ...(visitorId ? { visitorId: String(visitorId).slice(0, 64) } : {}),
       };
 
       let user;
@@ -1305,6 +1309,15 @@ const register = async (req, res) => {
       }
 
       await provisionFreeSubscription(user._id);
+
+      if (visitorId) {
+        linkVisitorToCustomer({
+          customerId: user._id,
+          visitorId,
+          signupPageUrl,
+          linkSource: 'signup',
+        }).catch(() => null);
+      }
 
       if (signupAttribution) {
         sendSignupMarketingEmail({
@@ -1389,6 +1402,7 @@ const register = async (req, res) => {
     const emailOtp = generateOtp();
     const emailOtpExpires = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
     const legacyPayload = {
+      ...(visitorId ? { visitorId: String(visitorId).slice(0, 64) } : {}),
       fullname: normalizedFullname,
       email: normalizedEmail,
       phone: normalizedPhone || makeOptionalPhonePlaceholder(),
@@ -1421,6 +1435,15 @@ const register = async (req, res) => {
     }
 
     await provisionFreeSubscription(user._id);
+
+    if (visitorId) {
+      linkVisitorToCustomer({
+        customerId: user._id,
+        visitorId,
+        signupPageUrl,
+        linkSource: 'signup',
+      }).catch(() => null);
+    }
 
     if (signupAttribution) {
       sendSignupMarketingEmail({

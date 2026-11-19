@@ -17,6 +17,7 @@ import BrandingHead from './components/BrandingHead';
 import PublicSignHead from './components/PublicFlow/PublicSignHead';
 import { useSubscription } from './context/SubscriptionContext';
 import { captureSignupAttribution, trackJourneyPage } from './utils/signupAttribution';
+import { initVisitorTracker, trackPageView } from './utils/visitorTracker';
 
 const CustomerChatWidget = lazy(() => import('./components/SupportChat/CustomerChatWidget'));
 const AIAssistantButton = lazy(() => import('./components/AIAssistant/AIAssistantButton'));
@@ -86,8 +87,12 @@ const App: React.FC = () => {
   useEffect(() => {
     captureSignupAttribution();
     trackJourneyPage();
+    initVisitorTracker();
 
-    const onNav = () => trackJourneyPage();
+    const onNav = () => {
+      trackJourneyPage();
+      trackPageView();
+    };
     window.addEventListener('popstate', onNav);
 
     const origPush = history.pushState.bind(history);

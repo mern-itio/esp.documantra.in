@@ -9,7 +9,7 @@ const userList = async (req, res) => {
     const users = await User.find()
       .select(
         'fullname email phone company address plan status emailVerified phoneVerified ' +
-        'googleId facebookId linkedinId twitterId referredBy createdAt updatedAt isFirstLogin ' +
+        'googleId facebookId linkedinId twitterId referredBy createdAt updatedAt isFirstLogin visitorId ' +
         'signupIp signupGeo signupHttpReferrer signupExternalReferrer signupLandingPage signupLandingTitle signupPageUrl ' +
         'signupUtmSource signupUtmMedium signupUtmCampaign signupUtmTerm signupSearchKeyword ' +
         'signupTrafficSource signupJourney signupGclid signupFbclid'
@@ -41,6 +41,7 @@ const userList = async (req, res) => {
         signupMethod,
         referredBy: u.referredBy || null,
         isFirstLogin: u.isFirstLogin !== false,
+        visitorId: u.visitorId || '',
         signupIp: u.signupIp || '',
         signupLocation: locationParts.length ? locationParts.join(', ') : '',
         signupGeo: geo,

@@ -140,6 +140,7 @@ function oauthTrackingFromBody(body = {}) {
     gclid: body.gclid,
     fbclid: body.fbclid,
     journey: body.journey,
+    visitorId: body.visitorId,
   };
 }
 
@@ -155,6 +156,23 @@ async function handleOAuthLogin(req, res, identity, providerLabel, referral) {
     applySignupAttributionAndNotify(user, req, tracking || {}, providerLabel.toLowerCase()).catch(
       (err) => console.warn('OAuth signup attribution failed:', err?.message || err)
     );
+    if (tracking?.visitorId) {
+      try {
+        const { linkVisitorToCustomer } = require('../utils/linkVisitorTracking');
+        if (tracking.visitorId) {
+          user.visitorId = String(tracking.visitorId).slice(0, 64);
+          await user.save({ validateBeforeSave: false }).catch(() => null);
+        }
+        linkVisitorToCustomer({
+          customerId: user._id,
+          visitorId: tracking.visitorId,
+          signupPageUrl: tracking.signupPageUrl,
+          linkSource: `oauth_${String(providerLabel || 'oauth').toLowerCase()}`,
+        }).catch(() => null);
+      } catch {
+        /* soft-fail */
+      }
+    }
   }
   return issueOAuthLoginResponse(req, res, user, providerLabel);
 }

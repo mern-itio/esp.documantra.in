@@ -1,5 +1,47 @@
 
+const axios = require('axios');
 const { serviceGet, servicePatch, serviceDel } = require('../utils/apiHelper');
+
+const getUserJourney = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ status: 400, message: 'User ID is required', data: null });
+  }
+  try {
+    const base =
+      process.env.VISITOR_TRACKING_URL || 'http://visitor-tracking-service:2116';
+    const secret = process.env.TRACKING_INTERNAL_SECRET || '';
+    if (!secret) {
+      return res.status(200).json({
+        status: 200,
+        data: { customerId: id, timeline: [], message: 'Tracking secret not configured' },
+      });
+    }
+    const result = await axios.get(
+      `${base.replace(/\/$/, '')}/admin/v1/customers/${encodeURIComponent(id)}/journey`,
+      {
+        headers: { 'x-tracking-secret': secret },
+        timeout: 8000,
+      },
+    );
+    return res.status(200).json({
+      status: 200,
+      message: 'Visitor journey fetched',
+      data: result.data?.data ?? result.data,
+    });
+  } catch (err) {
+    console.warn('Visitor journey soft-fail:', err?.message || err);
+    return res.status(200).json({
+      status: 200,
+      data: {
+        customerId: id,
+        timeline: [],
+        message: 'No visitor journey available yet',
+      },
+    });
+  }
+};
+
 const userList = async (req, res) => {
   try {
     const result = await serviceGet(req, 'auth', { url: '/api-admin/user-list' });
@@ -149,5 +191,6 @@ module.exports = {
   updateUserDetail,
   updateUserPassword,
   deleteUser,
+  getUserJourney,
 };
 

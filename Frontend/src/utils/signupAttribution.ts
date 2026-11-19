@@ -412,6 +412,22 @@ export function markSignupPageVisit(): SignupAttribution {
   return next
 }
 
+function readVisitorIdCookie(): string {
+  if (!isBrowser()) return ''
+  const parts = document.cookie.split(';')
+  for (const part of parts) {
+    const [k, ...rest] = part.trim().split('=')
+    if (k === 'dm_vid') {
+      try {
+        return decodeURIComponent(rest.join('=') || '')
+      } catch {
+        return rest.join('=') || ''
+      }
+    }
+  }
+  return ''
+}
+
 export function getSignupAttributionPayload(): Record<string, string | JourneyStep[]> {
   const data = markSignupPageVisit()
   const out: Record<string, string | JourneyStep[]> = {}
@@ -432,6 +448,8 @@ export function getSignupAttributionPayload(): Record<string, string | JourneySt
   if (data.gclid) out.gclid = data.gclid
   if (data.fbclid) out.fbclid = data.fbclid
   if (data.journey?.length) out.journey = data.journey
+  const visitorId = readVisitorIdCookie()
+  if (visitorId) out.visitorId = visitorId
   return out
 }
 

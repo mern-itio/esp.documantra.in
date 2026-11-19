@@ -17,6 +17,8 @@ services:
     command: npm run dev
     environment:
       - EMAIL_SERVICE_URL=http://email-service:2112
+      - VISITOR_TRACKING_URL=http://visitor-tracking-service:2116
+      - TRACKING_INTERNAL_SECRET=dm-tracking-internal-dev-secret
 
   pdf-service:
     build:
@@ -144,6 +146,9 @@ services:
     command: npm run dev
     env_file:
       - ./services/admin-service/.env
+    environment:
+      - VISITOR_TRACKING_URL=http://visitor-tracking-service:2116
+      - TRACKING_INTERNAL_SECRET=dm-tracking-internal-dev-secret
 
   support-service:
     build:
@@ -266,3 +271,42 @@ services:
           memory: 2G
         reservations:
           memory: 1G
+
+  # Dedicated Visitor Tracking PostgreSQL (isolated from master MongoDB)
+  visitor-tracking-postgres:
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_USER: tracking
+      POSTGRES_PASSWORD: tracking
+      POSTGRES_DB: visitor_tracking
+    volumes:
+      - visitor_tracking_pgdata:/var/lib/postgresql/data
+      - ./services/visitor-tracking-service/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tracking -d visitor_tracking"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  visitor-tracking-service:
+    build:
+      context: .
+      dockerfile: services/visitor-tracking-service/Dockerfile
+    ports:
+      - "127.0.0.1:2116:2116"
+    volumes:
+      - ./services/visitor-tracking-service:/app/services/visitor-tracking-service:cached
+      - /app/services/visitor-tracking-service/node_modules
+    env_file:
+      - ./services/visitor-tracking-service/.env
+    environment:
+      - TRACKING_DATABASE_URL=postgres://tracking:tracking@visitor-tracking-postgres:5432/visitor_tracking
+    depends_on:
+      visitor-tracking-postgres:
+        condition: service_healthy
+    command: sh -c "node db/migrate.js && npm run dev"
+volumes:
+  visitor_tracking_pgdata:
+

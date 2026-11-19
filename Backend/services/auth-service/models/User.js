@@ -85,6 +85,8 @@ const userSchema = new mongoose.Schema({
   }],
   /** Set when this user registered via a referral link (referrer's User id). */
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+  /** Anonymous visitor UUID from tracking cookie (dm_vid) — thin link only. */
+  visitorId: { type: String, default: '', index: true },
   /** First-touch / signup attribution for marketing + admin. */
   signupIp: { type: String, default: '' },
   signupUserAgent: { type: String, default: '' },
