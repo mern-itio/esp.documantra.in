@@ -6,6 +6,59 @@ function trimStr(value, max = 1024) {
   return String(value).trim().slice(0, max);
 }
 
+function isInternalUrl(url) {
+  if (!url) return false;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === 'documantra.in' || host.endsWith('.documantra.in') || host === 'localhost' || host === '127.0.0.1';
+  } catch {
+    return /documantra\.in/i.test(String(url));
+  }
+}
+
+function isEspSignupUrl(url) {
+  if (!url) return false;
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase();
+    const path = (u.pathname || '').replace(/\/+$/, '') || '/';
+    return (host === 'esp.documantra.in' || host === 'esign.documantra.in') && path === '/signup';
+  } catch {
+    return false;
+  }
+}
+
+function pickExternalReferrer(body = {}, req) {
+  const candidates = [
+    body.externalReferrer,
+    body.httpReferrer,
+    body.signupHttpReferrer,
+    body.signupExternalReferrer,
+    // Only use request Referer when it is a true external site (never ESP/marketing).
+    req?.headers?.referer,
+    req?.headers?.referrer,
+  ];
+  for (const raw of candidates) {
+    const value = trimStr(raw, 1024);
+    if (!value) continue;
+    if (isInternalUrl(value) || isEspSignupUrl(value)) continue;
+    return value;
+  }
+  return '';
+}
+
+function pickLandingPage(body = {}) {
+  const candidates = [body.landingPage, body.signupLandingPage, body.dm_landing];
+  for (const raw of candidates) {
+    const value = trimStr(raw, 1024);
+    if (!value) continue;
+    if (isEspSignupUrl(value)) continue;
+    return value;
+  }
+  // Last resort: accept signup URL only if nothing else exists.
+  return trimStr(body.landingPage || body.signupLandingPage, 1024);
+}
+
 function normalizeJourney(raw) {
   if (!Array.isArray(raw)) {
     if (typeof raw === 'string' && raw.trim()) {
@@ -35,17 +88,17 @@ function normalizeJourney(raw) {
 async function buildSignupAttribution(req, body = {}) {
   const { ipAddress, userAgent } = getRequestMeta(req);
   const geo = await resolveGeoFromIp(ipAddress);
-  const externalReferrer = trimStr(
-    body.externalReferrer || body.httpReferrer || body.signupHttpReferrer || req?.headers?.referer,
-    1024
-  );
+  const externalReferrer = pickExternalReferrer(body, req);
+  const landingPage = pickLandingPage(body);
+  const landingTitle = trimStr(body.landingTitle || body.dm_title || body.signupLandingTitle, 200);
 
   return {
     signupIp: trimStr(ipAddress, 128) || 'Unknown IP',
     signupUserAgent: trimStr(userAgent || body.userAgent, 512),
     signupHttpReferrer: externalReferrer,
     signupExternalReferrer: externalReferrer,
-    signupLandingPage: trimStr(body.landingPage || body.signupLandingPage, 1024),
+    signupLandingPage: landingPage,
+    signupLandingTitle: landingTitle,
     signupPageUrl: trimStr(body.signupPageUrl || body.signupPage, 1024),
     signupUtmSource: trimStr(body.utmSource || body.utm_source, 128),
     signupUtmMedium: trimStr(body.utmMedium || body.utm_medium, 128),
@@ -80,6 +133,7 @@ function attributionFieldsForCreate(attribution) {
     signupHttpReferrer: attribution.signupHttpReferrer,
     signupExternalReferrer: attribution.signupExternalReferrer,
     signupLandingPage: attribution.signupLandingPage,
+    signupLandingTitle: attribution.signupLandingTitle,
     signupPageUrl: attribution.signupPageUrl,
     signupUtmSource: attribution.signupUtmSource,
     signupUtmMedium: attribution.signupUtmMedium,

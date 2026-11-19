@@ -90,6 +90,7 @@ const userSchema = new mongoose.Schema({
   signupUserAgent: { type: String, default: '' },
   signupHttpReferrer: { type: String, default: '' },
   signupLandingPage: { type: String, default: '' },
+  signupLandingTitle: { type: String, default: '' },
   signupPageUrl: { type: String, default: '' },
   signupUtmSource: { type: String, default: '' },
   signupUtmMedium: { type: String, default: '' },

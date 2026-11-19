@@ -12,6 +12,7 @@ export type JourneyStep = {
 
 export type SignupAttribution = {
   landingPage: string
+  landingTitle: string
   /** First external referrer only (Google / other sites) — never overwritten by esp/documantra URLs */
   httpReferrer: string
   externalReferrer: string
@@ -33,6 +34,16 @@ function isBrowser(): boolean {
   return typeof window !== 'undefined' && typeof document !== 'undefined'
 }
 
+function isEspHost(hostname: string): boolean {
+  const h = hostname.toLowerCase()
+  return h === 'esp.documantra.in' || h === 'esign.documantra.in'
+}
+
+function isMarketingHost(hostname: string): boolean {
+  const h = hostname.toLowerCase()
+  return h === 'documantra.in' || h === 'www.documantra.in'
+}
+
 function isInternalHost(hostname: string): boolean {
   const h = hostname.toLowerCase()
   return h === 'documantra.in' || h.endsWith('.documantra.in') || h === 'localhost' || h === '127.0.0.1'
@@ -44,6 +55,39 @@ function isInternalUrl(url: string): boolean {
     return isInternalHost(new URL(url).hostname)
   } catch {
     return /documantra\.in/i.test(url)
+  }
+}
+
+function isExternalUrl(url: string): boolean {
+  return Boolean(url) && !isInternalUrl(url)
+}
+
+function isMarketingUrl(url: string): boolean {
+  if (!url) return false
+  try {
+    return isMarketingHost(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
+
+function isEspUrl(url: string): boolean {
+  if (!url) return false
+  try {
+    return isEspHost(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
+
+function isSignupUrl(url: string): boolean {
+  if (!url) return false
+  try {
+    const u = new URL(url)
+    const path = u.pathname.replace(/\/+$/, '') || '/'
+    return path === '/signup'
+  } catch {
+    return /\/signup\/?(\?|$)/i.test(url)
   }
 }
 
@@ -71,7 +115,6 @@ function writeCookie(name: string, value: string, days = 90) {
   if (!isBrowser()) return
   const maxAge = days * 24 * 60 * 60
   const secure = window.location.protocol === 'https:' ? '; Secure' : ''
-  // Share across marketing + ESP subdomains when on documantra.in
   const host = window.location.hostname
   const domain =
     host === 'localhost' || host === '127.0.0.1' ? '' : `; Domain=${COOKIE_DOMAIN}`
@@ -89,10 +132,11 @@ function readParams() {
       utmContent: params.get('utm_content')?.trim() || '',
       gclid: params.get('gclid')?.trim() || '',
       fbclid: params.get('fbclid')?.trim() || '',
-      // Cross-domain handoff from marketing links
       dmLanding: params.get('dm_landing')?.trim() || '',
+      dmTitle: params.get('dm_title')?.trim() || '',
       dmRef: params.get('dm_ref')?.trim() || '',
       dmKeyword: params.get('dm_keyword')?.trim() || '',
+      dmSource: params.get('dm_source')?.trim() || '',
     }
   } catch {
     return {
@@ -104,8 +148,10 @@ function readParams() {
       gclid: '',
       fbclid: '',
       dmLanding: '',
+      dmTitle: '',
       dmRef: '',
       dmKeyword: '',
+      dmSource: '',
     }
   }
 }
@@ -115,16 +161,11 @@ export function extractSearchKeyword(referrerUrl: string): string {
   if (!referrerUrl) return ''
   try {
     const u = new URL(referrerUrl)
-    const host = u.hostname.toLowerCase()
     const params = u.searchParams
     const candidates = ['q', 'query', 'text', 'keyword', 'p']
     for (const key of candidates) {
       const val = params.get(key)?.trim()
       if (val) return val.slice(0, 200)
-    }
-    // Some engines put terms in path fragments rarely — skip
-    if (host.includes('google.') || host.includes('bing.') || host.includes('yahoo.') || host.includes('duckduckgo.')) {
-      return ''
     }
   } catch {
     /* ignore */
@@ -172,11 +213,11 @@ function loadStored(): Partial<SignupAttribution> {
   if (!isBrowser()) return {}
   const fromSession = safeParse(sessionStorage.getItem(STORAGE_KEY)) || {}
   const fromCookie = safeParse(readCookie(COOKIE_KEY)) || {}
-  // Merge: prefer earlier first-touch from cookie (marketing site) then session
   return {
     ...fromSession,
     ...fromCookie,
     landingPage: fromCookie.landingPage || fromSession.landingPage || '',
+    landingTitle: fromCookie.landingTitle || fromSession.landingTitle || '',
     httpReferrer: fromCookie.httpReferrer || fromSession.httpReferrer || '',
     externalReferrer: fromCookie.externalReferrer || fromSession.externalReferrer || '',
     searchKeyword: fromCookie.searchKeyword || fromSession.searchKeyword || '',
@@ -188,11 +229,12 @@ function loadStored(): Partial<SignupAttribution> {
     utmContent: fromCookie.utmContent || fromSession.utmContent || '',
     gclid: fromCookie.gclid || fromSession.gclid || '',
     fbclid: fromCookie.fbclid || fromSession.fbclid || '',
-    journey: Array.isArray(fromCookie.journey) && fromCookie.journey.length
-      ? fromCookie.journey
-      : Array.isArray(fromSession.journey)
-        ? fromSession.journey
-        : [],
+    journey:
+      Array.isArray(fromCookie.journey) && fromCookie.journey.length
+        ? fromCookie.journey
+        : Array.isArray(fromSession.journey)
+          ? fromSession.journey
+          : [],
     capturedAt: fromCookie.capturedAt || fromSession.capturedAt || '',
     signupPageUrl: fromSession.signupPageUrl || fromCookie.signupPageUrl || '',
   }
@@ -214,9 +256,25 @@ function persist(data: SignupAttribution) {
 }
 
 function firstExternalReferrer(existing: string, candidate: string): string {
-  if (existing && !isInternalUrl(existing)) return existing
-  if (candidate && !isInternalUrl(candidate)) return candidate
-  return existing || ''
+  if (existing && isExternalUrl(existing)) return existing
+  if (candidate && isExternalUrl(candidate)) return candidate
+  return ''
+}
+
+function pickLandingPage(
+  existing: string,
+  dmLanding: string,
+  docRef: string,
+  nowUrl: string,
+): string {
+  const candidates = [existing, dmLanding, isMarketingUrl(docRef) ? docRef : '', nowUrl]
+  for (const c of candidates) {
+    if (!c) continue
+    // Prefer non-signup first-touch over the ESP signup URL itself.
+    if (isSignupUrl(c) && isEspUrl(c)) continue
+    return c
+  }
+  return existing || dmLanding || nowUrl
 }
 
 /** First-touch + journey capture. Safe to call on every page. */
@@ -231,21 +289,26 @@ export function captureSignupAttribution(): SignupAttribution {
   const nowUrl = window.location.href
 
   const externalReferrer = firstExternalReferrer(
-    existing.externalReferrer || existing.httpReferrer || '',
-    params.dmRef || docRef
+    existing.externalReferrer || (isExternalUrl(existing.httpReferrer || '') ? existing.httpReferrer! : ''),
+    params.dmRef || docRef,
   )
 
-  const landingPage =
-    existing.landingPage ||
-    params.dmLanding ||
-    nowUrl
+  const landingPage = pickLandingPage(
+    existing.landingPage || '',
+    params.dmLanding,
+    docRef,
+    nowUrl,
+  )
+
+  const landingTitle = (existing.landingTitle || params.dmTitle || '').slice(0, 200)
 
   const searchKeyword =
     existing.searchKeyword ||
     params.dmKeyword ||
     params.utmTerm ||
     extractSearchKeyword(externalReferrer) ||
-    extractSearchKeyword(docRef)
+    extractSearchKeyword(params.dmRef) ||
+    ''
 
   const utmSource = existing.utmSource || params.utmSource
   const utmMedium = existing.utmMedium || params.utmMedium
@@ -257,6 +320,7 @@ export function captureSignupAttribution(): SignupAttribution {
 
   const trafficSource =
     existing.trafficSource ||
+    params.dmSource ||
     classifyTrafficSource({
       externalReferrer,
       utmSource,
@@ -266,11 +330,20 @@ export function captureSignupAttribution(): SignupAttribution {
     })
 
   const journey = Array.isArray(existing.journey) ? [...existing.journey] : []
-  appendJourney(journey, nowUrl, document.title || '', docRef)
+  // If we arrived from marketing with empty journey, seed the marketing page.
+  if (!journey.length && isMarketingUrl(docRef)) {
+    appendJourney(journey, docRef, params.dmTitle || '', isExternalUrl(externalReferrer) ? externalReferrer : '')
+  }
+  if (!journey.length && params.dmLanding && !isEspUrl(params.dmLanding)) {
+    appendJourney(journey, params.dmLanding, params.dmTitle || '', externalReferrer)
+  }
+  appendJourney(journey, nowUrl, document.title || '', isExternalUrl(docRef) ? docRef : '')
 
   const next: SignupAttribution = {
     landingPage,
-    httpReferrer: externalReferrer || existing.httpReferrer || docRef || '',
+    landingTitle: (landingTitle || params.dmTitle || '').slice(0, 200),
+    // Never store ESP/marketing internal pages as "external" HTTP referrer.
+    httpReferrer: externalReferrer,
     externalReferrer,
     signupPageUrl: existing.signupPageUrl || '',
     searchKeyword,
@@ -291,19 +364,21 @@ export function captureSignupAttribution(): SignupAttribution {
 }
 
 function appendJourney(journey: JourneyStep[], url: string, title: string, referrer: string) {
+  if (!url) return
   const last = journey[journey.length - 1]
   if (last && last.url === url) return
   journey.push({
     url: url.slice(0, 1024),
     title: (title || '').slice(0, 200),
     at: new Date().toISOString(),
-    ...(referrer && !isInternalUrl(referrer) ? { referrer: referrer.slice(0, 1024) } : {}),
+    ...(referrer && isExternalUrl(referrer) ? { referrer: referrer.slice(0, 1024) } : {}),
   })
 }
 
 function emptyAttribution(): SignupAttribution {
   return {
     landingPage: '',
+    landingTitle: '',
     httpReferrer: '',
     externalReferrer: '',
     signupPageUrl: '',
@@ -331,7 +406,7 @@ export function markSignupPageVisit(): SignupAttribution {
   const base = captureSignupAttribution()
   const next: SignupAttribution = {
     ...base,
-    signupPageUrl: window.location.href,
+    signupPageUrl: window.location.href.split('#')[0],
   }
   persist(next)
   return next
@@ -340,9 +415,12 @@ export function markSignupPageVisit(): SignupAttribution {
 export function getSignupAttributionPayload(): Record<string, string | JourneyStep[]> {
   const data = markSignupPageVisit()
   const out: Record<string, string | JourneyStep[]> = {}
-  if (data.httpReferrer) out.httpReferrer = data.httpReferrer
-  if (data.externalReferrer) out.externalReferrer = data.externalReferrer
+  if (data.httpReferrer && isExternalUrl(data.httpReferrer)) out.httpReferrer = data.httpReferrer
+  if (data.externalReferrer && isExternalUrl(data.externalReferrer)) {
+    out.externalReferrer = data.externalReferrer
+  }
   if (data.landingPage) out.landingPage = data.landingPage
+  if (data.landingTitle) out.landingTitle = data.landingTitle
   if (data.signupPageUrl) out.signupPageUrl = data.signupPageUrl
   if (data.searchKeyword) out.searchKeyword = data.searchKeyword
   if (data.trafficSource) out.trafficSource = data.trafficSource
@@ -377,8 +455,10 @@ export function buildEspSignupUrl(base = 'https://esp.documantra.in/signup'): st
   try {
     const u = new URL(base)
     if (data.landingPage) u.searchParams.set('dm_landing', data.landingPage)
+    if (data.landingTitle) u.searchParams.set('dm_title', data.landingTitle)
     if (data.externalReferrer) u.searchParams.set('dm_ref', data.externalReferrer)
     if (data.searchKeyword) u.searchParams.set('dm_keyword', data.searchKeyword)
+    if (data.trafficSource) u.searchParams.set('dm_source', data.trafficSource)
     if (data.utmSource) u.searchParams.set('utm_source', data.utmSource)
     if (data.utmMedium) u.searchParams.set('utm_medium', data.utmMedium)
     if (data.utmCampaign) u.searchParams.set('utm_campaign', data.utmCampaign)

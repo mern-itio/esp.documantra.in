@@ -10,7 +10,7 @@ const userList = async (req, res) => {
       .select(
         'fullname email phone company address plan status emailVerified phoneVerified ' +
         'googleId facebookId linkedinId twitterId referredBy createdAt updatedAt isFirstLogin ' +
-        'signupIp signupGeo signupHttpReferrer signupExternalReferrer signupLandingPage signupPageUrl ' +
+        'signupIp signupGeo signupHttpReferrer signupExternalReferrer signupLandingPage signupLandingTitle signupPageUrl ' +
         'signupUtmSource signupUtmMedium signupUtmCampaign signupUtmTerm signupSearchKeyword ' +
         'signupTrafficSource signupJourney signupGclid signupFbclid'
       )
@@ -47,6 +47,7 @@ const userList = async (req, res) => {
         signupHttpReferrer: u.signupHttpReferrer || '',
         signupExternalReferrer: u.signupExternalReferrer || u.signupHttpReferrer || '',
         signupLandingPage: u.signupLandingPage || '',
+        signupLandingTitle: u.signupLandingTitle || '',
         signupPageUrl: u.signupPageUrl || '',
         signupUtmSource: u.signupUtmSource || '',
         signupUtmMedium: u.signupUtmMedium || '',
